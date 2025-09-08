@@ -1,0 +1,21 @@
+@use '../../../styles/variables' as *;
+.button {
+  background: var(--color-primary-light);
+  color: var(--color-text-primary-dark);
+  border: none;
+  padding: $spacing-md;
+  border-radius: $border-radius-sm;
+  font-size: $font-size-md;
+  cursor: pointer;
+  transition: background 0.2s, color 0.2s;
+}
+.button:hover {
+  background: var(--color-accent-light);
+}
+[data-theme='dark'] .button {
+  background: var(--color-primary-dark);
+  color: var(--color-text-primary-light);
+}
+[data-theme='dark'] .button:hover {
+  background: var(--color-accent-dark);
+}

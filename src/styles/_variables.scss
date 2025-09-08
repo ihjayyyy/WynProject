@@ -1,34 +1,51 @@
 
 
 
-$color-primary: #1976d2;
-$color-secondary: #424242;
-$color-accent: #ff9800;
-$color-background: #f4f6f8;
-$color-surface: #ffffff;
-$color-border: #e0e0e0;
-$color-error: #d32f2f;
-$color-success: #388e3c;
-$color-warning: #fbc02d;
-$color-info: #0288d1;
-$color-text: #212121;
-$color-text-light: #757575;
-$color-disabled: #bdbdbd;
 
- :root {
-  --color-primary: #1976d2;
-  --color-secondary: #424242;
-  --color-accent: #ff9800;
-  --color-background: #f4f6f8;
-  --color-surface: #ffffff;
-  --color-border: #e0e0e0;
-  --color-error: #d32f2f;
-  --color-success: #388e3c;
-  --color-warning: #fbc02d;
-  --color-info: #0288d1;
-  --color-text: #212121;
-  --color-text-light: #757575;
-  --color-disabled: #bdbdbd;
+
+// Color scheme variables
+$color-primary-light: #0F172A;
+$color-primary-dark: #1E293B;
+$color-secondary-light: #64748B;
+$color-secondary-dark: #94A3B8;
+$color-accent-light: #3B82F6;
+$color-accent-dark: #60A5FA;
+$color-success-light: #22C55E;
+$color-success-dark: #4ADE80;
+$color-warning-light: #EAB308;
+$color-warning-dark: #FACC15;
+$color-error-light: #DC2626;
+$color-error-dark: #F87171;
+$color-background-light: #FFFFFF;
+$color-background-dark: #0F172A;
+$color-background-alt-light: #F1F5F9;
+$color-background-alt-dark: #1E293B;
+$color-text-primary-light: #111827;
+$color-text-primary-dark: #F9FAFB;
+$color-text-secondary-light: #374151;
+$color-text-secondary-dark: #94A3B8;
+
+:root {
+  --color-primary-light: #0F172A;
+  --color-primary-dark: #1E293B;
+  --color-secondary-light: #64748B;
+  --color-secondary-dark: #94A3B8;
+  --color-accent-light: #3B82F6;
+  --color-accent-dark: #60A5FA;
+  --color-success-light: #22C55E;
+  --color-success-dark: #4ADE80;
+  --color-warning-light: #EAB308;
+  --color-warning-dark: #FACC15;
+  --color-error-light: #DC2626;
+  --color-error-dark: #F87171;
+  --color-background-light: #FFFFFF;
+  --color-background-dark: #0F172A;
+  --color-background-alt-light: #F1F5F9;
+  --color-background-alt-dark: #1E293B;
+  --color-text-primary-light: #111827;
+  --color-text-primary-dark: #F9FAFB;
+  --color-text-secondary-light: #374151;
+  --color-text-secondary-dark: #94A3B8;
 }
 
 // Font sizes

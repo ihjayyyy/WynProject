@@ -1,11 +1,10 @@
 @use '../../styles/variables' as *;
  .loginForm {
   width: 100%;
-// ...existing code...
   max-width: 400px;
   margin: $spacing-xl auto;
   padding: $spacing-xl $spacing-lg $spacing-lg $spacing-lg;
-  background: var(--color-background, $color-background);
+  background: var(--color-background-alt-light);
   border-radius: $border-radius-lg;
   box-shadow: $shadow-lg;
   display: flex;
@@ -14,21 +13,6 @@
   gap: $spacing-md;
   transition: background 0.2s, color 0.2s, box-shadow 0.2s;
 }
-
-// Example: override CSS variables for dark mode
-:global(body.dark) {
-  --color-background: #232326;
-  --color-surface: #18181b;
-  --color-border: #333;
-  --color-text: #f3f3f3;
-  --color-text-light: #bdbdbd;
-  --color-primary: #4eaaff;
-}
-:global(body.dark) .loginForm {
-  background: var(--color-background, #232326);
-  box-shadow: 0 8px 24px rgba(0,0,0,0.5);
-}
-
 
 .logoWrap {
   display: flex;
@@ -40,27 +24,43 @@
   text-align: center;
   font-size: $font-size-xl;
   font-weight: $font-weight-bold;
-  color: var(--color-text, $color-text);
+  color: var(--color-text-primary-light);
+  background: var(--color-background-alt-light);
   margin: 0;
 }
 
 .subtitle {
   text-align: center;
-  color: var(--color-text-light, $color-text-light);
+  color: var(--color-text-secondary-light);
   font-size: $font-size-md;
+}
+
+
+[data-theme='dark'] .loginForm {
+  background: var(--color-background-alt-dark);
+  color: var(--color-text-primary-dark);
 }
 
 .fieldLabel {
   font-size: $font-size-md;
-  font-weight: $font-weight-medium;
-  color: var(--color-text, $color-text);
+  color: var(--color-text-primary-light);
 }
 
 .inputIconWrap {
   display: flex;
   align-items: center;
-  background: var(--color-surface, $color-surface);
-  border: 1px solid var(--color-border, $color-border);
+  background: var(--color-background-alt-light);
+  border: 1px solid var(--color-secondary-light);
+.loginButton:hover {
+  background: var(--color-accent-light);
+}
+[data-theme='dark'] .loginButton {
+  background: var(--color-primary-dark);
+  color: var(--color-text-primary-light);
+}
+[data-theme='dark'] .loginButton:hover {
+  background: var(--color-accent-dark);
+}
   border-radius: $border-radius-sm;
   padding: 0 $spacing-md;
   transition: background 0.2s, border 0.2s;
@@ -80,7 +80,7 @@
   font-size: $font-size-md;
   padding: $spacing-md 0;
   outline: none;
-  color: var(--color-text, $color-text);
+  color: var(--color-text-primary-light);
   transition: color 0.2s;
 }
 
@@ -93,29 +93,29 @@
 }
 
 :global(body.dark) .checkboxLabel {
-  color: #e0e0e0;
+  color: var(--color-text-secondary-dark);
 }
 .checkboxLabel {
   display: flex;
   align-items: center;
   font-size: $font-size-sm;
-  color: var(--color-text, $color-text);
+  color: var(--color-text-primary-light);
   gap: $spacing-xs;
   cursor: pointer;
 }
 
 .checkboxLabel input[type="checkbox"] {
-  accent-color: var(--color-primary, $color-primary);
+  accent-color: var(--color-primary-light);
   width: $font-size-md;
   height: $font-size-md;
   margin-right: $spacing-xs;
 }
 
 :global(body.dark) .forgot {
-  color: #4eaaff;
+  color: var(--color-secondary-dark);
 }
   .forgot {
-  color: var(--color-primary, $color-primary);
+  color: var(--color-primary-light);
   font-size: $font-size-sm;
   text-decoration: none;
   font-weight: $font-weight-medium;
@@ -127,8 +127,8 @@
 
 .signinBtn {
   width: 100%;
-  background: var(--color-primary, $color-primary);
-  color: var(--color-background, $color-background);
+  background: var(--color-primary-light);
+  color: var(--color-text-primary-dark);
   font-size: $font-size-lg;
   font-weight: $font-weight-bold;
   border-radius: $border-radius-sm;
@@ -139,8 +139,8 @@
 
 
 .error {
-  color: var(--color-error, $color-error);
-  background: #ffeaea;
+  color: var(--color-error-light);
+  background: var(--color-background-alt-light);
   padding: $spacing-sm $spacing-md;
   border-radius: $border-radius-sm;
   margin-bottom: $spacing-sm;

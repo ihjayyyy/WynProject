@@ -2,7 +2,7 @@
 import React, { useState } from "react";
 import Image from "next/image";
 import styles from "./LoginForm.module.scss";
-import Button from "../ui/Button";
+import Button from "../ui/Button/Button";
 
 export default function LoginForm({ onLogin }) {
   const [email, setEmail] = useState("");
