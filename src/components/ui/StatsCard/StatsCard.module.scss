@@ -1,0 +1,53 @@
+@use '../../../styles/variables' as *;
+
+.statCard {
+  background: var(--color-background-light);
+  border: 1px solid #e5e7eb;
+  border-radius: $border-radius-lg;
+  padding: 1.5rem;
+  box-shadow: $shadow-sm;
+  transition: all 0.2s ease;
+
+  &:hover {
+    box-shadow: $shadow-md;
+    border-color: #d1d5db;
+  }
+}
+
+.statContent {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 0.5rem;
+}
+
+.statNumber {
+  font-size: 2rem;
+  font-weight: $font-weight-bold;
+  color: var(--color-text-primary-light);
+  line-height: 1;
+}
+
+.statLabel {
+  font-size: $font-size-sm;
+  color: var(--color-secondary-light);
+  font-weight: $font-weight-medium;
+}
+
+.statChange {
+  font-size: $font-size-sm;
+  font-weight: $font-weight-medium;
+  padding: 0.25rem 0.5rem;
+  border-radius: $border-radius-sm;
+  line-height: 1;
+
+  &[data-positive="true"] {
+    color: var(--color-success-light);
+    background: rgba(34, 197, 94, 0.1);
+  }
+
+  &[data-positive="false"] {
+    color: var(--color-error-light);
+    background: rgba(220, 38, 38, 0.1);
+  }
+}

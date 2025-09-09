@@ -25,7 +25,7 @@ export default function SidenavLayout({ children }) {
           title={item.label}
           className={`${styles.navLink} ${isActive ? styles.active : ''}`}
         >
-          <item.icon size={22} />
+          <item.icon size={18} />
           {!isCollapsed && <span className={styles.navLabel}>{item.label}</span>}
         </Link>
       </li>
@@ -49,12 +49,12 @@ export default function SidenavLayout({ children }) {
                 src="/ODR-Logo.png"
                 alt="ODR Logo"
                 className={`${styles.brandLogo} ${isLogoHovered && isCollapsed ? styles.logoHovered : ''}`}
-                width={40}
-                height={40}
+                width={32}
+                height={32}
               />
               {isCollapsed && isLogoHovered && (
                 <div className={styles.expandIcon}>
-                  <FiChevronRight size={20} />
+                  <FiChevronRight size={16} />
                 </div>
               )}
             </div>
@@ -72,7 +72,7 @@ export default function SidenavLayout({ children }) {
               aria-label="Collapse sidebar"
               title="Collapse sidebar"
             >
-              <FiChevronLeft size={20} />
+              <FiChevronLeft size={16} />
             </button>
           )}
         </header>
@@ -91,8 +91,8 @@ export default function SidenavLayout({ children }) {
               src="/ODR-Logo.png" 
               alt="User Avatar" 
               className={styles.userAvatar} 
-              width={32} 
-              height={32} 
+              width={28} 
+              height={28} 
             />
             {!isCollapsed && (
               <div className={styles.userDetails}>

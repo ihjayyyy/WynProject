@@ -1,9 +1,11 @@
-import React from "react";
-import styles from "./Button.module.scss";
+import styles from './Button.module.scss';
 
-export default function Button({ children, className = "", ...props }) {
+export default function Button({ children, variant = 'primary', className = '', ...props }) {
   return (
-    <button className={`${styles.button} ${className}`} {...props}>
+    <button 
+      className={`${styles.button} ${styles[variant]} ${className}`}
+      {...props}
+    >
       {children}
     </button>
   );

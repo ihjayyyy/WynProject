@@ -1,0 +1,110 @@
+@use '../../../styles/variables' as *;
+
+.searchSection {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.searchContainer {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.searchIcon {
+  position: absolute;
+  left: 0.75rem;
+  color: var(--color-secondary-light);
+  z-index: 1;
+  pointer-events: none;
+}
+
+.searchInput {
+  padding: 0.75rem 0.75rem 0.75rem 2.5rem;
+  border: 1px solid #d1d5db;
+  border-radius: $border-radius-md;
+  font-size: $font-size-sm;
+  background-color: var(--color-background-light);
+  color: var(--color-text-primary-light);
+  transition: all 0.2s ease;
+
+  &:focus {
+    outline: none;
+    border-color: var(--color-accent-light);
+    box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1);
+  }
+
+  &::placeholder {
+    color: var(--color-secondary-light);
+  }
+
+  &:hover {
+    border-color: #9ca3af;
+  }
+}
+
+.filterButton {
+  padding: 0.75rem;
+  border: 1px solid #d1d5db;
+  border-radius: $border-radius-md;
+  background-color: var(--color-background-light);
+  color: var(--color-secondary-light);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  &:hover {
+    background-color: var(--color-background-alt-light);
+    border-color: #9ca3af;
+    color: var(--color-text-primary-light);
+  }
+
+  &:focus {
+    outline: none;
+    border-color: var(--color-accent-light);
+    box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1);
+  }
+
+  &:active {
+    transform: scale(0.98);
+  }
+}
+
+// Dark mode support
+[data-theme='dark'] {
+  .searchInput {
+    background-color: var(--color-background-dark);
+    color: var(--color-text-primary-dark);
+    border-color: #374151;
+
+    &:focus {
+      border-color: var(--color-accent-dark);
+    }
+
+    &::placeholder {
+      color: var(--color-secondary-dark);
+    }
+  }
+
+  .filterButton {
+    background-color: var(--color-background-dark);
+    color: var(--color-secondary-dark);
+    border-color: #374151;
+
+    &:hover {
+      background-color: var(--color-background-alt-dark);
+      color: var(--color-text-primary-dark);
+    }
+
+    &:focus {
+      border-color: var(--color-accent-dark);
+    }
+  }
+
+  .searchIcon {
+    color: var(--color-secondary-dark);
+  }
+}

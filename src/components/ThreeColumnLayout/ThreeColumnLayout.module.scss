@@ -1,0 +1,208 @@
+@use '../../styles/variables' as *;
+
+// THREE COLUMN LAYOUT STYLES
+.container {
+  display: flex;
+  height: 100%;
+  width: 100%;
+  position: relative;
+}
+
+.mainContent {
+  flex: 1;
+  padding: 1.5rem 0.75rem 1.5rem 1.5rem; // Reduce right padding to match left gap
+  background-color: var(--color-background-light);
+  min-height: 100vh;
+  transition: margin-right 0.3s ease;
+  overflow-x: auto;
+
+  &.withRightPanel {
+    margin-right: 200px; // Width of expanded right panel (same as sidenav)
+  }
+
+  &.withCollapsedRightPanel {
+    margin-right: 56px; // Width of collapsed right panel (same as sidenav)
+  }
+}
+
+// RIGHT PANEL STYLES
+.rightPanel {
+  position: fixed;
+  right: 0;
+  top: 0;
+  height: 100vh;
+  background: var(--color-background-alt-light);
+  color: var(--color-text-primary-light);
+  box-shadow: $shadow-lg;
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+  transition: width 0.3s ease;
+  overflow: hidden;
+
+  &.expanded {
+    width: 200px;
+    padding: 1.5rem 0.75rem 0.5rem 0.75rem;
+  }
+
+  &.collapsed {
+    width: 56px;
+    padding: 1rem 0 0.5rem 0;
+    align-items: center;
+  }
+}
+
+.rightPanelHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.75rem;
+
+  .collapsed & {
+    justify-content: center;
+    margin-bottom: 0.75rem;
+  }
+}
+
+.toggleButton {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--color-text-primary-light);
+  padding: 0.5rem;
+  border-radius: 50%;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  position: relative;
+  flex-shrink: 0;
+
+  &:hover {
+    background: var(--color-background-light);
+    transform: scale(1.1);
+    color: var(--color-accent-light);
+  }
+
+  &:focus {
+    outline: none;
+    box-shadow: 0 0 0 2px var(--color-accent-light);
+  }
+
+  &:active {
+    transform: scale(0.95);
+  }
+
+  // Add a subtle indicator for collapsed state
+  .collapsed & {
+    &::after {
+      content: '';
+      position: absolute;
+      top: -2px;
+      left: -2px;
+      width: 8px;
+      height: 8px;
+      background: var(--color-accent-light);
+      border-radius: 50%;
+      animation: pulseIndicator 2s infinite;
+    }
+  }
+}
+
+@keyframes pulseIndicator {
+  0%, 100% {
+    opacity: 0.6;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.2);
+  }
+}
+
+// Collapsed state tooltip-like behavior
+.rightPanel.collapsed {
+  .toggleButton {
+    &:hover {
+      transform: scale(1.2);
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+    }
+  }
+}
+
+.rightPanelContent {
+  flex: 1;
+  overflow-y: auto;
+}
+
+// RESPONSIVE DESIGN
+@media (max-width: 1024px) {
+  .rightPanel {
+    &.expanded {
+      width: 200px; // Keep same as sidenav for consistency
+    }
+
+    &.collapsed {
+      width: 56px;
+    }
+  }
+
+  .mainContent.withRightPanel {
+    margin-right: 200px;
+  }
+
+  .mainContent.withCollapsedRightPanel {
+    margin-right: 56px;
+  }
+}
+
+@media (max-width: 768px) {
+  .rightPanel {
+    &.expanded {
+      width: 100%;
+    }
+
+    &.collapsed {
+      width: 56px;
+    }
+  }
+
+  .mainContent.withRightPanel {
+    margin-right: 0;
+    display: none; // Hide main content on mobile when panel is open
+  }
+
+  .mainContent.withCollapsedRightPanel {
+    margin-right: 56px;
+    display: block; // Show main content when panel is collapsed
+  }
+}
+
+// ============================================
+// DARK MODE SUPPORT
+// ============================================
+[data-theme='dark'] {
+  .mainContent {
+    background-color: var(--color-background-dark);
+  }
+
+  .rightPanel {
+    background: var(--color-background-alt-dark);
+    color: var(--color-text-primary-dark);
+  }
+
+  .toggleButton {
+    color: var(--color-text-primary-dark);
+
+    &:hover {
+      background: var(--color-background-dark);
+      color: var(--color-accent-dark);
+    }
+
+    .collapsed &::after {
+      background: var(--color-accent-dark);
+    }
+  }
+}
