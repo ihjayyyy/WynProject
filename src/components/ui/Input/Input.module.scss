@@ -1,4 +1,5 @@
-@use '../../../styles/variables' as *;
+@import '../../../styles/variables';
+
 .field {
   display: flex;
   flex-direction: column;
@@ -6,39 +7,43 @@
 
   label {
     font-weight: $font-weight-medium;
+    color: $color-text-primary-light;
+    font-size: $font-size-sm;
+  }
+}
+
+.input {
+  padding: $spacing-sm $spacing-md;
+  border: 1px solid $color-secondary-light;
+  border-radius: $border-radius-sm;
+  font-size: $font-size-md;
+  background: $color-background-light;
+  color: $color-text-primary-light;
+  transition: border 0.2s, background 0.2s, box-shadow 0.2s;
+
+  &::placeholder {
+    color: $color-text-secondary-light;
+    opacity: 1;
   }
 
-  input {
-    padding: $spacing-sm $spacing-md;
-  border: 1px solid var(--color-secondary-light);
-    border-radius: $border-radius-sm;
-    font-size: $font-size-md;
-  background: var(--color-background-light);
-  color: var(--color-text-primary-light);
-    transition: background 0.2s, color 0.2s, border 0.2s;
-    &::placeholder {
-  color: var(--color-text-secondary-light);
-      opacity: 1;
-    }
-    .input {
-      background: var(--color-background-light);
-      color: var(--color-text-primary-light);
-      border: 1px solid var(--color-secondary-light);
-      border-radius: 4px;
-      padding: 0.5rem 1rem;
-      transition: border 0.2s, background 0.2s;
-    }
-    .input:focus {
-      border-color: var(--color-accent-light);
-      outline: none;
-    }
-  [data-theme='dark'] .input {
-      background: var(--color-background-dark);
-      color: var(--color-text-primary-dark);
-      border: 1px solid var(--color-secondary-dark);
-    }
-  [data-theme='dark'] .input:focus {
-      border-color: var(--color-accent-dark);
+  &:focus {
+    border-color: $color-accent-light;
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+  }
+
+  &:disabled {
+    background: $color-background-alt-light;
+    color: $color-text-secondary-light;
+    cursor: not-allowed;
+  }
+
+  &.error {
+    border-color: $color-error-light;
+
+    &:focus {
+      border-color: $color-error-light;
+      box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.1);
     }
   }
 }

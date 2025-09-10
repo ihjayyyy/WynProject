@@ -2,9 +2,8 @@
 
 import React, { useState } from 'react';
 import ThreeColumnLayout from '../../../components/ThreeColumnLayout/ThreeColumnLayout';
-import { StatsCard, SearchBar } from '../../../components';
+import { StatsCard, SearchBar, DataTable, StatusDot } from '../../../components';
 import styles from './page.module.scss';
-import { FiMoreVertical } from 'react-icons/fi';
 
 export default function SupplierPage() {
   const [searchTerm, setSearchTerm] = useState('');
@@ -68,9 +67,44 @@ export default function SupplierPage() {
     }
   ];
 
+  // Define table columns
+  const columns = [
+    {
+      key: 'status',
+      header: 'STATUS',
+      render: (item) => <StatusDot status={item.status} />
+    },
+    {
+      key: 'name',
+      header: 'SUPPLIER NAME'
+    },
+    {
+      key: 'contact',
+      header: 'CONTACT'
+    },
+    {
+      key: 'category',
+      header: 'CATEGORY'
+    },
+    {
+      key: 'totalAmount',
+      header: 'TOTAL VALUE',
+      render: (item) => `$${item.totalAmount}`
+    },
+    {
+      key: 'lastOrder',
+      header: 'LAST ORDER'
+    }
+  ];
+
   const handleRowClick = (supplier) => {
     console.log('Selected supplier:', supplier);
     // Add your row click logic here when ready
+  };
+
+  const handleActionClick = (supplier) => {
+    console.log('Action clicked for supplier:', supplier);
+    // Add your action menu logic here
   };
 
   const handleSearchChange = (value) => {
@@ -86,15 +120,6 @@ export default function SupplierPage() {
   const handleFilterClick = () => {
     console.log('Filter clicked');
     // Add your filter logic here
-  };
-
-  const getStatusColor = (status) => {
-    switch (status) {
-      case 'ACTIVE': return '#10b981';
-      case 'PENDING': return '#f59e0b';
-      case 'INACTIVE': return '#ef4444';
-      default: return '#6b7280';
-    }
   };
 
   const suppliersContent = (
@@ -135,50 +160,13 @@ export default function SupplierPage() {
       </div>
 
       {/* Table */}
-      <div className={styles.tableContainer}>
-        <table className={styles.table}>
-          <thead>
-            <tr>
-              <th>STATUS</th>
-              <th>SUPPLIER NAME</th>
-              <th>CONTACT</th>
-              <th>CATEGORY</th>
-              <th>TOTAL VALUE</th>
-              <th>LAST ORDER</th>
-              <th></th>
-            </tr>
-          </thead>
-          <tbody>
-            {suppliers.map((supplier) => (
-              <tr 
-                key={supplier.id} 
-                className={styles.tableRow}
-                onClick={() => handleRowClick(supplier)}
-              >
-                <td>
-                  <div className={styles.priority}>
-                    <div 
-                      className={styles.priorityDot}
-                      style={{ backgroundColor: getStatusColor(supplier.status) }}
-                    ></div>
-                    <span>{supplier.status}</span>
-                  </div>
-                </td>
-                <td>{supplier.name}</td>
-                <td>{supplier.contact}</td>
-                <td>{supplier.category}</td>
-                <td>${supplier.totalAmount}</td>
-                <td>{supplier.lastOrder}</td>
-                <td>
-                  <button className={styles.menuButton}>
-                    <FiMoreVertical size={16} />
-                  </button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+      <DataTable
+        columns={columns}
+        data={suppliers}
+        onRowClick={handleRowClick}
+        onActionClick={handleActionClick}
+        emptyMessage="No suppliers found"
+      />
     </div>
   );
 
@@ -189,7 +177,7 @@ export default function SupplierPage() {
           display: 'flex', 
           alignItems: 'center', 
           justifyContent: 'center', 
-          height: '100%',
+          height: '80%',
           color: 'var(--color-text-secondary-light)',
           fontSize: '0.875rem',
           textAlign: 'center',

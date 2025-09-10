@@ -1,0 +1,103 @@
+@use '../../../styles/variables' as *;
+
+.tableContainer {
+  background: $color-background-light;
+  border-radius: 8px;
+  border: 1px solid $color-secondary-light;
+  overflow: hidden;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: $font-size-sm;
+
+  th {
+    background: $color-background-alt-light;
+    padding: $spacing-md $spacing-lg;
+    text-align: left;
+    font-weight: $font-weight-medium;
+    font-size: $font-size-xs;
+    letter-spacing: 0.05em;
+    color: $color-text-secondary-light;
+    text-transform: uppercase;
+    border-bottom: 1px solid $color-secondary-light;
+
+    &:first-child {
+      padding-left: $spacing-lg;
+    }
+
+    &:last-child {
+      padding-right: $spacing-lg;
+      width: 40px;
+    }
+  }
+
+  td {
+    padding: $spacing-md $spacing-lg;
+    border-bottom: 1px solid $color-secondary-light;
+    color: $color-text-primary-light;
+    vertical-align: middle;
+
+    &:first-child {
+      padding-left: $spacing-lg;
+    }
+
+    &:last-child {
+      padding-right: $spacing-lg;
+      text-align: center;
+      width: 40px;
+    }
+  }
+}
+
+.tableRow {
+  transition: background-color 0.2s ease;
+
+  &:hover {
+    background: $color-background-alt-light;
+  }
+
+  &:last-child td {
+    border-bottom: none;
+  }
+
+  &.clickable {
+    cursor: pointer;
+  }
+}
+
+.menuButton {
+  background: none;
+  border: none;
+  padding: $spacing-xs;
+  cursor: pointer;
+  color: $color-text-secondary-light;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+
+  &:hover {
+    background: $color-background-alt-light;
+    color: $color-text-primary-light;
+  }
+}
+
+.emptyContainer {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 3rem;
+  background: $color-background-light;
+  border-radius: $border-radius-lg;
+  border: 1px solid $color-secondary-light;
+  margin-top: $spacing-lg;
+}
+
+.emptyMessage {
+  color: $color-text-secondary-light;
+  font-size: $font-size-sm;
+  margin: 0;
+}

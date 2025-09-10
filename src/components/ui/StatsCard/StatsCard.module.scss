@@ -1,16 +1,16 @@
-@use '../../../styles/variables' as *;
+@import '../../../styles/variables';
 
 .statCard {
-  background: var(--color-background-light);
-  border: 1px solid #e5e7eb;
+  background: $color-background-light;
+  border: 1px solid $color-secondary-light;
   border-radius: $border-radius-lg;
-  padding: 1.5rem;
+  padding: $spacing-lg;
   box-shadow: $shadow-sm;
   transition: all 0.2s ease;
 
   &:hover {
     box-shadow: $shadow-md;
-    border-color: #d1d5db;
+    border-color: $color-secondary-dark;
   }
 }
 
@@ -18,36 +18,36 @@
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
-  margin-bottom: 0.5rem;
+  margin-bottom: $spacing-sm;
 }
 
 .statNumber {
-  font-size: 2rem;
+  font-size: $font-size-xxl;
   font-weight: $font-weight-bold;
-  color: var(--color-text-primary-light);
+  color: $color-text-primary-light;
   line-height: 1;
 }
 
 .statLabel {
   font-size: $font-size-sm;
-  color: var(--color-secondary-light);
+  color: $color-text-secondary-light;
   font-weight: $font-weight-medium;
 }
 
 .statChange {
   font-size: $font-size-sm;
   font-weight: $font-weight-medium;
-  padding: 0.25rem 0.5rem;
+  padding: $spacing-xs $spacing-sm;
   border-radius: $border-radius-sm;
   line-height: 1;
 
   &[data-positive="true"] {
-    color: var(--color-success-light);
+    color: $color-success-light;
     background: rgba(34, 197, 94, 0.1);
   }
 
   &[data-positive="false"] {
-    color: var(--color-error-light);
+    color: $color-error-light;
     background: rgba(220, 38, 38, 0.1);
   }
 }
