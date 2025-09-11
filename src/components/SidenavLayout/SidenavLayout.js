@@ -6,28 +6,116 @@ import { sidenavItems } from './sidenavData';
 import Image from 'next/image';
 import { useState } from 'react';
 import { usePathname } from 'next/navigation';
-import { FiChevronLeft, FiChevronRight } from 'react-icons/fi';
+import { FiChevronLeft, FiChevronRight, FiChevronDown, FiChevronUp } from 'react-icons/fi';
 
 export default function SidenavLayout({ children }) {
   const [isCollapsed, setIsCollapsed] = useState(true);
   const [isLogoHovered, setIsLogoHovered] = useState(false);
+  const [expandedParents, setExpandedParents] = useState(new Set());
   const pathname = usePathname();
 
   const toggleSidebar = () => setIsCollapsed(!isCollapsed);
 
+  const toggleParentExpansion = (parentLabel) => {
+    const newExpanded = new Set(expandedParents);
+    if (newExpanded.has(parentLabel)) {
+      newExpanded.delete(parentLabel);
+    } else {
+      newExpanded.add(parentLabel);
+    }
+    setExpandedParents(newExpanded);
+  };
+
+  const isParentActive = (item) => {
+    if (item.href && pathname?.toLowerCase() === item.href.toLowerCase()) {
+      return true;
+    }
+    if (item.children) {
+      return item.children.some(child => pathname?.toLowerCase() === child.href.toLowerCase());
+    }
+    return false;
+  };
+
+  const isChildActive = (child) => {
+    return pathname?.toLowerCase() === child.href.toLowerCase();
+  };
+
   const renderNavItem = (item) => {
-    const isActive = pathname?.toLowerCase() === item.href.toLowerCase();
-    
+    const hasChildren = item.children && item.children.length > 0;
+    const isExpanded = expandedParents.has(item.label);
+    const isActive = isParentActive(item);
+
+    // Helper to render icon safely
+    const renderIcon = (IconComponent, size = 18) => {
+      if (!IconComponent) {
+        if (process.env.NODE_ENV !== 'production') {
+          // eslint-disable-next-line no-console
+          console.warn(`SidenavLayout: Icon for '${item.label}' is undefined.`);
+        }
+        return <span style={{ width: size, display: 'inline-block' }} />;
+      }
+      return <IconComponent size={size} />;
+    };
+
+    // If no children, render as before
+    if (!hasChildren) {
+      return (
+        <li key={item.label} className={styles.navItem}>
+          <Link
+            href={item.href}
+            title={item.label}
+            className={`${styles.navLink} ${isActive ? styles.active : ''}`}
+          >
+            {renderIcon(item.icon, 18)}
+            {!isCollapsed && <span className={styles.navLabel}>{item.label}</span>}
+          </Link>
+        </li>
+      );
+    }
+
+    // Parent with children
     return (
       <li key={item.label} className={styles.navItem}>
-        <Link
-          href={item.href}
-          title={item.label}
-          className={`${styles.navLink} ${isActive ? styles.active : ''}`}
-        >
-          <item.icon size={18} />
-          {!isCollapsed && <span className={styles.navLabel}>{item.label}</span>}
-        </Link>
+        <div className={styles.parentItem}>
+          <button
+            className={`${styles.navLink} ${styles.parentNavLink} ${isActive ? styles.active : ''}`}
+            onClick={() => {
+              if (isCollapsed) {
+                setIsCollapsed(false);
+                setExpandedParents(new Set([item.label]));
+              } else {
+                toggleParentExpansion(item.label);
+              }
+            }}
+            title={item.label}
+          >
+            {renderIcon(item.icon, 18)}
+            {!isCollapsed && (
+              <>
+                <span className={styles.navLabel}>{item.label}</span>
+                <span className={styles.chevronIcon}>
+                  {isExpanded ? <FiChevronUp size={14} /> : <FiChevronDown size={14} />}
+                </span>
+              </>
+            )}
+          </button>
+          {!isCollapsed && isExpanded && (
+            <ul className={styles.childNavList}>
+              {item.children.map((child) => (
+                <li key={child.label} className={styles.childNavItem}>
+                  <Link
+                    href={child.href}
+                    title={child.label}
+                    className={`${styles.navLink} ${styles.childNavLink} ${isChildActive(child) ? styles.active : ''}`}
+                  >
+                    {renderIcon(child.icon, 16)}
+                    <span className={styles.navLabel}>{child.label}</span>
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
       </li>
     );
   };
@@ -35,7 +123,7 @@ export default function SidenavLayout({ children }) {
   return (
     <div className={styles.layout}>
       <aside className={`${styles.sidebar} ${isCollapsed ? styles.collapsed : styles.expanded}`}>
-        {/* Header Section */}
+        {/* Header Section - Unchanged */}
         <header className={styles.sidebarHeader}>
           <div className={styles.brandSection}>
             <div 
@@ -84,7 +172,7 @@ export default function SidenavLayout({ children }) {
           </ul>
         </nav>
 
-        {/* Footer Section */}
+        {/* Footer Section - Unchanged */}
         <footer className={styles.sidebarFooter}>
           <div className={styles.userProfile}>
             <Image 

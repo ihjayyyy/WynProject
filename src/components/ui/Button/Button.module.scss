@@ -1,4 +1,5 @@
-@import '../../../styles/variables';
+@use 'sass:color';
+@use '../../../styles/variables' as *;
 
 .button {
   background: $color-primary-light;
@@ -43,6 +44,6 @@
   color: $color-text-primary-dark;
 
   &:hover {
-    background: darken($color-error-light, 10%);
+    background: color.scale($color-error-light, $lightness: -10%);
   }
 }
