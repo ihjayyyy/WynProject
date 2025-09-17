@@ -61,9 +61,8 @@ function RightPanel({ allColumns, selectedColumns, setSelectedColumns, filter, o
                     onFilterChange({ ...filter, companyCode: e.target.value });
                   }
                 }}
-                placeholder="Enter company code"
+                placeholder="Enter code"
                 label={null}
-                className={styles.filterInput}
               />
             </label>
           </div>
