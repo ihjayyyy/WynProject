@@ -11,6 +11,8 @@ import {
   FiBarChart2,
   FiShoppingBag, // Added for Purchasing
   FiCreditCard, // Added for Sales
+  FiTruck, // Added for Supplier
+  FiBriefcase, // Added for Company
 } from "react-icons/fi";
 
 export const sidenavItems = [
@@ -21,10 +23,24 @@ export const sidenavItems = [
     href: "/dashboard",
   },
 
+    // Item with children
+  {
+    label: "Users",
+    icon: FiUsers,
+    href: "/users",
+  },
+
+  // Item with children
+  {
+    label: "Company",
+    icon: FiBriefcase,
+    href: "/company",
+  },
+
   // Item with children
   {
     label: "Supplier",
-    icon: FiUsers,
+    icon: FiTruck,
     href: "/supplier",
   },
 

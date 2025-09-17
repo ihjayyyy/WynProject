@@ -1,0 +1,58 @@
+@use '../../../styles/variables' as *;
+
+// SUPPLIER PAGE STYLES
+.container {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+// STATS GRID AT THE TOP
+.statsGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1rem;
+}
+
+// TITLE AND SEARCH SECTION
+.titleSection {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 2rem;
+}
+
+.title {
+  font-size: 2rem;
+  font-weight: 700;
+  color: var(--color-text-primary-light);
+  margin: 0;
+}
+
+// RESPONSIVE DESIGN
+@media (max-width: 1024px) {
+  .titleSection {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1rem;
+  }
+
+  .statsGrid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1rem;
+  }
+}
+
+@media (max-width: 768px) {
+  .statsGrid {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+
+  .titleSection {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1rem;
+  }
+}
