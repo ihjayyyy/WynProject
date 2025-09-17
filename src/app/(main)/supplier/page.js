@@ -4,8 +4,9 @@ import React, { useState, useMemo, useCallback } from 'react';
 
 import ThreeColumnLayout from '../../../components/ThreeColumnLayout/ThreeColumnLayout';
 import { StatsCard, SearchBar } from '../../../components';
-import SupplierTable from '../../../components/SupplierTable/SupplierTable';
+import DataTable from '../../../components/ui/DataTable/DataTable';
 import styles from './page.module.scss';
+import RightPanel from './RightPanel';
 
 
 // --- Data & Configs ---
@@ -65,7 +66,7 @@ const ALL_COLUMNS = [
     key: 'CompanyCode',
     header: 'COMPANY CODE',
     sortable: true,
-    align: 'center',
+    align: 'start',
     render: (item) => <span style={{ fontWeight: 'bold', fontSize: '1rem' }}>{item.CompanyCode}</span>
   },
   {
@@ -77,7 +78,7 @@ const ALL_COLUMNS = [
     key: 'Logo',
     header: 'LOGO',
     render: (item) => item.Logo ? <img src={item.Logo} alt="logo" style={{ width: 32, height: 32, display: 'block', margin: '0 auto' }} /> : '',
-    align: 'center',
+    align: 'start',
     sortable: false
   },
   {
@@ -89,13 +90,13 @@ const ALL_COLUMNS = [
     key: 'Phone',
     header: 'PHONE',
     sortable: true,
-    align: 'center'
+    align: 'start'
   },
   {
     key: 'Fax',
     header: 'FAX',
     sortable: true,
-    align: 'center'
+    align: 'start'
   },
   {
     key: 'Email',
@@ -122,33 +123,7 @@ function StatsSection() {
   );
 }
 
-function RightPanel({ allColumns, selectedColumns, setSelectedColumns }) {
-  return (
-    <div style={{ padding: '2rem', minWidth: 220 }}>
-      <h3 style={{ marginBottom: '1rem', fontSize: '1.1em' }}>Show Columns</h3>
-      <form>
-        {allColumns.map(col => (
-          <div key={col.key} style={{ marginBottom: '0.5rem' }}>
-            <label style={{ display: 'flex', alignItems: 'center', gap: '0.5em' }}>
-              <input
-                type="checkbox"
-                checked={selectedColumns.includes(col.key)}
-                onChange={e => {
-                  if (e.target.checked) {
-                    setSelectedColumns(prev => [...prev, col.key]);
-                  } else {
-                    setSelectedColumns(prev => prev.filter(k => k !== col.key));
-                  }
-                }}
-              />
-              {col.header}
-            </label>
-          </div>
-        ))}
-      </form>
-    </div>
-  );
-}
+// ...existing code...
 
 // --- Main Page ---
 export default function SupplierPage() {
@@ -157,6 +132,10 @@ export default function SupplierPage() {
   const [selectedColumns, setSelectedColumns] = useState([
     'CompanyCode', 'Name', 'Logo', 'Address', 'Phone', 'Fax', 'Email', 'Website'
   ]);
+  // Add filter state
+  const [filter, setFilter] = useState({ companyCode: '' });
+  // Right panel collapsed state
+  const [isRightPanelCollapsed, setIsRightPanelCollapsed] = useState(false);
 
   // Memoize columns
   const columns = useMemo(
@@ -164,10 +143,20 @@ export default function SupplierPage() {
     [selectedColumns]
   );
 
-  // Sorting logic
+  // Filter and sort suppliers
+  const filteredSuppliers = useMemo(() => {
+    let filtered = SUPPLIERS;
+    if (filter.companyCode) {
+      filtered = filtered.filter(sup =>
+        sup.CompanyCode.toLowerCase().includes(filter.companyCode.toLowerCase())
+      );
+    }
+    return filtered;
+  }, [filter]);
+
   const sortedSuppliers = useMemo(() => {
-    if (!sortConfig.key) return SUPPLIERS;
-    const sorted = [...SUPPLIERS].sort((a, b) => {
+    if (!sortConfig.key) return filteredSuppliers;
+    const sorted = [...filteredSuppliers].sort((a, b) => {
       let aValue = a[sortConfig.key];
       let bValue = b[sortConfig.key];
       if (typeof aValue === 'string' && typeof bValue === 'string') {
@@ -180,7 +169,7 @@ export default function SupplierPage() {
       return 0;
     });
     return sorted;
-  }, [sortConfig]);
+  }, [sortConfig, filteredSuppliers]);
 
   // Handlers
   const handleSort = useCallback((key) => {
@@ -208,16 +197,20 @@ export default function SupplierPage() {
   }, []);
 
   const handleFilterClick = useCallback(() => {
-    console.log('Filter clicked');
+    setIsRightPanelCollapsed(false);
   }, []);
 
   return (
     <ThreeColumnLayout
+      isRightPanelCollapsed={isRightPanelCollapsed}
+      setIsRightPanelCollapsed={setIsRightPanelCollapsed}
       rightPanel={
         <RightPanel
           allColumns={ALL_COLUMNS}
           selectedColumns={selectedColumns}
           setSelectedColumns={setSelectedColumns}
+          filter={filter}
+          onFilterChange={setFilter}
         />
       }
     >
@@ -234,11 +227,9 @@ export default function SupplierPage() {
             width="300px"
           />
         </div>
-        <SupplierTable
-          suppliers={sortedSuppliers}
+        <DataTable
+          data={sortedSuppliers}
           columns={columns}
-          sortConfig={sortConfig}
-          onSort={handleSort}
           onRowClick={handleRowClick}
           onActionClick={handleActionClick}
           emptyMessage="No suppliers found"

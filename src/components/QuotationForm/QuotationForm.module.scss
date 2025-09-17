@@ -1,4 +1,5 @@
 @use '../../styles/variables' as *;
+
 .gridItemSpan2 {
   grid-column: 1 / span 2;
 }
@@ -6,6 +7,7 @@
 .gridItemSpanAll {
   grid-column: 1 / -1;
 }
+
 .title {
   font-size: 2rem;
   font-weight: 700;
@@ -13,7 +15,71 @@
   margin: 0;
 }
 
+// New header section styles
+.headerSection {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin-bottom: 0.5rem;
+}
 
+.typeSelector {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.typeLabel {
+  font-weight: 600;
+  color: var(--color-text-primary-light);
+  font-size: 0.95rem;
+  margin: 0;
+}
+
+.selectWrapper {
+  position: relative;
+  min-width: 140px;
+}
+
+.typeSelect {
+  width: 100%;
+  padding: 0.6rem 2.5rem 0.6rem 0.875rem;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 0.5rem;
+  background: #ffffff;
+  font-size: 0.95rem;
+  font-weight: 500;
+  color: var(--color-text-primary-light);
+  cursor: pointer;
+  appearance: none;
+  transition: all 0.2s ease;
+  
+  &:hover {
+    border-color: #cbd5e1;
+  }
+  
+  &:focus {
+    outline: none;
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+  }
+}
+
+.selectArrow {
+  position: absolute;
+  right: 0.75rem;
+  top: 50%;
+  transform: translateY(-50%);
+  pointer-events: none;
+  color: #64748b;
+  transition: transform 0.2s ease;
+  
+  .typeSelect:focus + & {
+    transform: translateY(-50%) rotate(180deg);
+  }
+}
 
 .topFields {
   display: grid;
@@ -37,8 +103,22 @@
   .gridItem[style] {
     grid-column: auto !important;
   }
+  
+  .headerSection {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1rem;
+  }
+  
+  .typeSelector {
+    align-self: stretch;
+    justify-content: space-between;
+  }
+  
+  .selectWrapper {
+    min-width: 160px;
+  }
 }
-
 
 .leftTopFields {
   flex-basis: 400px;
@@ -48,7 +128,6 @@
   gap: 1.25rem;
 }
 
-
 .rightTopFields {
   flex-basis: 220px;
   min-width: 180px;
@@ -57,7 +136,6 @@
   gap: 1.25rem;
   align-items: flex-start;
 }
-
 
 .bottomFields {
   display: flex;
@@ -69,14 +147,12 @@
   width: 100%;
 }
 
-
 .leftBottomFields {
   flex-basis: 400px;
   min-width: 280px;
   display: flex;
   gap: 1.25rem;
 }
-
 
 .rightBottomFields {
   flex-basis: 220px;
@@ -127,6 +203,7 @@
   justify-content: flex-end;
   width: 100%;
 }
+
 .saveButtonWrapper button {
   background: #3ec46d;
   color: #fff;

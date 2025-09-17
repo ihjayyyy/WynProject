@@ -4,14 +4,15 @@ import { useState } from 'react';
 import styles from './ThreeColumnLayout.module.scss';
 import { FiChevronLeft, FiChevronRight } from 'react-icons/fi';
 
+
 export default function ThreeColumnLayout({ 
   children, 
-  rightPanel
+  rightPanel,
+  isRightPanelCollapsed,
+  setIsRightPanelCollapsed
 }) {
-  const [isRightPanelCollapsed, setIsRightPanelCollapsed] = useState(false);
-
   const handleToggleRightPanel = () => {
-    setIsRightPanelCollapsed(!isRightPanelCollapsed);
+    setIsRightPanelCollapsed && setIsRightPanelCollapsed(!isRightPanelCollapsed);
   };
 
   return (

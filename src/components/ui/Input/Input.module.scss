@@ -13,13 +13,30 @@
 }
 
 .input {
-  padding: $spacing-sm $spacing-md;
-  border: 1px solid $color-secondary-light;
-  border-radius: $border-radius-sm;
+  flex: 1;
+  border: none;
+  background: transparent;
   font-size: $font-size-md;
-  background: $color-background-light;
-  color: $color-text-primary-light;
-  transition: border 0.2s, background 0.2s, box-shadow 0.2s;
+  padding: $spacing-md 0;
+  outline: none;
+  color: var(--color-text-primary-light);
+  transition: color 0.2s;
+}
+
+.inputIconWrap {
+  display: flex;
+  align-items: center;
+  background: var(--color-background-alt-light);
+  border: 1px solid var(--color-secondary-light);
+  border-radius: $border-radius-sm;
+  padding: 0 $spacing-md;
+  transition: background 0.2s, border 0.2s;
+}
+
+.inputIcon {
+  display: flex;
+  align-items: center;
+  margin-right: 0.5rem;
 
   &::placeholder {
     color: $color-text-secondary-light;

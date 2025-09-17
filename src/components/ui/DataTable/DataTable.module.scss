@@ -4,17 +4,21 @@
   background: $color-background-light;
   border-radius: 8px;
   border: 1px solid $color-secondary-light;
-  overflow: hidden;
+  overflow-x: auto;
+  width: 100%;
 }
 
 .table {
   width: 100%;
   border-collapse: collapse;
   font-size: $font-size-sm;
-
   th {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    /* ...existing th styles... */
     background: $color-background-alt-light;
-    padding: $spacing-md $spacing-lg;
+    padding: $spacing-md;
     text-align: left;
     font-weight: $font-weight-medium;
     font-size: $font-size-xs;
@@ -34,7 +38,11 @@
   }
 
   td {
-    padding: $spacing-md $spacing-lg;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 180px; /* Adjust as needed */
+    padding: $spacing-md;
     border-bottom: 1px solid $color-secondary-light;
     color: $color-text-primary-light;
     vertical-align: middle;
@@ -49,7 +57,7 @@
       width: 40px;
     }
   }
-}
+
 
 .tableRow {
   transition: background-color 0.2s ease;
@@ -85,19 +93,18 @@
   }
 }
 
+
 .emptyContainer {
   display: flex;
   align-items: center;
   justify-content: center;
   padding: 3rem;
   background: $color-background-light;
-  border-radius: $border-radius-lg;
-  border: 1px solid $color-secondary-light;
-  margin-top: $spacing-lg;
 }
 
 .emptyMessage {
   color: $color-text-secondary-light;
   font-size: $font-size-sm;
   margin: 0;
+}
 }
