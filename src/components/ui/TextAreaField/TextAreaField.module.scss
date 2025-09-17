@@ -1,0 +1,62 @@
+@use '../../../styles/variables' as *;
+
+.textAreaField {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-sm;
+
+  label {
+    font-weight: $font-weight-bold;
+    color: $color-text-primary-light;
+    font-size: $font-size-sm;
+  }
+}
+
+.textarea {
+  width: 100%;
+  border: 1.2px solid $color-secondary-light;
+  background: $color-background-alt-light;
+  font-size: $font-size-md;
+  border-radius: $border-radius-lg;
+  padding: 0 $spacing-md;
+  color: $color-text-primary-light;
+  font-weight: $font-weight-normal;
+  transition: border-color 0.2s, box-shadow 0.2s, background 0.2s;
+  outline: none;
+  margin-bottom: $spacing-sm;
+  box-shadow: 0 1px 4px 0 rgba(60,60,60,0.04);
+  min-height: 80px;
+  line-height: 1.5;
+  box-sizing: border-box;
+  font-family: inherit;
+
+  &::placeholder {
+    color: $color-text-secondary-light;
+    font-weight: $font-weight-normal;
+    opacity: 1;
+  }
+
+  &:focus {
+    border-color: $color-text-primary-light;
+    box-shadow: 0 2px 8px 0 rgba(60,60,60,0.08);
+    background: $color-background-light;
+  }
+
+  /* Custom scrollbar for Webkit browsers */
+  &::-webkit-scrollbar {
+    width: 8px;
+    background: $color-background-alt-light;
+    border-radius: 8px;
+  }
+  &::-webkit-scrollbar-thumb {
+    background: $color-secondary-light;
+    border-radius: 8px;
+  }
+  &::-webkit-scrollbar-thumb:hover {
+    background: $color-secondary-dark;
+  }
+
+  /* For Firefox */
+  scrollbar-width: thin;
+  scrollbar-color: $color-secondary-light $color-background-alt-light;
+}

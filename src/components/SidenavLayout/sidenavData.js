@@ -35,14 +35,14 @@ export const sidenavItems = [
     label: "Purchasing",
     icon: FiShoppingBag, // changed to shopping bag for business context
     children: [
-      { label: "Quotation", icon: FiFileText, href: "/purchasing/quotation" },
-      { label: "Purchase Order", icon: FiClipboard, href: "/purchasing/order" },
+      { label: "Quotation", icon: FiFileText, href: "/purchase/quotation" },
+      { label: "Purchase Order", icon: FiClipboard, href: "/purchase/order" },
       {
         label: "Invoice",
         icon: FiFile,
-        href: "/purchasing/invoice",
+        href: "/purchase/invoice",
       },
-      { label: "Payment", icon: FiDollarSign, href: "/purchasing/payment" },
+      { label: "Payment", icon: FiDollarSign, href: "/purchase/payment" },
     ],
   },
 
