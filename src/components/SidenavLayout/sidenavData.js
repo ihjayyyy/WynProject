@@ -14,18 +14,18 @@ import {
 } from "react-icons/fi";
 
 export const sidenavItems = [
+  // Dashboard
+  {
+    label: "Dashboard",
+    icon: FiBarChart,
+    href: "/dashboard",
+  },
+
   // Item with children
   {
     label: "Supplier",
     icon: FiUsers,
     href: "/supplier",
-  },
-
-  // Simple item without children
-  {
-    label: "Dashboard",
-    icon: FiBarChart,
-    href: "/dashboard",
   },
 
   // Parent with children

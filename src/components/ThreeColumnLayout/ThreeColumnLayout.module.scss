@@ -10,7 +10,7 @@
 
 .mainContent {
   flex: 1;
-  padding: 1.5rem 0.75rem 1.5rem 1.5rem; // Reduce right padding to match left gap
+  padding: 1.5rem; // Reduce right padding to match left gap
   background-color: var(--color-background-light);
   min-height: 100vh;
   transition: margin-right 0.3s ease;

@@ -111,7 +111,7 @@ export default function QuotationForm() {
 
   return (
     <form className={styles.quotationForm} onSubmit={handleSubmit}>
-      <div style={{ marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '1rem' }}>
+      <div style={{  display: 'flex', alignItems: 'center', gap: '1rem' }}>
         <h2 className={styles.title}>Quotation</h2>
         <div>
           <label htmlFor="PurchaseType" style={{ fontWeight: 600, marginRight: 8 }}>Type:</label>
@@ -122,34 +122,51 @@ export default function QuotationForm() {
         </div>
       </div>
 
-      <div className={styles.topFields}>
-        <div className={styles.leftTopFields}>
-          <FormInput label="Supplier" placeholder="Supplier" id="SupplierGuid" name="SupplierGuid" value={form.SupplierGuid} onChange={handleChange} />
-          <FormInput label="Address" placeholder="Address" id="Address" name="Address" value={form.Address} onChange={handleChange} />
-          <FormInput label="Contact Number" placeholder="Contact Number" id="ContactNum" name="ContactNum" value={form.ContactNum} onChange={handleChange} />
-          <TextAreaField label="Description" placeholder="Description" name="Description" value={form.Description} onChange={handleChange}  />
-        </div>
 
-        <div className={styles.rightTopFields}>
+      <div className={styles.topFields}>
+        {/* Row 1: Supplier, Contact Number, Date */}
+        <div className={styles.gridItem}>
+          <FormInput label="Supplier" placeholder="Supplier" id="SupplierGuid" name="SupplierGuid" value={form.SupplierGuid} onChange={handleChange} />
+        </div>
+        <div className={styles.gridItem}>
+          <FormInput label="Contact Number" placeholder="Contact Number" id="ContactNum" name="ContactNum" value={form.ContactNum} onChange={handleChange} />
+        </div>
+        <div className={styles.gridItem}>
           <FormInput label="Date" id="Date" name="Date" value={form.Date} onChange={handleChange} type="date" />
+        </div>
+        {/* Row 2: Address, Quotation Number */}
+        <div className={`${styles.gridItem} ${styles.gridItemSpan2}`}>
+          <FormInput label="Address" placeholder="Address" id="Address" name="Address" value={form.Address} onChange={handleChange} />
+        </div>
+        <div className={styles.gridItem}>
           <FormInput label="Quotation Number" placeholder="Quotation Number" id="QuotationNumber" name="QuotationNumber" value={form.QuotationNumber} onChange={handleChange} />
+        </div>
+        {/* Row 3: Description full width */}
+        <div className={`${styles.gridItem} ${styles.gridItemSpanAll}`}>
+          <TextAreaField label="Description" placeholder="Description" name="Description" value={form.Description} onChange={handleChange} />
         </div>
       </div>
 
-      <DataTable
-        columns={columns}
-        data={items}
-        showActions={false}
-      />
+
+      <div style={{ overflowX: 'auto'}}>
+        <DataTable
+          columns={columns}
+          data={items}
+          showActions={false}
+        />
+      </div>
+
 
       <div className={styles.bottomFields}>
         <div className={styles.leftBottomFields}>
           <FormInput label="Prepared By" placeholder="Prepared By" id="PreparedBy" name="PreparedBy" value={form.PreparedBy} onChange={handleChange} />
           <FormInput label="Approved By" placeholder="Approved By" id="ApprovedBy" name="ApprovedBy" value={form.ApprovedBy} onChange={handleChange} />
         </div>
-        <div className={styles.rightBottomFields}>
-          <FormInput label="Total" placeholder="Total" value={items.reduce((sum, i) => sum + (Number(i.TotalPrice) || 0), 0)} readOnly />
-        </div>
+        {quotationType === "inventory" && (
+          <div className={styles.rightBottomFields}>
+            <FormInput label="Total" placeholder="Total" value={items.reduce((sum, i) => sum + (Number(i.TotalPrice) || 0), 0)} readOnly />
+          </div>
+        )}
       </div>
 
       <div className={styles.saveButtonWrapper}>
