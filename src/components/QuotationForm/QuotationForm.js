@@ -6,6 +6,7 @@ import Input from "../ui/Input/Input";
 import TextAreaField from "../ui/TextAreaField/TextAreaField";
 import DataTable from "../ui/DataTable/DataTable";
 import SaveButton from "../ui/Button/SaveButton";
+import Select from "../ui/Select/Select";
 
 const initialProductItems = [
   {
@@ -115,23 +116,17 @@ export default function QuotationForm() {
         <h2 className={styles.title}>Quotation</h2>
         <div className={styles.typeSelector}>
           <label htmlFor="PurchaseType" className={styles.typeLabel}>Type:</label>
-          <div className={styles.selectWrapper}>
-            <select 
-              id="PurchaseType" 
-              name="PurchaseType" 
-              value={form.PurchaseType} 
-              onChange={handleTypeChange}
-              className={styles.typeSelect}
-            >
-              <option value="inventory">Inventory</option>
-              <option value="service">Service</option>
-            </select>
-            <div className={styles.selectArrow}>
-              <svg width="12" height="8" viewBox="0 0 12 8" fill="none">
-                <path d="M1 1.5L6 6.5L11 1.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-              </svg>
-            </div>
-          </div>
+          <Select
+            id="PurchaseType"
+            name="PurchaseType"
+            value={form.PurchaseType}
+            onChange={handleTypeChange}
+            options={[
+              { value: "inventory", label: "Inventory" },
+              { value: "service", label: "Service" }
+            ]}
+            className={styles.typeSelect}
+          />
         </div>
       </div>
 

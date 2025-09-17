@@ -14,6 +14,9 @@ import {
   FiTruck, // Added for Supplier
   FiBriefcase, // Added for Company
 } from "react-icons/fi";
+import { GrUserSettings } from "react-icons/gr";
+
+
 
 export const sidenavItems = [
   // Dashboard
@@ -84,7 +87,7 @@ export const sidenavItems = [
     icon: FiSettings,
     href: "/settings",
     children: [
-      { label: "User Management", icon: FiUsers, href: "/settings/users" },
+      { label: "User Settings", icon: GrUserSettings  , href: "/settings/usersettings" },
       { label: "System Config", icon: FiDatabase, href: "/settings/system" },
     ],
   },
