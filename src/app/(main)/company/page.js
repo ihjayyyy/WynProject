@@ -1,210 +1,174 @@
 'use client';
 
-import React, { useState, useMemo, useCallback } from 'react';
-import ThreeColumnLayout from '../../../components/ThreeColumnLayout/ThreeColumnLayout';
-import { StatsCard, SearchBar } from '../../../components';
-import DataTable from '../../../components/ui/DataTable/DataTable';
+import React, { useState} from 'react';
 import styles from './page.module.scss';
-import RightPanel from './RightPanel';
+import Input from '../../../components/ui/Input/Input';
+import Button from '../../../components/ui/Button/Button';
+import { FiHash, FiFileText, FiMapPin, FiPhone, FiPrinter, FiEdit2, FiCheck, FiX } from 'react-icons/fi';
 
 // --- Data & Configs ---
-const COMPANIES = [
-  {
-    Guid: 'COMP001',
-    CompanyCode: 'ACME',
-    Name: 'Acme Corporation',
-    Logo: '',
-    Address: '123 Ayala Ave, Makati City',
-    Phone: '+63 2 8123 4567',
-    Fax: '+63 2 8123 4568',
-    Email: 'john.smith@acme.com',
-    Website: 'www.acme.com',
-    TaxNumber: 'TX123456',
-  },
-  {
-    Guid: 'COMP002',
-    CompanyCode: 'GLOB',
-    Name: 'Global Supplies Ltd',
-    Logo: '',
-    Address: '456 Ortigas Ave, Pasig City',
-    Phone: '+63 2 8987 6543',
-    Fax: '+63 2 8987 6544',
-    Email: 'sarah.j@globalsupplies.com',
-    Website: 'www.globalsupplies.com',
-    TaxNumber: 'TX654321',
-  },
-];
+const COMPANY = {
+  Guid: 'COMP001',
+  CompanyCode: 'ACME',
+  Name: 'Acme Corporation',
+  Logo: '',
+  Address: '123 Ayala Ave, Makati City',
+  Phone: '+63 2 8123 4567',
+  Fax: '+63 2 8123 4568',
+  Email: 'john.smith@acme.com',
+  Website: 'www.acme.com',
+  TaxNumber: 'TX123456',
+};
 
-const ALL_COLUMNS = [
-  {
-    key: 'CompanyCode',
-    header: 'COMPANY CODE',
-    sortable: true,
-    align: 'start',
-    render: (item) => <span style={{ fontWeight: 'bold', fontSize: '1rem' }}>{item.CompanyCode}</span>
-  },
-  {
-    key: 'Name',
-    header: 'NAME',
-    sortable: true
-  },
-  {
-    key: 'Logo',
-    header: 'LOGO',
-    render: (item) => item.Logo ? <img src={item.Logo} alt="logo" style={{ width: 32, height: 32, display: 'block', margin: '0 auto' }} /> : '',
-    align: 'start',
-    sortable: false
-  },
-  {
-    key: 'Address',
-    header: 'ADDRESS',
-    sortable: true
-  },
-  {
-    key: 'Phone',
-    header: 'PHONE',
-    sortable: true,
-    align: 'start'
-  },
-  {
-    key: 'Fax',
-    header: 'FAX',
-    sortable: true,
-    align: 'start'
-  },
-  {
-    key: 'Email',
-    header: 'EMAIL',
-    sortable: true,
-    render: (item) => <span style={{ fontSize: '0.95em' }}>{item.Email}</span>
-  },
-  {
-    key: 'Website',
-    header: 'WEBSITE',
-    sortable: true,
-    render: (item) => <span style={{ fontSize: '0.95em' }}>{item.Website}</span>
-  },
-  {
-    key: 'TaxNumber',
-    header: 'TAX NUMBER',
-    sortable: true
-  }
-];
-
-function StatsSection() {
-  return (
-    <div className={styles.statsGrid}>
-      <StatsCard number={COMPANIES.length.toString()} label="Total Companies" change="+0" isPositive />
-      <StatsCard number={COMPANIES.length.toString()} label="Active Companies" change="+0" isPositive />
-      <StatsCard number="0" label="Inactive Companies" change="0" isPositive={false} />
-    </div>
-  );
-}
 
 export default function CompanyPage() {
-  const [searchTerm, setSearchTerm] = useState('');
-  const [sortConfig, setSortConfig] = useState({ key: null, direction: 'asc' });
-  const [selectedColumns, setSelectedColumns] = useState([
-    'CompanyCode', 'Name', 'Logo', 'Address', 'Phone', 'Fax', 'Email', 'Website', 'TaxNumber'
-  ]);
-  const [filter, setFilter] = useState({ companyCode: '' });
-  const [isRightPanelCollapsed, setIsRightPanelCollapsed] = useState(false);
+  const [company, setCompany] = useState(COMPANY);
+  const [isEditing, setIsEditing] = useState(false);
 
-  const columns = useMemo(
-    () => ALL_COLUMNS.filter(col => selectedColumns.includes(col.key)),
-    [selectedColumns]
-  );
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setCompany((prev) => ({ ...prev, [name]: value }));
+  };
 
-  const filteredCompanies = useMemo(() => {
-    let filtered = COMPANIES;
-    if (filter.companyCode) {
-      filtered = filtered.filter(c =>
-        c.CompanyCode.toLowerCase().includes(filter.companyCode.toLowerCase())
-      );
-    }
-    return filtered;
-  }, [filter]);
-
-  const sortedCompanies = useMemo(() => {
-    if (!sortConfig.key) return filteredCompanies;
-    const sorted = [...filteredCompanies].sort((a, b) => {
-      let aValue = a[sortConfig.key];
-      let bValue = b[sortConfig.key];
-      if (typeof aValue === 'string' && typeof bValue === 'string') {
-        return sortConfig.direction === 'asc'
-          ? aValue.localeCompare(bValue)
-          : bValue.localeCompare(aValue);
-      }
-      if (aValue < bValue) return sortConfig.direction === 'asc' ? -1 : 1;
-      if (aValue > bValue) return sortConfig.direction === 'asc' ? 1 : -1;
-      return 0;
-    });
-    return sorted;
-  }, [sortConfig, filteredCompanies]);
-
-  const handleSort = useCallback((key) => {
-    setSortConfig(prev =>
-      prev.key === key
-        ? { key, direction: prev.direction === 'asc' ? 'desc' : 'asc' }
-        : { key, direction: 'asc' }
-    );
-  }, []);
-
-  const handleRowClick = useCallback((company) => {
-    console.log('Selected company:', company);
-  }, []);
-
-  const handleActionClick = useCallback((company) => {
-    console.log('Action clicked for company:', company);
-  }, []);
-
-  const handleSearchChange = useCallback((value) => {
-    setSearchTerm(value);
-  }, []);
-
-  const handleSearch = useCallback((value) => {
-    console.log('Searching for:', value);
-  }, []);
-
-  const handleFilterClick = useCallback(() => {
-    setIsRightPanelCollapsed(false);
-  }, []);
+  const handleEdit = () => setIsEditing(true);
+  const handleSave = () => setIsEditing(false);
 
   return (
-    <ThreeColumnLayout
-      isRightPanelCollapsed={isRightPanelCollapsed}
-      setIsRightPanelCollapsed={setIsRightPanelCollapsed}
-      rightPanel={
-        <RightPanel
-          allColumns={ALL_COLUMNS}
-          selectedColumns={selectedColumns}
-          setSelectedColumns={setSelectedColumns}
-          filter={filter}
-          onFilterChange={setFilter}
-        />
-      }
-    >
-      <div className={styles.container}>
-        <StatsSection />
-        <div className={styles.titleSection}>
-          <h1 className={styles.title}>Companies</h1>
-          <SearchBar
-            placeholder="Search companies..."
-            value={searchTerm}
-            onChange={handleSearchChange}
-            onSearch={handleSearch}
-            onFilterClick={handleFilterClick}
-            width="300px"
-          />
+    <div className={styles.container}>
+      <div className={styles.companyCard}>
+        {/* Header Section */}
+        <div className={styles.headerSection}>
+          <div className={styles.headerLeft}>
+            <div className={styles.companyIcon}>
+              {/* Use a placeholder SVG icon from public folder */}
+              <img src="/file.svg" alt="Company Icon" width={24} height={24} />
+            </div>
+            <div>
+              <h1 className={styles.companyName}>{company.Name}</h1>
+              <div className={styles.companyCode}>Code: {company.CompanyCode}</div>
+            </div>
+          </div>
+          <div>
+            {/* Show Edit button when not editing, Save/Cancel when editing */}
+            {!isEditing ? (
+              <Button
+                type="button"
+                icon={<FiEdit2 size={18} />}
+                onClick={handleEdit}
+              >
+                Edit Details
+              </Button>
+            ) : (
+              <div style={{ display: 'flex', gap: '0.5em' }}>
+                <Button
+                  type="button"
+                  variant="save"
+                  icon={<FiCheck size={18} />}
+                  onClick={handleSave}
+                >
+                  Save
+                </Button>
+                <Button
+                  type="button"
+                  variant="transparent"
+                  icon={<FiX size={18} />}
+                  onClick={() => setIsEditing(false)}
+                >
+                  Cancel
+                </Button>
+              </div>
+            )}
+          </div>
         </div>
-        <DataTable
-          data={sortedCompanies}
-          columns={columns}
-          onRowClick={handleRowClick}
-          onActionClick={handleActionClick}
-          emptyMessage="No companies found"
-        />
+
+        {/* Basic Information Section */}
+        <form className={styles.form}>
+          <div className={styles.sectionTitle}>Basic Information</div>
+          <div className={styles.formGrid}>
+            <Input
+              label="Company Code"
+              id="companyCode"
+              name="CompanyCode"
+              value={company.CompanyCode}
+              onChange={handleChange}
+              readOnly={!isEditing}
+              icon={<FiHash size={18} />}
+            />
+            <Input
+              label="Company Name"
+              id="name"
+              name="Name"
+              value={company.Name}
+              onChange={handleChange}
+              readOnly={!isEditing}
+              icon={<FiFileText size={18} />}
+            />
+          </div>
+
+          {/* Contact Information Section */}
+          <div className={styles.sectionTitle}>Contact Information</div>
+          <div className={styles.formGrid}>
+            <Input
+              label="Address"
+              id="address"
+              name="Address"
+              value={company.Address}
+              onChange={handleChange}
+              readOnly={!isEditing}
+              icon={<FiMapPin size={18} />}
+            />
+            <Input
+              label="Phone"
+              id="phone"
+              name="Phone"
+              value={company.Phone}
+              onChange={handleChange}
+              readOnly={!isEditing}
+              icon={<FiPhone size={18} />}
+            />
+            <Input
+              label="Fax"
+              id="fax"
+              name="Fax"
+              value={company.Fax}
+              onChange={handleChange}
+              readOnly={!isEditing}
+              icon={<FiPrinter size={18} />}
+            />
+              <Input
+                label="Email"
+                id="email"
+                name="Email"
+                value={company.Email}
+                onChange={handleChange}
+                readOnly={!isEditing}
+                icon={<FiFileText size={18} />}
+              />
+              <Input
+                label="Website"
+                id="website"
+                name="Website"
+                value={company.Website}
+                onChange={handleChange}
+                readOnly={!isEditing}
+                icon={<FiFileText size={18} />}
+              />
+          </div>
+          {/* Legal Information Section */}
+          <div className={styles.sectionTitle}>Legal Information</div>
+          <div className={styles.formGrid}>
+            <Input
+              label="Tax Number"
+              id="taxNumber"
+              name="TaxNumber"
+              value={company.TaxNumber}
+              onChange={handleChange}
+              readOnly={!isEditing}
+              icon={<FiHash size={18} />}
+            />
+          </div>
+        </form>
       </div>
-    </ThreeColumnLayout>
+    </div>
   );
 }

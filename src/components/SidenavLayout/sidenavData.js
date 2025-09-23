@@ -4,11 +4,9 @@ import {
   FiDatabase,
   FiFileText,
   FiBarChart,
-  FiShoppingCart,
   FiFile,
   FiClipboard,
   FiDollarSign,
-  FiBarChart2,
   FiShoppingBag, // Added for Purchasing
   FiCreditCard, // Added for Sales
   FiTruck, // Added for Supplier

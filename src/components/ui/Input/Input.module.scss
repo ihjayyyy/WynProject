@@ -1,67 +1,70 @@
 @use '../../../styles/variables' as *;
 
+
 .field {
   display: flex;
   flex-direction: column;
-  gap: $spacing-sm;
-
+  gap: $spacing-xs;
   label {
     font-weight: $font-weight-medium;
-    color: $color-text-primary-light;
+    color: $color-text-secondary-light;
     font-size: $font-size-sm;
+    margin-bottom: $spacing-xs;
   }
 }
+
 
 .input {
   flex: 1;
   border: none;
-  background: transparent;
+  background: $color-background-light;
   font-size: $font-size-md;
-  padding: $spacing-sm 0;
   outline: none;
-  color: var(--color-text-primary-light);
+  color: $color-text-secondary-light;
   transition: color 0.2s;
 }
+
 
 .inputIconWrap {
   display: flex;
   align-items: center;
-  background: var(--color-background-alt-light);
-  border: 1px solid var(--color-secondary-light);
-  border-radius: $border-radius-sm;
-  padding: 0 $spacing-md;
-  transition: background 0.2s, border 0.2s;
+  background: $color-background-light;
+  border-radius: $border-radius-md;
+
+  box-shadow: $shadow-sm;
+  padding: 0 $spacing-sm;
+  border: 1px solid $color-background-alt-light;
+  transition: box-shadow 0.2s, border 0.2s;
+  min-height: 44px;
 }
+
 
 .inputIcon {
   display: flex;
   align-items: center;
-  margin-right: 0.5rem;
+  margin-right: $spacing-md;
+  color: $color-secondary-dark;
+  font-size: 1.25rem;
+}
 
-  &::placeholder {
-    color: $color-text-secondary-light;
-    opacity: 1;
-  }
+.input::placeholder {
+  color: $color-text-secondary-light;
+  opacity: 1;
+}
 
-  &:focus {
-    border-color: $color-accent-light;
-    outline: none;
-    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
-  }
+.input:focus {
+  outline: none;
+  border: none;
+}
 
-  &:disabled {
-    background: $color-background-alt-light;
-    color: $color-text-secondary-light;
-    cursor: not-allowed;
-  }
+.inputIconWrap:focus-within {
+  border: 1px solid $color-accent-light;
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.08);
+}
 
-  &.error {
-    border-color: $color-error-light;
-
-    &:focus {
-      border-color: $color-error-light;
-      box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.1);
-    }
-  }
+.input:disabled {
+  background: $color-background-alt-light;
+  color: $color-text-secondary-light;
+  cursor: not-allowed;
 }
 

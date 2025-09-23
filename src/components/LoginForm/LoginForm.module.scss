@@ -4,7 +4,7 @@
   max-width: 400px;
   margin: $spacing-xl auto;
   padding: $spacing-xl $spacing-lg $spacing-lg $spacing-lg;
-  background: var(--color-background-alt-light);
+  background: var(--color-background-light);
   border-radius: $border-radius-lg;
   box-shadow: $shadow-lg;
   display: flex;
@@ -25,7 +25,6 @@
   font-size: $font-size-xl;
   font-weight: $font-weight-bold;
   color: var(--color-text-primary-light);
-  background: var(--color-background-alt-light);
   margin: 0;
 }
 
@@ -34,56 +33,6 @@
   color: var(--color-text-secondary-light);
   font-size: $font-size-md;
 }
-
-
-[data-theme='dark'] .loginForm {
-  background: var(--color-background-alt-dark);
-  color: var(--color-text-primary-dark);
-}
-
-.fieldLabel {
-  font-size: $font-size-md;
-  color: var(--color-text-primary-light);
-}
-
-.inputIconWrap {
-  display: flex;
-  align-items: center;
-  background: var(--color-background-alt-light);
-  border: 1px solid var(--color-secondary-light);
-.loginButton:hover {
-  background: var(--color-accent-light);
-}
-[data-theme='dark'] .loginButton {
-  background: var(--color-primary-dark);
-  color: var(--color-text-primary-light);
-}
-[data-theme='dark'] .loginButton:hover {
-  background: var(--color-accent-dark);
-}
-  border-radius: $border-radius-sm;
-  padding: 0 $spacing-md;
-  transition: background 0.2s, border 0.2s;
-}
-
-
-.inputIcon {
-  display: flex;
-  align-items: center;
-  margin-right: 0.5rem;
-}
-
-.input {
-  flex: 1;
-  border: none;
-  background: transparent;
-  font-size: $font-size-md;
-  padding: $spacing-md 0;
-  outline: none;
-  color: var(--color-text-primary-light);
-  transition: color 0.2s;
-}
-
 
 .optionsRow {
   display: flex;

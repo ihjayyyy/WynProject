@@ -5,7 +5,7 @@ import styles from "./OrderForm.module.scss";
 import Input from "../ui/Input/Input";
 import TextAreaField from "../ui/TextAreaField/TextAreaField";
 import DataTable from "../ui/DataTable/DataTable";
-import SaveButton from "../ui/Button/SaveButton";
+import Button from "../ui/Button/Button";
 import Select from "../ui/Select/Select";
 
 // Sample initial data
@@ -152,7 +152,7 @@ export default function OrderForm() {
       </div>
 
       <div className={styles.saveButtonWrapper}>
-        <SaveButton type="submit" />
+        <Button type="submit" variant="save">Save</Button>
       </div>
     </form>
   );

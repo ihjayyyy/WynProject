@@ -1,19 +1,27 @@
+
 @use 'sass:color';
 @use '../../../styles/variables' as *;
+
 
 .button {
   background: $color-primary-light;
   color: $color-text-primary-dark;
-  border: none;
-  padding: $spacing-md;
-  border-radius: $border-radius-sm;
+  border: 1px solid rgba(0,0,0,0.06);
+  padding: calc($spacing-sm + 2px) calc($spacing-md + 4px);
+  border-radius: $border-radius-md;
   font-size: $font-size-md;
-  font-weight: $font-weight-medium;
+  font-weight: $font-weight-bold;
   cursor: pointer;
-  transition: background 0.2s, color 0.2s;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+  transition: background 0.2s, color 0.2s, box-shadow 0.2s, transform 0.1s;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 
   &:hover {
     background: $color-accent-light;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.12);
+    transform: translateY(-1px) scale(1.01);
   }
 
   &:focus {
@@ -25,7 +33,15 @@
     background: $color-secondary-light;
     color: $color-text-secondary-light;
     cursor: not-allowed;
+    box-shadow: none;
   }
+}
+
+.icon {
+  display: inline-flex;
+  align-items: center;
+  margin-right: 0.5em;
+  font-size: 1.2em;
 }
 
 // Variant styles
@@ -45,5 +61,29 @@
 
   &:hover {
     background: color.scale($color-error-light, $lightness: -10%);
+  }
+}
+.button.save {
+  background: $color-success-light;
+  color: $color-text-primary-dark;
+  border: none;
+
+  &:hover {
+    background: color.scale($color-success-light, $lightness: -10%);
+  }
+}
+
+.button.transparent {
+  background: transparent;
+  color: $color-text-primary-light;
+  border: none;
+  box-shadow: none;
+  font-weight: $font-weight-medium;
+  &:hover {
+    background: rgba(0,0,0,0.04);
+  }
+  &:focus {
+    outline: 2px solid $color-accent-light;
+    outline-offset: 2px;
   }
 }

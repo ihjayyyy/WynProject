@@ -4,6 +4,7 @@ import Image from "next/image";
 import styles from "./LoginForm.module.scss";
 import Button from "../ui/Button/Button";
 import Input from "../ui/Input/Input";
+import { FiMail, FiLock } from "react-icons/fi";
 
 export default function LoginForm({ onLogin }) {
   const [email, setEmail] = useState("");
@@ -29,31 +30,25 @@ export default function LoginForm({ onLogin }) {
       <h2 className={styles.title}>Welcome back</h2>
       <div className={styles.subtitle}>Please sign in to your account</div>
       {error && <div className={styles.error}>{error}</div>}
-      <div className={styles.fieldLabel}>Email address</div>
       <Input
         id="login-email"
         type="email"
-        label={null}
+        label="Email address"
         placeholder="you@example.com"
         value={email}
         onChange={e => setEmail(e.target.value)}
         autoComplete="username"
-        icon={
-          <svg width="20" height="20" fill="none" viewBox="0 0 20 20"><rect width="20" height="20" rx="4" fill="#F3F4F6"/><path d="M3.5 6.5A2 2 0 0 1 5.5 4.5h9a2 2 0 0 1 2 2v7a2 2 0 0 1-2 2h-9a2 2 0 0 1-2-2v-7Zm1.75.25 5.25 3.5 5.25-3.5" stroke="#9CA3AF" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
-        }
+  icon={<FiMail size={20} />}
       />
-      <div className={styles.fieldLabel}>Password</div>
       <Input
         id="login-password"
         type="password"
-        label={null}
+        label="Password"
         placeholder="••••••••"
         value={password}
         onChange={e => setPassword(e.target.value)}
         autoComplete="current-password"
-        icon={
-          <svg width="20" height="20" fill="none" viewBox="0 0 20 20"><rect width="20" height="20" rx="4" fill="#F3F4F6"/><path d="M7 10V8a3 3 0 1 1 6 0v2" stroke="#9CA3AF" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/><rect x="5" y="10" width="10" height="6" rx="2" stroke="#9CA3AF" strokeWidth="1.5"/></svg>
-        }
+  icon={<FiLock size={20} />}
       />
       <div className={styles.optionsRow}>
         <label className={styles.checkboxLabel}>
