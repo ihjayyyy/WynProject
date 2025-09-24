@@ -1,8 +1,7 @@
-
 @use 'sass:color';
 @use '../../../styles/variables' as *;
 
-
+// Main button style
 .button {
   background: $color-primary-light;
   color: $color-text-primary-dark;
@@ -35,6 +34,80 @@
     cursor: not-allowed;
     box-shadow: none;
   }
+
+  // Variant styles
+  &.secondary {
+    background: $color-background-light;
+    color: $color-text-primary-light;
+    border: 1px solid $color-secondary-light;
+
+    &:hover {
+      background: $color-background-alt-light;
+    }
+  }
+
+  &.danger {
+    background: $color-error-light;
+    color: $color-text-primary-dark;
+
+    &:hover {
+      background: color.scale($color-error-light, $lightness: -10%);
+    }
+  }
+
+  &.save {
+    background: $color-success-light;
+    color: $color-text-primary-dark;
+    border: none;
+
+    &:hover {
+      background: color.scale($color-success-light, $lightness: -10%);
+    }
+  }
+
+  &.transparent {
+    background: transparent;
+    color: $color-text-primary-light;
+    border: none;
+    box-shadow: none;
+    font-weight: $font-weight-medium;
+    
+    &:hover {
+      background: rgba(0,0,0,0.04);
+    }
+    
+    &:focus {
+      outline: 2px solid $color-accent-light;
+      outline-offset: 2px;
+    }
+  }
+}
+
+// Icon-only button style
+.iconOnly {
+  padding-left: $spacing-xs;
+  padding-right: $spacing-xs;
+  justify-content: center;
+  border: none !important;
+}
+
+// Size variants
+.sm {
+  font-size: $font-size-xs;
+  padding: $spacing-xs $spacing-sm;
+  border-radius: $border-radius-sm;
+}
+
+.md {
+  font-size: $font-size-md;
+  padding: calc($spacing-sm + 2px) calc($spacing-md + 4px);
+  border-radius: $border-radius-md;
+}
+
+.lg {
+  font-size: $font-size-lg;
+  padding: $spacing-md $spacing-xl;
+  border-radius: $border-radius-lg;
 }
 
 .icon {
@@ -44,46 +117,7 @@
   font-size: 1.2em;
 }
 
-// Variant styles
-.button.secondary {
-  background: $color-background-light;
-  color: $color-text-primary-light;
-  border: 1px solid $color-secondary-light;
-
-  &:hover {
-    background: $color-background-alt-light;
-  }
-}
-
-.button.danger {
-  background: $color-error-light;
-  color: $color-text-primary-dark;
-
-  &:hover {
-    background: color.scale($color-error-light, $lightness: -10%);
-  }
-}
-.button.save {
-  background: $color-success-light;
-  color: $color-text-primary-dark;
-  border: none;
-
-  &:hover {
-    background: color.scale($color-success-light, $lightness: -10%);
-  }
-}
-
-.button.transparent {
-  background: transparent;
-  color: $color-text-primary-light;
-  border: none;
-  box-shadow: none;
-  font-weight: $font-weight-medium;
-  &:hover {
-    background: rgba(0,0,0,0.04);
-  }
-  &:focus {
-    outline: 2px solid $color-accent-light;
-    outline-offset: 2px;
-  }
+// Remove margin from icon when button is icon-only
+.iconOnly .icon {
+  margin-right: 0;
 }

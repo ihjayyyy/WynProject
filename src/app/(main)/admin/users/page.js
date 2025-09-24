@@ -48,7 +48,7 @@ const ALL_COLUMNS = [
     sortable: true,
     render: (item) => {
       const names = [item.Firstname, item.Middlename, item.Lastname].filter(Boolean).join(' ');
-      return <span style={{ fontWeight: 'bold', fontSize: '1rem' }}>{names}</span>;
+      return <span style={{ fontWeight: 'bold', }}>{names}</span>;
     }
   },
   {
@@ -56,7 +56,7 @@ const ALL_COLUMNS = [
     header: 'USERNAME',
     sortable: true,
     align: 'start',
-    render: (item) => <span style={{ fontSize: '1rem' }}>{item.Username}</span>
+    render: (item) => <span>{item.Username}</span>
   },
   {
     key: 'Phone',

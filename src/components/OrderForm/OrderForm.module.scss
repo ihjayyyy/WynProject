@@ -125,6 +125,9 @@
 .span5 {
   grid-column: span 5;
 }
+.span6 {
+  grid-column: span 6;
+}
 .span8 {
   grid-column: span 8;
 }
@@ -202,7 +205,6 @@
   flex-wrap: wrap;
   justify-content: space-between;
   align-items: flex-end;
-  margin-top: .5rem;
   gap: 2rem;
   width: 100%;
 }

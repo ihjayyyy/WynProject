@@ -24,8 +24,8 @@
 }
 
 .title {
-  font-size: 2rem;
-  font-weight: 700;
+  font-size: $font-size-lg;
+  font-weight: $font-weight-bold;
   color: var(--color-text-primary-light);
   margin: 0;
 }
