@@ -11,7 +11,8 @@ export default function DataTable({
   onActionClick,
   className = '',
   showActions = true,
-  emptyMessage = 'No data available'
+  emptyMessage = 'No data available',
+  footer
 }) {
   const handleRowClick = (item) => {
     if (onRowClick) {
@@ -95,6 +96,11 @@ export default function DataTable({
             </tr>
           ))}
         </tbody>
+        {footer && (
+          <tfoot>
+            {footer}
+          </tfoot>
+        )}
       </table>
     </div>
   );

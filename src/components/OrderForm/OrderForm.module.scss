@@ -8,6 +8,13 @@
   grid-column: 1 / -1;
 }
 
+// Right align numbers in table and input
+.rightAlignNum {
+  text-align: center;
+  width: 100%;
+  display: inline-block;
+}
+
 .title {
   font-size: 2rem;
   font-weight: 700;
@@ -242,26 +249,4 @@
   font-weight: bold;
   margin-bottom: 0.25rem;
   display: block;
-}
-
-.saveButtonWrapper {
-  display: flex;
-  justify-content: flex-end;
-  width: 100%;
-}
-
-.saveButtonWrapper button {
-  background: #3ec46d;
-  color: #fff;
-  font-weight: bold;
-  padding: 0.75rem 2rem;
-  border: none;
-  border-radius: 0.5rem;
-  font-size: 1.1rem;
-  cursor: pointer;
-  transition: background 0.2s;
-}
-
-.saveButtonWrapper button:hover {
-  background: #2ea85a;
 }

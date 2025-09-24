@@ -19,7 +19,6 @@
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
-    /* ...existing th styles... */
     background: $color-background-alt-light;
     padding: $spacing-md $spacing-sm;
     text-align: left;
@@ -36,6 +35,25 @@
     &:last-child {
       padding-right: $spacing-md;
       width: 40px;
+    }
+  }
+
+  tfoot {
+    th, td {
+      background: $color-background-alt-light;
+      font-size: $font-size-xs;
+      font-weight: $font-weight-medium;
+      color: $color-text-secondary-light;
+      text-transform: uppercase;
+      padding: $spacing-md $spacing-sm;
+      border-top: 1px solid $color-secondary-light;
+      border-bottom: none;
+      letter-spacing: 0.05em;
+    }
+    td {
+      color: $color-text-primary-light;
+      text-transform: none;
+      font-weight: $font-weight-bold;
     }
   }
 

@@ -3,7 +3,6 @@
 import React, { useState } from "react";
 import styles from "./OrderForm.module.scss";
 import Input from "../ui/Input/Input";
-import TextAreaField from "../ui/TextAreaField/TextAreaField";
 import DataTable from "../ui/DataTable/DataTable";
 import Button from "../ui/Button/Button";
 import Select from "../ui/Select/Select";
@@ -25,6 +24,8 @@ const initialServiceItems = [
     Amount: 1,
   }
 ];
+
+
 
 export default function OrderForm() {
   const [orderType, setOrderType] = useState("inventory");
@@ -51,6 +52,9 @@ export default function OrderForm() {
     setForm({ ...form, [e.target.name]: e.target.value });
   };
 
+   // Helper to format numbers to 2 decimal places
+  const formatNumber = (value) => Number(value).toFixed(2);
+
   // Handle type change
   const handleTypeChange = (e) => {
     setOrderType(e.target.value);
@@ -60,22 +64,74 @@ export default function OrderForm() {
   // // Table columns (editable)
   const columns = orderType === "inventory"
     ? [
-        { header: 'Product', key: 'ProductGuid'},
-        { header: 'Description', key: 'Description'},
-        { header: 'Unit Price', key: 'UnitPrice'},
-        { header: 'Quantity', key: 'Quantity'},
-        { header: 'Total Price', key: 'TotalPrice'},
-        { header: 'Discount', key: 'Discount'},
+        { header: 'Product', key: 'ProductGuid' },
+        { header: 'Description', key: 'Description' },
+        {
+          header: 'Unit Price',
+          key: 'UnitPrice',
+          render: (row) => (
+            <span className={styles.rightAlignNum}>{formatNumber(row.UnitPrice)}</span>
+          )
+        },
+        {
+          header: 'Quantity',
+          key: 'Quantity',
+          render: (row) => (
+            <span className={styles.rightAlignNum}>{formatNumber(row.Quantity)}</span>
+          )
+        },
+        {
+          header: 'Discount',
+          key: 'Discount',
+          render: (row) => (
+            <span className={styles.rightAlignNum}>{formatNumber(row.Discount)}%</span>
+          )
+        },
+        {
+          header: 'Total Price',
+          key: 'TotalPrice',
+          render: (row) => (
+            <span className={styles.rightAlignNum}>{formatNumber(row.TotalPrice)}</span>
+          )
+        },
       ]
     : [
-        { header: 'Service', key: 'Description'},
-        { header: 'Amount', key: 'Amount'},
+        { header: 'Service', key: 'Description' },
+        {
+          header: 'Amount',
+          key: 'Amount',
+          render: (row) => (
+            <span className={styles.rightAlignNum}>{formatNumber(row.Amount)}</span>
+          )
+        },
       ];
 
   // Calculate OrderAmount
   const orderAmount = orderType === "inventory"
     ? productItems.reduce((sum, i) => sum + (Number(i.TotalPrice) || 0), 0)
     : serviceItems.reduce((sum, i) => sum + (Number(i.Amount) || 0), 0);
+
+  // Table footer for total (for both inventory and service)
+  let tableFooter = null;
+  if (orderType === "inventory") {
+    tableFooter = (
+      <tr>
+        <td colSpan={columns.length - 1} style={{ textAlign: 'right', fontWeight: 'bold' }}>Total</td>
+        <td style={{ fontWeight: 'bold' }}>
+          {formatNumber(orderAmount)}
+        </td>
+      </tr>
+    );
+  } else if (orderType === "service") {
+    tableFooter = (
+      <tr>
+        <td colSpan={columns.length - 1} style={{ textAlign: 'right', fontWeight: 'bold' }}>Total</td>
+        <td style={{ fontWeight: 'bold' }}>
+          {formatNumber(orderAmount)}
+        </td>
+      </tr>
+    );
+  }
 
   // Save handler
   const handleSubmit = (e) => {
@@ -154,7 +210,7 @@ export default function OrderForm() {
         columns={columns}
         data={items}
         showActions={false}
-        // renderCell={renderCell}
+        footer={tableFooter}
       />
 
       <div className={styles.bottomFields}>
@@ -162,14 +218,9 @@ export default function OrderForm() {
           <Input label="Prepared By" placeholder="Prepared By" id="PreparedBy" name="PreparedBy" value={form.PreparedBy} onChange={handleChange} />
           <Input label="Approved By" placeholder="Approved By" id="ApprovedBy" name="ApprovedBy" value={form.ApprovedBy} onChange={handleChange} />
         </div>
-        <div className={styles.rightBottomFields}>
-          <Input label="Order Amount" placeholder="Order Amount" value={orderAmount} readOnly />
-        </div>
-      </div>
-
-      <div className={styles.saveButtonWrapper}>
         <Button type="submit" variant="save">Save</Button>
       </div>
+
     </form>
   );
 }
