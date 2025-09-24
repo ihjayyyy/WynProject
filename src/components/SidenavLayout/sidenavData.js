@@ -10,7 +10,8 @@ import {
   FiShoppingBag, // Added for Purchasing
   FiCreditCard, // Added for Sales
   FiTruck, // Added for Supplier
-  FiBriefcase, // Added for Company
+  FiBriefcase,
+  FiUserCheck, // Added for Company
 } from "react-icons/fi";
 import { GrUserSettings } from "react-icons/gr";
 
@@ -22,13 +23,6 @@ export const sidenavItems = [
     label: "Dashboard",
     icon: FiBarChart,
     href: "/dashboard",
-  },
-
-    // Item with children
-  {
-    label: "Users",
-    icon: FiUsers,
-    href: "/users",
   },
 
   // Item with children
@@ -81,12 +75,20 @@ export const sidenavItems = [
 
   // Parent that also has its own href (clickable parent)
   {
-    label: "Settings",
-    icon: FiSettings,
-    href: "/settings",
+    label: "User Settings",
+    icon: GrUserSettings,
+    href: "/usersettings",
     children: [
-      { label: "User Settings", icon: GrUserSettings  , href: "/settings/usersettings" },
-      { label: "System Config", icon: FiDatabase, href: "/settings/system" },
+      { label: "System Config", icon: FiDatabase  , href: "/usersettings/systemsettings" },
+      { label: "Company", icon: FiBriefcase, href: "/usersettings/company" },
+    ],
+  },
+
+    {
+    label: "Admin",
+    icon: FiUserCheck,
+    children: [
+      { label: "Users", icon: FiUsers, href: "/admin/users" },
     ],
   },
 ];

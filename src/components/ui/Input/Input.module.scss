@@ -19,6 +19,7 @@
   border: none;
   background: $color-background-light;
   font-size: $font-size-md;
+  width: 100%;
   outline: none;
   color: $color-text-secondary-light;
   transition: color 0.2s;
@@ -30,7 +31,6 @@
   align-items: center;
   background: $color-background-light;
   border-radius: $border-radius-md;
-
   box-shadow: $shadow-sm;
   padding: 0 $spacing-sm;
   border: 1px solid $color-background-alt-light;

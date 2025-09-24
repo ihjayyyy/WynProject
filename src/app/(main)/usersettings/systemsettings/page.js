@@ -21,7 +21,7 @@ const DATE_FORMAT_OPTIONS = [
   { label: 'D MMM YYYY', value: 'd MMM yyyy' },
 ];
 
-export default function UserSettingsPage() {
+export default function SystemSettings() {
   const [fontFamily, setFontFamily] = useState('inherit');
   const [dateFormat, setDateFormat] = useState(DATE_FORMAT_OPTIONS[0].value);
 

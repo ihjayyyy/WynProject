@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import Input from '../../../components/ui/Input/Input';
+import Input from '../../../../components/ui/Input/Input';
 import { FiChevronUp, FiChevronDown } from 'react-icons/fi';
 import styles from './RightPanel.module.scss';
 

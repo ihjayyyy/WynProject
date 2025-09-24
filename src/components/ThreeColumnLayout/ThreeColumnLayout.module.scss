@@ -17,11 +17,11 @@
   overflow-x: auto;
 
   &.withRightPanel {
-    margin-right: 200px; // Width of expanded right panel (same as sidenav)
+    margin-right: 212px; // Width of expanded right panel (same as sidenav)
   }
 
   &.withCollapsedRightPanel {
-    margin-right: 56px; // Width of collapsed right panel (same as sidenav)
+    margin-right: 40px; // Width of collapsed right panel (same as sidenav)
   }
 }
 

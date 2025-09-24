@@ -2,8 +2,8 @@
 
 import React, { useState} from 'react';
 import styles from './page.module.scss';
-import Input from '../../../components/ui/Input/Input';
-import Button from '../../../components/ui/Button/Button';
+import Input from '../../../../components/ui/Input/Input';
+import Button from '../../../../components/ui/Button/Button';
 import { FiHash, FiFileText, FiMapPin, FiPhone, FiPrinter, FiEdit2, FiCheck, FiX } from 'react-icons/fi';
 
 // --- Data & Configs ---

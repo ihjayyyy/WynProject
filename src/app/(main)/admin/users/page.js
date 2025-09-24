@@ -1,9 +1,9 @@
 'use client';
 
 import React, { useState, useMemo, useCallback } from 'react';
-import ThreeColumnLayout from '../../../components/ThreeColumnLayout/ThreeColumnLayout';
-import { StatsCard, SearchBar } from '../../../components';
-import DataTable from '../../../components/ui/DataTable/DataTable';
+import ThreeColumnLayout from '../../../../components/ThreeColumnLayout/ThreeColumnLayout';
+import { StatsCard, SearchBar } from '../../../../components';
+import DataTable from '../../../../components/ui/DataTable/DataTable';
 import styles from './page.module.scss';
 import RightPanel from './RightPanel';
 
