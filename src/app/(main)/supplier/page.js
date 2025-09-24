@@ -25,7 +25,8 @@ const SUPPLIERS = [
     ContactPerson: 'John Smith',
     ContactNumber: '+63 917 111 2222',
     PaymentTerms: 30,
-    Status: 'ACTIVE'
+    Status: 'ACTIVE',
+    SupplierType: 'Local'
   },
   {
     CompanyGuid: 'COMP002',
@@ -41,7 +42,8 @@ const SUPPLIERS = [
     ContactPerson: 'Sarah Johnson',
     ContactNumber: '+63 918 333 4444',
     PaymentTerms: 45,
-    Status: 'ACTIVE'
+    Status: 'ACTIVE',
+    SupplierType: 'International'
   },
   {
     CompanyGuid: 'COMP003',
@@ -57,22 +59,30 @@ const SUPPLIERS = [
     ContactPerson: 'Michael Brown',
     ContactNumber: '+63 919 555 6666',
     PaymentTerms: 60,
-    Status: 'PENDING'
+    Status: 'PENDING',
+    SupplierType: 'Local'
   }
 ];
 
 const ALL_COLUMNS = [
   {
     key: 'CompanyCode',
-    header: 'COMPANY CODE',
+    header: 'CODE',
     sortable: true,
     align: 'start',
-    render: (item) => <span style={{ fontWeight: 'bold', fontSize: '1rem' }}>{item.CompanyCode}</span>
+    render: (item) => <span style={{ fontWeight: 'bold'}}>{item.CompanyCode}</span>
   },
   {
     key: 'Name',
     header: 'NAME',
     sortable: true
+  },
+  {
+    key: 'SupplierType',
+    header: 'TYPE',
+    sortable: true,
+    render: (item) => <span>{item.SupplierType}</span>,
+    align: 'start'
   },
   {
     key: 'Logo',
@@ -102,7 +112,7 @@ const ALL_COLUMNS = [
     key: 'Email',
     header: 'EMAIL',
     sortable: true,
-    render: (item) => <span style={{ fontSize: '0.95em' }}>{item.Email}</span>
+    render: (item) => <span>{item.Email}</span>
   },
   {
     key: 'Website',
@@ -130,10 +140,10 @@ export default function SupplierPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [sortConfig, setSortConfig] = useState({ key: null, direction: 'asc' });
   const [selectedColumns, setSelectedColumns] = useState([
-    'CompanyCode', 'Name', 'Logo', 'Address', 'Phone', 'Fax', 'Email', 'Website'
+    'CompanyCode', 'Name', 'SupplierType', 'Logo', 'Address', 'Phone', 'Fax', 'Email', 'Website'
   ]);
   // Add filter state
-  const [filter, setFilter] = useState({ companyCode: '' });
+  const [filter, setFilter] = useState({ supplierType: '' });
   // Right panel collapsed state
   const [isRightPanelCollapsed, setIsRightPanelCollapsed] = useState(false);
 
@@ -146,9 +156,9 @@ export default function SupplierPage() {
   // Filter and sort suppliers
   const filteredSuppliers = useMemo(() => {
     let filtered = SUPPLIERS;
-    if (filter.companyCode) {
+    if (filter.supplierType && filter.supplierType !== '') {
       filtered = filtered.filter(sup =>
-        sup.CompanyCode.toLowerCase().includes(filter.companyCode.toLowerCase())
+        sup.SupplierType === filter.supplierType
       );
     }
     return filtered;

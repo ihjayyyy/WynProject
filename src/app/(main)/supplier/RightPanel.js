@@ -1,13 +1,13 @@
 import React, { useState } from 'react';
-import Input from '../../../components/ui/Input/Input';
+import Select from '../../../components/ui/Select/Select';
 import { FiChevronUp, FiChevronDown } from 'react-icons/fi';
 import styles from './RightPanel.module.scss';
 
 function RightPanel({ allColumns, selectedColumns, setSelectedColumns, filter, onFilterChange }) {
   const [expanded, setExpanded] = useState(false);
   const [filterExpanded, setFilterExpanded] = useState(true);
-  // Local state for company code filter (if not controlled by parent)
-  const [companyCode, setCompanyCode] = useState(filter?.companyCode || '');
+  // Local state for supplier type filter (if not controlled by parent)
+  const [supplierType, setSupplierType] = useState(filter?.supplierType || '');
   const handleColumnToggle = (columnKey, isChecked) => {
     if (isChecked) {
       setSelectedColumns(prev => [...prev, columnKey]);
@@ -51,17 +51,21 @@ function RightPanel({ allColumns, selectedColumns, setSelectedColumns, filter, o
         <div className={styles.panelContent}>
           <div className={styles.filterSection}>
             <label className={styles.filterLabel}>
-              <span className={styles.filterLabelText}>Company Code</span>
-              <Input
-                id="companyCodeFilter"
-                value={companyCode}
+              <span className={styles.filterLabelText}>Supplier Type</span>
+              <Select
+                id="supplierTypeFilter"
+                value={supplierType}
                 onChange={e => {
-                  setCompanyCode(e.target.value);
+                  setSupplierType(e.target.value);
                   if (onFilterChange) {
-                    onFilterChange({ ...filter, companyCode: e.target.value });
+                    onFilterChange({ ...filter, supplierType: e.target.value });
                   }
                 }}
-                placeholder="Enter code"
+                options={[
+                  { value: '', label: 'All' },
+                  { value: 'Local', label: 'Local' },
+                  { value: 'International', label: 'International' }
+                ]}
                 label={null}
               />
             </label>
