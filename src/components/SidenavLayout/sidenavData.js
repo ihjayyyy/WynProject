@@ -1,6 +1,5 @@
 import {
   FiUsers,
-  FiSettings,
   FiDatabase,
   FiFileText,
   FiBarChart,

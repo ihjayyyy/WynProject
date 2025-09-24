@@ -7,3 +7,5 @@ export { default as StatsCard } from './ui/StatsCard/StatsCard';
 export { default as SearchBar } from './ui/SearchBar/SearchBar';
 export { default as DataTable } from './ui/DataTable/DataTable';
 export { default as StatusDot } from './ui/StatusDot/StatusDot';
+export { default as OrderForm } from './OrderForm/OrderForm';
+export { default as InvoiceForm } from './InvoiceForm/InvoiceForm';
