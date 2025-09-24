@@ -9,8 +9,8 @@
 }
 
 .title {
-  font-size: 2rem;
-  font-weight: 700;
+  font-size: $font-size-lg;
+  font-weight: $font-weight-bold;
   color: var(--color-text-primary-light);
   margin: 0;
 }
@@ -185,12 +185,6 @@
   display: block;
 }
 
-.itemsTable th,
-.itemsTable td {
-  padding: 0.75rem 1rem;
-  text-align: left;
-}
-
 .bottomFields label {
   font-weight: bold;
   margin-bottom: 0.25rem;
@@ -217,4 +211,61 @@
 
 .saveButtonWrapper button:hover {
   background: #2ea85a;
+}
+
+.topFields8Col {
+  display: grid;
+  grid-template-columns: repeat(8, 1fr);
+  gap: 1rem 1.5rem;
+  width: 100%;
+}
+
+.gridItem8 {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.span2 {
+  grid-column: span 2;
+}
+.span3 {
+  grid-column: span 3;
+}
+.span5 {
+  grid-column: span 5;
+}
+.span6 {
+  grid-column: span 6;
+}
+.span8 {
+  grid-column: span 8;
+}
+
+// New class to right-align fields within the grid
+.rightAlign {
+  grid-column-start: -4; // Start from 4 columns from the end (for 3-column span)
+  grid-column-end: -1;   // End at the last column
+  
+  &.span2 {
+    grid-column-start: -3; // Start from 2 columns from the end
+  }
+  
+  &.span3 {
+    grid-column-start: -4; // Start from 3 columns from the end
+  }
+}
+
+@media (max-width: 900px) {
+  .topFields8Col {
+    grid-template-columns: 1fr;
+    gap: 1.25rem;
+  }
+  .gridItem8 {
+    grid-column: auto !important;
+    
+    &.rightAlign {
+      grid-column: auto !important;
+    }
+  }
 }

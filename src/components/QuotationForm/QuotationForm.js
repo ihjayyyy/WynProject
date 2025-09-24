@@ -130,27 +130,39 @@ export default function QuotationForm() {
         </div>
       </div>
 
-      <div className={styles.topFields}>
-        {/* Row 1: Supplier, Contact Number, Date */}
-        <div className={styles.gridItem}>
+      {/* 8-column grid layout for top fields */}
+      <div className={styles.topFields8Col}>
+        {/* Row 1: Supplier (span 3), Contact Number (span 2), Date (span 3, right-aligned) */}
+        <div className={`${styles.gridItem8} ${styles.span3}`}>
           <Input label="Supplier" placeholder="Supplier" id="SupplierGuid" name="SupplierGuid" value={form.SupplierGuid} onChange={handleChange} />
         </div>
-        <div className={styles.gridItem}>
+        <div className={`${styles.gridItem8} ${styles.span3}`}>
           <Input label="Contact Number" placeholder="Contact Number" id="ContactNum" name="ContactNum" value={form.ContactNum} onChange={handleChange} />
         </div>
-        <div className={styles.gridItem}>
+        <div className={`${styles.gridItem8} ${styles.span2} ${styles.rightAlign}`}>
           <Input label="Date" id="Date" name="Date" value={form.Date} onChange={handleChange} type="date" />
         </div>
-        {/* Row 2: Address, Quotation Number */}
-        <div className={`${styles.gridItem} ${styles.gridItemSpan2}`}>
+        
+        {/* Row 2: Address (span 5), Quotation Number (span 3, right-aligned) */}
+        <div className={`${styles.gridItem8} ${styles.span6}`}>
           <Input label="Address" placeholder="Address" id="Address" name="Address" value={form.Address} onChange={handleChange} />
         </div>
-        <div className={styles.gridItem}>
+        <div className={`${styles.gridItem8} ${styles.span2} ${styles.rightAlign}`}>
           <Input label="Quotation Number" placeholder="Quotation Number" id="QuotationNumber" name="QuotationNumber" value={form.QuotationNumber} onChange={handleChange} />
         </div>
-        {/* Row 3: Description full width */}
-        <div className={`${styles.gridItem} ${styles.gridItemSpanAll}`}>
-          <TextAreaField label="Description" placeholder="Description" name="Description" value={form.Description} onChange={handleChange} />
+        
+        {/* Row 3: Description full width (span 8) */}
+        <div className={`${styles.gridItem8} ${styles.span8}`}>
+          <Input
+            label="Description"
+            placeholder="Description"
+            id="Description"
+            name="Description"
+            value={form.Description}
+            onChange={handleChange}
+            multiline
+            rows={3}
+          />
         </div>
       </div>
 

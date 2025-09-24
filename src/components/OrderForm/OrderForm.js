@@ -110,27 +110,43 @@ export default function OrderForm() {
         </div>
       </div>
 
-      <div className={styles.topFields}>
-        <div className={styles.gridItem}>
+      {/* 8-column grid layout for top fields */}
+      <div className={styles.topFields8Col}>
+        {/* Row 1: Supplier (span 3), Contact Number (span 2), Date (span 3, right-aligned) */}
+        <div className={`${styles.gridItem8} ${styles.span3}`}>
           <Input label="Supplier" placeholder="Supplier" id="SupplierGuid" name="SupplierGuid" value={form.SupplierGuid} onChange={handleChange} />
         </div>
-        <div className={styles.gridItem}>
+        <div className={`${styles.gridItem8} ${styles.span2}`}>
           <Input label="Contact Number" placeholder="Contact Number" id="ContactNum" name="ContactNum" value={form.ContactNum} onChange={handleChange} />
         </div>
-        <div className={styles.gridItem}>
+        <div className={`${styles.gridItem8} ${styles.span3} ${styles.rightAlign}`}>
           <Input label="Date" id="Date" name="Date" value={form.Date} onChange={handleChange} type="date" />
         </div>
-        <div className={`${styles.gridItem} ${styles.gridItemSpan2}`}>
+        
+        {/* Row 2: Address (span 5), Quotation Number (span 3, right-aligned) */}
+        <div className={`${styles.gridItem8} ${styles.span5}`}>
           <Input label="Address" placeholder="Address" id="Address" name="Address" value={form.Address} onChange={handleChange} />
         </div>
-        <div className={styles.gridItem}>
+        <div className={`${styles.gridItem8} ${styles.span3} ${styles.rightAlign}`}>
           <Input label="Quotation Number" id="QuotationNumber" name="QuotationNumber" value={form.QuotationNumber} readOnly />
         </div>
-        <div className={styles.gridItem}>
+        
+        <div className={`${styles.gridItem8} ${styles.span3} ${styles.rightAlign}`}>
           <Input label="Purchase Order Number" placeholder="PO Number" id="PurchaseOrderNumber" name="PurchaseOrderNumber" value={form.PurchaseOrderNumber} onChange={handleChange} />
         </div>
-        <div className={`${styles.gridItem} ${styles.gridItemSpanAll}`}>
-          <TextAreaField label="Description" placeholder="Description" name="Description" value={form.Description} onChange={handleChange} />
+        
+        {/* Row 4: Description full width (span 8) */}
+        <div className={`${styles.gridItem8} ${styles.span8}`}>
+          <Input
+            label="Description"
+            placeholder="Description"
+            id="Description"
+            name="Description"
+            value={form.Description}
+            onChange={handleChange}
+            multiline
+            rows={3}
+          />
         </div>
       </div>
 
