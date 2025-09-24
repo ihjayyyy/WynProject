@@ -9,50 +9,53 @@
 }
 
 .table {
+
   width: 100%;
   border-collapse: collapse;
-  font-size: $font-size-sm;
+  font-size: $font-size-xs;
+
   th {
+    font-size: $font-size-xs;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
     /* ...existing th styles... */
     background: $color-background-alt-light;
-    padding: $spacing-md;
+    padding: $spacing-md $spacing-sm;
     text-align: left;
     font-weight: $font-weight-medium;
-    font-size: $font-size-xs;
     letter-spacing: 0.05em;
     color: $color-text-secondary-light;
     text-transform: uppercase;
     border-bottom: 1px solid $color-secondary-light;
 
     &:first-child {
-      padding-left: $spacing-lg;
+      padding-left: $spacing-md;
     }
 
     &:last-child {
-      padding-right: $spacing-lg;
+      padding-right: $spacing-md;
       width: 40px;
     }
   }
 
   td {
+    font-size: $font-size-xs;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
     max-width: 180px; /* Adjust as needed */
-    padding: $spacing-md;
+    padding: $spacing-sm;
     border-bottom: 1px solid $color-secondary-light;
     color: $color-text-primary-light;
     vertical-align: middle;
 
     &:first-child {
-      padding-left: $spacing-lg;
+      padding-left: $spacing-md;
     }
 
     &:last-child {
-      padding-right: $spacing-lg;
+      padding-right: $spacing-md;
       text-align: center;
       width: 40px;
     }

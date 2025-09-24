@@ -28,7 +28,7 @@ export default function Dashboard() {
   return (
       <div className={styles.dashboardWrap}>
         <h1 className={styles.title}>Dashboard</h1>
-        <div className={styles.statsRow}>
+        <div className={styles.statsGrid}>
           {stats.map((stat, idx) => (
             <StatsCard
               key={idx}
@@ -40,7 +40,7 @@ export default function Dashboard() {
           ))}
         </div>
         <div className={styles.tableSection}>
-          <h2>Recent Transactions</h2>
+          <h1 className={styles.title}>Recent Transactions</h1>
           <DataTable data={data} columns={columns} />
         </div>
       </div>

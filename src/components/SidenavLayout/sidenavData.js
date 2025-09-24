@@ -27,13 +27,6 @@ export const sidenavItems = [
 
   // Item with children
   {
-    label: "Company",
-    icon: FiBriefcase,
-    href: "/company",
-  },
-
-  // Item with children
-  {
     label: "Supplier",
     icon: FiTruck,
     href: "/supplier",
