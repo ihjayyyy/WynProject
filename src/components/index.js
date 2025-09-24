@@ -9,3 +9,4 @@ export { default as DataTable } from './ui/DataTable/DataTable';
 export { default as StatusDot } from './ui/StatusDot/StatusDot';
 export { default as OrderForm } from './OrderForm/OrderForm';
 export { default as InvoiceForm } from './InvoiceForm/InvoiceForm';
+export { default as PaymentForm } from './PaymentForm/PaymentForm';
