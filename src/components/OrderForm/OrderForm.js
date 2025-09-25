@@ -517,7 +517,6 @@ export default function OrderForm() {
               { value: "inventory", label: "Inventory" },
               { value: "service", label: "Service" }
             ]}
-            className={styles.typeSelect}
           />
         </div>
       </div>
