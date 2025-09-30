@@ -538,19 +538,21 @@ export default function OrderForm() {
   if (orderType === "inventory") {
     tableFooter = (
       <tr>
-        <td colSpan={columns.length - 1} style={{ textAlign: 'right', fontWeight: 'bold' }}>Total</td>
-        <td style={{ fontWeight: 'bold' }}>
+        <td colSpan={columns.length - 2} style={{ textAlign: 'right', fontWeight: 'bold' }}>Total</td>
+        <td style={{ fontWeight: 'bold', textAlign: 'center' }}>
           {formatNumber(orderAmount)}
         </td>
+        <td />
       </tr>
     );
   } else if (orderType === "service") {
     tableFooter = (
       <tr>
-        <td colSpan={columns.length - 1} style={{ textAlign: 'right', fontWeight: 'bold' }}>Total</td>
-        <td style={{ fontWeight: 'bold' }}>
+        <td colSpan={columns.length - 2} style={{ textAlign: 'right', fontWeight: 'bold' }}>Total</td>
+        <td style={{ fontWeight: 'bold', textAlign: 'center' }}>
           {formatNumber(orderAmount)}
         </td>
+        <td />
       </tr>
     );
   }

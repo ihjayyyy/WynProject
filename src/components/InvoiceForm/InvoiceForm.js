@@ -295,19 +295,21 @@ export default function InvoiceForm() {
   if (invoiceType === "inventory") {
     tableFooter = (
       <tr>
-        <td colSpan={columns.length - 1} style={{ textAlign: 'right', fontWeight: 'bold' }}>Total</td>
-        <td style={{ fontWeight: 'bold' }}>
+        <td colSpan={columns.length - 2} style={{ textAlign: 'right', fontWeight: 'bold' }}>Total</td>
+        <td style={{ fontWeight: 'bold', textAlign: 'center' }}>
           {formatNumber(productItems.reduce((sum, i) => sum + (Number(i.TotalPrice) || 0), 0))}
         </td>
+        <td />
       </tr>
     );
   } else if (invoiceType === "service") {
     tableFooter = (
       <tr>
-        <td colSpan={columns.length - 1} style={{ textAlign: 'right', fontWeight: 'bold' }}>Total</td>
-        <td style={{ fontWeight: 'bold' }}>
+        <td colSpan={columns.length - 2} style={{ textAlign: 'right', fontWeight: 'bold' }}>Total</td>
+        <td style={{ fontWeight: 'bold', textAlign: 'center' }}>
           {formatNumber(serviceItems.reduce((sum, i) => sum + (Number(i.Amount) || 0), 0))}
         </td>
+        <td />
       </tr>
     );
   }

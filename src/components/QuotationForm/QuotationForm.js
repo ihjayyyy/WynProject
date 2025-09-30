@@ -541,19 +541,21 @@ export default function QuotationForm() {
   if (quotationType === "inventory") {
     tableFooter = (
       <tr>
-        <td colSpan={columns.length - 1} style={{ textAlign: 'right', fontWeight: 'bold' }}>Total</td>
-        <td style={{ fontWeight: 'bold' }}>
+        <td colSpan={columns.length - 2} style={{ textAlign: 'right', fontWeight: 'bold' }}>Total</td>
+        <td style={{ fontWeight: 'bold' , textAlign: 'center' }}>
           {formatNumber(items.reduce((sum, i) => sum + (Number(i.TotalPrice) || 0), 0))}
         </td>
+        <td />
       </tr>
     );
   } else if (quotationType === "service") {
     tableFooter = (
       <tr>
-        <td colSpan={columns.length - 1} style={{ textAlign: 'right', fontWeight: 'bold' }}>Total</td>
-        <td style={{ fontWeight: 'bold' }}>
+        <td colSpan={columns.length - 2} style={{ textAlign: 'right', fontWeight: 'bold' }}>Total</td>
+        <td style={{ fontWeight: 'bold', textAlign: 'center' }}>
           {formatNumber(items.reduce((sum, i) => sum + (Number(i.Amount) || 0), 0))}
         </td>
+        <td />
       </tr>
     );
   }
