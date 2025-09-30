@@ -11,13 +11,63 @@ import { FiPlus, FiTrash2 } from "react-icons/fi";
 
 // Payment form for invoice payments
 
-// Mock product and service catalogs (same as OrderForm)
-const productCatalog = [
-  { ProductGuid: "P001", Description: "Premium Widget A", UnitPrice: 150.0 },
-  { ProductGuid: "P002", Description: "Standard Widget B", UnitPrice: 85.5 },
-  { ProductGuid: "P003", Description: "Deluxe Widget C", UnitPrice: 220.75 },
-  { ProductGuid: "P004", Description: "Basic Widget D", UnitPrice: 45.25 },
-  { ProductGuid: "P005", Description: "Professional Service Package", UnitPrice: 500.0 },
+// Mock invoice catalog for inventory payments
+const invoiceCatalog = [
+  {
+    Guid: "INVITEM001",
+    InvoiceGuid: "INV001",
+    OrderGuid: "ORD001",
+    ProductGuid: "P001",
+    Quantity: 2,
+    UnitPrice: 150.00,
+    TotalPrice: 300.00,
+    Discount: 0,
+    Description: "Premium Widget A"
+  },
+  {
+    Guid: "INVITEM002",
+    InvoiceGuid: "INV002",
+    OrderGuid: "ORD002",
+    ProductGuid: "P002",
+    Quantity: 1,
+    UnitPrice: 85.50,
+    TotalPrice: 85.50,
+    Discount: 0,
+    Description: "Standard Widget B"
+  },
+  {
+    Guid: "INVITEM003",
+    InvoiceGuid: "INV003",
+    OrderGuid: "ORD003",
+    ProductGuid: "P003",
+    Quantity: 3,
+    UnitPrice: 220.75,
+    TotalPrice: 662.25,
+    Discount: 0,
+    Description: "Deluxe Widget C"
+  },
+  {
+    Guid: "INVITEM004",
+    InvoiceGuid: "INV004",
+    OrderGuid: "ORD004",
+    ProductGuid: "P004",
+    Quantity: 5,
+    UnitPrice: 45.25,
+    TotalPrice: 226.25,
+    Discount: 0,
+    Description: "Basic Widget D"
+  },
+  {
+    Guid: "INVITEM005",
+    InvoiceGuid: "INV005",
+    OrderGuid: "ORD005",
+    ProductGuid: "P005",
+    Quantity: 1,
+    UnitPrice: 500.00,
+    TotalPrice: 500.00,
+    Discount: 0,
+    Description: "Professional Service Package"
+  }
 ];
 
 const serviceCatalog = [
@@ -61,12 +111,15 @@ export default function PaymentForm() {
 
   // --- Product Table Logic ---
   const [blankRowData, setBlankRowData] = useState({
+    Guid: '',
+    InvoiceGuid: '',
+    OrderGuid: '',
     ProductGuid: '',
-    Description: '',
-    UnitPrice: 0,
     Quantity: 1,
+    UnitPrice: 0,
     TotalPrice: 0,
-    Discount: 0
+    Discount: 0,
+    Description: ''
   });
 
   const calculateTotalPrice = (unitPrice, quantity, discount = 0) => {
@@ -75,28 +128,25 @@ export default function PaymentForm() {
     return subtotal - discountAmount;
   };
 
-  const handleProductSelect = (productGuid) => {
-    if (!productGuid) {
+  const handleInvoiceSelect = (invoiceGuid) => {
+    if (!invoiceGuid) {
       setBlankRowData({
+        Guid: '',
+        InvoiceGuid: '',
+        OrderGuid: '',
         ProductGuid: '',
-        Description: '',
-        UnitPrice: 0,
         Quantity: 1,
+        UnitPrice: 0,
         TotalPrice: 0,
-        Discount: 0
+        Discount: 0,
+        Description: ''
       });
       return;
     }
-    const selectedProduct = productCatalog.find(p => p.ProductGuid === productGuid);
-    if (selectedProduct) {
-      const totalPrice = calculateTotalPrice(selectedProduct.UnitPrice, blankRowData.Quantity, blankRowData.Discount);
+    const selectedInvoice = invoiceCatalog.find(inv => inv.InvoiceGuid === invoiceGuid);
+    if (selectedInvoice) {
       setBlankRowData({
-        ProductGuid: selectedProduct.ProductGuid,
-        Description: selectedProduct.Description,
-        UnitPrice: selectedProduct.UnitPrice,
-        Quantity: blankRowData.Quantity,
-        TotalPrice: totalPrice,
-        Discount: blankRowData.Discount
+        ...selectedInvoice
       });
     }
   };
@@ -129,12 +179,15 @@ export default function PaymentForm() {
       };
       setProductItems([...productItems, newItem]);
       setBlankRowData({
+        Guid: '',
+        InvoiceGuid: '',
+        OrderGuid: '',
         ProductGuid: '',
-        Description: '',
-        UnitPrice: 0,
         Quantity: 1,
+        UnitPrice: 0,
         TotalPrice: 0,
-        Discount: 0
+        Discount: 0,
+        Description: ''
       });
     }
   };
@@ -187,29 +240,33 @@ export default function PaymentForm() {
   const columns = paymentType === "inventory"
     ? [
         { 
-          header: 'Product', 
-          key: 'ProductGuid',
+          header: 'Invoice', 
+          key: 'InvoiceGuid',
           render: (row) => {
             if (row.isBlank) {
               return (
                 <Select
-                  value={row.ProductGuid}
-                  onChange={(e) => handleProductSelect(e.target.value)}
+                  value={row.InvoiceGuid}
+                  onChange={(e) => handleInvoiceSelect(e.target.value)}
                   options={[
-                    { value: "", label: "Select Product..." },
-                    ...row.availableProducts.map(p => ({
-                      value: p.ProductGuid,
-                      label: `${p.ProductGuid} - ${p.Description}`
+                    { value: "", label: "Select Invoice..." },
+                    ...row.availableProducts.map(inv => ({
+                      value: inv.InvoiceGuid,
+                      label: `${inv.InvoiceGuid} - ${inv.Description}`
                     }))
                   ]}
                 />
               );
             }
-            return row.ProductGuid;
+            return row.InvoiceGuid || '';
           }
         },
-        { header: 'Description', key: 'Description', render: (row) => row.Description },
-        { header: 'Unit Price', key: 'UnitPrice', render: (row) => row.isBlank && !row.ProductGuid ? '' : (<span className={styles.rightAlignNum}>{formatNumber(row.UnitPrice)}</span>) },
+        { header: 'Order', key: 'OrderGuid', render: (row) => row.OrderGuid || '' },
+        { 
+          header: 'Product', 
+          key: 'ProductGuid',
+          render: (row) => row.ProductGuid || ''
+        },
         { header: 'Quantity', key: 'Quantity', render: (row) => {
             if (row.isBlank) {
               if (!row.ProductGuid) return '';
@@ -226,6 +283,7 @@ export default function PaymentForm() {
             return (<span className={styles.rightAlignNum}>{row.Quantity}</span>);
           }
         },
+        { header: 'Unit Price', key: 'UnitPrice', render: (row) => row.isBlank && !row.ProductGuid ? '' : (<span className={styles.rightAlignNum}>{formatNumber(row.UnitPrice)}</span>) },
         { header: 'Discount (%)', key: 'Discount', render: (row) => {
             if (row.isBlank) {
               if (!row.ProductGuid) return '';
@@ -243,6 +301,7 @@ export default function PaymentForm() {
             return (<span className={styles.rightAlignNum}>{formatNumber(row.Discount)}%</span>);
           }
         },
+        { header: 'Description', key: 'Description', render: (row) => row.Description },
         { header: 'Total Price', key: 'TotalPrice', render: (row) => row.isBlank && !row.ProductGuid ? '' : (<span className={styles.rightAlignNum}>{formatNumber(row.TotalPrice)}</span>) },
         { header: 'Actions', key: 'actions', render: (row) => {
             if (row.isBlank) {
@@ -344,15 +403,17 @@ export default function PaymentForm() {
   if (paymentType === "inventory") {
     tableFooter = (
       <tr>
-        <td colSpan={columns.length - 1} style={{ textAlign: 'right', fontWeight: 'bold' }}>Total</td>
-        <td style={{ fontWeight: 'bold' }}>{formatNumber(totalAmount)}</td>
+        <td colSpan={columns.length - 2} style={{ textAlign: 'right', fontWeight: 'bold' }}>Total</td>
+        <td style={{ fontWeight: 'bold', textAlign: 'center' }}>{formatNumber(totalAmount)}</td>
+        <td />
       </tr>
     );
   } else if (paymentType === "service") {
     tableFooter = (
       <tr>
-        <td colSpan={columns.length - 1} style={{ textAlign: 'right', fontWeight: 'bold' }}>Total</td>
-        <td style={{ fontWeight: 'bold' }}>{formatNumber(totalAmount)}</td>
+        <td colSpan={columns.length - 2} style={{ textAlign: 'right', fontWeight: 'bold' }}>Total</td>
+        <td style={{ fontWeight: 'bold', textAlign: 'center' }}>{formatNumber(totalAmount)}</td>
+        <td />
       </tr>
     );
   }
@@ -417,8 +478,8 @@ export default function PaymentForm() {
       {(() => {
         let itemsWithBlank = [...items];
         if (paymentType === "inventory") {
-          const availableProducts = productCatalog.filter(
-            product => !productItems.find(item => item.ProductGuid === product.ProductGuid)
+          const availableProducts = invoiceCatalog.filter(
+            invoice => !productItems.find(item => item.ProductGuid === invoice.ProductGuid)
           );
           if (availableProducts.length > 0) {
             itemsWithBlank.push({
