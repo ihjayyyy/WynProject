@@ -8,6 +8,60 @@ import Button from "../ui/Button/Button";
 import { FiPlus, FiTrash2 } from "react-icons/fi";
 import Select from "../ui/Select/Select";
 
+// --- Supplier Data (mock, should match supplier page) ---
+const SUPPLIERS = [
+  {
+    CompanyGuid: 'COMP001',
+    CompanyCode: 'ACME',
+    Name: 'Acme Corporation',
+    Logo: '',
+    Address: '123 Ayala Ave, Makati City',
+    Phone: '+63 2 8123 4567',
+    Fax: '+63 2 8123 4568',
+    Email: 'john.smith@acme.com',
+    Website: 'www.acme.com',
+    TaxNumber: 'TX123456',
+    ContactPerson: 'John Smith',
+    ContactNumber: '+63 917 111 2222',
+    PaymentTerms: 30,
+    Status: 'ACTIVE',
+    SupplierType: 'Local'
+  },
+  {
+    CompanyGuid: 'COMP002',
+    CompanyCode: 'GLOB',
+    Name: 'Global Supplies Ltd',
+    Logo: '',
+    Address: '456 Ortigas Ave, Pasig City',
+    Phone: '+63 2 8987 6543',
+    Fax: '+63 2 8987 6544',
+    Email: 'sarah.j@globalsupplies.com',
+    Website: 'www.globalsupplies.com',
+    TaxNumber: 'TX654321',
+    ContactPerson: 'Sarah Johnson',
+    ContactNumber: '+63 918 333 4444',
+    PaymentTerms: 45,
+    Status: 'ACTIVE',
+    SupplierType: 'International'
+  },
+  {
+    CompanyGuid: 'COMP003',
+    CompanyCode: 'TECH',
+    Name: 'Tech Solutions Inc',
+    Logo: '',
+    Address: '789 IT Park, Cebu City',
+    Phone: '+63 32 456 7890',
+    Fax: '+63 32 456 7891',
+    Email: 'mbrown@techsolutions.com',
+    Website: 'www.techsolutions.com',
+    TaxNumber: 'TX789123',
+    ContactPerson: 'Michael Brown',
+    ContactNumber: '+63 919 555 6666',
+    PaymentTerms: 60,
+    Status: 'PENDING',
+    SupplierType: 'Local'
+  }
+];
 
 // Mock product catalog - in real app this would come from API
 const productCatalog = [
@@ -118,9 +172,21 @@ export default function OrderForm() {
   });
 
 
-  // Handle input changes
+  // Handle input changes (except Supplier)
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value });
+  };
+
+  // Handle supplier dropdown change
+  const handleSupplierChange = (e) => {
+    const selectedGuid = e.target.value;
+    const selectedSupplier = SUPPLIERS.find(s => s.CompanyGuid === selectedGuid);
+    setForm(form => ({
+      ...form,
+      SupplierGuid: selectedGuid,
+      ContactNum: selectedSupplier ? selectedSupplier.ContactNumber : '',
+      Address: selectedSupplier ? selectedSupplier.Address : ''
+    }));
   };
 
   // State for blank service row
@@ -525,10 +591,23 @@ export default function OrderForm() {
       <div className={styles.topFields8Col}>
         {/* Row 1: Supplier (span 3), Contact Number (span 2), Date (span 3, right-aligned) */}
         <div className={`${styles.gridItem8} ${styles.span3}`}>
-          <Input label="Supplier" placeholder="Supplier" id="SupplierGuid" name="SupplierGuid" value={form.SupplierGuid} onChange={handleChange} />
+          <label htmlFor="SupplierGuid" className={styles.inputLabel}>Supplier</label>
+          <Select
+            id="SupplierGuid"
+            name="SupplierGuid"
+            value={form.SupplierGuid}
+            onChange={handleSupplierChange}
+            options={[
+              { value: '', label: 'Select Supplier...' },
+              ...SUPPLIERS.map(s => ({
+                value: s.CompanyGuid,
+                label: `${s.CompanyCode} - ${s.Name}`
+              }))
+            ]}
+          />
         </div>
         <div className={`${styles.gridItem8} ${styles.span3}`}>
-          <Input label="Contact Number" placeholder="Contact Number" id="ContactNum" name="ContactNum" value={form.ContactNum} onChange={handleChange} />
+          <Input label="Contact Number" placeholder="Contact Number" id="ContactNum" name="ContactNum" value={form.ContactNum} onChange={handleChange} readOnly />
         </div>
         <div className={`${styles.gridItem8} ${styles.span2} ${styles.rightAlign}`}>
           <Input label="Date" id="Date" name="Date" value={form.Date} onChange={handleChange} type="date" />
@@ -536,7 +615,7 @@ export default function OrderForm() {
         
         {/* Row 2: Address (span 5), Quotation Number (span 3, right-aligned) */}
         <div className={`${styles.gridItem8} ${styles.span6}`}>
-          <Input label="Address" placeholder="Address" id="Address" name="Address" value={form.Address} onChange={handleChange} />
+          <Input label="Address" placeholder="Address" id="Address" name="Address" value={form.Address} onChange={handleChange} readOnly />
         </div>
         <div className={`${styles.gridItem8} ${styles.span2} ${styles.rightAlign}`}>
           <Input label="Quotation Number" id="QuotationNumber" name="QuotationNumber" value={form.QuotationNumber} readOnly />

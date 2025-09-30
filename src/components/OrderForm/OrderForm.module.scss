@@ -50,6 +50,13 @@
   min-width: 140px;
 }
 
+.inputLabel {
+  font-weight: $font-weight-medium;
+  color: $color-text-secondary-light;
+  font-size: $font-size-xs;
+  margin-bottom: $spacing-sm;
+}
+
 .typeSelect {
   width: 100%;
   padding: 0.6rem 2.5rem 0.6rem 0.875rem;

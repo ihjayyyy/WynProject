@@ -47,9 +47,15 @@
   font-size: 1.25rem;
 }
 
+
+// Placeholder color matches border color
 .input::placeholder {
-  color: $color-text-secondary-light;
+  color: $color-secondary-dark;
   opacity: 1;
+}
+
+.inputIconWrap:focus-within .input::placeholder {
+  color: $color-accent-light;
 }
 
 .input:focus {

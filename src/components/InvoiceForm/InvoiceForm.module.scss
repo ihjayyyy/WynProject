@@ -21,6 +21,13 @@
   margin: 0;
 }
 
+.inputLabel {
+  font-weight: $font-weight-medium;
+  color: $color-text-secondary-light;
+  font-size: $font-size-xs;
+  margin-bottom: $spacing-sm;
+}
+
 .headerSection {
   display: flex;
   align-items: center;
