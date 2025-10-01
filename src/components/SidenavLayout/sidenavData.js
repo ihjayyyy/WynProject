@@ -47,7 +47,7 @@ export const sidenavItems = [
         icon: FiFile,
         href: '/purchase/invoicelanding',
       },
-      { label: 'Payment', icon: FiDollarSign, href: '/purchase/payment' },
+      { label: 'Payment', icon: FiDollarSign, href: '/purchase/paymentlanding' },
     ],
   },
 
