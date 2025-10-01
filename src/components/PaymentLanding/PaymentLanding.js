@@ -3,7 +3,7 @@
 
 import { useRouter } from "next/navigation";
 import ThreeColumnLayout from "../ThreeColumnLayout/ThreeColumnLayout";
-import RightPanel from "./RightPanel";
+import RightPanel from "../RightPanel/RightPanel";
 import React, { useState, useCallback, useMemo } from "react";
 import styles from "./PaymentLanding.module.scss";
 import { StatsCard, SearchBar, DataTable } from "../../components";
@@ -197,6 +197,15 @@ export default function PaymentLanding() {
           setSelectedColumns={setSelectedColumns}
           filter={filter}
           onFilterChange={setFilter}
+          filterConfig={{
+            label: 'Status',
+            key: 'status',
+            options: [
+              { value: '', label: 'All' },
+              { value: 'prepared', label: 'Prepared' },
+              { value: 'paid', label: 'Paid' },
+            ],
+          }}
         />
       }
     >

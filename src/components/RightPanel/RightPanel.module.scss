@@ -33,8 +33,7 @@
   background: white;
   border-radius: 12px;
   border: 1px solid #e5e7eb;
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1),
-    0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
   overflow: hidden;
 }
 
@@ -50,7 +49,7 @@
 .headerContent {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+    justify-content: space-between;
   gap: 8px;
   flex: 1;
 }
@@ -175,8 +174,7 @@
   }
 }
 
-.checkIcon,
-.minusIcon {
+.checkIcon, .minusIcon {
   width: 12px;
   height: 12px;
   color: white;

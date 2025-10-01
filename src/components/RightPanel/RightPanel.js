@@ -3,17 +3,33 @@ import Select from '../ui/Select/Select';
 import { FiChevronUp, FiChevronDown } from 'react-icons/fi';
 import styles from './RightPanel.module.scss';
 
+/**
+ * Dynamic RightPanel component for all landing pages.
+ *
+ * Props:
+ * - allColumns: array of column objects { key, header }
+ * - selectedColumns: array of selected column keys
+ * - setSelectedColumns: function to update selected columns
+ * - filter: filter object (from parent state)
+ * - onFilterChange: function to update filter
+ * - filterConfig: {
+ *     label: string (e.g. 'Purchase Type'),
+ *     key: string (e.g. 'purchaseType'),
+ *     options: array of { value, label }
+ *   }
+ */
 function RightPanel({
   allColumns,
   selectedColumns,
   setSelectedColumns,
   filter,
   onFilterChange,
+  filterConfig = { label: '', key: '', options: [] },
 }) {
   const [expanded, setExpanded] = useState(false);
   const [filterExpanded, setFilterExpanded] = useState(true);
-  // Local state for supplier type filter (if not controlled by parent)
-  const [supplierType, setSupplierType] = useState(filter?.supplierType || '');
+  const [filterValue, setFilterValue] = useState(filter?.[filterConfig.key] || '');
+
   const handleColumnToggle = (columnKey, isChecked) => {
     if (isChecked) {
       setSelectedColumns((prev) => [...prev, columnKey]);
@@ -24,10 +40,8 @@ function RightPanel({
 
   const handleSelectAll = () => {
     if (selectedColumns.length === allColumns.length) {
-      // Deselect all
       setSelectedColumns([]);
     } else {
-      // Select all
       setSelectedColumns(allColumns.map((col) => col.key));
     }
   };
@@ -39,48 +53,48 @@ function RightPanel({
   return (
     <div className={styles.rightPanel}>
       {/* Filter Section */}
-      <div className={styles.panelHeader}>
-        <div className={styles.headerContent}>
-          <h3
-            className={styles.panelTitle}
-            style={{ cursor: 'pointer', display: 'flex', alignItems: 'center' }}
-            onClick={() => setFilterExpanded((exp) => !exp)}>
-            Filter
-          </h3>
-          <div style={{ display: 'flex', alignItems: 'center' }}>
-            {filterExpanded ? (
-              <FiChevronUp size={20} />
-            ) : (
-              <FiChevronDown size={20} />
-            )}
+      {filterConfig.label && (
+        <>
+          <div className={styles.panelHeader}>
+            <div className={styles.headerContent}>
+              <h3
+                className={styles.panelTitle}
+                style={{ cursor: 'pointer', display: 'flex', alignItems: 'center' }}
+                onClick={() => setFilterExpanded((exp) => !exp)}>
+                Filter
+              </h3>
+              <div style={{ display: 'flex', alignItems: 'center' }}>
+                {filterExpanded ? (
+                  <FiChevronUp size={20} />
+                ) : (
+                  <FiChevronDown size={20} />
+                )}
+              </div>
+            </div>
           </div>
-        </div>
-      </div>
 
-      {filterExpanded && (
-        <div className={styles.panelContent}>
-          <div className={styles.filterSection}>
-            <label className={styles.filterLabel}>
-              <span className={styles.filterLabelText}>Supplier Type</span>
-              <Select
-                id="supplierTypeFilter"
-                value={supplierType}
-                onChange={(e) => {
-                  setSupplierType(e.target.value);
-                  if (onFilterChange) {
-                    onFilterChange({ ...filter, supplierType: e.target.value });
-                  }
-                }}
-                options={[
-                  { value: '', label: 'All' },
-                  { value: 'Inventory', label: 'Inventory' },
-                  { value: 'Service', label: 'Service' },
-                ]}
-                label={null}
-              />
-            </label>
-          </div>
-        </div>
+          {filterExpanded && (
+            <div className={styles.panelContent}>
+              <div className={styles.filterSection}>
+                <label className={styles.filterLabel}>
+                  <span className={styles.filterLabelText}>{filterConfig.label}</span>
+                  <Select
+                    id={filterConfig.key + 'Filter'}
+                    value={filterValue}
+                    onChange={(e) => {
+                      setFilterValue(e.target.value);
+                      if (onFilterChange) {
+                        onFilterChange({ ...filter, [filterConfig.key]: e.target.value });
+                      }
+                    }}
+                    options={filterConfig.options}
+                    label={null}
+                  />
+                </label>
+              </div>
+            </div>
+          )}
+        </>
       )}
 
       {/* Columns Section */}

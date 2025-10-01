@@ -3,7 +3,7 @@
 
 import { useRouter } from "next/navigation";
 import ThreeColumnLayout from "../ThreeColumnLayout/ThreeColumnLayout";
-import RightPanel from "./RightPanel";
+import RightPanel from "../RightPanel/RightPanel";
 import React, { useState, useCallback, useMemo } from "react";
 import styles from "./DeliveryLanding.module.scss";
 import { StatsCard, SearchBar, DataTable } from "../../components";
@@ -206,6 +206,15 @@ export default function DeliveryLanding() {
           setSelectedColumns={setSelectedColumns}
           filter={filter}
           onFilterChange={setFilter}
+          filterConfig={{
+            label: 'Purchase Type',
+            key: 'purchaseType',
+            options: [
+              { value: '', label: 'All' },
+              { value: 'Inventory', label: 'Inventory' },
+              { value: 'Service', label: 'Service' },
+            ],
+          }}
         />
       }
     >

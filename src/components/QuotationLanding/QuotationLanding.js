@@ -3,7 +3,7 @@
 import { useRouter } from 'next/navigation';
 
 import ThreeColumnLayout from '../ThreeColumnLayout/ThreeColumnLayout';
-import RightPanel from './RightPanel';
+import RightPanel from '../RightPanel/RightPanel';
 import React, { useState, useCallback, useMemo } from 'react';
 import styles from './QuotationLanding.module.scss';
 import { StatsCard, SearchBar, DataTable } from '../../components';
@@ -184,6 +184,15 @@ export default function QuotationLanding() {
           setSelectedColumns={setSelectedColumns}
           filter={filter}
           onFilterChange={setFilter}
+          filterConfig={{
+            label: 'Purchase Type',
+            key: 'supplierType',
+            options: [
+              { value: '', label: 'All' },
+              { value: 'Inventory', label: 'Inventory' },
+              { value: 'Service', label: 'Service' },
+            ],
+          }}
         />
       }>
       <div className={styles.container}>

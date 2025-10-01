@@ -6,7 +6,7 @@ import ThreeColumnLayout from '../../../components/ThreeColumnLayout/ThreeColumn
 import { StatsCard, SearchBar } from '../../../components';
 import DataTable from '../../../components/ui/DataTable/DataTable';
 import styles from './page.module.scss';
-import RightPanel from './RightPanel';
+import RightPanel from '../../../components/RightPanel/RightPanel';
 
 
 // --- Data & Configs ---
@@ -221,6 +221,15 @@ export default function SupplierPage() {
           setSelectedColumns={setSelectedColumns}
           filter={filter}
           onFilterChange={setFilter}
+          filterConfig={{
+            label: 'Supplier Type',
+            key: 'supplierType',
+            options: [
+              { value: '', label: 'All' },
+              { value: 'Local', label: 'Local' },
+              { value: 'International', label: 'International' },
+            ],
+          }}
         />
       }
     >
