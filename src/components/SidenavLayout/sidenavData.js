@@ -10,7 +10,8 @@ import {
   FiCreditCard, // Added for Sales
   FiTruck, // Added for Supplier
   FiBriefcase,
-  FiUserCheck, // Added for Company
+  FiUserCheck,
+  FiBox, // Added for Company
 } from 'react-icons/fi';
 import { GrUserSettings } from 'react-icons/gr';
 
@@ -42,6 +43,7 @@ export const sidenavItems = [
         href: '/purchase/quotationlanding',
       },
       { label: 'Purchase Order', icon: FiClipboard, href: '/purchase/orderlanding' },
+      { label: 'Delivery', icon: FiBox, href: '/purchase/deliverylanding' },
       {
         label: 'Invoice',
         icon: FiFile,
