@@ -1,0 +1,27 @@
+@import '../../../styles/_variables.scss';
+
+.breadcrumbs {
+  display: flex;
+  align-items: center;
+  font-size: $font-size-md;
+  background: transparent;
+}
+
+.crumbLink {
+  color: $color-primary-light;
+  cursor: pointer;
+  font-weight: $font-weight-normal;
+  transition: color 0.15s;
+  &:hover {
+    color:$color-accent-light;
+  }
+  display: inline-flex;
+  align-items: center;
+  gap: $spacing-xs;
+}
+
+.crumbCurrent {
+  color: $color-text-primary-light;
+  font-weight: $font-weight-medium;
+  cursor: default;
+}

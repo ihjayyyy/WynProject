@@ -1,4 +1,4 @@
-'use client';
+  'use client';
 
 import { useRouter } from 'next/navigation';
 
@@ -129,6 +129,29 @@ export default function QuotationLanding() {
     [selectedColumns]
   );
 
+  // Filtered data based on filter and search
+  const filteredData = useMemo(() => {
+    let data = TABLE_DATA;
+    // Filter by supplierType (PurchaseType)
+    if (filter.supplierType) {
+      data = data.filter(
+        (item) =>
+          item.PurchaseType &&
+          item.PurchaseType.toLowerCase().includes(filter.supplierType.toLowerCase())
+      );
+    }
+    // Filter by search term (searches in Description and QuotationNumber)
+    if (searchTerm) {
+      const term = searchTerm.toLowerCase();
+      data = data.filter(
+        (item) =>
+          (item.Description && item.Description.toLowerCase().includes(term)) ||
+          (item.QuotationNumber && item.QuotationNumber.toLowerCase().includes(term))
+      );
+    }
+    return data;
+  }, [filter, searchTerm]);
+
   const handleSearchChange = useCallback((value) => {
     setSearchTerm(value);
   }, []);
@@ -179,7 +202,7 @@ export default function QuotationLanding() {
           />
         </div>
         <DataTable
-          data={TABLE_DATA}
+          data={filteredData}
           columns={columns}
           onRowClick={handleRowClick}
           onActionClick={handleActionClick}

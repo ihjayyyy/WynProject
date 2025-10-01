@@ -73,8 +73,8 @@ function RightPanel({
                 }}
                 options={[
                   { value: '', label: 'All' },
-                  { value: 'Local', label: 'Local' },
-                  { value: 'International', label: 'International' },
+                  { value: 'Inventory', label: 'Inventory' },
+                  { value: 'Service', label: 'Service' },
                 ]}
                 label={null}
               />

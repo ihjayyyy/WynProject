@@ -59,7 +59,7 @@ import styles from "./QuotationForm.module.scss";
 import Input from "../ui/Input/Input";
 import DataTable from "../ui/DataTable/DataTable";
 import Button from "../ui/Button/Button";
-import { FiPlus, FiTrash2 } from "react-icons/fi";
+import { FiFileText, FiPlus, FiTrash2 } from "react-icons/fi";
 import Select from "../ui/Select/Select";
 
 // Mock product catalog - in real app this would come from API
@@ -146,6 +146,9 @@ const initialBlankServiceRow = {
   Description: '',
   Amount: 0,
 };
+
+
+import Breadcrumbs from '../ui/Breadcrumbs/Breadcrumbs';
 
 export default function QuotationForm() {
   const [quotationType, setQuotationType] = useState("inventory");
@@ -569,10 +572,14 @@ export default function QuotationForm() {
     });
   };
 
+
+
   return (
     <form className={styles.quotationForm} onSubmit={handleSubmit}>
+      <Breadcrumbs showBack items={[{ label: 'Quotation Form' }]} backIcon={<FiFileText size={18}/>} />
+
       <div className={styles.headerSection}>
-        <h2 className={styles.title}>Quotation</h2>
+        <h2 className={styles.title}>Quotation Form</h2>
         <div className={styles.typeSelector}>
           <label htmlFor="PurchaseType" className={styles.typeLabel}>Type:</label>
           <Select
