@@ -111,7 +111,7 @@ export default function QuotationLanding() {
 
   // Function to redirect to quotation form
   const redirectToQuotationForm = useCallback(() => {
-    router.push('/purchase/quotationForm');
+    router.push('/purchase/quotationform');
   }, [router]);
   const [selectedColumns, setSelectedColumns] = useState([
     'Guid',

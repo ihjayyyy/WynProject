@@ -1,6 +1,8 @@
 'use client';
 
 import React, { useState } from "react";
+import Breadcrumbs from '../ui/Breadcrumbs/Breadcrumbs';
+import { FiClipboard } from 'react-icons/fi';
 import styles from "./OrderForm.module.scss";
 import Input from "../ui/Input/Input";
 import DataTable from "../ui/DataTable/DataTable";
@@ -572,6 +574,7 @@ export default function OrderForm() {
 
   return (
     <form className={styles.quotationForm} onSubmit={handleSubmit}>
+      <Breadcrumbs showBack items={[{ label: 'Order Form' }]} backIcon={<FiClipboard size={18}/>} />
       <div className={styles.headerSection}>
         <h2 className={styles.title}>Order</h2>
         <div className={styles.typeSelector}>

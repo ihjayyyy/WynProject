@@ -39,9 +39,9 @@ export const sidenavItems = [
       {
         label: 'Quotation',
         icon: FiFileText,
-        href: '/purchase/quotationLanding',
+        href: '/purchase/quotationlanding',
       },
-      { label: 'Purchase Order', icon: FiClipboard, href: '/purchase/order' },
+      { label: 'Purchase Order', icon: FiClipboard, href: '/purchase/orderlanding' },
       {
         label: 'Invoice',
         icon: FiFile,

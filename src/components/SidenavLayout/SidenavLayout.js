@@ -26,17 +26,57 @@ export default function SidenavLayout({ children }) {
     setExpandedParents(newExpanded);
   };
 
+
+
+  // Helper: for order landing, also match /purchase/order and /purchase/orderform
+  const isOrderLandingPath = (path) => {
+    const orderLandingPaths = [
+      '/purchase/orderlanding',
+      '/purchase/order',
+      '/purchase/orderform',
+    ];
+    return orderLandingPaths.includes(path?.toLowerCase());
+  };
+
+  // Helper: for quotation landing, also match /purchase/quotation, /purchase/quotationform, /purchase/quotationlanding
+  const isQuotationLandingPath = (path) => {
+    const quotationLandingPaths = [
+      '/purchase/quotationlanding',
+      '/purchase/quotation',
+      '/purchase/quotationform',
+    ];
+    return quotationLandingPaths.includes(path?.toLowerCase());
+  };
+
   const isParentActive = (item) => {
     if (item.href && pathname?.toLowerCase() === item.href.toLowerCase()) {
       return true;
     }
     if (item.children) {
-      return item.children.some(child => pathname?.toLowerCase() === child.href.toLowerCase());
+      return item.children.some(child => {
+        // Special case for Purchase Order
+        if (child.href === '/purchase/orderlanding') {
+          return isOrderLandingPath(pathname);
+        }
+        // Special case for Quotation
+        if (child.href === '/purchase/quotationlanding') {
+          return isQuotationLandingPath(pathname);
+        }
+        return pathname?.toLowerCase() === child.href.toLowerCase();
+      });
     }
     return false;
   };
 
   const isChildActive = (child) => {
+    // Special case for Purchase Order
+    if (child.href === '/purchase/orderlanding') {
+      return isOrderLandingPath(pathname);
+    }
+    // Special case for Quotation
+    if (child.href === '/purchase/quotationlanding') {
+      return isQuotationLandingPath(pathname);
+    }
     return pathname?.toLowerCase() === child.href.toLowerCase();
   };
 
