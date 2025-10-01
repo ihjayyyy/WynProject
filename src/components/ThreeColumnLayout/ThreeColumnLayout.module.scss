@@ -1,9 +1,15 @@
 @use '../../styles/variables' as *;
 
 // THREE COLUMN LAYOUT STYLES
+.title{
+    font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--color-text-primary-light);
+  margin: 0;
+  line-height: 1.2;
+}
 .container {
   display: flex;
-  height: 100%;
   width: 100%;
   position: relative;
 }
@@ -55,7 +61,7 @@
 .rightPanelHeader {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  gap: 0.5rem;
   margin-bottom: 0.75rem;
 
   .collapsed & {

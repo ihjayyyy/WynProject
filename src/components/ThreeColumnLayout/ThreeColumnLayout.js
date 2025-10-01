@@ -33,6 +33,10 @@ export default function ThreeColumnLayout({
           >
             {isRightPanelCollapsed ? <FiChevronLeft size={16} /> : <FiChevronRight size={16} />}
           </button>
+          {!isRightPanelCollapsed && (
+            <h1 className={styles.title}>Settings Panel</h1>
+          )}
+
         </div>
         {!isRightPanelCollapsed && (
           <div className={styles.rightPanelContent}>

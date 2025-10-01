@@ -5,8 +5,9 @@ import styles from "./InvoiceForm.module.scss";
 import Input from "../ui/Input/Input";
 import DataTable from "../ui/DataTable/DataTable";
 import Button from "../ui/Button/Button";
-import { FiPlus, FiTrash2 } from "react-icons/fi";
+import { FiFile, FiPlus, FiTrash2 } from "react-icons/fi";
 import Select from "../ui/Select/Select";
+import Breadcrumbs from "../ui/Breadcrumbs/Breadcrumbs";
 
 // --- Supplier Data (mock, should match supplier page) ---
 const SUPPLIERS = [
@@ -330,8 +331,10 @@ export default function InvoiceForm() {
 
   return (
     <form className={styles.quotationForm} onSubmit={handleSubmit}>
+      <Breadcrumbs showBack items={[{ label: 'Invoice Form' }]} backIcon={<FiFile size={18}/>} />
+      
       <div className={styles.headerSection}>
-        <h2 className={styles.title}>Invoice</h2>
+        <h2 className={styles.title}>Invoice Form</h2>
         <div className={styles.typeSelector}>
           <label htmlFor="PurchaseType" className={styles.typeLabel}>Type:</label>
           <Select

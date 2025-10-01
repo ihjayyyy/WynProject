@@ -26,7 +26,15 @@ export default function SidenavLayout({ children }) {
     setExpandedParents(newExpanded);
   };
 
-
+  // Helper: for invoice landing, also match /purchase/invoice and /purchase/invoiceform
+  const isInvoiceLandingPath = (path) => {
+    const invoiceLandingPaths = [
+      '/purchase/invoicelanding',
+      '/purchase/invoice',
+      '/purchase/invoiceform',
+    ];
+    return invoiceLandingPaths.includes(path?.toLowerCase());
+  };
 
   // Helper: for order landing, also match /purchase/order and /purchase/orderform
   const isOrderLandingPath = (path) => {
@@ -58,6 +66,10 @@ export default function SidenavLayout({ children }) {
         if (child.href === '/purchase/orderlanding') {
           return isOrderLandingPath(pathname);
         }
+        // Special case for Invoice
+        if (child.href === '/purchase/invoicelanding') {
+          return isInvoiceLandingPath(pathname);
+        }
         // Special case for Quotation
         if (child.href === '/purchase/quotationlanding') {
           return isQuotationLandingPath(pathname);
@@ -76,6 +88,10 @@ export default function SidenavLayout({ children }) {
     // Special case for Quotation
     if (child.href === '/purchase/quotationlanding') {
       return isQuotationLandingPath(pathname);
+    }
+    // Special case for Invoice
+    if (child.href === '/purchase/invoicelanding') {
+      return isInvoiceLandingPath(pathname);
     }
     return pathname?.toLowerCase() === child.href.toLowerCase();
   };
