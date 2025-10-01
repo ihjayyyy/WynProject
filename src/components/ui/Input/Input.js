@@ -1,14 +1,23 @@
-import React from "react";
-import styles from "./Input.module.scss";
+import React from 'react';
+import styles from './Input.module.scss';
 
-export default function Input({ label, id, type = "text", value, onChange, icon, multiline = false, rows = 3, ...props }) {
+export default function Input({
+  label,
+  id,
+  type = 'text',
+  value,
+  onChange,
+  icon,
+  multiline = false,
+  rows = 3,
+  ...props
+}) {
+  const today = new Date().toISOString().split('T')[0];
   return (
     <div className={styles.field}>
       {label && <label htmlFor={id}>{label}</label>}
       <div className={styles.inputIconWrap}>
-        {icon && (
-          <span className={styles.inputIcon}>{icon}</span>
-        )}
+        {icon && <span className={styles.inputIcon}>{icon}</span>}
         {multiline ? (
           <textarea
             className={styles.input}
@@ -24,7 +33,7 @@ export default function Input({ label, id, type = "text", value, onChange, icon,
             className={styles.input}
             id={id}
             type={type}
-            value={value}
+            value={type === 'date' ? today : value}
             onChange={onChange}
             {...props}
           />
