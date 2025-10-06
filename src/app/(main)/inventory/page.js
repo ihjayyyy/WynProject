@@ -1,76 +1,23 @@
 'use client';
 
-import React, { useState, useMemo, useCallback } from 'react';
+import React, { useState, useMemo, useCallback, useEffect } from 'react';
 
 import ThreeColumnLayout from '../../../components/ThreeColumnLayout/ThreeColumnLayout';
 import { StatsCard, SearchBar } from '../../../components';
 import DataTable from '../../../components/ui/DataTable/DataTable';
 import styles from './page.module.scss';
 import RightPanel from '../../../components/RightPanel/RightPanel';
+import { InventoryService } from '@/services/inventoryService';
 
 // --- Data & Configs ---
-const INVENTORIES = [
-  {
-    CompanyGuid: 'COMP001',
-    CompanyCode: 'ACME',
-    Name: 'Acme Corporation',
-    Logo: '',
-    Address: '123 Ayala Ave, Makati City',
-    Phone: '+63 2 8123 4567',
-    Fax: '+63 2 8123 4568',
-    Email: 'john.smith@acme.com',
-    Website: 'www.acme.com',
-    TaxNumber: 'TX123456',
-    ContactPerson: 'John Smith',
-    ContactNumber: '+63 917 111 2222',
-    PaymentTerms: 30,
-    Status: 'ACTIVE',
-    SupplierType: 'Local',
-  },
-  {
-    CompanyGuid: 'COMP002',
-    CompanyCode: 'GLOB',
-    Name: 'Global Supplies Ltd',
-    Logo: '',
-    Address: '456 Ortigas Ave, Pasig City',
-    Phone: '+63 2 8987 6543',
-    Fax: '+63 2 8987 6544',
-    Email: 'sarah.j@globalsupplies.com',
-    Website: 'www.globalsupplies.com',
-    TaxNumber: 'TX654321',
-    ContactPerson: 'Sarah Johnson',
-    ContactNumber: '+63 918 333 4444',
-    PaymentTerms: 45,
-    Status: 'ACTIVE',
-    SupplierType: 'International',
-  },
-  {
-    CompanyGuid: 'COMP003',
-    CompanyCode: 'TECH',
-    Name: 'Tech Solutions Inc',
-    Logo: '',
-    Address: '789 IT Park, Cebu City',
-    Phone: '+63 32 456 7890',
-    Fax: '+63 32 456 7891',
-    Email: 'mbrown@techsolutions.com',
-    Website: 'www.techsolutions.com',
-    TaxNumber: 'TX789123',
-    ContactPerson: 'Michael Brown',
-    ContactNumber: '+63 919 555 6666',
-    PaymentTerms: 60,
-    Status: 'PENDING',
-    SupplierType: 'Local',
-  },
-];
-
 const ALL_COLUMNS = [
   {
-    key: 'CompanyCode',
+    key: 'ProductCode',
     header: 'CODE',
     sortable: true,
     align: 'start',
     render: (item) => (
-      <span style={{ fontWeight: 'bold' }}>{item.CompanyCode}</span>
+      <span style={{ fontWeight: 'bold' }}>{item.ProductCode}</span>
     ),
   },
   {
@@ -79,59 +26,22 @@ const ALL_COLUMNS = [
     sortable: true,
   },
   {
-    key: 'SupplierType',
+    key: 'ProductType',
     header: 'TYPE',
     sortable: true,
-    render: (item) => <span>{item.SupplierType}</span>,
+    render: (item) => <span>{item.ProductType}</span>,
     align: 'start',
   },
   {
-    key: 'Logo',
-    header: 'LOGO',
-    render: (item) =>
-      item.Logo ? (
-        <img
-          src={item.Logo}
-          alt="logo"
-          style={{ width: 32, height: 32, display: 'block', margin: '0 auto' }}
-        />
-      ) : (
-        ''
-      ),
+    key: 'Description',
+    header: 'DESCRIPTION',
+    render: (item) => (
+      <span style={{ fontSize: '0.95em' }}>{item.Description}</span>
+    ),
     align: 'start',
     sortable: false,
   },
-  {
-    key: 'Address',
-    header: 'ADDRESS',
-    sortable: true,
-  },
-  {
-    key: 'Phone',
-    header: 'PHONE',
-    sortable: true,
-    align: 'start',
-  },
-  {
-    key: 'Fax',
-    header: 'FAX',
-    sortable: true,
-    align: 'start',
-  },
-  {
-    key: 'Email',
-    header: 'EMAIL',
-    sortable: true,
-    render: (item) => <span>{item.Email}</span>,
-  },
-  {
-    key: 'Website',
-    header: 'WEBSITE',
-    sortable: true,
-    render: (item) => (
-      <span style={{ fontSize: '0.95em' }}>{item.Website}</span>
-    ),
-  },
+  // Keep other columns minimal for product inventory mock
 ];
 
 // --- Small Components ---
@@ -163,22 +73,23 @@ function StatsSection() {
 // ...existing code...
 
 // --- Main Page ---
-export default function SupplierPage() {
+export default function InventoryPage() {
+  //service
+  // Instantiate the service once per component lifecycle
+  const inventoryService = useMemo(() => new InventoryService(), []);
+
+  const [inventories, setInventories] = useState([]);
+  const [isLoading, setIsLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [sortConfig, setSortConfig] = useState({ key: null, direction: 'asc' });
   const [selectedColumns, setSelectedColumns] = useState([
-    'CompanyCode',
+    'ProductCode',
     'Name',
-    'SupplierType',
-    'Logo',
-    'Address',
-    'Phone',
-    'Fax',
-    'Email',
-    'Website',
+    'ProductType',
+    'Description',
   ]);
-  // Add filter state
-  const [filter, setFilter] = useState({ supplierType: '' });
+  // Add filter state (filter by ProductType from mock)
+  const [filter, setFilter] = useState({ productType: '' });
   // Right panel collapsed state
   const [isRightPanelCollapsed, setIsRightPanelCollapsed] = useState(false);
 
@@ -190,14 +101,14 @@ export default function SupplierPage() {
 
   // Filter and sort inventories
   const filteredInventories = useMemo(() => {
-    let filtered = INVENTORIES;
-    if (filter.supplierType && filter.supplierType !== '') {
+    let filtered = inventories || [];
+    if (filter.productType && filter.productType !== '') {
       filtered = filtered.filter(
-        (sup) => sup.SupplierType === filter.supplierType
+        (item) => item.ProductType === filter.productType
       );
     }
     return filtered;
-  }, [filter]);
+  }, [filter, inventories]);
 
   const sortedInventories = useMemo(() => {
     if (!sortConfig.key) return filteredInventories;
@@ -216,6 +127,25 @@ export default function SupplierPage() {
     return sorted;
   }, [sortConfig, filteredInventories]);
 
+  //Fetch
+  const getAllInventories = useCallback(async () => {
+    try {
+      setIsLoading(true);
+      const data = await inventoryService.getAllInventories();
+      if (data) setInventories(data || []);
+      console.log('Fetched Inventories (raw):', data);
+    } catch (err) {
+      console.error('Error fetching inventories:', err);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [inventoryService]);
+
+  useEffect(() => {
+    // Fetch inventories using supplierService
+    getAllInventories();
+  }, [getAllInventories]);
+
   // Handlers
   const handleSort = useCallback((key) => {
     setSortConfig((prev) =>
@@ -225,12 +155,12 @@ export default function SupplierPage() {
     );
   }, []);
 
-  const handleRowClick = useCallback((supplier) => {
-    console.log('Selected supplier:', supplier);
+  const handleRowClick = useCallback((inventory) => {
+    console.log('Selected inventory:', inventory);
   }, []);
 
-  const handleActionClick = useCallback((supplier) => {
-    console.log('Action clicked for supplier:', supplier);
+  const handleActionClick = useCallback((inventory) => {
+    console.log('Action clicked for inventory:', inventory);
   }, []);
 
   const handleSearchChange = useCallback((value) => {
@@ -257,12 +187,13 @@ export default function SupplierPage() {
           filter={filter}
           onFilterChange={setFilter}
           filterConfig={{
-            label: 'Supplier Type',
-            key: 'supplierType',
+            label: 'Product Type',
+            key: 'productType',
             options: [
               { value: '', label: 'All' },
-              { value: 'Local', label: 'Local' },
-              { value: 'International', label: 'International' },
+              { value: 'Raw Material', label: 'Raw Material' },
+              { value: 'Finished Goods', label: 'Finished Goods' },
+              { value: 'Consumable', label: 'Consumable' },
             ],
           }}
         />
@@ -280,13 +211,17 @@ export default function SupplierPage() {
             width="300px"
           />
         </div>
-        <DataTable
-          data={sortedInventories}
-          columns={columns}
-          onRowClick={handleRowClick}
-          onActionClick={handleActionClick}
-          emptyMessage="No inventories found"
-        />
+        {isLoading ? (
+          <div style={{ padding: 20 }}>Loading inventories...</div>
+        ) : (
+          <DataTable
+            data={sortedInventories}
+            columns={columns}
+            onRowClick={handleRowClick}
+            onActionClick={handleActionClick}
+            emptyMessage="No inventories found"
+          />
+        )}
       </div>
     </ThreeColumnLayout>
   );
