@@ -11,7 +11,8 @@ import {
   FiTruck, // Added for Supplier
   FiBriefcase,
   FiUserCheck,
-  FiBox, // Added for Company
+  FiBox,
+  FiPackage, // Added for Company
 } from 'react-icons/fi';
 import { GrUserSettings } from 'react-icons/gr';
 
@@ -29,6 +30,11 @@ export const sidenavItems = [
     icon: FiTruck,
     href: '/supplier',
   },
+  {
+    label: 'Inventory',
+    icon: FiPackage,
+    href: '/inventory',
+  },
 
   // Parent with children
 
@@ -42,14 +48,22 @@ export const sidenavItems = [
         icon: FiFileText,
         href: '/purchase/quotationlanding',
       },
-      { label: 'Purchase Order', icon: FiClipboard, href: '/purchase/orderlanding' },
+      {
+        label: 'Purchase Order',
+        icon: FiClipboard,
+        href: '/purchase/orderlanding',
+      },
       { label: 'Delivery', icon: FiBox, href: '/purchase/deliverylanding' },
       {
         label: 'Invoice',
         icon: FiFile,
         href: '/purchase/invoicelanding',
       },
-      { label: 'Payment', icon: FiDollarSign, href: '/purchase/paymentlanding' },
+      {
+        label: 'Payment',
+        icon: FiDollarSign,
+        href: '/purchase/paymentlanding',
+      },
     ],
   },
 
