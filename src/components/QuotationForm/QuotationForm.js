@@ -74,6 +74,7 @@ export default function QuotationForm() {
     QuotationNumber: "",
     Address: "",
     ContactNum: "",
+    ContactName: "",
     Date: "",
     Description: "",
     PurchaseType: "inventory", // "inventory" or "service"
@@ -141,6 +142,7 @@ export default function QuotationForm() {
       ...form,
       SupplierGuid: selectedGuid,
       ContactNum: selectedSupplier ? selectedSupplier.ContactNumber : '',
+      ContactName: selectedSupplier ? selectedSupplier.ContactPerson : '',
       Address: selectedSupplier ? selectedSupplier.Address : ''
     }));
   };
@@ -527,7 +529,6 @@ export default function QuotationForm() {
 
       {/* 8-column grid layout for top fields */}
       <div className={styles.topFields8Col}>
-        {/* Row 1: Supplier (span 3), Contact Number (span 2), Date (span 3, right-aligned) */}
         <div className={`${styles.gridItem8} ${styles.span3}`}>
           <label htmlFor="SupplierGuid" className={styles.inputLabel}>Supplier</label>
           <Select
@@ -546,16 +547,21 @@ export default function QuotationForm() {
             ]}
           />
         </div>
+
         <div className={`${styles.gridItem8} ${styles.span3}`}>
-          <Input label="Contact Number" placeholder="Contact Number" id="ContactNum" name="ContactNum" value={form.ContactNum} onChange={handleChange} readOnly />
+          <Input label="Address" placeholder="Address" id="Address" name="Address" value={form.Address} onChange={handleChange} readOnly />
         </div>
+
         <div className={`${styles.gridItem8} ${styles.span2} ${styles.rightAlign}`}>
           <Input label="Date" id="Date" name="Date" value={form.Date} onChange={handleChange} type="date" />
         </div>
         
         {/* Row 2: Address (span 5), Quotation Number (span 3, right-aligned) */}
-        <div className={`${styles.gridItem8} ${styles.span6}`}>
-          <Input label="Address" placeholder="Address" id="Address" name="Address" value={form.Address} onChange={handleChange} readOnly />
+        <div className={`${styles.gridItem8} ${styles.span3}`}>
+          <Input label="Contact Name" placeholder="Contact Name" id="ContactName" name="ContactName" value={form.ContactName} onChange={handleChange} readOnly />
+        </div>
+        <div className={`${styles.gridItem8} ${styles.span3}`}>
+          <Input label="Contact Number" placeholder="Contact Number" id="ContactNum" name="ContactNum" value={form.ContactNum} onChange={handleChange} readOnly />
         </div>
         <div className={`${styles.gridItem8} ${styles.span2} ${styles.rightAlign}`}>
           <Input label="Quotation Number" placeholder="Quotation Number" id="QuotationNumber" name="QuotationNumber" value={form.QuotationNumber} onChange={handleChange} />
