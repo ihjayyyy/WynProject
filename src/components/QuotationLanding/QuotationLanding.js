@@ -7,7 +7,8 @@ import RightPanel from '../RightPanel/RightPanel';
 import React, { useState, useCallback, useMemo, useEffect } from 'react';
 import QuotationService from '../../services/quotationService';
 import styles from './QuotationLanding.module.scss';
-import { StatsCard, SearchBar, DataTable } from '../../components';
+import { StatsCard, SearchBar, DataTable, StatusBadge, DropdownAction } from '../../components';
+import { FiEye, FiCheck, FiX } from 'react-icons/fi';
 
 // Data will be loaded from QuotationService
 
@@ -48,6 +49,55 @@ const ALL_COLUMNS = [
     sortable: true,
     align: 'start',
   },
+  {
+    key: 'Status',
+    header: 'STATUS',
+    sortable: true,
+    align: 'start',
+    render: (item) => <StatusBadge status={item.Status} />,
+  },
+  {
+    key: 'Actions',
+    header: '',
+    sortable: false,
+    align: 'end',
+    width: '48px',
+    render: (item) => {
+      const items = [
+        {
+          key: 'view',
+          label: 'View',
+          icon: <FiEye size={16} />,
+          onClick: (it) => handleView(it),
+        },
+        {
+          key: 'approve',
+          label: 'Approve',
+          icon: <FiCheck size={16} />,
+          onClick: (it) => handleApprove(it),
+          disabled: (it) => String(it?.Status || '').toUpperCase() === 'APPROVED',
+          hidden: (it) => {
+            const s = String(it?.Status || '').toUpperCase();
+            return s === 'APPROVED' || s === 'CANCELLED';
+          },
+        },
+        {
+          key: 'cancel',
+          label: 'Cancel',
+          icon: <FiX size={16} />,
+          destructive: true,
+          onClick: (it) => handleCancel(it),
+          disabled: (it) => String(it?.Status || '').toUpperCase() === 'CANCELLED',
+          hidden: (it) => {
+            const s = String(it?.Status || '').toUpperCase();
+            return s === 'CANCELLED';
+          },
+        },
+      ];
+
+    return <DropdownAction item={item} items={items} />;
+    },
+  },
 ];
 
 function StatsSection() {
@@ -74,6 +124,8 @@ export default function QuotationLanding() {
     'PurchaseType',
     'Date',
     'ValidUntil',
+    'Status',
+    'Actions',
   ]);
   const [filter, setFilter] = useState({ supplierType: '' });
   const [isRightPanelCollapsed, setIsRightPanelCollapsed] = useState(false);
@@ -151,6 +203,36 @@ export default function QuotationLanding() {
     console.log('Action clicked for supplier:', quotation);
   }, []);
 
+  // Action handlers used by DropdownAction
+  const handleView = useCallback(
+    (quotation) => {
+      // navigate to a quotation detail page (replace with correct route if different)
+      if (quotation?.Guid) {
+        router.push(`/purchase/quotation/${quotation.Guid}`);
+      }
+    },
+    [router]
+  );
+
+  const handleApprove = useCallback(
+    (quotation) => {
+      // optimistic local update (mock service)
+      setItems((prev) =>
+        prev.map((it) => (it.Guid === quotation.Guid ? { ...it, Status: 'Approved' } : it))
+      );
+    },
+    []
+  );
+
+  const handleCancel = useCallback(
+    (quotation) => {
+      setItems((prev) =>
+        prev.map((it) => (it.Guid === quotation.Guid ? { ...it, Status: 'Cancelled' } : it))
+      );
+    },
+    []
+  );
+
   return (
     <ThreeColumnLayout
       isRightPanelCollapsed={isRightPanelCollapsed}
@@ -198,6 +280,7 @@ export default function QuotationLanding() {
             columns={columns}
             onRowClick={handleRowClick}
             onActionClick={handleActionClick}
+            showActions={false}
             emptyMessage="No quotations found"
           />
         )}

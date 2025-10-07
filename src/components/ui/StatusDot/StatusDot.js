@@ -10,25 +10,40 @@ export default function StatusDot({
 }) {
   const getStatusColor = (status) => {
     if (color) return color;
-    
+
     switch (status?.toUpperCase()) {
-      case 'ACTIVE': return '#10b981';
-      case 'PENDING': return '#f59e0b';
-      case 'INACTIVE': return '#ef4444';
-      case 'COMPLETED': return '#10b981';
-      case 'IN_PROGRESS': return '#3b82f6';
-      case 'CANCELLED': return '#ef4444';
-      default: return '#6b7280';
+      case 'APPROVED':
+        return '#10b981'; // green
+      case 'DRAFT':
+        return '#6b7280'; // gray
+      case 'ORDERED':
+        return '#3b82f6'; // blue
+      case 'CANCELLED':
+        return '#ef4444'; // red
+      case 'PENDING':
+        return '#f59e0b'; // amber
+      default:
+        return '#6b7280';
     }
+  };
+
+  const formatLabel = (status) => {
+    if (!status) return '';
+    // show Title Case for nicer display
+    return status
+      .toString()
+      .split(/[_\s]+/) // split on underscores or spaces
+      .map((s) => s.charAt(0).toUpperCase() + s.slice(1).toLowerCase())
+      .join(' ');
   };
 
   return (
     <div className={`${styles.priority} ${className}`}>
-      <div 
+      <div
         className={styles.priorityDot}
         style={{ backgroundColor: getStatusColor(status) }}
       ></div>
-      <span>{status}</span>
+      <span>{formatLabel(status)}</span>
     </div>
   );
 }

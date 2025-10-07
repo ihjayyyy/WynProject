@@ -1,0 +1,65 @@
+
+@use '../../../styles/variables' as *;
+
+.container {
+  position: relative;
+  display: inline-block;
+}
+
+.trigger {
+  background: transparent;
+  border: none;
+  padding: 6px;
+  cursor: pointer;
+  color: $color-text-primary-light;
+}
+
+.menu {
+  /* positioned via inline fixed styles from JS (portal) */
+  background: $color-background-light;
+  border: 1px solid $color-secondary-light;
+  box-shadow: 0 6px 18px rgba(16,24,40,0.08);
+  border-radius: 8px;
+  z-index: $z-index-dropdown;
+  padding: 6px 0;
+  max-width: 260px;
+  word-wrap: break-word;
+  overflow: visible;
+}
+
+.menuItem {
+  display: flex;
+  align-items: center;
+  gap: $spacing-sm;
+  width: 100%;
+  padding: 10px 12px;
+  background: transparent;
+  border: none;
+  text-align: left;
+  cursor: pointer;
+  color: $color-text-primary-light;
+  font-weight: $font-weight-medium;
+}
+
+.openAbove {
+  /* Slight visual tweak when opening above */
+  box-shadow: 0 -6px 18px rgba(16,24,40,0.06);
+  border-radius: 8px;
+}
+
+.menuItem:hover {
+  background: $color-background-alt-light;
+}
+
+.icon {
+  opacity: 0.9;
+}
+
+.destructive {
+  color: $color-error-light;
+}
+
+.menuItem[disabled] {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
