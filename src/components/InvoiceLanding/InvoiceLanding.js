@@ -68,7 +68,7 @@ const TABLE_DATA = [
 const ALL_COLUMNS = [
   {
     key: "Guid",
-    header: "INVOICE CODE",
+    header: "CODE",
     sortable: true,
     align: "start",
     render: (item) => <span style={{ fontWeight: "bold" }}>{item.Guid}</span>,
@@ -131,7 +131,7 @@ const ALL_COLUMNS = [
   },
   {
     key: "InvoiceAmount",
-    header: "INVOICE AMOUNT",
+    header: "AMOUNT",
     sortable: true,
     render: (item) => <span>₱{item.InvoiceAmount.toLocaleString()}</span>,
     align: "end",

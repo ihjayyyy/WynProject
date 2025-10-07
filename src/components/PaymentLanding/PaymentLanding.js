@@ -84,7 +84,7 @@ const ALL_COLUMNS = [
   },
   {
     key: "TotalAmount",
-    header: "TOTAL AMOUNT",
+    header: "AMOUNT",
     sortable: true,
     render: (item) => <span>₱{item.TotalAmount.toLocaleString()}</span>,
     align: "end",
