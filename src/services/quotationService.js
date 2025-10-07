@@ -3,7 +3,7 @@ const QUOTATIONS = [
   {
     Guid: 'ID123',
     CompanyGuid: 'c0mp-0001-aaaa-bbbb-ccccdddd1111',
-    SupplierGuid: 'sup-1001-xxxx-yyyy-zzzz11112222',
+    SupplierGuid: 'COMP001',
     QuotationNumber: 'QTN-2025-0001',
     Date: '2025-10-01',
     Description: 'Haircut and grooming supplies',
@@ -18,7 +18,7 @@ const QUOTATIONS = [
   {
     Guid: 'ID456',
     CompanyGuid: 'c0mp-0001-aaaa-bbbb-ccccdddd1111',
-    SupplierGuid: 'sup-1002-aaaa-bbbb-cccc22223333',
+    SupplierGuid: 'COMP002',
     QuotationNumber: 'QTN-2025-0002',
     Date: '2025-10-01',
     Description: 'Massage',
@@ -33,7 +33,7 @@ const QUOTATIONS = [
   {
     Guid: 'ID789',
     CompanyGuid: 'c0mp-0002-eeee-ffff-gggghhhh2222',
-    SupplierGuid: 'sup-1003-pppp-qqqq-rrrr33334444',
+    SupplierGuid: 'COMP003',
     QuotationNumber: 'QTN-2025-0003',
     Date: '2025-10-01',
     Description: 'Extra Service',
