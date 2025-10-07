@@ -4,58 +4,12 @@ import { useRouter } from 'next/navigation';
 
 import ThreeColumnLayout from '../ThreeColumnLayout/ThreeColumnLayout';
 import RightPanel from '../RightPanel/RightPanel';
-import React, { useState, useCallback, useMemo } from 'react';
+import React, { useState, useCallback, useMemo, useEffect } from 'react';
+import QuotationService from '../../services/quotationService';
 import styles from './QuotationLanding.module.scss';
 import { StatsCard, SearchBar, DataTable } from '../../components';
 
-// --- Data & Configs ---
-const TABLE_DATA = [
-  {
-    Guid: 'ID123',
-    CompanyGuid: 'c0mp-0001-aaaa-bbbb-ccccdddd1111',
-    SupplierGuid: 'sup-1001-xxxx-yyyy-zzzz11112222',
-    QuotationNumber: 'QTN-2025-0001',
-    Date: '2025-10-01',
-    Description: 'Haircut and grooming supplies',
-    PurchaseType: 'Inventory',
-    ValidUntil: '2025-10-15',
-    PreparedBy: 'Juan Dela Cruz',
-    ApprovedBy: 'Maria Santos',
-    Status: 'Pending',
-    SupplierContactPerson: 'Jose Ramirez',
-    SupplierContactNumber: '+63 917 123 4567',
-  },
-  {
-    Guid: 'ID456',
-    CompanyGuid: 'c0mp-0001-aaaa-bbbb-ccccdddd1111',
-    SupplierGuid: 'sup-1002-aaaa-bbbb-cccc22223333',
-    QuotationNumber: 'QTN-2025-0002',
-    Date: '2025-10-01',
-    Description: 'Massage',
-    PurchaseType: 'Service',
-    ValidUntil: '2025-10-10',
-    PreparedBy: 'Juan Dela Cruz',
-    ApprovedBy: 'Maria Santos',
-    Status: 'Approved',
-    SupplierContactPerson: 'Ana Cruz',
-    SupplierContactNumber: '+63 918 654 3210',
-  },
-  {
-    Guid: 'ID789',
-    CompanyGuid: 'c0mp-0002-eeee-ffff-gggghhhh2222',
-    SupplierGuid: 'sup-1003-pppp-qqqq-rrrr33334444',
-    QuotationNumber: 'QTN-2025-0003',
-    Date: '2025-10-01',
-    Description: 'Extra Service',
-    PurchaseType: 'Service',
-    ValidUntil: '2025-11-01',
-    PreparedBy: 'Carlo Mendoza',
-    ApprovedBy: 'Andrea Lopez',
-    Status: 'Rejected',
-    SupplierContactPerson: 'Mark Villanueva',
-    SupplierContactNumber: '+63 920 888 7777',
-  },
-];
+// Data will be loaded from QuotationService
 
 const ALL_COLUMNS = [
   {
@@ -123,34 +77,58 @@ export default function QuotationLanding() {
   ]);
   const [filter, setFilter] = useState({ supplierType: '' });
   const [isRightPanelCollapsed, setIsRightPanelCollapsed] = useState(false);
+  const [items, setItems] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   const columns = useMemo(
     () => ALL_COLUMNS.filter((col) => selectedColumns.includes(col.key)),
     [selectedColumns]
   );
 
+  // Load data from service
+  useEffect(() => {
+    let mounted = true;
+    const svc = new QuotationService();
+    setLoading(true);
+    svc
+      .getAllQuotations()
+      .then((res) => {
+        if (!mounted) return;
+        setItems(res || []);
+        setLoading(false);
+      })
+      .catch((err) => {
+        if (!mounted) return;
+        setError(err && err.message ? err.message : String(err));
+        setLoading(false);
+      });
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
   // Filtered data based on filter and search
   const filteredData = useMemo(() => {
-    let data = TABLE_DATA;
+    let filtered = items && Array.isArray(items) ? items : [];
     // Filter by supplierType (PurchaseType)
     if (filter.supplierType) {
-      data = data.filter(
+      filtered = filtered.filter(
         (item) =>
           item.PurchaseType &&
           item.PurchaseType.toLowerCase().includes(filter.supplierType.toLowerCase())
       );
     }
-    // Filter by search term (searches in Description and QuotationNumber)
     if (searchTerm) {
       const term = searchTerm.toLowerCase();
-      data = data.filter(
+      filtered = filtered.filter(
         (item) =>
           (item.Description && item.Description.toLowerCase().includes(term)) ||
           (item.QuotationNumber && item.QuotationNumber.toLowerCase().includes(term))
       );
     }
-    return data;
-  }, [filter, searchTerm]);
+    return filtered;
+  }, [filter, searchTerm, items]);
 
   const handleSearchChange = useCallback((value) => {
     setSearchTerm(value);
@@ -210,13 +188,19 @@ export default function QuotationLanding() {
             width="300px"
           />
         </div>
-        <DataTable
-          data={filteredData}
-          columns={columns}
-          onRowClick={handleRowClick}
-          onActionClick={handleActionClick}
-          emptyMessage="No suppliers found"
-        />
+        {loading ? (
+          <div className={styles.loading}>Loading quotations...</div>
+        ) : error ? (
+          <div className={styles.error}>Error loading quotations: {error}</div>
+        ) : (
+          <DataTable
+            data={filteredData}
+            columns={columns}
+            onRowClick={handleRowClick}
+            onActionClick={handleActionClick}
+            emptyMessage="No quotations found"
+          />
+        )}
       </div>
     </ThreeColumnLayout>
   );
