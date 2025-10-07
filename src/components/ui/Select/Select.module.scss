@@ -15,28 +15,37 @@
 }
 
 
-.customSelect {
+
+/* shared control styles for both native select and searchable input */
+.controlBase {
   width: 100%;
-  padding: 0.6rem 2.5rem 0.6rem 0.875rem; /* left, right for arrow */
+  padding: 0.5rem 2.5rem 0.5rem 0.875rem;
   border: 1.5px solid #e2e8f0;
   border-radius: 0.5rem;
   background: #ffffff;
   font-size: 0.95rem;
-  font-weight: 500;
+  font-weight: 400;
   min-height: 42px;
   color: var(--color-text-primary-light, #374151);
-  cursor: pointer;
-  appearance: none;
-  transition: all 0.2s ease;
-  margin-bottom: 0;
   box-sizing: border-box;
+  transition: all 0.15s ease;
 }
 
-.customSelect:hover {
+.customSelect {
+  @extend .controlBase;
+  cursor: pointer;
+  appearance: none;
+  margin-bottom: 0;
+}
+
+.customSelect:hover,
+.searchInputWrap:hover .searchableInput {
   border-color: #cbd5e1;
 }
 
-.customSelect:focus {
+/* focus and focus-within should show the same ring for both controls */
+.customSelect:focus,
+.searchInputWrap:focus-within .searchableInput {
   outline: none;
   border-color: #3b82f6;
   box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
@@ -48,10 +57,72 @@
   right: 1rem;
   top: 50%;
   transform: translateY(-50%);
-  pointer-events: none;
+  pointer-events: auto;
   color: #64748b;
   transition: transform 0.2s ease;
   display: flex;
   align-items: center;
   height: 100%;
+}
+
+.selectArrow.open {
+  transform: translateY(-50%) rotate(180deg);
+}
+
+/* ensure native option text is not bold */
+.customSelect option {
+  font-weight: 400;
+}
+
+.searchableWrapper {
+  position: relative;
+}
+
+.searchInputWrap {
+  position: relative;
+}
+
+.searchableInput {
+  @extend .controlBase;
+  /* visually match the native select control exactly */
+}
+.dropdownList {
+  position: absolute;
+  z-index: 50;
+  left: 0;
+  right: 0;
+  margin-top: 0.5rem;
+  background: #fff;
+  border: 1px solid #e6edf3;
+  border-radius: 0.5rem;
+  box-shadow: 0 8px 24px rgba(16,24,40,0.08);
+  list-style: none;
+  padding: 0.25rem 0;
+  max-height: 220px;
+  overflow: auto;
+}
+
+/* styles applied when dropdown is rendered in a portal */
+.dropdownList[style] {
+  box-sizing: border-box;
+}
+
+.dropdownItem {
+  padding: 0.5rem 0.875rem;
+  cursor: pointer;
+  font-weight: 400;
+  color: var(--color-text-primary-light, #374151);
+}
+
+.dropdownItem:hover {
+  background: #f8fafc;
+}
+
+.selectedItem {
+  background: #eef2ff;
+}
+
+.noResults {
+  padding: 0.5rem 0.875rem;
+  color: #64748b;
 }

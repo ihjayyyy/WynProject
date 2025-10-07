@@ -1,60 +1,6 @@
 'use client';
 
-import React, { useState } from "react";
-// --- Supplier Data (mock, should match supplier page) ---
-const SUPPLIERS = [
-  {
-    CompanyGuid: 'COMP001',
-    CompanyCode: 'ACME',
-    Name: 'Acme Corporation',
-    Logo: '',
-    Address: '123 Ayala Ave, Makati City',
-    Phone: '+63 2 8123 4567',
-    Fax: '+63 2 8123 4568',
-    Email: 'john.smith@acme.com',
-    Website: 'www.acme.com',
-    TaxNumber: 'TX123456',
-    ContactPerson: 'John Smith',
-    ContactNumber: '+63 917 111 2222',
-    PaymentTerms: 30,
-    Status: 'ACTIVE',
-    SupplierType: 'Local'
-  },
-  {
-    CompanyGuid: 'COMP002',
-    CompanyCode: 'GLOB',
-    Name: 'Global Supplies Ltd',
-    Logo: '',
-    Address: '456 Ortigas Ave, Pasig City',
-    Phone: '+63 2 8987 6543',
-    Fax: '+63 2 8987 6544',
-    Email: 'sarah.j@globalsupplies.com',
-    Website: 'www.globalsupplies.com',
-    TaxNumber: 'TX654321',
-    ContactPerson: 'Sarah Johnson',
-    ContactNumber: '+63 918 333 4444',
-    PaymentTerms: 45,
-    Status: 'ACTIVE',
-    SupplierType: 'International'
-  },
-  {
-    CompanyGuid: 'COMP003',
-    CompanyCode: 'TECH',
-    Name: 'Tech Solutions Inc',
-    Logo: '',
-    Address: '789 IT Park, Cebu City',
-    Phone: '+63 32 456 7890',
-    Fax: '+63 32 456 7891',
-    Email: 'mbrown@techsolutions.com',
-    Website: 'www.techsolutions.com',
-    TaxNumber: 'TX789123',
-    ContactPerson: 'Michael Brown',
-    ContactNumber: '+63 919 555 6666',
-    PaymentTerms: 60,
-    Status: 'PENDING',
-    SupplierType: 'Local'
-  }
-];
+import React, { useState, useEffect } from "react";
 import styles from "./QuotationForm.module.scss";
 import Input from "../ui/Input/Input";
 import DataTable from "../ui/DataTable/DataTable";
@@ -62,53 +8,21 @@ import Button from "../ui/Button/Button";
 import { FiFileText, FiPlus, FiTrash2 } from "react-icons/fi";
 import Select from "../ui/Select/Select";
 
-// Mock product catalog - in real app this would come from API
-const productCatalog = [
-  {
-    ProductGuid: "P001",
-    Description: "Premium Widget A",
-    UnitPrice: 150.00
-  },
-  {
-    ProductGuid: "P002", 
-    Description: "Standard Widget B",
-    UnitPrice: 85.50
-  },
-  {
-    ProductGuid: "P003",
-    Description: "Deluxe Widget C", 
-    UnitPrice: 220.75
-  },
-  {
-    ProductGuid: "P004",
-    Description: "Basic Widget D",
-    UnitPrice: 45.25
-  },
-  {
-    ProductGuid: "P005",
-    Description: "Professional Service Package",
-    UnitPrice: 500.00
-  }
-];
+import { InventoryService } from "../../services/inventoryService";
+import { ServiceService } from "../../services/serviceService";
+import SupplierService from "../../services/supplierService";
 
-// Mock service catalog - in real app this would come from API
-const serviceCatalog = [
-  {
-    ServiceGuid: "S001",
-    Description: "Consultation Service",
-    Amount: 250.00
-  },
-  {
-    ServiceGuid: "S002",
-    Description: "Installation Service",
-    Amount: 400.00
-  },
-  {
-    ServiceGuid: "S003",
-    Description: "Maintenance Package",
-    Amount: 150.00
-  }
-];
+import Breadcrumbs from '../ui/Breadcrumbs/Breadcrumbs';
+
+// Supplier service instance
+const supplierService = new SupplierService();
+
+// Catalogs will be loaded from services (mocked in-memory services)
+// They are mapped to the shape expected by the UI (ProductGuid/ServiceGuid etc.)
+
+// Create service instances (lightweight, in-memory mocks)
+const inventoryService = new InventoryService();
+const serviceService = new ServiceService();
 
 const initialProductItems = [
   {
@@ -146,14 +60,15 @@ const initialBlankServiceRow = {
   Description: '',
   Amount: 0,
 };
-
-
-import Breadcrumbs from '../ui/Breadcrumbs/Breadcrumbs';
-
 export default function QuotationForm() {
+  // Grouped state hooks
   const [quotationType, setQuotationType] = useState("inventory");
   const [productItems, setProductItems] = useState(initialProductItems);
   const [serviceItems, setServiceItems] = useState(initialServiceItems);
+  const [productCatalog, setProductCatalog] = useState([]);
+  const [serviceCatalog, setServiceCatalog] = useState([]);
+  const [suppliers, setSuppliers] = useState([]);
+
   const [form, setForm] = useState({
     SupplierGuid: "",
     QuotationNumber: "",
@@ -164,20 +79,64 @@ export default function QuotationForm() {
     PurchaseType: "inventory", // "inventory" or "service"
     PreparedBy: "",
     ApprovedBy: "",
-    // ValidUntil: "",
-    // Status: "draft",
   });
 
+  const [blankServiceRow, setBlankServiceRow] = useState(initialBlankServiceRow);
 
-  // Handle change for all fields except Supplier
+  const [blankRowData, setBlankRowData] = useState({
+    ProductGuid: '',
+    Description: '',
+    UnitPrice: 0,
+    Quantity: 1,
+    TotalPrice: 0,
+    Discount: 0
+  });
+
+  // Load catalogs on mount
+  useEffect(() => {
+    let mounted = true;
+
+    const load = async () => {
+      try {
+        const inv = await inventoryService.getAllInventories();
+        const mappedProducts = inv.map(item => ({
+          ProductGuid: item.Guid || item.ProductCode,
+          Description: item.Name || item.Description || item.ProductCode,
+          UnitPrice: item.UnitPrice || 0
+        }));
+        const sv = await serviceService.getAllServices();
+        const mappedServices = sv.map(s => ({
+          ServiceGuid: s.Guid || s.ServiceCode,
+          Description: s.Name || s.Description || s.ServiceCode,
+          Amount: s.Amount || 0
+        }));
+        if (mounted) {
+          setProductCatalog(mappedProducts);
+          setServiceCatalog(mappedServices);
+          try {
+            const s = await supplierService.getAllSuppliers();
+            if (mounted) setSuppliers(s);
+          } catch (e) {
+            console.error('Failed to load suppliers', e);
+          }
+        }
+      } catch (err) {
+        console.error('Failed to load catalogs', err);
+      }
+    };
+
+    load();
+    return () => { mounted = false; };
+  }, []);
+
+  // Handlers and helpers
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value });
   };
 
-  // Handle supplier dropdown change
   const handleSupplierChange = (e) => {
     const selectedGuid = e.target.value;
-    const selectedSupplier = SUPPLIERS.find(s => s.CompanyGuid === selectedGuid);
+    const selectedSupplier = suppliers.find(s => s.CompanyGuid === selectedGuid);
     setForm(form => ({
       ...form,
       SupplierGuid: selectedGuid,
@@ -191,10 +150,6 @@ export default function QuotationForm() {
     setForm({ ...form, PurchaseType: e.target.value });
   };
 
-  // State for blank service row
-  const [blankServiceRow, setBlankServiceRow] = useState(initialBlankServiceRow);
-
-  // Handle blank service row changes
   const handleBlankServiceChange = (e) => {
     const { name, value } = e.target;
     setBlankServiceRow((prev) => ({
@@ -203,7 +158,6 @@ export default function QuotationForm() {
     }));
   };
 
-  // Handle service selection in blank row
   const handleServiceSelect = (serviceGuid) => {
     if (!serviceGuid) {
       setBlankServiceRow(initialBlankServiceRow);
@@ -219,7 +173,6 @@ export default function QuotationForm() {
     }
   };
 
-  // Add blank service row to service items
   const handleAddBlankServiceRow = () => {
     if (blankServiceRow.Description && blankServiceRow.Amount > 0) {
       setServiceItems([...serviceItems, { id: Date.now(), ...blankServiceRow }]);
@@ -227,29 +180,16 @@ export default function QuotationForm() {
     }
   };
 
-  // Remove service item
   const handleRemoveServiceItem = (itemId) => {
     setServiceItems(items => items.filter(item => item.id !== itemId));
   };
 
-  // State for the blank row being edited
-  const [blankRowData, setBlankRowData] = useState({
-    ProductGuid: '',
-    Description: '',
-    UnitPrice: 0,
-    Quantity: 1,
-    TotalPrice: 0,
-    Discount: 0
-  });
-
-  // Calculate total price based on quantity, unit price, and discount
   const calculateTotalPrice = (unitPrice, quantity, discount = 0) => {
     const subtotal = unitPrice * quantity;
     const discountAmount = subtotal * (discount / 100);
     return subtotal - discountAmount;
   };
 
-  // Handle product selection in the blank row
   const handleProductSelect = (productGuid) => {
     if (!productGuid) {
       setBlankRowData({
@@ -276,7 +216,6 @@ export default function QuotationForm() {
     }
   };
 
-  // Handle blank row field changes
   const handleBlankRowQuantityChange = (newQuantity) => {
     const quantity = Math.max(1, Number(newQuantity) || 1);
     const totalPrice = calculateTotalPrice(blankRowData.UnitPrice, quantity, blankRowData.Discount);
@@ -297,7 +236,6 @@ export default function QuotationForm() {
     });
   };
 
-  // Add the blank row item to the list
   const handleAddBlankRowItem = () => {
     if (blankRowData.ProductGuid) {
       const newItem = {
@@ -305,7 +243,6 @@ export default function QuotationForm() {
         ...blankRowData
       };
       setProductItems([...productItems, newItem]);
-      // Reset blank row
       setBlankRowData({
         ProductGuid: '',
         Description: '',
@@ -317,24 +254,19 @@ export default function QuotationForm() {
     }
   };
 
-  // Remove product item
   const handleRemoveItem = (itemId) => {
     setProductItems(items => items.filter(item => item.id !== itemId));
   };
 
   const items = quotationType === "inventory" ? productItems : serviceItems;
 
-  // Helper to format numbers to 2 decimal places
   const formatNumber = (value) => Number(value).toFixed(2);
 
-  // Create the blank row for adding new products
   const createBlankProductRow = () => {
     const availableProducts = productCatalog.filter(
       product => !productItems.find(item => item.ProductGuid === product.ProductGuid)
     );
-    if (availableProducts.length === 0) {
-      return null; // No more products to add
-    }
+    if (availableProducts.length === 0) return null;
     return {
       id: 'blank',
       ...blankRowData,
@@ -343,7 +275,6 @@ export default function QuotationForm() {
     };
   };
 
-  // Dynamically set columns based on type
   const columns = quotationType === "inventory"
     ? [
         { 
@@ -362,6 +293,8 @@ export default function QuotationForm() {
                       label: `${p.ProductGuid} - ${p.Description}`
                     }))
                   ]}
+                  searchable
+                  placeholder="Search product..."
                 />
               );
             }
@@ -396,7 +329,6 @@ export default function QuotationForm() {
                 />
               );
             }
-            // Existing items show quantity as read-only
             return (
               <span className={styles.rightAlignNum}>{row.Quantity}</span>
             );
@@ -419,7 +351,6 @@ export default function QuotationForm() {
                 />
               );
             }
-            // Existing items show discount as read-only
             return (
               <span className={styles.rightAlignNum}>{formatNumber(row.Discount)}%</span>
             );
@@ -468,6 +399,8 @@ export default function QuotationForm() {
             <Select
               value={row.ServiceGuid}
               onChange={(e) => handleServiceSelect(e.target.value)}
+              searchable
+              placeholder="Search service..."
               options={[
                 { value: '', label: 'Select Service...' },
                 ...serviceCatalog.map(s => ({
@@ -539,7 +472,6 @@ export default function QuotationForm() {
         }
       ];
 
-  // Table footer for total (for both inventory and service)
   let tableFooter = null;
   if (quotationType === "inventory") {
     tableFooter = (
@@ -565,14 +497,11 @@ export default function QuotationForm() {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    // Log the form data and items
     console.log({
       ...form,
       items: quotationType === "inventory" ? productItems : serviceItems,
     });
   };
-
-
 
   return (
     <form className={styles.quotationForm} onSubmit={handleSubmit}>
@@ -606,12 +535,14 @@ export default function QuotationForm() {
             name="SupplierGuid"
             value={form.SupplierGuid}
             onChange={handleSupplierChange}
+            searchable
+            placeholder="Search supplier..."
             options={[
               { value: '', label: 'Select Supplier...' },
-              ...SUPPLIERS.map(s => ({
-                value: s.CompanyGuid,
-                label: `${s.CompanyCode} - ${s.Name}`
-              }))
+              ...suppliers.map(s => ({
+                  value: s.CompanyGuid,
+                  label: `${s.CompanyCode} - ${s.Name}`
+                }))
             ]}
           />
         </div>
