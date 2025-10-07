@@ -1,4 +1,6 @@
 
+@use '../../../styles/variables' as *;
+
 .selectWrapper {
   position: relative;
   min-width: 140px;
@@ -8,25 +10,23 @@
 }
 
 .label {
-  font-weight: 500;
-  margin-bottom: 8px;
+  font-weight: $font-weight-medium;
+  margin-bottom: $spacing-sm;
   display: block;
-  color: var(--color-text-secondary-light, #6b7280);
+  color: $color-text-secondary-light;
 }
-
-
 
 /* shared control styles for both native select and searchable input */
 .controlBase {
   width: 100%;
   padding: 0.5rem 2.5rem 0.5rem 0.875rem;
-  border: 1.5px solid #e2e8f0;
-  border-radius: 0.5rem;
-  background: #ffffff;
-  font-size: 0.95rem;
-  font-weight: 400;
+  border: 1.5px solid $color-secondary-light;
+  border-radius: $border-radius-md;
+  background: $color-background-light;
+  font-size: $font-size-md;
+  font-weight: $font-weight-normal;
   min-height: 42px;
-  color: var(--color-text-primary-light, #374151);
+  color: $color-text-primary-light;
   box-sizing: border-box;
   transition: all 0.15s ease;
 }
@@ -40,17 +40,16 @@
 
 .customSelect:hover,
 .searchInputWrap:hover .searchableInput {
-  border-color: #cbd5e1;
+  border-color: $color-secondary-dark;
 }
 
 /* focus and focus-within should show the same ring for both controls */
 .customSelect:focus,
 .searchInputWrap:focus-within .searchableInput {
   outline: none;
-  border-color: #3b82f6;
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+  border-color: $color-accent-light;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.08);
 }
-
 
 .selectArrow {
   position: absolute;
@@ -58,7 +57,7 @@
   top: 50%;
   transform: translateY(-50%);
   pointer-events: auto;
-  color: #64748b;
+  color: $color-secondary-dark;
   transition: transform 0.2s ease;
   display: flex;
   align-items: center;
@@ -71,7 +70,7 @@
 
 /* ensure native option text is not bold */
 .customSelect option {
-  font-weight: 400;
+  font-weight: $font-weight-normal;
 }
 
 .searchableWrapper {
@@ -86,16 +85,17 @@
   @extend .controlBase;
   /* visually match the native select control exactly */
 }
+
 .dropdownList {
   position: absolute;
-  z-index: 50;
+  z-index: $z-index-dropdown;
   left: 0;
   right: 0;
   margin-top: 0.5rem;
-  background: #fff;
-  border: 1px solid #e6edf3;
-  border-radius: 0.5rem;
-  box-shadow: 0 8px 24px rgba(16,24,40,0.08);
+  background: $color-background-light;
+  border: 1px solid $color-background-alt-light;
+  border-radius: $border-radius-md;
+  box-shadow: $shadow-lg;
   list-style: none;
   padding: 0.25rem 0;
   max-height: 220px;
@@ -110,19 +110,20 @@
 .dropdownItem {
   padding: 0.5rem 0.875rem;
   cursor: pointer;
-  font-weight: 400;
-  color: var(--color-text-primary-light, #374151);
+  font-weight: $font-weight-normal;
+  color: $color-text-primary-light;
 }
 
 .dropdownItem:hover {
-  background: #f8fafc;
+  background: $color-background-alt-light;
 }
 
 .selectedItem {
-  background: #eef2ff;
+  background: rgba(238, 242, 255, 0.6);
 }
 
 .noResults {
   padding: 0.5rem 0.875rem;
-  color: #64748b;
+  color: $color-secondary-dark;
 }
+ 
