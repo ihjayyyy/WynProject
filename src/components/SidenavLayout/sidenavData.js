@@ -12,7 +12,9 @@ import {
   FiBriefcase,
   FiUserCheck,
   FiBox,
-  FiPackage, // Added for Company
+  FiPackage,
+  FiCheckSquare,
+  // Added for Company
 } from 'react-icons/fi';
 import { GrUserSettings } from 'react-icons/gr';
 
@@ -34,6 +36,11 @@ export const sidenavItems = [
     label: 'Inventory',
     icon: FiPackage,
     href: '/inventory',
+  },
+  {
+    label: 'Service',
+    icon: FiCheckSquare,
+    href: '/service',
   },
 
   // Parent with children

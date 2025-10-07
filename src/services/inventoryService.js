@@ -1,4 +1,4 @@
-// supplierService.js
+//MOCK DATA
 const INVENTORIES = [
   {
     Guid: 'INV1',
