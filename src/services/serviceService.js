@@ -9,6 +9,7 @@ const SERVICES = [
     Name: 'Air Conditioning Repair',
     UnitOfMeasureGuid: 'uuuuu001-uuuu-uuuu-uuuu-uuuuuuuuuuuu',
     Description: 'Comprehensive air conditioning system repair and cleaning',
+  Price: 1500.0,
   },
   {
     Guid: 'SRV2',
@@ -20,6 +21,7 @@ const SERVICES = [
     UnitOfMeasureGuid: 'uuuuu002-uuuu-uuuu-uuuu-uuuuuuuuuuuu',
     Description:
       'Professional installation of CCTV cameras and monitoring systems',
+  Price: 800.0,
   },
   {
     Guid: 'SRV3',
@@ -30,6 +32,7 @@ const SERVICES = [
     Name: 'Office Deep Cleaning',
     UnitOfMeasureGuid: 'uuuuu003-uuuu-uuuu-uuuu-uuuuuuuuuuuu',
     Description: 'Full-scale cleaning service for office spaces and equipment',
+  Price: 450.0,
   },
 ];
 

@@ -11,56 +11,32 @@ import Select from "../ui/Select/Select";
 import { InventoryService } from "../../services/inventoryService";
 import { ServiceService } from "../../services/serviceService";
 import SupplierService from "../../services/supplierService";
-
+import QuotationService from '../../services/quotationService';
+import { useSearchParams, useRouter } from 'next/navigation';
 import Breadcrumbs from '../ui/Breadcrumbs/Breadcrumbs';
+import StatusBadge from '../ui/StatusBadge/StatusBadge';
 
 // Supplier service instance
 const supplierService = new SupplierService();
 
-// Catalogs will be loaded from services (mocked in-memory services)
-// They are mapped to the shape expected by the UI (ProductGuid/ServiceGuid etc.)
-
-// Create service instances (lightweight, in-memory mocks)
 const inventoryService = new InventoryService();
 const serviceService = new ServiceService();
 
-const initialProductItems = [
-  {
-    id: 1,
-    ProductGuid: "P001",
-    Description: "Premium Widget A",
-    UnitPrice: 150.00,
-    Quantity: 2,
-    TotalPrice: 300.00,
-    Discount: 0
-  },
-  {
-    id: 2,
-    ProductGuid: "P002",
-    Description: "Standard Widget B", 
-    UnitPrice: 85.50,
-    Quantity: 1,
-    TotalPrice: 85.50,
-    Discount: 0
-  }
-];
+const initialProductItems = [];
 
-const initialServiceItems = [
-  {
-    id: 1,
-    ServiceGuid: "S001",
-    Description: "Consultation Service",
-    Amount: 250.00,
-  },
-];
+const initialServiceItems = [];
 
 // State for the blank row for service
 const initialBlankServiceRow = {
   ServiceGuid: '',
   Description: '',
-  Amount: 0,
+  Price: 0,
 };
 export default function QuotationForm() {
+  const searchParams = useSearchParams();
+  const viewId = searchParams ? searchParams.get('id') : null;
+  const isView = !!viewId;
+  const router = useRouter();
   // Grouped state hooks
   const [quotationType, setQuotationType] = useState("inventory");
   const [productItems, setProductItems] = useState(initialProductItems);
@@ -76,11 +52,17 @@ export default function QuotationForm() {
     ContactNum: "",
     ContactName: "",
     Date: "",
+    ValidUntil: "",
     Description: "",
     PurchaseType: "inventory", // "inventory" or "service"
     PreparedBy: "",
     ApprovedBy: "",
+    Guid: '',
+    Status: ''
   });
+
+  // Editable when not viewing, or when viewing and the quotation is in Draft status
+  const isEditable = !isView || (String(form.Status || '').trim().toUpperCase() === 'DRAFT');
 
   const [blankServiceRow, setBlankServiceRow] = useState(initialBlankServiceRow);
 
@@ -109,7 +91,7 @@ export default function QuotationForm() {
         const mappedServices = sv.map(s => ({
           ServiceGuid: s.Guid || s.ServiceCode,
           Description: s.Name || s.Description || s.ServiceCode,
-          Amount: s.Amount || 0
+          Price: s.Price || s.Amount || 0
         }));
         if (mounted) {
           setProductCatalog(mappedProducts);
@@ -127,12 +109,148 @@ export default function QuotationForm() {
     };
 
     load();
+    // If creating a new quotation (not view), initialize Date and ValidUntil to sensible defaults
+    if (mounted && !isView) {
+      try {
+        const today = new Date();
+        const todayStr = today.toISOString().slice(0, 10);
+        const d = new Date(today);
+        d.setMonth(d.getMonth() + 1);
+        const validStr = d.toISOString().slice(0, 10);
+        setForm((prev) => ({ ...prev, Date: prev.Date || todayStr, ValidUntil: prev.ValidUntil || validStr }));
+      } catch (e) {
+        // ignore
+      }
+    }
     return () => { mounted = false; };
-  }, []);
+  }, [isView]);
+
+  // When mounted, if an ?id= query param exists, load quotation and its details
+  useEffect(() => {
+    let mounted = true;
+    const id = searchParams ? searchParams.get('id') : null;
+    if (!id) return;
+
+    const loadQuotation = async () => {
+      const quotationService = new QuotationService();
+      try {
+        const q = await quotationService.getQuotationById(id);
+        if (!mounted || !q) return;
+
+        // Map quotation fields into form
+        setForm((prev) => ({
+          ...prev,
+          SupplierGuid: q.SupplierGuid || prev.SupplierGuid,
+          QuotationNumber: q.QuotationNumber || prev.QuotationNumber,
+          Address: prev.Address,
+          ContactNum: q.SupplierContactNumber || prev.ContactNum,
+          ContactName: q.SupplierContactPerson || prev.ContactName,
+          Date: q.Date || prev.Date,
+          ValidUntil: q.ValidUntil || prev.ValidUntil,
+          Description: q.Description || prev.Description,
+          PurchaseType: q.PurchaseType ? q.PurchaseType.toLowerCase() : prev.PurchaseType,
+          PreparedBy: q.PreparedBy || prev.PreparedBy,
+          ApprovedBy: q.ApprovedBy || prev.ApprovedBy,
+          Guid: q.Guid || prev.Guid,
+          Status: q.Status || prev.Status,
+        }));
+
+        // Try to resolve supplier details (address/contact) from cached suppliers or service
+        try {
+          const supplierGuid = q.SupplierGuid;
+          let resolvedSupplier = suppliers.find(s => s.CompanyGuid === supplierGuid);
+          if (!resolvedSupplier) {
+            // attempt to fetch single supplier if not in cache
+            resolvedSupplier = supplierGuid ? await supplierService.getSupplierById(supplierGuid) : null;
+          }
+          if (mounted && resolvedSupplier) {
+            setForm((prev) => ({
+              ...prev,
+              Address: resolvedSupplier.Address || prev.Address,
+              ContactNum: resolvedSupplier.ContactNumber || resolvedSupplier.Phone || prev.ContactNum,
+              ContactName: resolvedSupplier.ContactPerson || resolvedSupplier.ContactPerson || prev.ContactName,
+            }));
+          } else {
+            // fallback to supplier fields embedded in the quotation record
+            setForm((prev) => ({
+              ...prev,
+              Address: prev.Address,
+              ContactNum: q.SupplierContactNumber || prev.ContactNum,
+              ContactName: q.SupplierContactPerson || prev.ContactName,
+            }));
+          }
+        } catch (e) {
+          // ignore supplier resolution errors and keep existing values
+        }
+
+        // Load details with resolved Item records
+        const details = await quotationService.getDetailsWithItemsByQuotationGuid(id);
+        if (!mounted) return;
+
+        // Map details into productItems or serviceItems depending on PurchaseType
+        const purchaseType = (q.PurchaseType || '').toLowerCase();
+        if (purchaseType === 'inventory') {
+          const mapped = details.map((d) => ({
+            id: d.Guid,
+            ProductGuid: d.Item ? d.Item.Guid : d.ItemGuid,
+            Description: d.Description || (d.Item && (d.Item.Name || d.Item.Description)),
+            UnitPrice: d.UnitPrice || 0,
+            Quantity: d.Quantity || 1,
+            TotalPrice: d.TotalPrice || 0,
+            Discount: d.Discount || 0,
+          }));
+          setProductItems(mapped);
+          setQuotationType('inventory');
+          } else if (purchaseType === 'service') {
+          const mapped = details.map((d) => ({
+            id: d.Guid,
+            ServiceGuid: d.Item ? d.Item.Guid : d.ItemGuid,
+            Description: d.Description || (d.Item && (d.Item.Name || d.Item.Description)),
+            Price: d.UnitPrice || d.TotalPrice || 0,
+          }));
+          setServiceItems(mapped);
+          setQuotationType('service');
+        }
+      } catch (err) {
+        console.error('Failed to load quotation', err);
+      }
+    };
+
+    loadQuotation();
+    // subscribe to service updates so the opened quotation can reflect status changes
+    const unsubscribe = QuotationService.subscribe((all) => {
+      if (!mounted) return;
+      const found = (all || []).find((q) => q.Guid === id || q.QuotationNumber === id);
+      if (found) {
+        setForm((prev) => ({ ...prev, Status: found.Status || prev.Status, ApprovedBy: found.ApprovedBy || prev.ApprovedBy }));
+      }
+    });
+    return () => { mounted = false; try { unsubscribe && unsubscribe(); } catch (e) {} };
+  }, [searchParams, suppliers]);
 
   // Handlers and helpers
   const handleChange = (e) => {
-    setForm({ ...form, [e.target.name]: e.target.value });
+    const { name, value } = e.target;
+    // Special handling for Date: auto-set ValidUntil to one month later
+    if (name === 'Date') {
+      const prevDate = form.Date;
+      const prevValid = form.ValidUntil;
+      let newValid = prevValid;
+      try {
+        const shouldAuto = !prevValid || prevValid === prevDate;
+        if (shouldAuto && value) {
+          const base = new Date(value);
+          const d = new Date(base);
+          d.setMonth(d.getMonth() + 1);
+          newValid = d.toISOString().slice(0, 10);
+        }
+      } catch (err) {
+        // ignore
+      }
+      setForm({ ...form, Date: value, ValidUntil: newValid });
+      return;
+    }
+    setForm({ ...form, [name]: value });
   };
 
   const handleSupplierChange = (e) => {
@@ -156,11 +274,12 @@ export default function QuotationForm() {
     const { name, value } = e.target;
     setBlankServiceRow((prev) => ({
       ...prev,
-      [name]: name === 'Amount' ? Number(value) : value
+      [name]: name === 'Price' ? Number(value) : value
     }));
   };
 
-  const handleServiceSelect = (serviceGuid) => {
+  const handleServiceSelect = (serviceGuidOrEvent) => {
+    const serviceGuid = serviceGuidOrEvent && serviceGuidOrEvent.target ? serviceGuidOrEvent.target.value : serviceGuidOrEvent;
     if (!serviceGuid) {
       setBlankServiceRow(initialBlankServiceRow);
       return;
@@ -170,13 +289,13 @@ export default function QuotationForm() {
       setBlankServiceRow({
         ServiceGuid: selectedService.ServiceGuid,
         Description: selectedService.Description,
-        Amount: selectedService.Amount
+        Price: selectedService.Price
       });
     }
   };
 
   const handleAddBlankServiceRow = () => {
-    if (blankServiceRow.Description && blankServiceRow.Amount > 0) {
+    if (blankServiceRow.Description && blankServiceRow.Price > 0) {
       setServiceItems([...serviceItems, { id: Date.now(), ...blankServiceRow }]);
       setBlankServiceRow(initialBlankServiceRow);
     }
@@ -192,7 +311,8 @@ export default function QuotationForm() {
     return subtotal - discountAmount;
   };
 
-  const handleProductSelect = (productGuid) => {
+  const handleProductSelect = (productGuidOrEvent) => {
+    const productGuid = productGuidOrEvent && productGuidOrEvent.target ? productGuidOrEvent.target.value : productGuidOrEvent;
     if (!productGuid) {
       setBlankRowData({
         ProductGuid: '',
@@ -288,6 +408,7 @@ export default function QuotationForm() {
                 <Select
                   value={row.ProductGuid}
                   onChange={(e) => handleProductSelect(e.target.value)}
+                  disabled={!isEditable}
                   options={[
                     { value: "", label: "Select Product..." },
                     ...row.availableProducts.map(p => ({
@@ -326,6 +447,7 @@ export default function QuotationForm() {
                   type="number"
                   value={row.Quantity}
                   onChange={(e) => handleBlankRowQuantityChange(e.target.value)}
+                  readOnly={!isEditable}
                   min="1"
                   step="1"
                 />
@@ -347,6 +469,7 @@ export default function QuotationForm() {
                   type="number"
                   value={row.Discount}
                   onChange={(e) => handleBlankRowDiscountChange(e.target.value)}
+                  readOnly={!isEditable}
                   min="0"
                   max="100"
                   step="0.01"
@@ -369,6 +492,9 @@ export default function QuotationForm() {
           header: 'Actions',
           key: 'actions',
           render: (row) => {
+            // When not editable, hide action buttons entirely
+            if (!isEditable) return null;
+
             if (row.isBlank) {
               if (!row.ProductGuid) return '';
               return (
@@ -385,7 +511,7 @@ export default function QuotationForm() {
               <Button
                 variant="danger"
                 size="sm"
-                onClick={() => handleRemoveItem(row.id)}
+                  onClick={() => handleRemoveItem(row.id)}
                 icon={<FiTrash2 />}
                 aria-label="Remove"
               />
@@ -401,6 +527,7 @@ export default function QuotationForm() {
             <Select
               value={row.ServiceGuid}
               onChange={(e) => handleServiceSelect(e.target.value)}
+              disabled={!isEditable}
               searchable
               placeholder="Search service..."
               options={[
@@ -422,32 +549,35 @@ export default function QuotationForm() {
               value={row.Description}
               onChange={handleBlankServiceChange}
               placeholder="Service Description"
-              readOnly={!!row.ServiceGuid}
+              readOnly={!!row.ServiceGuid || !isEditable}
             />
           ) : row.Description
         },
         {
-          header: 'Amount',
-          key: 'Amount',
+          header: 'Price',
+          key: 'Price',
           render: (row) => row.isBlank ? (
             <Input
-              name="Amount"
+              name="Price"
               type="number"
-              value={row.Amount}
+              value={row.Price}
               onChange={handleBlankServiceChange}
               min="0"
               step="0.01"
               placeholder="0.00"
-              readOnly={!!row.ServiceGuid}
+              readOnly={!!row.ServiceGuid || !isEditable}
             />
           ) : (
-            <span className={styles.rightAlignNum}>{formatNumber(row.Amount)}</span>
+            <span className={styles.rightAlignNum}>{formatNumber(row.Price)}</span>
           )
         },
         {
           header: 'Actions',
           key: 'actions',
           render: (row) => {
+            // Hide actions when not editable
+            if (!isEditable) return null;
+
             if (row.isBlank) {
               if (!row.ServiceGuid && !row.Description) return '';
               return (
@@ -457,7 +587,7 @@ export default function QuotationForm() {
                   onClick={handleAddBlankServiceRow}
                   icon={<FiPlus />}
                   aria-label="Add"
-                  disabled={!row.Description || row.Amount <= 0}
+                  disabled={!row.Description || row.Price <= 0}
                 />
               );
             }
@@ -465,7 +595,7 @@ export default function QuotationForm() {
               <Button
                 variant="danger"
                 size="sm"
-                onClick={() => handleRemoveServiceItem(row.id)}
+                  onClick={() => handleRemoveServiceItem(row.id)}
                 icon={<FiTrash2 />}
                 aria-label="Remove"
               />
@@ -474,35 +604,62 @@ export default function QuotationForm() {
         }
       ];
 
+    // Hide the entire Actions column when the form is not editable
+    const visibleColumns = columns.filter((c) => {
+      if (!isEditable && String(c.key).toLowerCase() === 'actions') return false;
+      return true;
+    });
+
   let tableFooter = null;
   if (quotationType === "inventory") {
     tableFooter = (
       <tr>
-        <td colSpan={columns.length - 2} style={{ textAlign: 'right', fontWeight: 'bold' }}>Total</td>
+        <td colSpan={Math.max(0, visibleColumns.length - 1)} style={{ textAlign: 'right', fontWeight: 'bold' }}>Total</td>
         <td style={{ fontWeight: 'bold' , textAlign: 'center' }}>
           {formatNumber(items.reduce((sum, i) => sum + (Number(i.TotalPrice) || 0), 0))}
         </td>
-        <td />
       </tr>
     );
   } else if (quotationType === "service") {
     tableFooter = (
       <tr>
-        <td colSpan={columns.length - 2} style={{ textAlign: 'right', fontWeight: 'bold' }}>Total</td>
+        <td colSpan={Math.max(0, visibleColumns.length - 1)} style={{ textAlign: 'right', fontWeight: 'bold' }}>Total</td>
         <td style={{ fontWeight: 'bold', textAlign: 'center' }}>
-          {formatNumber(items.reduce((sum, i) => sum + (Number(i.Amount) || 0), 0))}
+          {formatNumber(items.reduce((sum, i) => sum + (Number(i.Price) || 0), 0))}
         </td>
-        <td />
       </tr>
     );
   }
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    console.log({
+    const payload = {
       ...form,
       items: quotationType === "inventory" ? productItems : serviceItems,
-    });
+    };
+    // Use QuotationService to create (mock) and then redirect to landing so it refreshes
+    const svc = new QuotationService();
+    if (isView && form.Guid) {
+      svc.updateQuotation(payload).then((updated) => {
+        try {
+          router.push('/purchase/quotationlanding');
+        } catch (e) {
+          console.log('Updated quotation', updated);
+        }
+      }).catch((err) => {
+        console.error('Failed to update quotation', err);
+      });
+    } else {
+      svc.createQuotation(payload).then((created) => {
+        try {
+          router.push('/purchase/quotationlanding');
+        } catch (e) {
+          console.log('Created quotation', created);
+        }
+      }).catch((err) => {
+        console.error('Failed to create quotation', err);
+      });
+    }
   };
 
   return (
@@ -510,7 +667,16 @@ export default function QuotationForm() {
       <Breadcrumbs showBack items={[{ label: 'Quotation Form' }]} backIcon={<FiFileText size={18}/>} />
 
       <div className={styles.headerSection}>
-        <h2 className={styles.title}>Quotation Form</h2>
+        {isView ? (
+          <div className={styles.viewHeader}>
+            <h2 className={styles.title}>Quotation: {form.Guid}</h2>
+            <div className={styles.viewStatus}>
+              <StatusBadge status={form.Status} />
+            </div>
+          </div>
+        ) : (
+          <h2 className={styles.title}>Quotation Form</h2>
+        )}
         <div className={styles.typeSelector}>
           <label htmlFor="PurchaseType" className={styles.typeLabel}>Type:</label>
           <Select
@@ -518,6 +684,8 @@ export default function QuotationForm() {
             name="PurchaseType"
             value={form.PurchaseType}
             onChange={handleTypeChange}
+            disabled={!isEditable}
+            title={!isEditable ? 'Quotation locked — only Draft can be edited' : undefined}
             options={[
               { value: "inventory", label: "Inventory" },
               { value: "service", label: "Service" }
@@ -536,6 +704,7 @@ export default function QuotationForm() {
             name="SupplierGuid"
             value={form.SupplierGuid}
             onChange={handleSupplierChange}
+            disabled={!isEditable}
             searchable
             placeholder="Search supplier..."
             options={[
@@ -549,22 +718,26 @@ export default function QuotationForm() {
         </div>
 
         <div className={`${styles.gridItem8} ${styles.span3}`}>
-          <Input label="Address" placeholder="Address" id="Address" name="Address" value={form.Address} onChange={handleChange} readOnly />
+          <Input label="Address" placeholder="Address" id="Address" name="Address" value={form.Address} onChange={handleChange} readOnly={!isEditable} />
         </div>
 
         <div className={`${styles.gridItem8} ${styles.span2} ${styles.rightAlign}`}>
-          <Input label="Date" id="Date" name="Date" value={form.Date} onChange={handleChange} type="date" />
+          <Input label="Date" id="Date" name="Date" value={form.Date} onChange={handleChange} type="date" readOnly={!isEditable} />
         </div>
         
         {/* Row 2: Address (span 5), Quotation Number (span 3, right-aligned) */}
         <div className={`${styles.gridItem8} ${styles.span3}`}>
-          <Input label="Contact Name" placeholder="Contact Name" id="ContactName" name="ContactName" value={form.ContactName} onChange={handleChange} readOnly />
+          <Input label="Contact Name" placeholder="Contact Name" id="ContactName" name="ContactName" value={form.ContactName} onChange={handleChange} readOnly={!isEditable} />
         </div>
         <div className={`${styles.gridItem8} ${styles.span3}`}>
-          <Input label="Contact Number" placeholder="Contact Number" id="ContactNum" name="ContactNum" value={form.ContactNum} onChange={handleChange} readOnly />
+          <Input label="Contact Number" placeholder="Contact Number" id="ContactNum" name="ContactNum" value={form.ContactNum} onChange={handleChange} readOnly={!isEditable} />
         </div>
         <div className={`${styles.gridItem8} ${styles.span2} ${styles.rightAlign}`}>
-          <Input label="Quotation Number" placeholder="Quotation Number" id="QuotationNumber" name="QuotationNumber" value={form.QuotationNumber} onChange={handleChange} />
+          <Input label="Valid Until" id="ValidUntil" name="ValidUntil" value={form.ValidUntil} onChange={handleChange} type="date" readOnly={!isEditable} />
+        </div>
+
+        <div className={`${styles.gridItem8} ${styles.span2} ${styles.rightAlign}`}>
+          <Input label="Quotation Number" placeholder="Quotation Number" id="QuotationNumber" name="QuotationNumber" value={form.QuotationNumber} onChange={handleChange} readOnly={!isEditable} />
         </div>
         
         {/* Row 3: Description full width (span 8) */}
@@ -578,6 +751,7 @@ export default function QuotationForm() {
             onChange={handleChange}
             multiline
             rows={3}
+            readOnly={!isEditable}
           />
         </div>
       </div>
@@ -585,21 +759,23 @@ export default function QuotationForm() {
       {/* Add blank row to items if needed */}
       {(() => {
         let itemsWithBlank = [...items];
-        if (quotationType === "inventory") {
-          const blankRow = createBlankProductRow();
-          if (blankRow) {
-            itemsWithBlank.push(blankRow);
+        if (isEditable) {
+          if (quotationType === "inventory") {
+            const blankRow = createBlankProductRow();
+            if (blankRow) {
+              itemsWithBlank.push(blankRow);
+            }
+          } else if (quotationType === "service") {
+            itemsWithBlank.push({
+              id: 'blank',
+              ...blankServiceRow,
+              isBlank: true
+            });
           }
-        } else if (quotationType === "service") {
-          itemsWithBlank.push({
-            id: 'blank',
-            ...blankServiceRow,
-            isBlank: true
-          });
         }
         return (
           <DataTable
-            columns={columns}
+            columns={visibleColumns}
             data={itemsWithBlank}
             showActions={false}
             footer={tableFooter}
@@ -609,10 +785,16 @@ export default function QuotationForm() {
 
       <div className={styles.bottomFields}>
         <div className={styles.leftBottomFields}>
-          <Input label="Prepared By" placeholder="Prepared By" id="PreparedBy" name="PreparedBy" value={form.PreparedBy} onChange={handleChange} />
-          <Input label="Approved By" placeholder="Approved By" id="ApprovedBy" name="ApprovedBy" value={form.ApprovedBy} onChange={handleChange} />
+          {isView && (
+            <>
+              <Input label="Prepared By" placeholder="Prepared By" id="PreparedBy" name="PreparedBy" value={form.PreparedBy} onChange={handleChange} readOnly />
+              <Input label="Approved By" placeholder="Approved By" id="ApprovedBy" name="ApprovedBy" value={form.ApprovedBy} onChange={handleChange} readOnly />
+            </>
+          )}
         </div>
-        <Button type="submit" variant="save">Save</Button>
+        {isEditable && (
+          <Button type="submit" variant="save">{isView ? 'Save changes' : 'Create'}</Button>
+        )}
       </div>
     </form>
   );

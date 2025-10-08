@@ -33,7 +33,8 @@ export default function Input({
             className={styles.input}
             id={id}
             type={type}
-            value={type === 'date' ? today : value}
+            // For date inputs, prefer the provided value; fall back to today only when value is empty
+            value={type === 'date' ? (value || today) : value}
             onChange={onChange}
             {...props}
           />

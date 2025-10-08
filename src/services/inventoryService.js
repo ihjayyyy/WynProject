@@ -9,6 +9,7 @@ const INVENTORIES = [
     Name: 'Steel Rod',
     UnitOfMeasureGuid: 'uuuuu001-uuuu-uuuu-uuuu-uuuuuuuuuuuu',
     Description: 'High strength steel rod for construction',
+    UnitPrice: 120.0,
   },
   {
     Guid: 'INV2',
@@ -19,6 +20,7 @@ const INVENTORIES = [
     Name: 'Aluminum Door',
     UnitOfMeasureGuid: 'uuuuu002-uuuu-uuuu-uuuu-uuuuuuuuuuuu',
     Description: 'Lightweight aluminum door with lockset',
+    UnitPrice: 250.0,
   },
   {
     Guid: 'INV3',
@@ -29,6 +31,7 @@ const INVENTORIES = [
     Name: 'Industrial Glue',
     UnitOfMeasureGuid: 'uuuuu003-uuuu-uuuu-uuuu-uuuuuuuuuuuu',
     Description: 'Fast-drying industrial adhesive',
+    UnitPrice: 45.0,
   },
 ];
 

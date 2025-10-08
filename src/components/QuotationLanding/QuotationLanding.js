@@ -56,48 +56,8 @@ const ALL_COLUMNS = [
     align: 'start',
     render: (item) => <StatusBadge status={item.Status} />,
   },
-  {
-    key: 'Actions',
-    header: '',
-    sortable: false,
-    align: 'end',
-    width: '48px',
-    render: (item) => {
-      const items = [
-        {
-          key: 'view',
-          label: 'View',
-          icon: <FiEye size={16} />,
-          onClick: (it) => handleView(it),
-        },
-        {
-          key: 'approve',
-          label: 'Approve',
-          icon: <FiCheck size={16} />,
-          onClick: (it) => handleApprove(it),
-          disabled: (it) => String(it?.Status || '').toUpperCase() === 'APPROVED',
-          hidden: (it) => {
-            const s = String(it?.Status || '').toUpperCase();
-            return s === 'APPROVED' || s === 'CANCELLED';
-          },
-        },
-        {
-          key: 'cancel',
-          label: 'Cancel',
-          icon: <FiX size={16} />,
-          destructive: true,
-          onClick: (it) => handleCancel(it),
-          disabled: (it) => String(it?.Status || '').toUpperCase() === 'CANCELLED',
-          hidden: (it) => {
-            const s = String(it?.Status || '').toUpperCase();
-            return s === 'CANCELLED';
-          },
-        },
-      ];
-
-    return <DropdownAction item={item} items={items} />;
-    },
-  },
+  // Actions column intentionally omitted from module-scope column list.
+  // It's created inside the component so it has access to handlers like handleView.
 ];
 
 function StatsSection() {
@@ -133,30 +93,25 @@ export default function QuotationLanding() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  const columns = useMemo(
-    () => ALL_COLUMNS.filter((col) => selectedColumns.includes(col.key)),
-    [selectedColumns]
-  );
+  // columns will be computed after handlers are defined (see below)
 
-  // Load data from service
+  // Subscribe to service so landing reflects additions/updates in real-time (mock)
   useEffect(() => {
     let mounted = true;
-    const svc = new QuotationService();
     setLoading(true);
-    svc
-      .getAllQuotations()
-      .then((res) => {
-        if (!mounted) return;
-        setItems(res || []);
-        setLoading(false);
-      })
-      .catch((err) => {
-        if (!mounted) return;
-        setError(err && err.message ? err.message : String(err));
-        setLoading(false);
-      });
+    // subscribe returns an unsubscribe function
+    const unsubscribe = QuotationService.subscribe((res) => {
+      if (!mounted) return;
+      setItems(res || []);
+      setLoading(false);
+    });
     return () => {
       mounted = false;
+      try {
+        unsubscribe && unsubscribe();
+      } catch (e) {
+        // ignore
+      }
     };
   }, []);
 
@@ -206,9 +161,9 @@ export default function QuotationLanding() {
   // Action handlers used by DropdownAction
   const handleView = useCallback(
     (quotation) => {
-      // navigate to a quotation detail page (replace with correct route if different)
+      // navigate to the quotation form and open the requested quotation for viewing/editing
       if (quotation?.Guid) {
-        router.push(`/purchase/quotation/${quotation.Guid}`);
+        router.push(`/purchase/quotationform?id=${quotation.Guid}`);
       }
     },
     [router]
@@ -216,22 +171,89 @@ export default function QuotationLanding() {
 
   const handleApprove = useCallback(
     (quotation) => {
-      // optimistic local update (mock service)
-      setItems((prev) =>
-        prev.map((it) => (it.Guid === quotation.Guid ? { ...it, Status: 'Approved' } : it))
-      );
+      // call mock service to update and notify subscribers
+      try {
+        const svc = new QuotationService();
+        svc.setQuotationStatus({ Guid: quotation.Guid, Status: 'Approved' }).catch((e) => {
+          console.error('Failed to approve quotation', e);
+        });
+      } catch (e) {
+        // fallback to optimistic local update
+        setItems((prev) =>
+          prev.map((it) => (it.Guid === quotation.Guid ? { ...it, Status: 'Approved' } : it))
+        );
+      }
     },
     []
   );
 
   const handleCancel = useCallback(
     (quotation) => {
-      setItems((prev) =>
-        prev.map((it) => (it.Guid === quotation.Guid ? { ...it, Status: 'Cancelled' } : it))
-      );
+      try {
+        const svc = new QuotationService();
+        svc.setQuotationStatus({ Guid: quotation.Guid, Status: 'Cancelled' }).catch((e) => {
+          console.error('Failed to cancel quotation', e);
+        });
+      } catch (e) {
+        setItems((prev) =>
+          prev.map((it) => (it.Guid === quotation.Guid ? { ...it, Status: 'Cancelled' } : it))
+        );
+      }
     },
     []
   );
+
+  // Compute columns after handlers are available
+  const columns = useMemo(() => {
+    const base = ALL_COLUMNS.filter((col) => selectedColumns.includes(col.key));
+    // Actions column created here so it has access to component handlers
+    if (selectedColumns.includes('Actions')) {
+      const ACTION_COLUMN = {
+        key: 'Actions',
+        header: '',
+        sortable: false,
+        align: 'end',
+        width: '48px',
+        render: (item) => {
+          const items = [
+            {
+              key: 'view',
+              label: 'View',
+              icon: <FiEye size={16} />,
+              onClick: (it) => handleView(it),
+            },
+            {
+              key: 'approve',
+              label: 'Approve',
+              icon: <FiCheck size={16} />,
+              onClick: (it) => handleApprove(it),
+              disabled: (it) => String(it?.Status || '').toUpperCase() === 'APPROVED',
+              hidden: (it) => {
+                const s = String(it?.Status || '').toUpperCase();
+                return s === 'APPROVED' || s === 'CANCELLED' || s === 'ORDERED';
+              },
+            },
+            {
+              key: 'cancel',
+              label: 'Cancel',
+              icon: <FiX size={16} />,
+              destructive: true,
+              onClick: (it) => handleCancel(it),
+              disabled: (it) => String(it?.Status || '').toUpperCase() === 'CANCELLED',
+              hidden: (it) => {
+                const s = String(it?.Status || '').toUpperCase();
+                return s === 'CANCELLED' || s === 'ORDERED';
+              },
+            },
+          ];
+
+          return <DropdownAction item={item} items={items} />;
+        },
+      };
+      return [...base, ACTION_COLUMN];
+    }
+    return base;
+  }, [selectedColumns, handleView, handleApprove, handleCancel]);
 
   return (
     <ThreeColumnLayout
