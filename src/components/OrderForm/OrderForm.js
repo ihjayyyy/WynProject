@@ -1,6 +1,8 @@
 'use client';
 
 import React, { useState } from "react";
+import { useSearchParams, useRouter } from 'next/navigation';
+import QuotationService from '../../services/quotationService';
 import Breadcrumbs from '../ui/Breadcrumbs/Breadcrumbs';
 import { FiClipboard } from 'react-icons/fi';
 import styles from "./OrderForm.module.scss";
@@ -154,6 +156,65 @@ const initialBlankServiceRow = {
 
 
 export default function OrderForm() {
+  const searchParams = useSearchParams();
+  const fromQuotation = searchParams ? searchParams.get('fromQuotation') : null;
+  const router = useRouter();
+  // If navigated from a quotation, try to prefill the order form
+  React.useEffect(() => {
+    let mounted = true;
+    if (!fromQuotation) return;
+    const load = async () => {
+      try {
+        const svc = new QuotationService();
+        const q = await svc.getQuotationById(fromQuotation);
+        if (!mounted || !q) return;
+        // Map fields from quotation to order form state
+        setForm((prev) => ({
+          ...prev,
+          SupplierGuid: q.SupplierGuid || prev.SupplierGuid,
+          QuotationNumber: q.QuotationNumber || prev.QuotationNumber,
+          Address: prev.Address,
+          ContactNum: q.SupplierContactNumber || prev.ContactNum,
+          ContactName: q.SupplierContactPerson || prev.ContactName,
+          Date: q.Date || prev.Date,
+          Description: q.Description || prev.Description,
+          PurchaseType: (q.PurchaseType || '').toLowerCase() || prev.PurchaseType,
+        }));
+
+        // Load details and map to order items
+        const details = await svc.getDetailsWithItemsByQuotationGuid(q.Guid);
+        if (!mounted || !details) return;
+        if ((q.PurchaseType || '').toLowerCase() === 'inventory') {
+          const mapped = details.map((d, idx) => ({
+            id: Date.now() + idx,
+            ProductGuid: d.Item ? d.Item.Guid : d.ItemGuid,
+            Description: d.Description || (d.Item && (d.Item.Name || d.Item.Description)),
+            UnitPrice: d.UnitPrice || 0,
+            Quantity: d.Quantity || 1,
+            TotalPrice: d.TotalPrice || 0,
+            Discount: d.Discount || 0,
+          }));
+          setProductItems(mapped);
+          setOrderType('inventory');
+        } else {
+          const mapped = details.map((d, idx) => ({
+            id: Date.now() + idx,
+            ServiceGuid: d.Item ? d.Item.Guid : d.ItemGuid,
+            Description: d.Description || (d.Item && (d.Item.Name || d.Item.Description)),
+            Amount: d.UnitPrice || d.TotalPrice || 0,
+          }));
+          setServiceItems(mapped);
+          setOrderType('service');
+        }
+      } catch (e) {
+        // ignore and proceed with blank form
+        console.error('Failed to prefill order from quotation', e);
+      }
+    };
+    load();
+    return () => { mounted = false; };
+  }, [fromQuotation]);
+
   const [orderType, setOrderType] = useState("inventory");
   const [productItems, setProductItems] = useState(initialProductItems);
   const [serviceItems, setServiceItems] = useState(initialServiceItems);
@@ -162,6 +223,7 @@ export default function OrderForm() {
     QuotationNumber: "Q-2025-0001", // Static/fixed
     PurchaseOrderNumber: "",
     Address: "",
+    ContactName: "",
     ContactNum: "",
     Date: "",
     Description: "",
@@ -187,6 +249,7 @@ export default function OrderForm() {
       ...form,
       SupplierGuid: selectedGuid,
       ContactNum: selectedSupplier ? selectedSupplier.ContactNumber : '',
+      ContactName: selectedSupplier ? selectedSupplier.ContactPerson || selectedSupplier.ContactPerson : '',
       Address: selectedSupplier ? selectedSupplier.Address : ''
     }));
   };
@@ -612,16 +675,22 @@ export default function OrderForm() {
           />
         </div>
         <div className={`${styles.gridItem8} ${styles.span3}`}>
-          <Input label="Contact Number" placeholder="Contact Number" id="ContactNum" name="ContactNum" value={form.ContactNum} onChange={handleChange} readOnly />
+          <Input label="Address" placeholder="Address" id="Address" name="Address" value={form.Address} onChange={handleChange} readOnly />
         </div>
         <div className={`${styles.gridItem8} ${styles.span2} ${styles.rightAlign}`}>
           <Input label="Date" id="Date" name="Date" value={form.Date} onChange={handleChange} type="date" />
         </div>
         
         {/* Row 2: Address (span 5), Quotation Number (span 3, right-aligned) */}
-        <div className={`${styles.gridItem8} ${styles.span6}`}>
-          <Input label="Address" placeholder="Address" id="Address" name="Address" value={form.Address} onChange={handleChange} readOnly />
+
+
+        <div className={`${styles.gridItem8} ${styles.span3}`}>
+          <Input label="Contact Name" placeholder="Contact Name" id="ContactName" name="ContactName" value={form.ContactName} onChange={handleChange} readOnly />
         </div>
+        <div className={`${styles.gridItem8} ${styles.span3}`}>
+          <Input label="Contact Number" placeholder="Contact Number" id="ContactNum" name="ContactNum" value={form.ContactNum} onChange={handleChange} readOnly />
+        </div>    
+
         <div className={`${styles.gridItem8} ${styles.span2} ${styles.rightAlign}`}>
           <Input label="Quotation Number" id="QuotationNumber" name="QuotationNumber" value={form.QuotationNumber} readOnly />
         </div>

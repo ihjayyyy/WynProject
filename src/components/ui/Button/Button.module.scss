@@ -89,6 +89,34 @@
   padding-right: $spacing-xs;
   justify-content: center;
   border: none !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  padding: $spacing-xs;
+  min-width: 32px;
+  height: 32px;
+  border-radius: $border-radius-sm;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.12s, transform 0.06s;
+
+  &:hover {
+    background: rgba(0,0,0,0.04);
+    transform: translateY(-1px);
+  }
+
+}
+
+// Ensure danger icon-only buttons remain visible on transparent backgrounds
+.iconOnly.danger,
+.danger.iconOnly {
+  background: transparent !important;
+  color: $color-error-light; // make the icon appear in error (red) color
+
+  &:hover {
+    background: rgba(220,34,34,0.06);
+    color: color.scale($color-error-light, $lightness: -10%);
+  }
 }
 
 // Size variants

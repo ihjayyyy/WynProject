@@ -39,16 +39,27 @@ function RightPanel({
   };
 
   const handleSelectAll = () => {
-    if (selectedColumns.length === allColumns.length) {
-      setSelectedColumns([]);
+    // Treat any column whose key lower-cased equals 'actions' as the action column.
+    const actionKeys = selectedColumns.filter((k) => String(k).toLowerCase() === 'actions');
+    const selectedWithoutAction = selectedColumns.filter((k) => String(k).toLowerCase() !== 'actions');
+
+    if (selectedWithoutAction.length === allColumns.length) {
+      // Deselect all but preserve action keys (actions should remain visible)
+      setSelectedColumns(actionKeys);
     } else {
-      setSelectedColumns(allColumns.map((col) => col.key));
+      // Select all available columns and preserve any action keys that existed
+      const allKeys = allColumns.map((col) => col.key);
+      const merged = Array.from(new Set([...allKeys, ...actionKeys]));
+      setSelectedColumns(merged);
     }
   };
 
-  const isAllSelected = selectedColumns.length === allColumns.length;
-  const isIndeterminate =
-    selectedColumns.length > 0 && selectedColumns.length < allColumns.length;
+  // Compute counts while excluding action column(s) from the math so the UI
+  // shows e.g. 7/7 instead of 8/7 when 'Actions' is always present in
+  // selectedColumns.
+  const selectedWithoutAction = selectedColumns.filter((k) => String(k).toLowerCase() !== 'actions');
+  const isAllSelected = selectedWithoutAction.length === allColumns.length;
+  const isIndeterminate = selectedWithoutAction.length > 0 && selectedWithoutAction.length < allColumns.length;
 
   return (
     <div className={styles.rightPanel}>
@@ -106,7 +117,7 @@ function RightPanel({
             onClick={() => setExpanded((exp) => !exp)}>
             Columns
             <span className={styles.columnCount}>
-              {selectedColumns.length}/{allColumns.length}
+              {selectedWithoutAction.length}/{allColumns.length}
             </span>
           </h3>
           <div style={{ display: 'flex', alignItems: 'center' }}>

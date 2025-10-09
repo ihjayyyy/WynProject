@@ -5,7 +5,7 @@ import styles from "./QuotationForm.module.scss";
 import Input from "../ui/Input/Input";
 import DataTable from "../ui/DataTable/DataTable";
 import Button from "../ui/Button/Button";
-import { FiFileText, FiPlus, FiTrash2 } from "react-icons/fi";
+import { FiFileText, FiPlus, FiTrash2, FiEdit, FiCheck, FiX } from "react-icons/fi";
 import Select from "../ui/Select/Select";
 
 import { InventoryService } from "../../services/inventoryService";
@@ -74,6 +74,10 @@ export default function QuotationForm() {
     TotalPrice: 0,
     Discount: 0
   });
+
+  // Inline editing state for existing rows
+  const [editingItemId, setEditingItemId] = useState(null);
+  const [editedRow, setEditedRow] = useState(null);
 
   // Load catalogs on mount
   useEffect(() => {
@@ -338,6 +342,84 @@ export default function QuotationForm() {
     }
   };
 
+  const handleBlankRowDescriptionChange = (value) => {
+    setBlankRowData((prev) => ({ ...prev, Description: value }));
+  };
+
+  const handleStartEdit = (item) => {
+    setEditingItemId(item.id);
+    setEditedRow({ ...item });
+  };
+
+  const handleEditChange = (name, value) => {
+    setEditedRow((prev) => {
+      if (!prev) return prev;
+      let next = { ...prev, [name]: value };
+
+      // If product selection changed, pull unit price and description from catalog and recalc total
+      if (name === 'ProductGuid') {
+        const selected = productCatalog.find(p => p.ProductGuid === value);
+        if (selected) {
+          next.UnitPrice = selected.UnitPrice || 0;
+          // If description was empty or previously matched product, replace it
+          next.Description = selected.Description || next.Description;
+          const qty = Number(next.Quantity || 1);
+          const disc = Number(next.Discount || 0);
+          next.TotalPrice = calculateTotalPrice(next.UnitPrice, qty, disc);
+        }
+      }
+
+      // If service selection changed, pull price and description from service catalog
+      if (name === 'ServiceGuid') {
+        const selected = serviceCatalog.find(s => s.ServiceGuid === value);
+        if (selected) {
+          next.Price = selected.Price || 0;
+          next.Description = selected.Description || next.Description;
+        }
+      }
+
+      // If quantity or discount changed for inventory, recalc total
+      if (name === 'Quantity' || name === 'Discount') {
+        const qty = Math.max(1, Number(name === 'Quantity' ? value : next.Quantity) || 1);
+        const disc = Math.max(0, Math.min(100, Number(name === 'Discount' ? value : next.Discount) || 0));
+        next.Quantity = qty;
+        next.Discount = disc;
+        const unit = Number(next.UnitPrice || 0);
+        next.TotalPrice = calculateTotalPrice(unit, qty, disc);
+      }
+
+      // If unit price edited, recalc total
+      if (name === 'UnitPrice') {
+        const unit = Number(value) || 0;
+        const qty = Math.max(1, Number(next.Quantity || 1) || 1);
+        const disc = Math.max(0, Math.min(100, Number(next.Discount || 0) || 0));
+        next.UnitPrice = unit;
+        next.TotalPrice = calculateTotalPrice(unit, qty, disc);
+      }
+
+      // If price edited for service, ensure numeric
+      if (name === 'Price') {
+        next.Price = Number(value) || 0;
+      }
+
+      return next;
+    });
+  };
+
+  const handleSaveEdit = () => {
+    if (!editedRow) return;
+    // Save the entire edited row into the appropriate list(s)
+    setProductItems((prev) => prev.map((it) => (it.id === editedRow.id ? { ...it, ...editedRow } : it)));
+    setServiceItems((prev) => prev.map((it) => (it.id === editedRow.id ? { ...it, ...editedRow } : it)));
+    setEditingItemId(null);
+    setEditedRow(null);
+  };
+
+  const handleCancelEdit = () => {
+    setEditingItemId(null);
+    setEditedRow(null);
+  };
+
   const handleBlankRowQuantityChange = (newQuantity) => {
     const quantity = Math.max(1, Number(newQuantity) || 1);
     const totalPrice = calculateTotalPrice(blankRowData.UnitPrice, quantity, blankRowData.Discount);
@@ -395,214 +477,141 @@ export default function QuotationForm() {
       isBlank: true,
       availableProducts
     };
+
   };
 
-  const columns = quotationType === "inventory"
-    ? [
-        { 
-          header: 'Product', 
-          key: 'ProductGuid',
-          render: (row) => {
-            if (row.isBlank) {
-              return (
-                <Select
-                  value={row.ProductGuid}
-                  onChange={(e) => handleProductSelect(e.target.value)}
-                  disabled={!isEditable}
-                  options={[
-                    { value: "", label: "Select Product..." },
-                    ...row.availableProducts.map(p => ({
-                      value: p.ProductGuid,
-                      label: `${p.ProductGuid} - ${p.Description}`
-                    }))
-                  ]}
-                  searchable
-                  placeholder="Search product..."
-                />
-              );
-            }
-            return row.ProductGuid;
-          }
-        },
-        { 
-          header: 'Description', 
-          key: 'Description',
-          render: (row) => row.isBlank ? row.Description : row.Description
-        },
-        {
-          header: 'Unit Price',
-          key: 'UnitPrice',
-          render: (row) => row.isBlank && !row.ProductGuid ? '' : (
-            <span className={styles.rightAlignNum}>{formatNumber(row.UnitPrice)}</span>
-          )
-        },
-        {
-          header: 'Quantity',
-          key: 'Quantity',
-          render: (row) => {
-            if (row.isBlank) {
-              if (!row.ProductGuid) return '';
-              return (
-                <Input
-                  type="number"
-                  value={row.Quantity}
-                  onChange={(e) => handleBlankRowQuantityChange(e.target.value)}
-                  readOnly={!isEditable}
-                  min="1"
-                  step="1"
-                />
-              );
-            }
-            return (
-              <span className={styles.rightAlignNum}>{row.Quantity}</span>
-            );
-          }
-        },
-        {
-          header: 'Discount (%)',
-          key: 'Discount',
-          render: (row) => {
-            if (row.isBlank) {
-              if (!row.ProductGuid) return '';
-              return (
-                <Input
-                  type="number"
-                  value={row.Discount}
-                  onChange={(e) => handleBlankRowDiscountChange(e.target.value)}
-                  readOnly={!isEditable}
-                  min="0"
-                  max="100"
-                  step="0.01"
-                />
-              );
-            }
-            return (
-              <span className={styles.rightAlignNum}>{formatNumber(row.Discount)}%</span>
-            );
-          }
-        },
-        {
-          header: 'Total Price',
-          key: 'TotalPrice',
-          render: (row) => row.isBlank && !row.ProductGuid ? '' : (
-            <span className={styles.rightAlignNum}>{formatNumber(row.TotalPrice)}</span>
-          )
-        },
-        {
-          header: 'Actions',
-          key: 'actions',
-          render: (row) => {
-            // When not editable, hide action buttons entirely
-            if (!isEditable) return null;
-
-            if (row.isBlank) {
-              if (!row.ProductGuid) return '';
-              return (
-                <Button
-                  variant="primary"
-                  size="sm"
-                  onClick={handleAddBlankRowItem}
-                  icon={<FiPlus />}
-                  aria-label="Add"
-                />
-              );
-            }
-            return (
-              <Button
-                variant="danger"
-                size="sm"
-                  onClick={() => handleRemoveItem(row.id)}
-                icon={<FiTrash2 />}
-                aria-label="Remove"
-              />
-            );
-          }
-        }
-      ]
-    : [
-        {
-          header: 'Service',
-          key: 'ServiceGuid',
-          render: (row) => row.isBlank ? (
+  const inventoryColumns = [
+    {
+      header: 'Product',
+      key: 'ProductGuid',
+      render: (row) => {
+        if (row.isBlank) {
+          return (
             <Select
-              value={row.ServiceGuid}
-              onChange={(e) => handleServiceSelect(e.target.value)}
+              value={row.ProductGuid}
+              onChange={(e) => handleProductSelect(e.target.value)}
               disabled={!isEditable}
+              options={[{ value: '', label: 'Select Product...' }, ...row.availableProducts.map(p => ({ value: p.ProductGuid, label: `${p.ProductGuid} - ${p.Description}` }))]}
               searchable
-              placeholder="Search service..."
-              options={[
-                { value: '', label: 'Select Service...' },
-                ...serviceCatalog.map(s => ({
-                  value: s.ServiceGuid,
-                  label: `${s.ServiceGuid} - ${s.Description}`
-                }))
-              ]}
+              placeholder="Search product..."
             />
-          ) : row.ServiceGuid
-        },
-        {
-          header: 'Description',
-          key: 'Description',
-          render: (row) => row.isBlank ? (
-            <Input
-              name="Description"
-              value={row.Description}
-              onChange={handleBlankServiceChange}
-              placeholder="Service Description"
-              readOnly={!!row.ServiceGuid || !isEditable}
-            />
-          ) : row.Description
-        },
-        {
-          header: 'Price',
-          key: 'Price',
-          render: (row) => row.isBlank ? (
-            <Input
-              name="Price"
-              type="number"
-              value={row.Price}
-              onChange={handleBlankServiceChange}
-              min="0"
-              step="0.01"
-              placeholder="0.00"
-              readOnly={!!row.ServiceGuid || !isEditable}
-            />
-          ) : (
-            <span className={styles.rightAlignNum}>{formatNumber(row.Price)}</span>
-          )
-        },
-        {
-          header: 'Actions',
-          key: 'actions',
-          render: (row) => {
-            // Hide actions when not editable
-            if (!isEditable) return null;
-
-            if (row.isBlank) {
-              if (!row.ServiceGuid && !row.Description) return '';
-              return (
-                <Button
-                  variant="primary"
-                  size="sm"
-                  onClick={handleAddBlankServiceRow}
-                  icon={<FiPlus />}
-                  aria-label="Add"
-                  disabled={!row.Description || row.Price <= 0}
-                />
-              );
-            }
-            return (
-              <Button
-                variant="danger"
-                size="sm"
-                  onClick={() => handleRemoveServiceItem(row.id)}
-                icon={<FiTrash2 />}
-                aria-label="Remove"
-              />
-            );
-          }
+          );
         }
-      ];
+        if (editingItemId === row.id) {
+          return (
+            <Select
+              value={editedRow ? editedRow.ProductGuid : row.ProductGuid}
+              onChange={(e) => handleEditChange('ProductGuid', e.target.value)}
+              options={[{ value: '', label: 'Select Product...' }, ...productCatalog.map(p => ({ value: p.ProductGuid, label: `${p.ProductGuid} - ${p.Description}` }))]}
+              searchable
+            />
+          );
+        }
+        return row.ProductGuid;
+      }
+    },
+    {
+      header: 'Description',
+      key: 'Description',
+      render: (row) => {
+        if (row.isBlank) return <Input value={row.Description} onChange={(e) => handleBlankRowDescriptionChange(e.target.value)} placeholder="Description" readOnly={!isEditable} />;
+        if (editingItemId === row.id) return <Input value={editedRow ? editedRow.Description : row.Description} onChange={(e) => handleEditChange('Description', e.target.value)} />;
+        return row.Description;
+      }
+    },
+    {
+      header: 'Unit Price',
+      key: 'UnitPrice',
+      render: (row) => row.isBlank && !row.ProductGuid ? '' : (editingItemId === row.id ? <Input type="number" value={editedRow ? editedRow.UnitPrice : row.UnitPrice} onChange={(e) => handleEditChange('UnitPrice', e.target.value)} min="0" step="0.01" /> : <span className={styles.rightAlignNum}>{formatNumber(row.UnitPrice)}</span>)
+    },
+    {
+      header: 'Quantity',
+      key: 'Quantity',
+      render: (row) => {
+        if (row.isBlank) {
+          if (!row.ProductGuid) return '';
+          return <Input type="number" value={row.Quantity} onChange={(e) => handleBlankRowQuantityChange(e.target.value)} readOnly={!isEditable} min="1" step="1" />;
+        }
+        return editingItemId === row.id ? <Input type="number" value={editedRow ? editedRow.Quantity : row.Quantity} onChange={(e) => handleEditChange('Quantity', e.target.value)} min="1" step="1" /> : <span className={styles.rightAlignNum}>{row.Quantity}</span>;
+      }
+    },
+    {
+      header: 'Discount (%)',
+      key: 'Discount',
+      render: (row) => {
+        if (row.isBlank) {
+          if (!row.ProductGuid) return '';
+          return <Input type="number" value={row.Discount} onChange={(e) => handleBlankRowDiscountChange(e.target.value)} readOnly={!isEditable} min="0" max="100" step="0.01" />;
+        }
+        return editingItemId === row.id ? <Input type="number" value={editedRow ? editedRow.Discount : row.Discount} onChange={(e) => handleEditChange('Discount', e.target.value)} min="0" max="100" step="0.01" /> : <span className={styles.rightAlignNum}>{formatNumber(row.Discount)}%</span>;
+      }
+    },
+    {
+      header: 'Total Price',
+      key: 'TotalPrice',
+      render: (row) => (row.isBlank && !row.ProductGuid ? '' : <span className={styles.rightAlignNum}>{formatNumber(editingItemId === row.id && editedRow ? editedRow.TotalPrice : row.TotalPrice)}</span>)
+    },
+    {
+      header: 'Actions',
+      key: 'actions',
+      render: (row) => {
+        if (!isEditable) return null;
+        if (row.isBlank) {
+          if (!row.ProductGuid) return '';
+          return <Button variant="transparent" size="sm" onClick={handleAddBlankRowItem} icon={<FiPlus />} aria-label="Add" />;
+        }
+        if (editingItemId === row.id) return (<div style={{ display: 'flex', gap: 8 }}><Button variant="transparent" size="sm" onClick={handleSaveEdit} icon={<FiCheck />} aria-label="Save" /><Button variant="danger" size="sm" onClick={handleCancelEdit} icon={<FiX />} aria-label="Cancel" /></div>);
+        return (<div style={{ display: 'flex', gap: 8 }}><Button variant="transparent" size="sm" onClick={() => handleStartEdit(row)} icon={<FiEdit />} aria-label="Edit" /><Button variant="danger" size="sm" onClick={() => handleRemoveItem(row.id)} icon={<FiTrash2 />} aria-label="Remove" /></div>);
+      }
+    }
+  ];
+
+  const serviceColumns = [
+    {
+      header: 'Service',
+      key: 'ServiceGuid',
+      render: (row) => {
+        if (row.isBlank) return <Select value={row.ServiceGuid} onChange={(e) => handleServiceSelect(e.target.value)} disabled={!isEditable} searchable placeholder="Search service..." options={[{ value: '', label: 'Select Service...' }, ...serviceCatalog.map(s => ({ value: s.ServiceGuid, label: `${s.ServiceGuid} - ${s.Description}` }))]} />;
+        if (editingItemId === row.id) return <Select value={editedRow ? editedRow.ServiceGuid : row.ServiceGuid} onChange={(e) => handleEditChange('ServiceGuid', e.target.value)} options={[{ value: '', label: 'Select Service...' }, ...serviceCatalog.map(s => ({ value: s.ServiceGuid, label: `${s.ServiceGuid} - ${s.Description}` }))]} searchable />;
+        return row.ServiceGuid;
+      }
+    },
+    {
+      header: 'Description',
+      key: 'Description',
+      render: (row) => {
+        if (row.isBlank) return <Input name="Description" value={row.Description} onChange={handleBlankServiceChange} placeholder="Service Description" readOnly={!isEditable} />;
+        if (editingItemId === row.id) return <Input value={editedRow ? editedRow.Description : row.Description} onChange={(e) => handleEditChange('Description', e.target.value)} />;
+        return row.Description;
+      }
+    },
+    {
+      header: 'Price',
+      key: 'Price',
+      render: (row) => {
+        if (row.isBlank) return <Input name="Price" type="number" value={row.Price} onChange={handleBlankServiceChange} min="0" step="0.01" placeholder="0.00" readOnly={!!row.ServiceGuid || !isEditable} />;
+        return editingItemId === row.id ? <Input type="number" value={editedRow ? editedRow.Price : row.Price} onChange={(e) => handleEditChange('Price', e.target.value)} min="0" step="0.01" /> : <span className={styles.rightAlignNum}>{formatNumber(row.Price)}</span>;
+      }
+    },
+    {
+      header: 'Actions',
+      key: 'actions',
+      render: (row) => {
+        if (!isEditable) return null;
+        if (row.isBlank) {
+          if (!row.ServiceGuid && !row.Description) return '';
+          return <Button variant="transparent" size="sm" onClick={handleAddBlankServiceRow} icon={<FiPlus />} aria-label="Add" disabled={!row.Description || row.Price <= 0} />;
+        }
+        if (editingItemId === row.id) return (<div style={{ display: 'flex', gap: 8 }}><Button variant="transparent" size="sm" onClick={handleSaveEdit} icon={<FiCheck />} aria-label="Save" /><Button variant="transparent" size="sm" onClick={handleCancelEdit} icon={<FiX />} aria-label="Cancel" /></div>);
+        return (<div style={{ display: 'flex', gap: 8 }}>
+          <Button variant="transparent" size="sm" onClick={() => handleStartEdit(row)} icon={<FiEdit />} aria-label="Edit" />
+          <Button variant="transparent" size="sm" onClick={() => handleRemoveServiceItem(row.id)} icon={<FiTrash2 />} aria-label="Remove" />
+        </div>);
+      }
+    }
+  ];
+
+  const columns = quotationType === 'inventory' ? inventoryColumns : serviceColumns;
 
     // Hide the entire Actions column when the form is not editable
     const visibleColumns = columns.filter((c) => {
@@ -792,9 +801,30 @@ export default function QuotationForm() {
             </>
           )}
         </div>
-        {isEditable && (
-          <Button type="submit" variant="save">{isView ? 'Save changes' : 'Create'}</Button>
-        )}
+        {/* Convert to Order button - visible when a quotation exists (view mode) or when the form has been created */}
+        <div className={styles.rightBottomButtons}>
+          {form.Guid && (
+            <Button
+              type="button"
+              variant="primary"
+              onClick={() => {
+                // Navigate to order form and include a query param so OrderForm can prefill
+                try {
+                  router.push(`/purchase/orderform?fromQuotation=${encodeURIComponent(form.Guid)}`);
+                } catch (e) {
+                  // Fallback: simple location change
+                  window.location.href = `/purchase/orderform?fromQuotation=${encodeURIComponent(form.Guid)}`;
+                }
+              }}
+              title="Convert this quotation into an order"
+            >
+              Convert to order
+            </Button>
+          )}
+          {isEditable && (
+            <Button type="submit" variant="save">{isView ? 'Save changes' : 'Create'}</Button>
+          )}
+        </div>
       </div>
     </form>
   );
