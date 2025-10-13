@@ -6,13 +6,19 @@ import { sidenavItems } from './sidenavData';
 import Image from 'next/image';
 import { useState } from 'react';
 import { usePathname } from 'next/navigation';
-import { FiChevronLeft, FiChevronRight, FiChevronDown, FiChevronUp } from 'react-icons/fi';
+import {
+  FiChevronLeft,
+  FiChevronRight,
+  FiChevronDown,
+  FiChevronUp,
+} from 'react-icons/fi';
 
 export default function SidenavLayout({ children }) {
   const [isCollapsed, setIsCollapsed] = useState(true);
   const [isLogoHovered, setIsLogoHovered] = useState(false);
   const [expandedParents, setExpandedParents] = useState(new Set());
   const pathname = usePathname();
+  const pathLower = pathname?.toLowerCase();
 
   const toggleSidebar = () => setIsCollapsed(!isCollapsed);
 
@@ -25,7 +31,6 @@ export default function SidenavLayout({ children }) {
     }
     setExpandedParents(newExpanded);
   };
-
 
   // Helper: for payment landing, also match /purchase/payment and /purchase/paymentform
   const isPaymentLandingPath = (path) => {
@@ -68,11 +73,17 @@ export default function SidenavLayout({ children }) {
   };
 
   const isParentActive = (item) => {
-    if (item.href && pathname?.toLowerCase() === item.href.toLowerCase()) {
+    // normalize once
+    const itemHrefLower = item.href?.toLowerCase();
+    if (
+      item.href &&
+      (pathLower === itemHrefLower ||
+        pathLower?.startsWith(itemHrefLower + '/'))
+    ) {
       return true;
     }
     if (item.children) {
-      return item.children.some(child => {
+      return item.children.some((child) => {
         // Special case for Purchase Order
         if (child.href === '/purchase/orderlanding') {
           return isOrderLandingPath(pathname);
@@ -89,7 +100,11 @@ export default function SidenavLayout({ children }) {
         if (child.href === '/purchase/quotationlanding') {
           return isQuotationLandingPath(pathname);
         }
-        return pathname?.toLowerCase() === child.href.toLowerCase();
+        // also treat child href as active when the current path is under the child's route
+        return (
+          pathLower === child.href.toLowerCase() ||
+          pathLower?.startsWith(child.href.toLowerCase() + '/')
+        );
       });
     }
     return false;
@@ -112,7 +127,11 @@ export default function SidenavLayout({ children }) {
     if (child.href === '/purchase/paymentlanding') {
       return isPaymentLandingPath(pathname);
     }
-    return pathname?.toLowerCase() === child.href.toLowerCase();
+    // Also consider child active for nested routes under the child's href
+    return (
+      pathLower === child.href.toLowerCase() ||
+      pathLower?.startsWith(child.href.toLowerCase() + '/')
+    );
   };
 
   const renderNavItem = (item) => {
@@ -124,7 +143,6 @@ export default function SidenavLayout({ children }) {
     const renderIcon = (IconComponent, size = 18) => {
       if (!IconComponent) {
         if (process.env.NODE_ENV !== 'production') {
-          // eslint-disable-next-line no-console
           console.warn(`SidenavLayout: Icon for '${item.label}' is undefined.`);
         }
         return <span style={{ width: size, display: 'inline-block' }} />;
@@ -139,10 +157,11 @@ export default function SidenavLayout({ children }) {
           <Link
             href={item.href}
             title={item.label}
-            className={`${styles.navLink} ${isActive ? styles.active : ''}`}
-          >
+            className={`${styles.navLink} ${isActive ? styles.active : ''}`}>
             {renderIcon(item.icon, 18)}
-            {!isCollapsed && <span className={styles.navLabel}>{item.label}</span>}
+            {!isCollapsed && (
+              <span className={styles.navLabel}>{item.label}</span>
+            )}
           </Link>
         </li>
       );
@@ -153,7 +172,9 @@ export default function SidenavLayout({ children }) {
       <li key={item.label} className={styles.navItem}>
         <div className={styles.parentItem}>
           <button
-            className={`${styles.navLink} ${styles.parentNavLink} ${isActive ? styles.active : ''}`}
+            className={`${styles.navLink} ${styles.parentNavLink} ${
+              isActive ? styles.active : ''
+            }`}
             onClick={() => {
               if (isCollapsed) {
                 setIsCollapsed(false);
@@ -162,14 +183,17 @@ export default function SidenavLayout({ children }) {
                 toggleParentExpansion(item.label);
               }
             }}
-            title={item.label}
-          >
+            title={item.label}>
             {renderIcon(item.icon, 18)}
             {!isCollapsed && (
               <>
                 <span className={styles.navLabel}>{item.label}</span>
                 <span className={styles.chevronIcon}>
-                  {isExpanded ? <FiChevronUp size={14} /> : <FiChevronDown size={14} />}
+                  {isExpanded ? (
+                    <FiChevronUp size={14} />
+                  ) : (
+                    <FiChevronDown size={14} />
+                  )}
                 </span>
               </>
             )}
@@ -181,8 +205,9 @@ export default function SidenavLayout({ children }) {
                   <Link
                     href={child.href}
                     title={child.label}
-                    className={`${styles.navLink} ${styles.childNavLink} ${isChildActive(child) ? styles.active : ''}`}
-                  >
+                    className={`${styles.navLink} ${styles.childNavLink} ${
+                      isChildActive(child) ? styles.active : ''
+                    }`}>
                     {renderIcon(child.icon, 16)}
                     <span className={styles.navLabel}>{child.label}</span>
                   </Link>
@@ -197,21 +222,27 @@ export default function SidenavLayout({ children }) {
 
   return (
     <div className={styles.layout}>
-      <aside className={`${styles.sidebar} ${isCollapsed ? styles.collapsed : styles.expanded}`}>
+      <aside
+        className={`${styles.sidebar} ${
+          isCollapsed ? styles.collapsed : styles.expanded
+        }`}>
         {/* Header Section - Unchanged */}
         <header className={styles.sidebarHeader}>
           <div className={styles.brandSection}>
-            <div 
-              className={`${styles.logoContainer} ${isCollapsed ? styles.collapsedLogo : ''}`}
+            <div
+              className={`${styles.logoContainer} ${
+                isCollapsed ? styles.collapsedLogo : ''
+              }`}
               onClick={() => isCollapsed && setIsCollapsed(false)}
               onMouseEnter={() => setIsLogoHovered(true)}
               onMouseLeave={() => setIsLogoHovered(false)}
-              title={isCollapsed ? "Expand sidebar" : ""}
-            >
+              title={isCollapsed ? 'Expand sidebar' : ''}>
               <Image
                 src="/ODR-Logo.png"
                 alt="ODR Logo"
-                className={`${styles.brandLogo} ${isLogoHovered && isCollapsed ? styles.logoHovered : ''}`}
+                className={`${styles.brandLogo} ${
+                  isLogoHovered && isCollapsed ? styles.logoHovered : ''
+                }`}
                 width={32}
                 height={32}
               />
@@ -233,8 +264,7 @@ export default function SidenavLayout({ children }) {
               className={styles.collapseButton}
               onClick={toggleSidebar}
               aria-label="Collapse sidebar"
-              title="Collapse sidebar"
-            >
+              title="Collapse sidebar">
               <FiChevronLeft size={16} />
             </button>
           )}
@@ -242,20 +272,18 @@ export default function SidenavLayout({ children }) {
 
         {/* Navigation Section */}
         <nav className={styles.navigation}>
-          <ul className={styles.navList}>
-            {sidenavItems.map(renderNavItem)}
-          </ul>
+          <ul className={styles.navList}>{sidenavItems.map(renderNavItem)}</ul>
         </nav>
 
         {/* Footer Section - Unchanged */}
         <footer className={styles.sidebarFooter}>
           <div className={styles.userProfile}>
-            <Image 
-              src="/ODR-Logo.png" 
-              alt="User Avatar" 
-              className={styles.userAvatar} 
-              width={28} 
-              height={28} 
+            <Image
+              src="/ODR-Logo.png"
+              alt="User Avatar"
+              className={styles.userAvatar}
+              width={28}
+              height={28}
             />
             {!isCollapsed && (
               <div className={styles.userDetails}>

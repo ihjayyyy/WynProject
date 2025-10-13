@@ -1,10 +1,12 @@
 'use client';
 import React, { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import styles from './SupplierForm.module.scss';
 import Breadcrumbs from '../ui/Breadcrumbs/Breadcrumbs';
 import { FiTruck } from 'react-icons/fi';
 import Input from '../ui/Input/Input';
 import Button from '../ui/Button/Button';
+import SupplierService from '../../services/supplierService';
 
 export default function SupplierForm() {
   const [form, setForm] = useState({
@@ -24,10 +26,19 @@ export default function SupplierForm() {
     Status: '',
     SupplierType: '',
   });
+  const router = useRouter();
+  //Service
+  const supplierService = new SupplierService();
 
   // Handlers and helpers
   const handleChange = (e) => {
-    const { name, value } = e.target;
+    const { name, value, type, files } = e.target;
+    // handle file inputs (store filename for mock service)
+    if (type === 'file') {
+      const file = files && files[0];
+      setForm({ ...form, [name]: file ? file.name : '' });
+      return;
+    }
     // // Special handling for Date: auto-set ValidUntil to one month later
     // if (name === 'Date') {
     //   const prevDate = form.Date;
@@ -49,8 +60,42 @@ export default function SupplierForm() {
     // }
     setForm({ ...form, [name]: value });
   };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    try {
+      // prepare data - ensure PaymentTerms is a number
+      const payload = { ...form };
+      if (payload.PaymentTerms)
+        payload.PaymentTerms = Number(payload.PaymentTerms);
+      const created = await supplierService.createCompany(payload);
+      // redirect to supplier list page after successful create
+      router.push('/supplier');
+      // reset form
+      setForm({
+        CompanyGuid: '',
+        CompanyCode: '',
+        Name: '',
+        Logo: '',
+        Address: '',
+        Phone: '',
+        Fax: '',
+        Email: '',
+        Website: '',
+        TaxNumber: '',
+        ContactPerson: '',
+        ContactNumber: '',
+        PaymentTerms: 0,
+        Status: '',
+        SupplierType: '',
+      });
+    } catch (err) {
+      console.error(err);
+      alert('Failed to create supplier: ' + (err.message || err));
+    }
+  };
   return (
-    <form className={styles.supplierForm}>
+    <form className={styles.supplierForm} onSubmit={handleSubmit}>
       <Breadcrumbs
         showBack
         items={[{ label: 'Supplier Form' }]}
@@ -67,8 +112,8 @@ export default function SupplierForm() {
           <Input
             label="Supplier Name"
             placeholder="Supplier Name"
-            id="SupplierName"
-            name="SupplierName"
+            id="Name"
+            name="Name"
             value={form.Name}
             onChange={handleChange}
           />
@@ -180,7 +225,7 @@ export default function SupplierForm() {
       </div>
       <div className={styles.bottomFields}>
         <div className={styles.rightBottomButtons}>
-          <Button type="button" variant="save">
+          <Button type="submit" variant="save">
             Create
           </Button>
         </div>
