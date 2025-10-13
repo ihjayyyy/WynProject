@@ -2,7 +2,7 @@
 
 import React, { useCallback } from 'react';
 import EntityForm from '@/components/EntityForm/EntityForm';
-import { FiSettings } from 'react-icons/fi';
+import { FiCheckSquare } from 'react-icons/fi';
 import { ServiceService } from '@/services/serviceService';
 
 export default function Page() {
@@ -26,7 +26,7 @@ export default function Page() {
   return (
     <EntityForm
       title="Service Form"
-      icon={<FiSettings size={18} />}
+      icon={<FiCheckSquare size={18} />}
       fields={fields}
       initialValues={{ Name: '', Description: '', ServiceCode: '', ServiceType: '', Price: 0 }}
       onSubmit={handleSubmit}
