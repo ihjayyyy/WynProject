@@ -144,6 +144,31 @@ export default function SupplierForm() {
         {/* Row 2 */}
         <div className={`${styles.gridItem8} ${styles.span3}`}>
           <Input
+            label="Email"
+            placeholder="Email"
+            id="Email"
+            name="Email"
+            value={form.Email}
+            onChange={handleChange}
+          />
+        </div>
+
+        <div
+          className={`${styles.gridItem8} ${styles.span2} ${styles.rightAlign}`}>
+          <Input
+            label="Website"
+            placeholder="Website"
+            id="Website"
+            name="Website"
+            value={form.Website}
+            onChange={handleChange}
+            type="url"
+          />
+        </div>
+
+        {/* Row 3 */}
+        <div className={`${styles.gridItem8} ${styles.span3}`}>
+          <Input
             label="Phone"
             placeholder="Phone"
             id="Phone"
@@ -166,17 +191,16 @@ export default function SupplierForm() {
 
         <div className={`${styles.gridItem8} ${styles.span2}`}>
           <Input
-            label="Website"
-            placeholder="Website"
-            id="Website"
-            name="Website"
-            value={form.Website}
+            label="Tax Number"
+            placeholder="Tax Number"
+            id="TaxNumber"
+            name="TaxNumber"
+            value={form.TaxNumber}
             onChange={handleChange}
-            type="url"
           />
         </div>
 
-        {/* Row 3 */}
+        {/* Row 4 */}
         <div className={`${styles.gridItem8} ${styles.span3}`}>
           <Input
             label="Contact Person"
@@ -195,17 +219,6 @@ export default function SupplierForm() {
             id="ContactNumber"
             name="ContactNumber"
             value={form.ContactNumber}
-            onChange={handleChange}
-          />
-        </div>
-
-        <div className={`${styles.gridItem8} ${styles.span2}`}>
-          <Input
-            label="Tax Number"
-            placeholder="Tax Number"
-            id="TaxNumber"
-            name="TaxNumber"
-            value={form.TaxNumber}
             onChange={handleChange}
           />
         </div>
