@@ -1,5 +1,6 @@
 'use client';
 
+import { useRouter } from 'next/navigation';
 import React, { useState, useMemo, useCallback, useEffect } from 'react';
 
 import ThreeColumnLayout from '../../../components/ThreeColumnLayout/ThreeColumnLayout';
@@ -164,6 +165,12 @@ export default function ServicePage() {
     setIsRightPanelCollapsed(false);
   }, []);
 
+  // router for redirecting to create new service form
+  const router = useRouter();
+  const redirectToServiceForm = useCallback(() => {
+    router.push('/service/serviceform');
+  }, [router]);
+
   return (
     <ThreeColumnLayout
       isRightPanelCollapsed={isRightPanelCollapsed}
@@ -198,6 +205,8 @@ export default function ServicePage() {
             onSearch={handleSearch}
             onFilterClick={handleFilterClick}
             width="300px"
+            showButton
+            handleOnClick={redirectToServiceForm}
           />
         </div>
         {isLoading ? (
