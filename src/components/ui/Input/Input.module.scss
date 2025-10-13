@@ -1,6 +1,5 @@
 @use '../../../styles/variables' as *;
 
-
 .field {
   display: flex;
   flex-direction: column;
@@ -13,7 +12,6 @@
   }
 }
 
-
 .input {
   flex: 1;
   border: none;
@@ -24,7 +22,6 @@
   color: $color-text-secondary-light;
   transition: color 0.2s;
 }
-
 
 .inputIconWrap {
   display: flex;
@@ -38,6 +35,60 @@
   min-height: 40px;
 }
 
+/* File input specific styles */
+.fileInputWrap {
+  display: flex;
+  align-items: center;
+  gap: $spacing-sm;
+  padding-right: $spacing-sm;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.fileButton {
+  background: transparent;
+  border: 1px solid $color-background-alt-light;
+  padding: 0;
+  width: 36px;
+  height: 36px;
+  border-radius: $border-radius-md;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: $color-text-primary-light;
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
+  background-color: transparent;
+  line-height: 0;
+}
+
+.fileButton:hover {
+  border-color: $color-accent-light;
+  background-color: rgba(59, 130, 246, 0.04);
+  color: $color-accent-light;
+}
+
+.fileName {
+  color: $color-text-secondary-light;
+  font-size: $font-size-sm;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  flex: 1 1 auto;
+  min-width: 0; /* allows truncation inside flex containers */
+  padding-left: $spacing-sm;
+}
+
+.inputFile {
+  /* visually hide the native file input but keep it accessible */
+  position: absolute;
+  opacity: 0;
+  width: 0.1px;
+  height: 0.1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
 
 .inputIcon {
   display: flex;
@@ -46,7 +97,6 @@
   color: $color-secondary-dark;
   font-size: 1.25rem;
 }
-
 
 // Placeholder color matches border color
 .input::placeholder {
@@ -73,4 +123,3 @@
   color: $color-text-secondary-light;
   cursor: not-allowed;
 }
-

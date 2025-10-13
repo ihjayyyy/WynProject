@@ -1,4 +1,5 @@
 import React from 'react';
+import { FiUpload } from 'react-icons/fi';
 import styles from './Input.module.scss';
 
 export default function Input({
@@ -13,6 +14,20 @@ export default function Input({
   ...props
 }) {
   const today = new Date().toISOString().split('T')[0];
+  const [fileName, setFileName] = React.useState('');
+  const inputRef = React.useRef(null);
+
+  const handleFileChange = (e) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) {
+      setFileName('');
+    } else if (files.length === 1) {
+      setFileName(files[0].name);
+    } else {
+      setFileName(`${files.length} files`);
+    }
+    if (onChange) onChange(e);
+  };
   return (
     <div className={styles.field}>
       {label && <label htmlFor={id}>{label}</label>}
@@ -28,13 +43,35 @@ export default function Input({
             rows={rows}
             {...props}
           />
+        ) : type === 'file' ? (
+          <div className={styles.fileInputWrap}>
+            <button
+              type="button"
+              className={styles.fileButton}
+              onClick={() => inputRef.current && inputRef.current.click()}
+              aria-label="Upload file"
+              title="Upload file">
+              <FiUpload size={18} />
+            </button>
+            <span className={styles.fileName} title={fileName}>
+              {fileName || 'No file chosen'}
+            </span>
+            <input
+              ref={inputRef}
+              className={styles.inputFile}
+              id={id}
+              type="file"
+              onChange={handleFileChange}
+              {...props}
+            />
+          </div>
         ) : (
           <input
             className={styles.input}
             id={id}
             type={type}
             // For date inputs, prefer the provided value; fall back to today only when value is empty
-            value={type === 'date' ? (value || today) : value}
+            value={type === 'date' ? value || today : value}
             onChange={onChange}
             {...props}
           />
