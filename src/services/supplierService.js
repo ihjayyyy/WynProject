@@ -67,6 +67,39 @@ class SupplierService {
     );
     return found ? { ...found } : null;
   }
+
+  async createCompany(companyData) {
+    if (!companyData || typeof companyData !== 'object') {
+      throw new Error('Invalid company data');
+    }
+
+    // Simple unique ID generator
+    const newGuid =
+      companyData.CompanyGuid ||
+      `COMP${(SUPPLIERS.length + 1).toString().padStart(3, '0')}`;
+
+    const newCompany = {
+      CompanyGuid: newGuid,
+      CompanyCode: companyData.CompanyCode || '',
+      Name: companyData.Name || '',
+      Logo: companyData.Logo || '',
+      Address: companyData.Address || '',
+      Phone: companyData.Phone || '',
+      Fax: companyData.Fax || '',
+      Email: companyData.Email || '',
+      Website: companyData.Website || '',
+      TaxNumber: companyData.TaxNumber || '',
+      ContactPerson: companyData.ContactPerson || '',
+      ContactNumber: companyData.ContactNumber || '',
+      PaymentTerms: companyData.PaymentTerms || 30,
+      Status: companyData.Status || 'ACTIVE',
+      SupplierType: companyData.SupplierType || 'Local',
+    };
+
+    SUPPLIERS.push(newCompany);
+
+    return { ...newCompany };
+  }
 }
 
 export default SupplierService;

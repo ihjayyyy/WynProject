@@ -61,3 +61,16 @@
   align-items: flex-end;
   margin-left: auto;
 }
+
+.rightAlign {
+  grid-column-start: -4; // Start from 4 columns from the end (for 3-column span)
+  grid-column-end: -1; // End at the last column
+
+  &.span2 {
+    grid-column-start: -3; // Start from 2 columns from the end
+  }
+
+  &.span3 {
+    grid-column-start: -4; // Start from 3 columns from the end
+  }
+}

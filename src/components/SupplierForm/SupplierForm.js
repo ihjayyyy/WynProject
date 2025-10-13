@@ -87,13 +87,12 @@ export default function SupplierForm() {
 
         <div className={`${styles.gridItem8} ${styles.span2}`}>
           <Input
-            label="Logo"
-            placeholder="Logo"
-            id="Logo"
-            name="Logo"
-            value={form.Logo}
+            label="Company Code"
+            placeholder="Company Code"
+            id="CompanyCode"
+            name="CompanyCode"
+            value={form.CompanyCode}
             onChange={handleChange}
-            type="file"
           />
         </div>
 
@@ -163,6 +162,19 @@ export default function SupplierForm() {
             name="TaxNumber"
             value={form.TaxNumber}
             onChange={handleChange}
+          />
+        </div>
+
+        <div
+          className={`${styles.gridItem8} ${styles.span2} ${styles.rightAlign}`}>
+          <Input
+            label="Logo"
+            placeholder="Logo"
+            id="Logo"
+            name="Logo"
+            value={form.Logo}
+            onChange={handleChange}
+            type="file"
           />
         </div>
       </div>
