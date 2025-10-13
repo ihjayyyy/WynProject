@@ -1,0 +1,63 @@
+@use '../../styles/variables' as *;
+
+.supplierForm {
+  background: #fff;
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  box-shadow: 0 2px 16px rgba(0, 0, 0, 0.08);
+}
+
+.headerSection {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin-bottom: 0.5rem;
+}
+
+.title {
+  font-size: $font-size-lg;
+  font-weight: $font-weight-bold;
+  color: var(--color-text-primary-light);
+  margin: 0;
+}
+
+.topFields8Col {
+  display: grid;
+  grid-template-columns: repeat(8, 1fr);
+  gap: 1rem 1.5rem;
+  width: 100%;
+}
+
+.gridItem8 {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.span2 {
+  grid-column: span 2;
+}
+
+.span3 {
+  grid-column: span 3;
+}
+
+.bottomFields {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: 2rem;
+  width: 100%;
+}
+
+.rightBottomButtons {
+  display: flex;
+  gap: 1.25rem;
+  align-items: flex-end;
+  margin-left: auto;
+}

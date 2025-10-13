@@ -1,5 +1,5 @@
 'use client';
-
+import { useRouter } from 'next/navigation';
 import React, { useState, useMemo, useCallback, useEffect } from 'react';
 
 import ThreeColumnLayout from '../../../components/ThreeColumnLayout/ThreeColumnLayout';
@@ -9,7 +9,6 @@ import styles from './page.module.scss';
 import RightPanel from '../../../components/RightPanel/RightPanel';
 import SupplierService from '../../../services/supplierService';
 
-
 // Data will be loaded from SupplierService
 
 const ALL_COLUMNS = [
@@ -18,56 +17,69 @@ const ALL_COLUMNS = [
     header: 'CODE',
     sortable: true,
     align: 'start',
-    render: (item) => <span style={{ fontWeight: 'bold'}}>{item.CompanyCode}</span>
+    render: (item) => (
+      <span style={{ fontWeight: 'bold' }}>{item.CompanyCode}</span>
+    ),
   },
   {
     key: 'Name',
     header: 'NAME',
-    sortable: true
+    sortable: true,
   },
   {
     key: 'SupplierType',
     header: 'TYPE',
     sortable: true,
     render: (item) => <span>{item.SupplierType}</span>,
-    align: 'start'
+    align: 'start',
   },
   {
     key: 'Logo',
     header: 'LOGO',
-    render: (item) => item.Logo ? <img src={item.Logo} alt="logo" style={{ width: 32, height: 32, display: 'block', margin: '0 auto' }} /> : '',
+    render: (item) =>
+      item.Logo ? (
+        <img
+          src={item.Logo}
+          alt="logo"
+          style={{ width: 32, height: 32, display: 'block', margin: '0 auto' }}
+        />
+      ) : (
+        ''
+      ),
     align: 'start',
-    sortable: false
+    sortable: false,
   },
   {
     key: 'Address',
     header: 'ADDRESS',
-    sortable: true
+    sortable: true,
   },
   {
     key: 'Phone',
     header: 'PHONE',
     sortable: true,
-    align: 'start'
+    align: 'start',
   },
   {
     key: 'Fax',
     header: 'FAX',
     sortable: true,
-    align: 'start'
+    align: 'start',
   },
   {
     key: 'Email',
     header: 'EMAIL',
     sortable: true,
-    render: (item) => <span>{item.Email}</span>
+    render: (item) => <span>{item.Email}</span>,
   },
   {
     key: 'Website',
     header: 'WEBSITE',
     sortable: true,
-    render: (item) => <span style={{ fontSize: '0.95em' }}>{item.Website}</span>
-  }
+    render: (item) => (
+      <span style={{ fontSize: '0.95em' }}>{item.Website}</span>
+    ),
+  },
 ];
 
 // --- Small Components ---
@@ -76,7 +88,12 @@ function StatsSection() {
     <div className={styles.statsGrid}>
       <StatsCard number="156" label="Total Suppliers" change="+8" isPositive />
       <StatsCard number="142" label="Active Suppliers" change="+5" isPositive />
-      <StatsCard number="₱2.4M" label="Total Value (YTD)" change="+12%" isPositive />
+      <StatsCard
+        number="₱2.4M"
+        label="Total Value (YTD)"
+        change="+12%"
+        isPositive
+      />
     </div>
   );
 }
@@ -86,9 +103,18 @@ function StatsSection() {
 // --- Main Page ---
 export default function SupplierPage() {
   const [searchTerm, setSearchTerm] = useState('');
+  const router = useRouter();
   const [sortConfig, setSortConfig] = useState({ key: null, direction: 'asc' });
   const [selectedColumns, setSelectedColumns] = useState([
-    'CompanyCode', 'Name', 'SupplierType', 'Logo', 'Address', 'Phone', 'Fax', 'Email', 'Website'
+    'CompanyCode',
+    'Name',
+    'SupplierType',
+    'Logo',
+    'Address',
+    'Phone',
+    'Fax',
+    'Email',
+    'Website',
   ]);
   // Add filter state
   const [filter, setFilter] = useState({ supplierType: '' });
@@ -98,9 +124,14 @@ export default function SupplierPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
+  // Function to redirect to quotation form
+  const redirectToQuotationForm = useCallback(() => {
+    router.push('/supplier/supplierform');
+  }, [router]);
+
   // Memoize columns
   const columns = useMemo(
-    () => ALL_COLUMNS.filter(col => selectedColumns.includes(col.key)),
+    () => ALL_COLUMNS.filter((col) => selectedColumns.includes(col.key)),
     [selectedColumns]
   );
 
@@ -130,7 +161,9 @@ export default function SupplierPage() {
   const filteredSuppliers = useMemo(() => {
     let filtered = items && Array.isArray(items) ? items : [];
     if (filter.supplierType && filter.supplierType !== '') {
-      filtered = filtered.filter((sup) => sup.SupplierType === filter.supplierType);
+      filtered = filtered.filter(
+        (sup) => sup.SupplierType === filter.supplierType
+      );
     }
     // basic search in Name and CompanyCode
     if (searchTerm) {
@@ -163,7 +196,7 @@ export default function SupplierPage() {
 
   // Handlers
   const handleSort = useCallback((key) => {
-    setSortConfig(prev =>
+    setSortConfig((prev) =>
       prev.key === key
         ? { key, direction: prev.direction === 'asc' ? 'desc' : 'asc' }
         : { key, direction: 'asc' }
@@ -211,8 +244,7 @@ export default function SupplierPage() {
             ],
           }}
         />
-      }
-    >
+      }>
       <div className={styles.container}>
         <StatsSection />
         <div className={styles.titleSection}>
@@ -224,6 +256,8 @@ export default function SupplierPage() {
             onSearch={handleSearch}
             onFilterClick={handleFilterClick}
             width="300px"
+            showButton
+            handleOnClick={redirectToQuotationForm}
           />
         </div>
         {loading ? (
