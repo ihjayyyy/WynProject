@@ -1,12 +1,12 @@
  'use client';
 
-import React, { useCallback } from 'react';
+import React, { useCallback, useMemo } from 'react';
 import EntityForm from '@/components/EntityForm/EntityForm';
 import { FiCheckSquare } from 'react-icons/fi';
 import { ServiceService } from '@/services/serviceService';
 
 export default function Page() {
-  const serviceService = new ServiceService();
+  const serviceService = useMemo(() => new ServiceService(), []);
 
   const fields = [
     { name: 'Name', label: 'Service Name', span: 'span3' },
@@ -17,11 +17,17 @@ export default function Page() {
   ];
 
   const handleSubmit = useCallback(async (values) => {
-    // The mock ServiceService currently doesn't implement create; if it did,
-    // you'd call it here. We'll just log for now.
-    console.log('Service create payload:', values);
-    // Example: await serviceService.createService(values);
-  }, []);
+    try {
+      // Ensure Price is numeric
+      if (values.Price) values.Price = Number(values.Price);
+      const created = await serviceService.createService(values);
+      console.log('Created service:', created);
+      return created;
+    } catch (err) {
+      console.error('Failed to create service:', err);
+      throw err;
+    }
+  }, [serviceService]);
 
   return (
     <EntityForm

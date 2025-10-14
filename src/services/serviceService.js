@@ -52,4 +52,26 @@ export class ServiceService {
     );
     return found ? { ...found } : null;
   }
+
+  // Create a new service (mock in-memory)
+  async createService(data) {
+    if (!data || typeof data !== 'object') {
+      throw new Error('Invalid service data');
+    }
+    const nextIndex = SERVICES.length + 1;
+    const newGuid = data.Guid || `SRV${nextIndex}`;
+    const newService = {
+      Guid: newGuid,
+      ServiceCategoryGuid: data.ServiceCategoryGuid || '',
+      CompanyGuid: data.CompanyGuid || '',
+      ServiceType: data.ServiceType || data.ServiceCategory || '',
+      ServiceCode: data.ServiceCode || `SV-${String(nextIndex).padStart(3, '0')}`,
+      Name: data.Name || '',
+      UnitOfMeasureGuid: data.UnitOfMeasureGuid || '',
+      Description: data.Description || '',
+      Price: typeof data.Price === 'number' ? data.Price : Number(data.Price) || 0,
+    };
+    SERVICES.push(newService);
+    return { ...newService };
+  }
 }
