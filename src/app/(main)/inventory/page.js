@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useMemo, useCallback, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 
 import ThreeColumnLayout from '../../../components/ThreeColumnLayout/ThreeColumnLayout';
 import { StatsCard, SearchBar } from '../../../components';
@@ -77,6 +78,10 @@ export default function InventoryPage() {
   //service
   // Instantiate the service once per component lifecycle
   const inventoryService = useMemo(() => new InventoryService(), []);
+  const router = useRouter();
+  const redirectToInventoryForm = useCallback(() => {
+    router.push('/inventory/inventoryform');
+  }, [router]);
 
   const [inventories, setInventories] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -208,6 +213,8 @@ export default function InventoryPage() {
             onChange={handleSearchChange}
             onSearch={handleSearch}
             onFilterClick={handleFilterClick}
+            showButton
+            handleOnClick={redirectToInventoryForm}
             width="300px"
           />
         </div>

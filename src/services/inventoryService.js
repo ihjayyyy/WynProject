@@ -51,4 +51,32 @@ export class InventoryService {
     );
     return found ? { ...found } : null;
   }
+
+  async addInventory(inventoryData) {
+    if (!inventoryData || typeof inventoryData !== 'object') {
+      throw new Error('Invalid inventory data');
+    }
+
+    // Generate new Guid (or use provided one)
+    const newGuid =
+      inventoryData.Guid ||
+      `INV${(INVENTORIES.length + 1).toString().padStart(3, '0')}`;
+
+    const newInventory = {
+      Guid: newGuid,
+      ProductCategoryGuid:
+        inventoryData.ProductCategoryGuid || 'default-category-guid',
+      CompanyGuid: inventoryData.CompanyGuid || 'default-company-guid',
+      UnitOfMeasureGuid: inventoryData.UnitOfMeasureGuid || 'default-uom-guid',
+      ProductType: inventoryData.ProductType || '',
+      ProductCode: inventoryData.ProductCode || '',
+      Name: inventoryData.Name || '',
+      Description: inventoryData.Description || '',
+      UnitPrice: inventoryData.UnitPrice || 0,
+    };
+
+    INVENTORIES.push(newInventory);
+
+    return { ...newInventory };
+  }
 }
