@@ -69,10 +69,10 @@ export default function DataTable({
         <tbody>
           {data.map((item, index) => (
             <tr 
-              key={item.id || index}
-              className={`${styles.tableRow} ${onRowClick ? styles.clickable : ''}`}
-              onClick={() => handleRowClick(item)}
-            >
+                key={item.id || index}
+                className={styles.tableRow}
+                onClick={() => handleRowClick(item)}
+              >
               {columns.map((column, colIndex) => (
                 <td 
                   key={column.key || colIndex}

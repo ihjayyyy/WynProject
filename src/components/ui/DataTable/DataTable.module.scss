@@ -82,10 +82,6 @@
 .tableRow {
   transition: background-color 0.2s ease;
 
-  &:hover {
-    background: $color-background-alt-light;
-  }
-
   &:last-child td {
     border-bottom: none;
   }

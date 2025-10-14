@@ -66,6 +66,10 @@ export default function QuotationForm() {
 
   const [blankServiceRow, setBlankServiceRow] = useState(initialBlankServiceRow);
 
+  // Control whether the blank-row select controls are visible (hidden behind a button initially)
+  const [showBlankProductSelector, setShowBlankProductSelector] = useState(false);
+  const [showBlankServiceSelector, setShowBlankServiceSelector] = useState(false);
+
   const [blankRowData, setBlankRowData] = useState({
     ProductGuid: '',
     Description: '',
@@ -272,6 +276,9 @@ export default function QuotationForm() {
   const handleTypeChange = (e) => {
     setQuotationType(e.target.value);
     setForm({ ...form, PurchaseType: e.target.value });
+    // Reset the blank selectors when switching types
+    setShowBlankProductSelector(false);
+    setShowBlankServiceSelector(false);
   };
 
   const handleBlankServiceChange = (e) => {
@@ -302,6 +309,8 @@ export default function QuotationForm() {
     if (blankServiceRow.Description && blankServiceRow.Price > 0) {
       setServiceItems([...serviceItems, { id: Date.now(), ...blankServiceRow }]);
       setBlankServiceRow(initialBlankServiceRow);
+      // hide the selector again for the next blank row
+      setShowBlankServiceSelector(false);
     }
   };
 
@@ -455,6 +464,8 @@ export default function QuotationForm() {
         TotalPrice: 0,
         Discount: 0
       });
+      // hide the selector again for the next blank row
+      setShowBlankProductSelector(false);
     }
   };
 
@@ -486,6 +497,21 @@ export default function QuotationForm() {
       key: 'ProductGuid',
       render: (row) => {
         if (row.isBlank) {
+          // show a button first; clicking reveals the product selector
+          if (!showBlankProductSelector) {
+            return (
+              <Button
+                variant="transparent"
+                size="sm"
+                onClick={() => setShowBlankProductSelector(true)}
+                icon={<FiPlus />}
+                title={isEditable ? 'Add product' : undefined}
+                disabled={!isEditable}
+              >
+                {isEditable ? 'Add Product...' : ''}
+              </Button>
+            );
+          }
           return (
             <Select
               value={row.ProductGuid}
@@ -514,7 +540,11 @@ export default function QuotationForm() {
       header: 'Description',
       key: 'Description',
       render: (row) => {
-        if (row.isBlank) return <Input value={row.Description} onChange={(e) => handleBlankRowDescriptionChange(e.target.value)} placeholder="Description" readOnly={!isEditable} />;
+        if (row.isBlank) {
+          // don't show the description input until the product selector is revealed or a product is already selected
+          if (!showBlankProductSelector && !row.ProductGuid) return '';
+          return <Input value={row.Description} onChange={(e) => handleBlankRowDescriptionChange(e.target.value)} placeholder="Description" readOnly={!isEditable} />;
+        }
         if (editingItemId === row.id) return <Input value={editedRow ? editedRow.Description : row.Description} onChange={(e) => handleEditChange('Description', e.target.value)} />;
         return row.Description;
       }
@@ -571,7 +601,32 @@ export default function QuotationForm() {
       header: 'Service',
       key: 'ServiceGuid',
       render: (row) => {
-        if (row.isBlank) return <Select value={row.ServiceGuid} onChange={(e) => handleServiceSelect(e.target.value)} disabled={!isEditable} searchable placeholder="Search service..." options={[{ value: '', label: 'Select Service...' }, ...serviceCatalog.map(s => ({ value: s.ServiceGuid, label: `${s.ServiceGuid} - ${s.Description}` }))]} />;
+        if (row.isBlank) {
+          if (!showBlankServiceSelector) {
+            return (
+              <Button
+                variant="transparent"
+                size="sm"
+                onClick={() => setShowBlankServiceSelector(true)}
+                icon={<FiPlus />}
+                title={isEditable ? 'Add service' : undefined}
+                disabled={!isEditable}
+              >
+                {isEditable ? 'Add Service...' : ''}
+              </Button>
+            );
+          }
+          return (
+            <Select
+              value={row.ServiceGuid}
+              onChange={(e) => handleServiceSelect(e.target.value)}
+              disabled={!isEditable}
+              searchable
+              placeholder="Search service..."
+              options={[{ value: '', label: 'Select Service...' }, ...serviceCatalog.map(s => ({ value: s.ServiceGuid, label: `${s.ServiceGuid} - ${s.Description}` }))]}
+            />
+          );
+        }
         if (editingItemId === row.id) return <Select value={editedRow ? editedRow.ServiceGuid : row.ServiceGuid} onChange={(e) => handleEditChange('ServiceGuid', e.target.value)} options={[{ value: '', label: 'Select Service...' }, ...serviceCatalog.map(s => ({ value: s.ServiceGuid, label: `${s.ServiceGuid} - ${s.Description}` }))]} searchable />;
         return row.ServiceGuid;
       }
@@ -580,7 +635,10 @@ export default function QuotationForm() {
       header: 'Description',
       key: 'Description',
       render: (row) => {
-        if (row.isBlank) return <Input name="Description" value={row.Description} onChange={handleBlankServiceChange} placeholder="Service Description" readOnly={!isEditable} />;
+        if (row.isBlank) {
+          if (!showBlankServiceSelector && !row.ServiceGuid && !row.Description) return '';
+          return <Input name="Description" value={row.Description} onChange={handleBlankServiceChange} placeholder="Service Description" readOnly={!isEditable} />;
+        }
         if (editingItemId === row.id) return <Input value={editedRow ? editedRow.Description : row.Description} onChange={(e) => handleEditChange('Description', e.target.value)} />;
         return row.Description;
       }
