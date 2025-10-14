@@ -6,23 +6,6 @@ import styles from './StatusBadge.module.scss';
 export default function StatusBadge({ status, className = '' }) {
   const s = status ? status.toString() : '';
 
-  const getColors = (status) => {
-    switch (status?.toUpperCase()) {
-      case 'APPROVED':
-        return { bg: '#d1fae5', color: '#065f46' };
-      case 'DRAFT':
-        return { bg: '#f3f4f6', color: '#374151' };
-      case 'ORDERED':
-        return { bg: '#dbeafe', color: '#1e3a8a' };
-      case 'CANCELLED':
-        return { bg: '#fee2e2', color: '#991b1b' };
-      case 'PENDING':
-        return { bg: '#fffbeb', color: '#92400e' };
-      default:
-        return { bg: '#f3f4f6', color: '#374151' };
-    }
-  };
-
   const formatLabel = (status) => {
     if (!status) return '';
     return status
@@ -32,13 +15,28 @@ export default function StatusBadge({ status, className = '' }) {
       .join(' ');
   };
 
-  const colors = getColors(s);
+  const pickVariant = (status) => {
+    if (!status) return styles.default;
+    switch (status.toString().toUpperCase()) {
+      case 'APPROVED':
+        return styles.approved;
+      case 'DRAFT':
+        return styles.draft;
+      case 'ORDERED':
+        return styles.ordered;
+      case 'CANCELLED':
+        return styles.cancelled;
+      case 'PENDING':
+        return styles.pending;
+      default:
+        return styles.default;
+    }
+  };
+
+  const variantClass = pickVariant(s);
 
   return (
-    <span
-      className={`${styles.badge} ${className}`}
-      style={{ backgroundColor: colors.bg, color: colors.color }}
-    >
+    <span className={`${styles.badge} ${variantClass} ${className}`.trim()}>
       {formatLabel(s)}
     </span>
   );
