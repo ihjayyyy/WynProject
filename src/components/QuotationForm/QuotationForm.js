@@ -647,7 +647,11 @@ export default function QuotationForm() {
       header: 'Price',
       key: 'Price',
       render: (row) => {
-        if (row.isBlank) return <Input name="Price" type="number" value={row.Price} onChange={handleBlankServiceChange} min="0" step="0.01" placeholder="0.00" readOnly={!!row.ServiceGuid || !isEditable} />;
+        // For the blank row, don't show the Price input until the service selector or description is visible
+        if (row.isBlank) {
+          if (!showBlankServiceSelector && !row.ServiceGuid && !row.Description) return '';
+          return <Input name="Price" type="number" value={row.Price} onChange={handleBlankServiceChange} min="0" step="0.01" placeholder="0.00" readOnly={!!row.ServiceGuid || !isEditable} />;
+        }
         return editingItemId === row.id ? <Input type="number" value={editedRow ? editedRow.Price : row.Price} onChange={(e) => handleEditChange('Price', e.target.value)} min="0" step="0.01" /> : <span className={styles.rightAlignNum}>{formatNumber(row.Price)}</span>;
       }
     },
@@ -688,14 +692,17 @@ export default function QuotationForm() {
       </tr>
     );
   } else if (quotationType === "service") {
-    tableFooter = (
-      <tr>
-        <td colSpan={Math.max(0, visibleColumns.length - 1)} style={{ textAlign: 'right', fontWeight: 'bold' }}>Total</td>
-        <td style={{ fontWeight: 'bold', textAlign: 'center' }}>
-          {formatNumber(items.reduce((sum, i) => sum + (Number(i.Price) || 0), 0))}
-        </td>
-      </tr>
-    );
+    // Only show total row when there are real service items (ignore the blank add-row)
+    if ((items || []).length > 0) {
+      tableFooter = (
+        <tr>
+          <td colSpan={Math.max(0, visibleColumns.length - 1)} style={{ textAlign: 'right', fontWeight: 'bold' }}>Total</td>
+          <td style={{ fontWeight: 'bold', textAlign: 'center' }}>
+            {formatNumber(items.reduce((sum, i) => sum + (Number(i.Price) || 0), 0))}
+          </td>
+        </tr>
+      );
+    }
   }
 
   const handleSubmit = (e) => {

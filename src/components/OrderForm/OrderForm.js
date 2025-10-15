@@ -235,6 +235,10 @@ export default function OrderForm() {
     // ValidUntil: "",
   });
 
+  // Control whether the blank-row select controls are visible (hidden behind a button initially)
+  const [showBlankProductSelector, setShowBlankProductSelector] = useState(false);
+  const [showBlankServiceSelector, setShowBlankServiceSelector] = useState(false);
+
 
   // Handle input changes (except Supplier)
   const handleChange = (e) => {
@@ -303,6 +307,9 @@ export default function OrderForm() {
   const handleTypeChange = (e) => {
     setOrderType(e.target.value);
     setForm({ ...form, PurchaseType: e.target.value });
+    // Reset the blank selectors when switching types
+    setShowBlankProductSelector(false);
+    setShowBlankServiceSelector(false);
   };
 
 
@@ -405,6 +412,11 @@ export default function OrderForm() {
           key: 'ProductGuid',
           render: (row) => {
             if (row.isBlank) {
+              if (!showBlankProductSelector) {
+                return (
+                  <Button variant="transparent" size="sm" onClick={() => setShowBlankProductSelector(true)} icon={<FiPlus />}>Add Product...</Button>
+                );
+              }
               return (
                 <Select
                   value={row.ProductGuid}
@@ -518,50 +530,72 @@ export default function OrderForm() {
         {
           header: 'Service',
           key: 'ServiceGuid',
-          render: (row) => row.isBlank ? (
-            <Select
-              value={row.ServiceGuid}
-              onChange={(e) => handleServiceSelect(e.target.value)}
-              options={[
-                { value: '', label: 'Select Service...' },
-                ...serviceCatalog.map(s => ({
-                  value: s.ServiceGuid,
-                  label: `${s.ServiceGuid} - ${s.Description}`
-                }))
-              ]}
-            />
-          ) : row.ServiceGuid
+          render: (row) => {
+            if (row.isBlank) {
+              if (!showBlankServiceSelector) {
+                return (
+                  <Button variant="transparent" size="sm" onClick={() => setShowBlankServiceSelector(true)} icon={<FiPlus />}>Add Service...</Button>
+                );
+              }
+              return (
+                <Select
+                  value={row.ServiceGuid}
+                  onChange={(e) => handleServiceSelect(e.target.value)}
+                  options={[
+                    { value: '', label: 'Select Service...' },
+                    ...serviceCatalog.map(s => ({
+                      value: s.ServiceGuid,
+                      label: `${s.ServiceGuid} - ${s.Description}`
+                    }))
+                  ]}
+                />
+              );
+            }
+            return row.ServiceGuid;
+          }
         },
         {
           header: 'Description',
           key: 'Description',
-          render: (row) => row.isBlank ? (
-            <Input
-              name="Description"
-              value={row.Description}
-              onChange={handleBlankServiceChange}
-              placeholder="Service Description"
-              readOnly={!!row.ServiceGuid}
-            />
-          ) : row.Description
+          render: (row) => {
+            if (row.isBlank) {
+              // hide description input until the selector is shown or a service/description exists
+              if (!showBlankServiceSelector && !row.ServiceGuid && !row.Description) return '';
+              return (
+                <Input
+                  name="Description"
+                  value={row.Description}
+                  onChange={handleBlankServiceChange}
+                  placeholder="Service Description"
+                  readOnly={!!row.ServiceGuid}
+                />
+              );
+            }
+            return row.Description;
+          }
         },
         {
           header: 'Amount',
           key: 'Amount',
-          render: (row) => row.isBlank ? (
-            <Input
-              name="Amount"
-              type="number"
-              value={row.Amount}
-              onChange={handleBlankServiceChange}
-              min="0"
-              step="0.01"
-              placeholder="0.00"
-              readOnly={!!row.ServiceGuid}
-            />
-          ) : (
-            <span className={styles.rightAlignNum}>{formatNumber(row.Amount)}</span>
-          )
+          render: (row) => {
+            // For the blank row, don't show the Amount input until the service selector or description is visible
+            if (row.isBlank) {
+              if (!showBlankServiceSelector && !row.ServiceGuid && !row.Description) return '';
+              return (
+                <Input
+                  name="Amount"
+                  type="number"
+                  value={row.Amount}
+                  onChange={handleBlankServiceChange}
+                  min="0"
+                  step="0.01"
+                  placeholder="0.00"
+                  readOnly={!!row.ServiceGuid}
+                />
+              );
+            }
+            return <span className={styles.rightAlignNum}>{formatNumber(row.Amount)}</span>;
+          }
         },
         {
           header: 'Actions',
@@ -611,15 +645,18 @@ export default function OrderForm() {
       </tr>
     );
   } else if (orderType === "service") {
-    tableFooter = (
-      <tr>
-        <td colSpan={columns.length - 2} style={{ textAlign: 'right', fontWeight: 'bold' }}>Total</td>
-        <td style={{ fontWeight: 'bold', textAlign: 'center' }}>
-          {formatNumber(orderAmount)}
-        </td>
-        <td />
-      </tr>
-    );
+    // Only show total when there are real service items (not just the blank row)
+    if ((serviceItems || []).length > 0) {
+      tableFooter = (
+        <tr>
+          <td colSpan={columns.length - 2} style={{ textAlign: 'right', fontWeight: 'bold' }}>Total</td>
+          <td style={{ fontWeight: 'bold', textAlign: 'center' }}>
+            {formatNumber(orderAmount)}
+          </td>
+          <td />
+        </tr>
+      );
+    }
   }
 
   // Save handler

@@ -106,6 +106,10 @@ export default function InvoiceForm() {
     InvoiceAmount: 0,
   });
 
+  // Control whether the blank-row select controls are visible (hidden behind a button initially)
+  const [showBlankProductSelector, setShowBlankProductSelector] = useState(false);
+  const [showBlankServiceSelector, setShowBlankServiceSelector] = useState(false);
+
   // Handle input changes (except Supplier)
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value });
@@ -125,6 +129,9 @@ export default function InvoiceForm() {
   const handleTypeChange = (e) => {
     setInvoiceType(e.target.value);
     setForm({ ...form, PurchaseType: e.target.value });
+    // Reset the blank selectors when switching types
+    setShowBlankProductSelector(false);
+    setShowBlankServiceSelector(false);
   };
 
   // Service row state/handlers
@@ -151,6 +158,8 @@ export default function InvoiceForm() {
     if (blankServiceRow.Description && blankServiceRow.Amount > 0) {
       setServiceItems([...serviceItems, { id: Date.now(), ...blankServiceRow }]);
       setBlankServiceRow(initialBlankServiceRow);
+      // hide the selector again for the next blank row
+      setShowBlankServiceSelector(false);
     }
   };
   const handleRemoveServiceItem = (itemId) => {
@@ -204,6 +213,8 @@ export default function InvoiceForm() {
       const newItem = { id: Date.now(), ...blankRowData };
       setProductItems([...productItems, newItem]);
       setBlankRowData({ ProductGuid: '', Description: '', UnitPrice: 0, Quantity: 1, TotalPrice: 0, Discount: 0 });
+      // hide the selector again for the next blank row
+      setShowBlankProductSelector(false);
     }
   };
   const handleRemoveItem = (itemId) => {
@@ -230,16 +241,26 @@ export default function InvoiceForm() {
   // Columns
   const columns = invoiceType === "inventory"
     ? [
-        { header: 'Product', key: 'ProductGuid', render: (row) => row.isBlank ? (
-            <Select
-              value={row.ProductGuid}
-              onChange={(e) => handleProductSelect(e.target.value)}
-              options={[
-                { value: "", label: "Select Product..." },
-                ...row.availableProducts.map(p => ({ value: p.ProductGuid, label: `${p.ProductGuid} - ${p.Description}` }))
-              ]}
-            />
-          ) : row.ProductGuid },
+        { header: 'Product', key: 'ProductGuid', render: (row) => {
+            if (row.isBlank) {
+              if (!showBlankProductSelector) {
+                return (
+                  <Button variant="transparent" size="sm" onClick={() => setShowBlankProductSelector(true)} icon={<FiPlus />}>Add Product...</Button>
+                );
+              }
+              return (
+                <Select
+                  value={row.ProductGuid}
+                  onChange={(e) => handleProductSelect(e.target.value)}
+                  options={[
+                    { value: "", label: "Select Product..." },
+                    ...row.availableProducts.map(p => ({ value: p.ProductGuid, label: `${p.ProductGuid} - ${p.Description}` }))
+                  ]}
+                />
+              );
+            }
+            return row.ProductGuid;
+          } },
         { header: 'Description', key: 'Description', render: (row) => row.Description },
         { header: 'Unit Price', key: 'UnitPrice', render: (row) => row.isBlank && !row.ProductGuid ? '' : (
             <span className={styles.rightAlignNum}>{formatNumber(row.UnitPrice)}</span>
@@ -266,22 +287,46 @@ export default function InvoiceForm() {
           ) },
       ]
     : [
-        { header: 'Service', key: 'ServiceGuid', render: (row) => row.isBlank ? (
-            <Select
-              value={row.ServiceGuid}
-              onChange={(e) => handleServiceSelect(e.target.value)}
-              options={[
-                { value: '', label: 'Select Service...' },
-                ...serviceCatalog.map(s => ({ value: s.ServiceGuid, label: `${s.ServiceGuid} - ${s.Description}` }))
-              ]}
-            />
-          ) : row.ServiceGuid },
-        { header: 'Description', key: 'Description', render: (row) => row.isBlank ? (
-            <Input name="Description" value={row.Description} onChange={handleBlankServiceChange} placeholder="Service Description" readOnly={!!row.ServiceGuid} />
-          ) : row.Description },
-        { header: 'Amount', key: 'Amount', render: (row) => row.isBlank ? (
-            <Input name="Amount" type="number" value={row.Amount} onChange={handleBlankServiceChange} min="0" step="0.01" placeholder="0.00" readOnly={!!row.ServiceGuid} />
-          ) : <span className={styles.rightAlignNum}>{formatNumber(row.Amount)}</span> },
+        { header: 'Service', key: 'ServiceGuid', render: (row) => {
+            if (row.isBlank) {
+              if (!showBlankServiceSelector) {
+                return (
+                  <Button variant="transparent" size="sm" onClick={() => setShowBlankServiceSelector(true)} icon={<FiPlus />}>Add Service...</Button>
+                );
+              }
+              return (
+                <Select
+                  value={row.ServiceGuid}
+                  onChange={(e) => handleServiceSelect(e.target.value)}
+                  options={[
+                    { value: '', label: 'Select Service...' },
+                    ...serviceCatalog.map(s => ({ value: s.ServiceGuid, label: `${s.ServiceGuid} - ${s.Description}` }))
+                  ]}
+                />
+              );
+            }
+            return row.ServiceGuid;
+          } },
+        { header: 'Description', key: 'Description', render: (row) => {
+            if (row.isBlank) {
+              // hide description input until the selector is shown or a service/description exists
+              if (!showBlankServiceSelector && !row.ServiceGuid && !row.Description) return '';
+              return (
+                <Input name="Description" value={row.Description} onChange={handleBlankServiceChange} placeholder="Service Description" readOnly={!!row.ServiceGuid} />
+              );
+            }
+            return row.Description;
+          } },
+        { header: 'Amount', key: 'Amount', render: (row) => {
+            // For the blank row, don't show the Amount input until the selector or description is visible
+            if (row.isBlank) {
+              if (!showBlankServiceSelector && !row.ServiceGuid && !row.Description) return '';
+              return (
+                <Input name="Amount" type="number" value={row.Amount} onChange={handleBlankServiceChange} min="0" step="0.01" placeholder="0.00" readOnly={!!row.ServiceGuid} />
+              );
+            }
+            return <span className={styles.rightAlignNum}>{formatNumber(row.Amount)}</span>;
+          } },
         { header: 'Actions', key: 'actions', render: (row) => row.isBlank ? (
             (!row.ServiceGuid && !row.Description) ? '' : (
               <Button variant="primary" size="sm" onClick={handleAddBlankServiceRow} icon={<FiPlus />} aria-label="Add" disabled={!row.Description || row.Amount <= 0} />
@@ -304,15 +349,18 @@ export default function InvoiceForm() {
       </tr>
     );
   } else if (invoiceType === "service") {
-    tableFooter = (
-      <tr>
-        <td colSpan={columns.length - 2} style={{ textAlign: 'right', fontWeight: 'bold' }}>Total</td>
-        <td style={{ fontWeight: 'bold', textAlign: 'center' }}>
-          {formatNumber(serviceItems.reduce((sum, i) => sum + (Number(i.Amount) || 0), 0))}
-        </td>
-        <td />
-      </tr>
-    );
+    // Only show total when there are real service items (not just the blank add-row)
+    if ((serviceItems || []).length > 0) {
+      tableFooter = (
+        <tr>
+          <td colSpan={columns.length - 2} style={{ textAlign: 'right', fontWeight: 'bold' }}>Total</td>
+          <td style={{ fontWeight: 'bold', textAlign: 'center' }}>
+            {formatNumber(serviceItems.reduce((sum, i) => sum + (Number(i.Amount) || 0), 0))}
+          </td>
+          <td />
+        </tr>
+      );
+    }
   }
 
   // Save handler

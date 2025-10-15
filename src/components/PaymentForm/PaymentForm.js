@@ -71,20 +71,29 @@ const invoiceCatalog = [
   }
 ];
 
-const serviceCatalog = [
-  { ServiceGuid: "S001", Description: "Consultation Service", Amount: 250.0 },
-  { ServiceGuid: "S002", Description: "Installation Service", Amount: 400.0 },
-  { ServiceGuid: "S003", Description: "Maintenance Package", Amount: 150.0 },
-];
+// (service catalog removed — invoices are used for selection in this form)
 
 const initialProductItems = [];
 const initialServiceItems = [];
-const initialBlankServiceRow = { ServiceGuid: '', Description: '', Amount: 0 };
+const initialBlankServiceRow = {
+  Guid: '',
+  InvoiceGuid: '',
+  OrderGuid: '',
+  ProductGuid: '',
+  Quantity: 1,
+  UnitPrice: 0,
+  TotalPrice: 0,
+  Discount: 0,
+  Description: ''
+};
 
 export default function PaymentForm() {
   const [paymentType, setPaymentType] = useState("inventory");
   const [productItems, setProductItems] = useState(initialProductItems);
   const [serviceItems, setServiceItems] = useState(initialServiceItems);
+  // Control whether the blank-row select controls are visible (hidden behind a button initially)
+  const [showBlankInvoiceSelector, setShowBlankInvoiceSelector] = useState(false);
+  const [showBlankServiceSelector, setShowBlankServiceSelector] = useState(false);
   const [form, setForm] = useState({
     Guid: "",
     CompanyGuid: "",
@@ -108,6 +117,9 @@ export default function PaymentForm() {
   // Toggle payment type
   const handleTypeChange = (e) => {
     setPaymentType(e.target.value);
+    // Reset the blank selectors when switching types
+    setShowBlankInvoiceSelector(false);
+    setShowBlankServiceSelector(false);
   };
 
   // --- Product Table Logic ---
@@ -190,6 +202,8 @@ export default function PaymentForm() {
         Discount: 0,
         Description: ''
       });
+      // hide the selector again for the next blank row
+      setShowBlankInvoiceSelector(false);
     }
   };
 
@@ -204,29 +218,42 @@ export default function PaymentForm() {
     const { name, value } = e.target;
     setBlankServiceRow((prev) => ({
       ...prev,
-      [name]: name === 'Amount' ? Number(value) : value
+      [name]: ['Quantity', 'UnitPrice', 'TotalPrice', 'Discount'].includes(name) ? Number(value || 0) : value
     }));
   };
 
-  const handleServiceSelect = (serviceGuid) => {
-    if (!serviceGuid) {
+  // Allow selecting an invoice item when in Service mode (treat invoice as a service line)
+  const mapInvoiceToInventoryRow = (inv) => ({
+    Guid: inv.Guid || '',
+    InvoiceGuid: inv.InvoiceGuid || '',
+    OrderGuid: inv.OrderGuid || '',
+    ProductGuid: inv.ProductGuid || '',
+    Quantity: inv.Quantity || 1,
+    UnitPrice: inv.UnitPrice || inv.TotalPrice || 0,
+    TotalPrice: inv.TotalPrice || (inv.UnitPrice || 0) * (inv.Quantity || 1),
+    Discount: inv.Discount || 0,
+    Description: inv.Description || ''
+  });
+
+  const handleInvoiceSelectAsService = (invoiceGuid) => {
+    if (!invoiceGuid) {
       setBlankServiceRow(initialBlankServiceRow);
       return;
     }
-    const selectedService = serviceCatalog.find(s => s.ServiceGuid === serviceGuid);
-    if (selectedService) {
-      setBlankServiceRow({
-        ServiceGuid: selectedService.ServiceGuid,
-        Description: selectedService.Description,
-        Amount: selectedService.Amount
-      });
+    const selectedInvoice = invoiceCatalog.find(inv => inv.InvoiceGuid === invoiceGuid);
+    if (selectedInvoice) {
+      setBlankServiceRow(mapInvoiceToInventoryRow(selectedInvoice));
     }
   };
 
   const handleAddBlankServiceRow = () => {
-    if (blankServiceRow.Description && blankServiceRow.Amount > 0) {
-      setServiceItems([...serviceItems, { id: Date.now(), ...blankServiceRow }]);
+    // ensure Description is present and TotalPrice > 0
+    if (blankServiceRow.Description && (Number(blankServiceRow.TotalPrice || 0) > 0)) {
+      const newItem = { id: Date.now(), ...blankServiceRow };
+      setServiceItems([...serviceItems, newItem]);
       setBlankServiceRow(initialBlankServiceRow);
+      // hide the selector again for the next blank row
+      setShowBlankServiceSelector(false);
     }
   };
 
@@ -237,162 +264,65 @@ export default function PaymentForm() {
   // Helper to format numbers
   const formatNumber = (value) => Number(value).toFixed(2);
 
-  // Table columns
-  const columns = paymentType === "inventory"
-    ? [
-        { 
-          header: 'Invoice', 
-          key: 'InvoiceGuid',
-          render: (row) => {
-            if (row.isBlank) {
-              return (
-                <Select
-                  value={row.InvoiceGuid}
-                  onChange={(e) => handleInvoiceSelect(e.target.value)}
-                  options={[
-                    { value: "", label: "Select Invoice..." },
-                    ...row.availableProducts.map(inv => ({
-                      value: inv.InvoiceGuid,
-                      label: `${inv.InvoiceGuid} - ${inv.Description}`
-                    }))
-                  ]}
-                />
-              );
-            }
-            return row.InvoiceGuid || '';
-          }
-        },
-        { header: 'Order', key: 'OrderGuid', render: (row) => row.OrderGuid || '' },
-        { 
-          header: 'Product', 
-          key: 'ProductGuid',
-          render: (row) => row.ProductGuid || ''
-        },
-        { header: 'Quantity', key: 'Quantity', render: (row) => {
-            if (row.isBlank) {
-              if (!row.ProductGuid) return '';
-              return (
-                <Input
-                  type="number"
-                  value={row.Quantity}
-                  onChange={(e) => handleBlankRowQuantityChange(e.target.value)}
-                  min="1"
-                  step="1"
-                />
-              );
-            }
-            return (<span className={styles.rightAlignNum}>{row.Quantity}</span>);
-          }
-        },
-        { header: 'Unit Price', key: 'UnitPrice', render: (row) => row.isBlank && !row.ProductGuid ? '' : (<span className={styles.rightAlignNum}>{formatNumber(row.UnitPrice)}</span>) },
-        { header: 'Discount (%)', key: 'Discount', render: (row) => {
-            if (row.isBlank) {
-              if (!row.ProductGuid) return '';
-              return (
-                <Input
-                  type="number"
-                  value={row.Discount}
-                  onChange={(e) => handleBlankRowDiscountChange(e.target.value)}
-                  min="0"
-                  max="100"
-                  step="0.01"
-                />
-              );
-            }
-            return (<span className={styles.rightAlignNum}>{formatNumber(row.Discount)}%</span>);
-          }
-        },
-        { header: 'Description', key: 'Description', render: (row) => row.Description },
-        { header: 'Total Price', key: 'TotalPrice', render: (row) => row.isBlank && !row.ProductGuid ? '' : (<span className={styles.rightAlignNum}>{formatNumber(row.TotalPrice)}</span>) },
-        { header: 'Actions', key: 'actions', render: (row) => {
-            if (row.isBlank) {
-              if (!row.ProductGuid) return '';
+  // Build inventory-style columns and reuse for service mode
+  const inventoryColumns = [
+    {
+      header: 'Invoice',
+      key: 'InvoiceGuid',
+      render: (row) => {
+        if (row.isBlank) {
+            // Show the Add button first; when clicked reveal the selector for the current paymentType
+            const showSelector = paymentType === 'inventory' ? showBlankInvoiceSelector : showBlankServiceSelector;
+            if (!showSelector) {
               return (
                 <Button
-                  variant="primary"
+                  variant="transparent"
                   size="sm"
-                  onClick={handleAddBlankRowItem}
+                  onClick={() => paymentType === 'inventory' ? setShowBlankInvoiceSelector(true) : setShowBlankServiceSelector(true)}
                   icon={<FiPlus />}
-                  aria-label="Add"
-                />
+                >
+                  Add Invoice...
+                </Button>
               );
             }
+            // Once revealed, show the selector using the provided available list
             return (
-              <Button
-                variant="danger"
-                size="sm"
-                onClick={() => handleRemoveItem(row.id)}
-                icon={<FiTrash2 />}
-                aria-label="Remove"
+              <Select
+                value={row.InvoiceGuid}
+                onChange={(e) => paymentType === 'inventory' ? handleInvoiceSelect(e.target.value) : handleInvoiceSelectAsService(e.target.value)}
+                options={[{ value: '', label: 'Select Invoice...' }, ...((paymentType === 'inventory' ? row.availableProducts : row.availableInvoices) || []).map(inv => ({ value: inv.InvoiceGuid, label: `${inv.InvoiceGuid} - ${inv.Description}` }))]}
               />
             );
-          }
         }
-      ]
-    : [
-        { header: 'Service', key: 'ServiceGuid', render: (row) => row.isBlank ? (
-            <Select
-              value={row.ServiceGuid}
-              onChange={(e) => handleServiceSelect(e.target.value)}
-              options={[
-                { value: '', label: 'Select Service...' },
-                ...serviceCatalog.map(s => ({
-                  value: s.ServiceGuid,
-                  label: `${s.ServiceGuid} - ${s.Description}`
-                }))
-              ]}
-            />
-          ) : row.ServiceGuid
-        },
-        { header: 'Description', key: 'Description', render: (row) => row.isBlank ? (
-            <Input
-              name="Description"
-              value={row.Description}
-              onChange={handleBlankServiceChange}
-              placeholder="Service Description"
-              readOnly={!!row.ServiceGuid}
-            />
-          ) : row.Description
-        },
-        { header: 'Amount', key: 'Amount', render: (row) => row.isBlank ? (
-            <Input
-              name="Amount"
-              type="number"
-              value={row.Amount}
-              onChange={handleBlankServiceChange}
-              min="0"
-              step="0.01"
-              placeholder="0.00"
-              readOnly={!!row.ServiceGuid}
-            />
-          ) : (<span className={styles.rightAlignNum}>{formatNumber(row.Amount)}</span>)
-        },
-        { header: 'Actions', key: 'actions', render: (row) => {
-            if (row.isBlank) {
-              if (!row.ServiceGuid && !row.Description) return '';
-              return (
-                <Button
-                  variant="primary"
-                  size="sm"
-                  onClick={handleAddBlankServiceRow}
-                  icon={<FiPlus />}
-                  aria-label="Add"
-                  disabled={!row.Description || row.Amount <= 0}
-                />
-              );
-            }
-            return (
-              <Button
-                variant="danger"
-                size="sm"
-                onClick={() => handleRemoveServiceItem(row.id)}
-                icon={<FiTrash2 />}
-                aria-label="Remove"
-              />
-            );
-          }
+        return row.InvoiceGuid || '';
+      }
+    },
+    { header: 'Order', key: 'OrderGuid', render: (row) => row.OrderGuid || '' },
+    { header: 'Product', key: 'ProductGuid', render: (row) => row.ProductGuid || '' },
+    { header: 'Quantity', key: 'Quantity', render: (row) => row.isBlank ? (row.ProductGuid ? <Input type="number" value={row.Quantity} onChange={(e) => handleBlankRowQuantityChange(e.target.value)} min="1" step="1" /> : '') : <span className={styles.rightAlignNum}>{row.Quantity}</span> },
+    { header: 'Unit Price', key: 'UnitPrice', render: (row) => row.isBlank && !row.ProductGuid ? '' : (<span className={styles.rightAlignNum}>{formatNumber(row.UnitPrice)}</span>) },
+    { header: 'Discount (%)', key: 'Discount', render: (row) => row.isBlank ? (row.ProductGuid ? <Input type="number" value={row.Discount} onChange={(e) => handleBlankRowDiscountChange(e.target.value)} min="0" max="100" step="0.01" /> : '') : <span className={styles.rightAlignNum}>{formatNumber(row.Discount)}%</span> },
+    { header: 'Description', key: 'Description', render: (row) => row.isBlank ? ( !row.ProductGuid && !row.Description ? '' : <Input name="Description" value={row.Description} onChange={handleBlankServiceChange} placeholder="Description" /> ) : row.Description },
+    { header: 'Total Price', key: 'TotalPrice', render: (row) => row.isBlank && !row.ProductGuid ? '' : (<span className={styles.rightAlignNum}>{formatNumber(row.TotalPrice)}</span>) },
+    { header: 'Actions', key: 'actions', render: (row) => {
+        if (row.isBlank) {
+          // in inventory mode add uses handleAddBlankRowItem; in service mode add uses handleAddBlankServiceRow
+          const onAdd = paymentType === 'inventory' ? handleAddBlankRowItem : handleAddBlankServiceRow;
+          const disableAdd = paymentType === 'inventory' ? !row.ProductGuid : !(row.Description && Number(row.TotalPrice) > 0);
+          if (paymentType === 'inventory' && !row.ProductGuid) return '';
+          return (
+            <Button variant="primary" size="sm" onClick={onAdd} icon={<FiPlus />} aria-label="Add" disabled={!!disableAdd} />
+          );
         }
-      ];
+        const onRemove = paymentType === 'inventory' ? () => handleRemoveItem(row.id) : () => handleRemoveServiceItem(row.id);
+        return (
+          <Button variant="danger" size="sm" onClick={onRemove} icon={<FiTrash2 />} aria-label="Remove" />
+        );
+      }
+    }
+  ];
+
+  const columns = inventoryColumns;
 
   // Calculate total
   const totalAmount = paymentType === "inventory"
@@ -410,6 +340,7 @@ export default function PaymentForm() {
       </tr>
     );
   } else if (paymentType === "service") {
+    // Always show the footer for service type (sums to 0.00 when there are no service items)
     tableFooter = (
       <tr>
         <td colSpan={columns.length - 2} style={{ textAlign: 'right', fontWeight: 'bold' }}>Total</td>
@@ -493,14 +424,20 @@ export default function PaymentForm() {
             });
           }
         } else if (paymentType === "service") {
+          // provide a filtered list of invoices for selection so Service mode can pick invoices like Inventory
+          const availableInvoices = invoiceCatalog.filter(
+            inv => !serviceItems.find(si => (si.ServiceGuid === (inv.Guid || inv.InvoiceGuid) || si.Description === inv.Description))
+          );
           itemsWithBlank.push({
             id: 'blank',
             ...blankServiceRow,
-            isBlank: true
+            isBlank: true,
+            availableInvoices
           });
         }
         return (
           <DataTable
+            key={paymentType}
             columns={columns}
             data={itemsWithBlank}
             showActions={false}
