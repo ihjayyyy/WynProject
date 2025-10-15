@@ -4,11 +4,12 @@ import { useRouter } from 'next/navigation';
 import React, { useState, useMemo, useCallback, useEffect } from 'react';
 
 import ThreeColumnLayout from '../../../components/ThreeColumnLayout/ThreeColumnLayout';
-import { StatsCard, SearchBar } from '../../../components';
+import { StatsCard, SearchBar, DropdownAction } from '../../../components';
 import DataTable from '../../../components/ui/DataTable/DataTable';
 import styles from './page.module.scss';
 import RightPanel from '../../../components/RightPanel/RightPanel';
 import { ServiceService } from '@/services/serviceService';
+import { FiEye, FiEdit2, FiTrash2 } from 'react-icons/fi';
 
 // --- Data & Configs ---
 const ALL_COLUMNS = [
@@ -68,6 +69,9 @@ export default function ServicePage() {
   // Instantiate the service once per component lifecycle
   const serviceService = useMemo(() => new ServiceService(), []);
 
+  // router for navigation (must be initialized before callbacks that depend on it)
+  const router = useRouter();
+
   const [services, setServices] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
@@ -77,17 +81,14 @@ export default function ServicePage() {
     'Name',
     'ServiceType',
     'Description',
+    'Actions',
   ]);
   // Add filter state (filter by ProductType from mock)
   const [filter, setFilter] = useState({ productType: '' });
   // Right panel collapsed state
   const [isRightPanelCollapsed, setIsRightPanelCollapsed] = useState(false);
 
-  // Memoize columns
-  const columns = useMemo(
-    () => ALL_COLUMNS.filter((col) => selectedColumns.includes(col.key)),
-    [selectedColumns]
-  );
+  // columns will be computed after handlers are defined (see below)
 
   // Filter and sort services
   const filteredServices = useMemo(() => {
@@ -153,6 +154,77 @@ export default function ServicePage() {
     console.log('Action clicked for service:', service);
   }, []);
 
+  // router and action handlers declared below
+
+  // Handlers for DropdownAction (View / Edit / Delete)
+  const handleView = useCallback(
+    (service) => {
+      if (service?.Guid) {
+        // open form in view-only mode
+        router.push(`/service/serviceform?id=${service.Guid}&mode=view`);
+      }
+    },
+    [router]
+  );
+
+  const handleEdit = useCallback(
+    (service) => {
+      if (service?.Guid) {
+        router.push(`/service/serviceform?id=${service.Guid}`);
+      }
+    },
+    [router]
+  );
+
+  const handleDelete = useCallback(
+    (service) => {
+      // Optimistic local delete since mock ServiceService has no delete method
+      setServices((prev) => (prev || []).filter((it) => it.Guid !== service.Guid));
+    },
+    []
+  );
+
+  // Compute columns after handlers are available
+  const columns = useMemo(() => {
+    const base = ALL_COLUMNS.filter((col) => selectedColumns.includes(col.key));
+    if (selectedColumns.includes('Actions')) {
+      const ACTION_COLUMN = {
+        key: 'Actions',
+        header: '',
+        sortable: false,
+        align: 'end',
+        width: '48px',
+        render: (item) => {
+          const items = [
+            {
+              key: 'view',
+              label: 'View',
+              icon: <FiEye size={16} />,
+              onClick: (it) => handleView(it),
+            },
+            {
+              key: 'edit',
+              label: 'Edit',
+              icon: <FiEdit2 size={16} />,
+              onClick: (it) => handleEdit(it),
+            },
+            {
+              key: 'delete',
+              label: 'Delete',
+              icon: <FiTrash2 size={16} />,
+              destructive: true,
+              onClick: (it) => handleDelete(it),
+            },
+          ];
+
+          return <DropdownAction item={item} items={items} />;
+        },
+      };
+      return [...base, ACTION_COLUMN];
+    }
+    return base;
+  }, [selectedColumns, handleView, handleEdit, handleDelete]);
+
   const handleSearchChange = useCallback((value) => {
     setSearchTerm(value);
   }, []);
@@ -165,8 +237,6 @@ export default function ServicePage() {
     setIsRightPanelCollapsed(false);
   }, []);
 
-  // router for redirecting to create new service form
-  const router = useRouter();
   const redirectToServiceForm = useCallback(() => {
     router.push('/service/serviceform');
   }, [router]);
@@ -217,6 +287,7 @@ export default function ServicePage() {
             columns={columns}
             onRowClick={handleRowClick}
             onActionClick={handleActionClick}
+            showActions={false}
             emptyMessage="No services found"
           />
         )}

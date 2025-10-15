@@ -74,4 +74,16 @@ export class ServiceService {
     SERVICES.push(newService);
     return { ...newService };
   }
+
+  // Update existing service by Guid (mock in-memory). Returns updated item or null if not found.
+  async updateService(data) {
+    if (!data || !data.Guid) {
+      throw new Error('updateService requires an object with a Guid');
+    }
+    const idx = SERVICES.findIndex((it) => it.Guid === data.Guid);
+    if (idx === -1) return null;
+    const updated = { ...SERVICES[idx], ...data };
+    SERVICES[idx] = updated;
+    return { ...updated };
+  }
 }

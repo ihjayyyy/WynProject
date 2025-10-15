@@ -4,11 +4,12 @@ import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 
 import ThreeColumnLayout from '../../../components/ThreeColumnLayout/ThreeColumnLayout';
-import { StatsCard, SearchBar } from '../../../components';
+import { StatsCard, SearchBar, DropdownAction } from '../../../components';
 import DataTable from '../../../components/ui/DataTable/DataTable';
 import styles from './page.module.scss';
 import RightPanel from '../../../components/RightPanel/RightPanel';
 import { InventoryService } from '@/services/inventoryService';
+import { FiEye, FiEdit2, FiTrash2 } from 'react-icons/fi';
 
 // --- Data & Configs ---
 const ALL_COLUMNS = [
@@ -92,17 +93,14 @@ export default function InventoryPage() {
     'Name',
     'ProductType',
     'Description',
+    'Actions',
   ]);
   // Add filter state (filter by ProductType from mock)
   const [filter, setFilter] = useState({ productType: '' });
   // Right panel collapsed state
   const [isRightPanelCollapsed, setIsRightPanelCollapsed] = useState(false);
 
-  // Memoize columns
-  const columns = useMemo(
-    () => ALL_COLUMNS.filter((col) => selectedColumns.includes(col.key)),
-    [selectedColumns]
-  );
+  // columns will be computed after handlers are defined (see below)
 
   // Filter and sort inventories
   const filteredInventories = useMemo(() => {
@@ -168,6 +166,42 @@ export default function InventoryPage() {
     console.log('Action clicked for inventory:', inventory);
   }, []);
 
+  const handleView = useCallback((inventory) => {
+    if (inventory?.Guid) router.push(`/inventory/inventoryform?id=${inventory.Guid}&mode=view`);
+  }, [router]);
+
+  const handleEdit = useCallback((inventory) => {
+    if (inventory?.Guid) router.push(`/inventory/inventoryform?id=${inventory.Guid}`);
+  }, [router]);
+
+  const handleDelete = useCallback((inventory) => {
+    setInventories((prev) => (prev || []).filter((it) => it.Guid !== inventory.Guid));
+  }, []);
+
+  // Compute columns after handlers are available
+  const columns = useMemo(() => {
+    const base = ALL_COLUMNS.filter((col) => selectedColumns.includes(col.key));
+    if (selectedColumns.includes('Actions')) {
+      const ACTION_COLUMN = {
+        key: 'Actions',
+        header: '',
+        sortable: false,
+        align: 'end',
+        width: '48px',
+        render: (item) => {
+          const items = [
+            { key: 'view', label: 'View', icon: <FiEye size={16} />, onClick: (it) => handleView(it) },
+            { key: 'edit', label: 'Edit', icon: <FiEdit2 size={16} />, onClick: (it) => handleEdit(it) },
+            { key: 'delete', label: 'Delete', destructive: true, icon: <FiTrash2 size={16} />, onClick: (it) => handleDelete(it) },
+          ];
+          return <DropdownAction item={item} items={items} />;
+        },
+      };
+      return [...base, ACTION_COLUMN];
+    }
+    return base;
+  }, [selectedColumns, handleView, handleEdit, handleDelete]);
+
   const handleSearchChange = useCallback((value) => {
     setSearchTerm(value);
   }, []);
@@ -226,6 +260,7 @@ export default function InventoryPage() {
             columns={columns}
             onRowClick={handleRowClick}
             onActionClick={handleActionClick}
+            showActions={false}
             emptyMessage="No inventories found"
           />
         )}

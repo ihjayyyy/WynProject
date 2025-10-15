@@ -79,4 +79,16 @@ export class InventoryService {
 
     return { ...newInventory };
   }
+
+  // Update existing inventory by Guid
+  async updateInventory(data) {
+    if (!data || !data.Guid) {
+      throw new Error('updateInventory requires an object with a Guid');
+    }
+    const idx = INVENTORIES.findIndex((it) => it.Guid === data.Guid);
+    if (idx === -1) return null;
+    const updated = { ...INVENTORIES[idx], ...data };
+    INVENTORIES[idx] = updated;
+    return { ...updated };
+  }
 }

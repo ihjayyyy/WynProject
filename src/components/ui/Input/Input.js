@@ -9,6 +9,7 @@ export default function Input({
   value,
   onChange,
   icon,
+  readOnly = false,
   multiline = false,
   rows = 3,
   ...props
@@ -41,18 +42,21 @@ export default function Input({
             value={value}
             onChange={onChange}
             rows={rows}
+            readOnly={readOnly}
             {...props}
           />
         ) : type === 'file' ? (
           <div className={styles.fileInputWrap}>
-            <button
-              type="button"
-              className={styles.fileButton}
-              onClick={() => inputRef.current && inputRef.current.click()}
-              aria-label="Upload file"
-              title="Upload file">
-              <FiUpload size={18} />
-            </button>
+            {!readOnly && (
+              <button
+                type="button"
+                className={styles.fileButton}
+                onClick={() => inputRef.current && inputRef.current.click()}
+                aria-label="Upload file"
+                title="Upload file">
+                <FiUpload size={18} />
+              </button>
+            )}
             <span className={styles.fileName} title={fileName}>
               {fileName || 'No file chosen'}
             </span>
@@ -62,6 +66,7 @@ export default function Input({
               id={id}
               type="file"
               onChange={handleFileChange}
+              readOnly={readOnly}
               {...props}
             />
           </div>
@@ -73,6 +78,7 @@ export default function Input({
             // For date inputs, prefer the provided value; fall back to today only when value is empty
             value={type === 'date' ? value || today : value}
             onChange={onChange}
+            readOnly={readOnly}
             {...props}
           />
         )}

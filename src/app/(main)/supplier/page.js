@@ -3,11 +3,12 @@ import { useRouter } from 'next/navigation';
 import React, { useState, useMemo, useCallback, useEffect } from 'react';
 
 import ThreeColumnLayout from '../../../components/ThreeColumnLayout/ThreeColumnLayout';
-import { StatsCard, SearchBar } from '../../../components';
+import { StatsCard, SearchBar, DropdownAction } from '../../../components';
 import DataTable from '../../../components/ui/DataTable/DataTable';
 import styles from './page.module.scss';
 import RightPanel from '../../../components/RightPanel/RightPanel';
 import SupplierService from '../../../services/supplierService';
+import { FiEye, FiEdit2, FiTrash2 } from 'react-icons/fi';
 
 // Data will be loaded from SupplierService
 
@@ -115,6 +116,7 @@ export default function SupplierPage() {
     'Fax',
     'Email',
     'Website',
+    'Actions',
   ]);
   // Add filter state
   const [filter, setFilter] = useState({ supplierType: '' });
@@ -130,10 +132,7 @@ export default function SupplierPage() {
   }, [router]);
 
   // Memoize columns
-  const columns = useMemo(
-    () => ALL_COLUMNS.filter((col) => selectedColumns.includes(col.key)),
-    [selectedColumns]
-  );
+  // columns will be computed after handlers are defined (see below)
 
   // Load suppliers from service
   useEffect(() => {
@@ -211,6 +210,42 @@ export default function SupplierPage() {
     console.log('Action clicked for supplier:', supplier);
   }, []);
 
+  const handleView = useCallback((supplier) => {
+    if (supplier?.CompanyGuid) router.push(`/supplier/supplierform?id=${supplier.CompanyGuid}&mode=view`);
+  }, [router]);
+
+  const handleEdit = useCallback((supplier) => {
+    if (supplier?.CompanyGuid) router.push(`/supplier/supplierform?id=${supplier.CompanyGuid}`);
+  }, [router]);
+
+  const handleDelete = useCallback((supplier) => {
+    // optimistic local delete
+    setItems((prev) => (prev || []).filter((it) => it.CompanyGuid !== supplier.CompanyGuid));
+  }, []);
+
+  const columns = useMemo(() => {
+    const base = ALL_COLUMNS.filter((col) => selectedColumns.includes(col.key));
+    if (selectedColumns.includes('Actions')) {
+      const ACTION_COLUMN = {
+        key: 'Actions',
+        header: '',
+        sortable: false,
+        align: 'end',
+        width: '48px',
+        render: (item) => {
+          const items = [
+            { key: 'view', label: 'View', icon: <FiEye size={16} />, onClick: (it) => handleView(it) },
+            { key: 'edit', label: 'Edit', icon: <FiEdit2 size={16} />, onClick: (it) => handleEdit(it) },
+            { key: 'delete', label: 'Delete', destructive: true, icon: <FiTrash2 size={16} />, onClick: (it) => handleDelete(it) },
+          ];
+          return <DropdownAction item={item} items={items} />;
+        },
+      };
+      return [...base, ACTION_COLUMN];
+    }
+    return base;
+  }, [selectedColumns, handleView, handleEdit, handleDelete]);
+
   const handleSearchChange = useCallback((value) => {
     setSearchTerm(value);
   }, []);
@@ -270,6 +305,7 @@ export default function SupplierPage() {
             columns={columns}
             onRowClick={handleRowClick}
             onActionClick={handleActionClick}
+            showActions={false}
             emptyMessage="No suppliers found"
           />
         )}

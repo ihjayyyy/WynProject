@@ -100,6 +100,15 @@ class SupplierService {
 
     return { ...newCompany };
   }
+
+  async updateCompany(data) {
+    if (!data || !data.CompanyGuid) throw new Error('updateCompany requires CompanyGuid');
+    const idx = SUPPLIERS.findIndex((it) => it.CompanyGuid === data.CompanyGuid);
+    if (idx === -1) return null;
+    const updated = { ...SUPPLIERS[idx], ...data };
+    SUPPLIERS[idx] = updated;
+    return { ...updated };
+  }
 }
 
 export default SupplierService;

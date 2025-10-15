@@ -1,5 +1,5 @@
  'use client';
- import React, { useState } from 'react';
+ import React, { useState, useEffect } from 'react';
  import { useRouter } from 'next/navigation';
  import styles from './EntityForm.module.scss';
  import Breadcrumbs from '../ui/Breadcrumbs/Breadcrumbs';
@@ -16,9 +16,14 @@
  * - onSubmit: async function(values) => void (optional)
  * - backPath: string (path to navigate to after submit/default back)
  */
-export default function EntityForm({ title, icon, fields, initialValues = {}, onSubmit, backPath = '/' }) {
+export default function EntityForm({ title, icon, fields, initialValues = {}, onSubmit, backPath = '/', readOnly = false }) {
   const router = useRouter();
   const [values, setValues] = useState({ ...initialValues });
+
+  // Keep internal state in sync when parent updates `initialValues` (e.g., when loading existing entity)
+  useEffect(() => {
+    setValues({ ...initialValues });
+  }, [initialValues]);
 
   const handleChange = (e) => {
     const { name, value, type, files } = e.target;
@@ -64,17 +69,20 @@ export default function EntityForm({ title, icon, fields, initialValues = {}, on
               name={f.name}
               value={values[f.name] ?? ''}
               onChange={handleChange}
+              readOnly={readOnly}
               type={f.type}
             />
           </div>
         ))}
       </div>
 
-      <div className={styles.bottomFields}>
-        <div className={styles.rightBottomButtons}>
-          <Button type="submit" variant="save">Create</Button>
+      {!readOnly && (
+        <div className={styles.bottomFields}>
+          <div className={styles.rightBottomButtons}>
+            <Button type="submit" variant="save">{(initialValues && (initialValues.Guid || initialValues.id)) ? 'Save' : 'Create'}</Button>
+          </div>
         </div>
-      </div>
+      )}
     </form>
   );
 }
