@@ -1,4 +1,9 @@
 @use '../../styles/variables' as *;
+.viewHeader {
+  display: flex;
+  align-items: center;
+  gap: .5rem;
+}
 
 .gridItemSpan2 {
   grid-column: 1 / span 2;

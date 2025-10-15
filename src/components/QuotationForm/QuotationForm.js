@@ -791,12 +791,16 @@ export default function QuotationForm() {
           />
         </div>
 
-        <div className={`${styles.gridItem8} ${styles.span3}`}>
+        <div className={`${styles.gridItem8} ${styles.span2} ${styles.rightAlign}`}>
+          <Input label="Date" id="Date" name="Date" value={form.Date} onChange={handleChange} type="date" readOnly={!isEditable} />
+        </div>
+
+        <div className={`${styles.gridItem8} ${styles.span6}`}>
           <Input label="Address" placeholder="Address" id="Address" name="Address" value={form.Address} onChange={handleChange} readOnly={!isEditable} />
         </div>
 
         <div className={`${styles.gridItem8} ${styles.span2} ${styles.rightAlign}`}>
-          <Input label="Date" id="Date" name="Date" value={form.Date} onChange={handleChange} type="date" readOnly={!isEditable} />
+          <Input label="Valid Until" id="ValidUntil" name="ValidUntil" value={form.ValidUntil} onChange={handleChange} type="date" readOnly={!isEditable} />
         </div>
         
         {/* Row 2: Address (span 5), Quotation Number (span 3, right-aligned) */}
@@ -805,9 +809,6 @@ export default function QuotationForm() {
         </div>
         <div className={`${styles.gridItem8} ${styles.span3}`}>
           <Input label="Contact Number" placeholder="Contact Number" id="ContactNum" name="ContactNum" value={form.ContactNum} onChange={handleChange} readOnly={!isEditable} />
-        </div>
-        <div className={`${styles.gridItem8} ${styles.span2} ${styles.rightAlign}`}>
-          <Input label="Valid Until" id="ValidUntil" name="ValidUntil" value={form.ValidUntil} onChange={handleChange} type="date" readOnly={!isEditable} />
         </div>
 
         <div className={`${styles.gridItem8} ${styles.span2} ${styles.rightAlign}`}>

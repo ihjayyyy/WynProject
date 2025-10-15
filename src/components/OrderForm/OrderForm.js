@@ -1,9 +1,14 @@
 'use client';
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useSearchParams, useRouter } from 'next/navigation';
 import QuotationService from '../../services/quotationService';
+import OrderService from '../../services/orderService';
+import SupplierService from '../../services/supplierService';
+import { InventoryService } from '../../services/inventoryService';
+import { ServiceService } from '../../services/serviceService';
 import Breadcrumbs from '../ui/Breadcrumbs/Breadcrumbs';
+import StatusBadge from '../ui/StatusBadge/StatusBadge';
 import { FiClipboard } from 'react-icons/fi';
 import styles from "./OrderForm.module.scss";
 import Input from "../ui/Input/Input";
@@ -12,139 +17,14 @@ import Button from "../ui/Button/Button";
 import { FiPlus, FiTrash2 } from "react-icons/fi";
 import Select from "../ui/Select/Select";
 
-// --- Supplier Data (mock, should match supplier page) ---
-const SUPPLIERS = [
-  {
-    CompanyGuid: 'COMP001',
-    CompanyCode: 'ACME',
-    Name: 'Acme Corporation',
-    Logo: '',
-    Address: '123 Ayala Ave, Makati City',
-    Phone: '+63 2 8123 4567',
-    Fax: '+63 2 8123 4568',
-    Email: 'john.smith@acme.com',
-    Website: 'www.acme.com',
-    TaxNumber: 'TX123456',
-    ContactPerson: 'John Smith',
-    ContactNumber: '+63 917 111 2222',
-    PaymentTerms: 30,
-    Status: 'ACTIVE',
-    SupplierType: 'Local'
-  },
-  {
-    CompanyGuid: 'COMP002',
-    CompanyCode: 'GLOB',
-    Name: 'Global Supplies Ltd',
-    Logo: '',
-    Address: '456 Ortigas Ave, Pasig City',
-    Phone: '+63 2 8987 6543',
-    Fax: '+63 2 8987 6544',
-    Email: 'sarah.j@globalsupplies.com',
-    Website: 'www.globalsupplies.com',
-    TaxNumber: 'TX654321',
-    ContactPerson: 'Sarah Johnson',
-    ContactNumber: '+63 918 333 4444',
-    PaymentTerms: 45,
-    Status: 'ACTIVE',
-    SupplierType: 'International'
-  },
-  {
-    CompanyGuid: 'COMP003',
-    CompanyCode: 'TECH',
-    Name: 'Tech Solutions Inc',
-    Logo: '',
-    Address: '789 IT Park, Cebu City',
-    Phone: '+63 32 456 7890',
-    Fax: '+63 32 456 7891',
-    Email: 'mbrown@techsolutions.com',
-    Website: 'www.techsolutions.com',
-    TaxNumber: 'TX789123',
-    ContactPerson: 'Michael Brown',
-    ContactNumber: '+63 919 555 6666',
-    PaymentTerms: 60,
-    Status: 'PENDING',
-    SupplierType: 'Local'
-  }
-];
+// Data for suppliers, products and services will be loaded from services
 
-// Mock product catalog - in real app this would come from API
-const productCatalog = [
-  {
-    ProductGuid: "P001",
-    Description: "Premium Widget A",
-    UnitPrice: 150.00
-  },
-  {
-    ProductGuid: "P002", 
-    Description: "Standard Widget B",
-    UnitPrice: 85.50
-  },
-  {
-    ProductGuid: "P003",
-    Description: "Deluxe Widget C", 
-    UnitPrice: 220.75
-  },
-  {
-    ProductGuid: "P004",
-    Description: "Basic Widget D",
-    UnitPrice: 45.25
-  },
-  {
-    ProductGuid: "P005",
-    Description: "Professional Service Package",
-    UnitPrice: 500.00
-  }
-];
-
-const initialProductItems = [
-  {
-    id: 1,
-    ProductGuid: "P001",
-    Description: "Premium Widget A",
-    UnitPrice: 150.00,
-    Quantity: 2,
-    TotalPrice: 300.00,
-    Discount: 0
-  },
-  {
-    id: 2,
-    ProductGuid: "P002",
-    Description: "Standard Widget B", 
-    UnitPrice: 85.50,
-    Quantity: 1,
-    TotalPrice: 85.50,
-    Discount: 0
-  }
-];
+const initialProductItems = [];
 
 
-const initialServiceItems = [
-  {
-    id: 1,
-    ServiceGuid: "S001",
-    Description: "Consultation Service",
-    Amount: 250.00,
-  },
-];
+const initialServiceItems = [];
 
-// Mock service catalog - in real app this would come from API
-const serviceCatalog = [
-  {
-    ServiceGuid: "S001",
-    Description: "Consultation Service",
-    Amount: 250.00
-  },
-  {
-    ServiceGuid: "S002",
-    Description: "Installation Service",
-    Amount: 400.00
-  },
-  {
-    ServiceGuid: "S003",
-    Description: "Maintenance Package",
-    Amount: 150.00
-  }
-];
+// (service list loaded from ServiceService)
 
 // State for the blank row for service
 const initialBlankServiceRow = {
@@ -158,9 +38,10 @@ const initialBlankServiceRow = {
 export default function OrderForm() {
   const searchParams = useSearchParams();
   const fromQuotation = searchParams ? searchParams.get('fromQuotation') : null;
+  const orderId = searchParams ? searchParams.get('id') : null;
   const router = useRouter();
   // If navigated from a quotation, try to prefill the order form
-  React.useEffect(() => {
+  useEffect(() => {
     let mounted = true;
     if (!fromQuotation) return;
     const load = async () => {
@@ -168,14 +49,29 @@ export default function OrderForm() {
         const svc = new QuotationService();
         const q = await svc.getQuotationById(fromQuotation);
         if (!mounted || !q) return;
-        // Map fields from quotation to order form state
+  // Map fields from quotation to order form state
+  // Try to resolve supplier details to populate address/contact
+  let supplierAddress = '';
+        let supplierContactName = q.SupplierContactPerson || '';
+        let supplierContactNum = q.SupplierContactNumber || '';
+        try {
+          const supplierSvc = new SupplierService();
+          const srec = await supplierSvc.getSupplierById(q.SupplierGuid || q.SupplierCode || q.SupplierCompanyCode || null);
+          if (srec) {
+            supplierAddress = srec.Address || supplierAddress;
+            supplierContactName = supplierContactName || srec.ContactPerson || srec.ContactName || '';
+            supplierContactNum = supplierContactNum || srec.ContactNumber || srec.Phone || '';
+          }
+        } catch (e) {
+          // ignore
+        }
         setForm((prev) => ({
           ...prev,
           SupplierGuid: q.SupplierGuid || prev.SupplierGuid,
           QuotationNumber: q.QuotationNumber || prev.QuotationNumber,
-          Address: prev.Address,
-          ContactNum: q.SupplierContactNumber || prev.ContactNum,
-          ContactName: q.SupplierContactPerson || prev.ContactName,
+          Address: supplierAddress || prev.Address,
+          ContactNum: supplierContactNum || prev.ContactNum,
+          ContactName: supplierContactName || prev.ContactName,
           Date: q.Date || prev.Date,
           Description: q.Description || prev.Description,
           PurchaseType: (q.PurchaseType || '').toLowerCase() || prev.PurchaseType,
@@ -215,10 +111,129 @@ export default function OrderForm() {
     return () => { mounted = false; };
   }, [fromQuotation]);
 
+  // If navigated from an existing order (e.g. /purchase/orderform?id=ORD-001), prefill the form
+  useEffect(() => {
+    let mounted = true;
+    if (!orderId) return;
+    const loadOrder = async () => {
+      try {
+        const svc = new OrderService();
+        const ord = await svc.getOrderById(orderId);
+        if (!mounted || !ord) return;
+
+        // Resolve supplier to populate address/contact
+        let supplierAddress = '';
+        let supplierContactName = ord.SupplierContactPerson || '';
+        let supplierContactNum = ord.SupplierContactNumber || '';
+        try {
+          const supplierSvc = new SupplierService();
+          const srec = await supplierSvc.getSupplierById(ord.SupplierGuid || ord.SupplierCode || null);
+          if (srec) {
+            supplierAddress = srec.Address || supplierAddress;
+            supplierContactName = supplierContactName || srec.ContactPerson || srec.ContactName || '';
+            supplierContactNum = supplierContactNum || srec.ContactNumber || srec.Phone || '';
+          }
+        } catch (e) {
+          // ignore
+        }
+
+        setForm((prev) => ({
+          ...prev,
+          Guid: ord.Guid || prev.Guid,
+          SupplierGuid: ord.SupplierGuid || prev.SupplierGuid,
+          QuotationNumber: ord.QuotationNumber || prev.QuotationNumber,
+          PurchaseOrderNumber: ord.PurchaseOrderNumber || prev.PurchaseOrderNumber,
+          Address: supplierAddress || prev.Address,
+          ContactNum: supplierContactNum || prev.ContactNum,
+          ContactName: supplierContactName || prev.ContactName,
+          Date: ord.Date || prev.Date,
+          Description: ord.Description || prev.Description,
+          PurchaseType: (ord.PurchaseType || '').toLowerCase() || prev.PurchaseType,
+          PreparedBy: ord.PreparedBy || prev.PreparedBy,
+          ApprovedBy: ord.ApprovedBy || prev.ApprovedBy,
+          Status: ord.Status || prev.Status,
+        }));
+
+        const details = await svc.getDetailsWithItemsByOrderGuid(ord.Guid);
+        if (!mounted || !details) return;
+
+        if ((ord.PurchaseType || '').toLowerCase() === 'inventory') {
+          const mapped = details.map((d, idx) => ({
+            id: Date.now() + idx,
+            ProductGuid: d.Item ? d.Item.Guid : d.ItemGuid,
+            Description: d.Description || (d.Item && (d.Item.Name || d.Item.Description)),
+            UnitPrice: d.UnitPrice || 0,
+            Quantity: d.Quantity || 1,
+            TotalPrice: d.TotalPrice || 0,
+            Discount: d.Discount || 0,
+          }));
+          setProductItems(mapped);
+          setOrderType('inventory');
+        } else {
+          const mapped = details.map((d, idx) => ({
+            id: Date.now() + idx,
+            ServiceGuid: d.Item ? d.Item.Guid : d.ItemGuid,
+            Description: d.Description || (d.Item && (d.Item.Name || d.Item.Description)),
+            Amount: d.UnitPrice || d.TotalPrice || 0,
+          }));
+          setServiceItems(mapped);
+          setOrderType('service');
+        }
+      } catch (e) {
+        console.error('Failed to prefill order from order id', e);
+      }
+    };
+    loadOrder();
+    return () => { mounted = false; };
+  }, [orderId]);
+
+  // Loaded lists from services
+  const [suppliers, setSuppliers] = useState([]);
+  const [availableProducts, setAvailableProducts] = useState([]);
+  const [availableServices, setAvailableServices] = useState([]);
+
+  // Load supplier/product/service catalogs on mount
+  useEffect(() => {
+    let mounted = true;
+    const load = async () => {
+      try {
+        const supplierSvc = new SupplierService();
+        const invSvc = new InventoryService();
+        const svcSvc = new ServiceService();
+
+        const [sList, invList, svcList] = await Promise.all([
+          supplierSvc.getAllSuppliers(),
+          invSvc.getAllInventories(),
+          svcSvc.getAllServices(),
+        ]);
+
+        if (!mounted) return;
+        setSuppliers(sList || []);
+        setAvailableProducts((invList || []).map(i => ({
+          ProductGuid: i.Guid,
+          Description: i.Name || i.Description || i.ProductCode || '',
+          UnitPrice: i.UnitPrice || 0
+        })));
+        setAvailableServices((svcList || []).map(s => ({
+          ServiceGuid: s.Guid,
+          Description: s.Name || s.Description || s.ServiceCode || '',
+          Amount: s.Price || s.Amount || 0
+        })));
+      } catch (e) {
+        console.error('Failed to load supplier/product/service catalogs', e);
+      }
+    };
+    load();
+    return () => { mounted = false; };
+  }, []);
+
   const [orderType, setOrderType] = useState("inventory");
   const [productItems, setProductItems] = useState(initialProductItems);
   const [serviceItems, setServiceItems] = useState(initialServiceItems);
+  const [isSaving, setIsSaving] = useState(false);
+  const [saveError, setSaveError] = useState(null);
   const [form, setForm] = useState({
+    Guid: '',
     SupplierGuid: "",
     QuotationNumber: "Q-2025-0001", // Static/fixed
     PurchaseOrderNumber: "",
@@ -226,14 +241,39 @@ export default function OrderForm() {
     ContactName: "",
     ContactNum: "",
     Date: "",
+    ValidUntil: "",
     Description: "",
     PurchaseType: "inventory", // "inventory" or "service"
     PreparedBy: "",
     ApprovedBy: "",
+    Status: 'draft',
     OrderAmount: 0,
-    // Status: "draft",
     // ValidUntil: "",
   });
+
+  // If creating a new order (not viewing an existing one), initialize Date and ValidUntil
+  useEffect(() => {
+    let mounted = true;
+    if (!mounted) return;
+    try {
+      const today = new Date();
+      const todayStr = today.toISOString().slice(0, 10);
+      const d = new Date(today);
+      d.setMonth(d.getMonth() + 1);
+      const validStr = d.toISOString().slice(0, 10);
+      // Only set defaults when not viewing an existing order
+      if (!orderId) {
+        setForm((prev) => ({ ...prev, Date: prev.Date || todayStr, ValidUntil: prev.ValidUntil || validStr }));
+      }
+    } catch (e) {
+      // ignore
+    }
+    return () => { mounted = false; };
+  }, [orderId]);
+
+  // Determine view/edit mode: editable when creating or when existing order is in DRAFT
+  const isView = !!orderId || !!form.Guid;
+  const isEditable = !isView || (String(form.Status || '').trim().toUpperCase() === 'DRAFT');
 
   // Control whether the blank-row select controls are visible (hidden behind a button initially)
   const [showBlankProductSelector, setShowBlankProductSelector] = useState(false);
@@ -248,7 +288,7 @@ export default function OrderForm() {
   // Handle supplier dropdown change
   const handleSupplierChange = (e) => {
     const selectedGuid = e.target.value;
-    const selectedSupplier = SUPPLIERS.find(s => s.CompanyGuid === selectedGuid);
+    const selectedSupplier = suppliers.find(s => s.CompanyGuid === selectedGuid);
     setForm(form => ({
       ...form,
       SupplierGuid: selectedGuid,
@@ -277,7 +317,7 @@ export default function OrderForm() {
       setBlankServiceRow(initialBlankServiceRow);
       return;
     }
-    const selectedService = serviceCatalog.find(s => s.ServiceGuid === serviceGuid);
+    const selectedService = availableServices.find(s => s.ServiceGuid === serviceGuid);
     if (selectedService) {
       setBlankServiceRow({
         ServiceGuid: selectedService.ServiceGuid,
@@ -343,7 +383,7 @@ export default function OrderForm() {
       });
       return;
     }
-    const selectedProduct = productCatalog.find(p => p.ProductGuid === productGuid);
+    const selectedProduct = availableProducts.find(p => p.ProductGuid === productGuid);
     if (selectedProduct) {
       const totalPrice = calculateTotalPrice(selectedProduct.UnitPrice, blankRowData.Quantity, blankRowData.Discount);
       setBlankRowData({
@@ -543,7 +583,7 @@ export default function OrderForm() {
                   onChange={(e) => handleServiceSelect(e.target.value)}
                   options={[
                     { value: '', label: 'Select Service...' },
-                    ...serviceCatalog.map(s => ({
+                    ...(availableServices || []).map(s => ({
                       value: s.ServiceGuid,
                       label: `${s.ServiceGuid} - ${s.Description}`
                     }))
@@ -662,21 +702,66 @@ export default function OrderForm() {
   // Save handler
   const handleSubmit = (e) => {
     e.preventDefault();
-    // Log the form data and items
-    console.log({
-      ...form,
-      items: orderType === "inventory" ? productItems : serviceItems,
-      OrderAmount: orderAmount,
-    });
+    (async () => {
+      try {
+        setIsSaving(true);
+        setSaveError(null);
+        const svc = new OrderService();
+        const payload = {
+          ...form,
+          items: orderType === "inventory" ? productItems : serviceItems,
+          OrderAmount: orderAmount,
+          PurchaseType: orderType,
+        };
+
+        let res;
+        if (form && form.Guid) {
+          // update
+          res = await svc.updateOrder(payload);
+        } else {
+          // create
+          res = await svc.createOrder(payload);
+        }
+
+        if (res) {
+          // After save, redirect to order landing
+          try {
+            router.push('/purchase/orderlanding');
+          } catch (navErr) {
+            window.location.href = '/purchase/orderlanding';
+          }
+        }
+      } catch (err) {
+        console.error('Failed to save order', err);
+        setSaveError(String(err || 'Unknown error'));
+      } finally {
+        setIsSaving(false);
+      }
+    })();
   };
 
   const items = orderType === "inventory" ? productItems : serviceItems;
+  
+  // Hide the entire Actions column when the form is not editable
+  const visibleColumns = columns.filter((c) => {
+    if (!isEditable && String(c.key).toLowerCase() === 'actions') return false;
+    return true;
+  });
 
   return (
     <form className={styles.quotationForm} onSubmit={handleSubmit}>
       <Breadcrumbs showBack items={[{ label: 'Order Form' }]} backIcon={<FiClipboard size={18}/>} />
       <div className={styles.headerSection}>
-        <h2 className={styles.title}>Order</h2>
+        {isView ? (
+          <div className={styles.viewHeader}>
+            <h2 className={styles.title}>Order: {form.Guid}</h2>
+            <div className={styles.viewStatus}>
+              <StatusBadge status={form.Status} />
+            </div>
+          </div>
+        ) : (
+          <h2 className={styles.title}>Order Form</h2>
+        )}
         <div className={styles.typeSelector}>
           <label htmlFor="PurchaseType" className={styles.typeLabel}>Type:</label>
           <Select
@@ -684,6 +769,7 @@ export default function OrderForm() {
             name="PurchaseType"
             value={form.PurchaseType}
             onChange={handleTypeChange}
+            disabled={!isEditable}
             options={[
               { value: "inventory", label: "Inventory" },
               { value: "service", label: "Service" }
@@ -702,30 +788,34 @@ export default function OrderForm() {
             name="SupplierGuid"
             value={form.SupplierGuid}
             onChange={handleSupplierChange}
+            disabled={!isEditable}
             options={[
               { value: '', label: 'Select Supplier...' },
-              ...SUPPLIERS.map(s => ({
+              ...suppliers.map(s => ({
                 value: s.CompanyGuid,
                 label: `${s.CompanyCode} - ${s.Name}`
               }))
             ]}
           />
         </div>
-        <div className={`${styles.gridItem8} ${styles.span3}`}>
-          <Input label="Address" placeholder="Address" id="Address" name="Address" value={form.Address} onChange={handleChange} readOnly />
+        <div className={`${styles.gridItem8} ${styles.span2} ${styles.rightAlign}`}>
+          <Input label="Date" id="Date" name="Date" value={form.Date} onChange={handleChange} type="date" readOnly={!isEditable} />
+        </div>
+        <div className={`${styles.gridItem8} ${styles.span6}`}>
+          <Input label="Address" placeholder="Address" id="Address" name="Address" value={form.Address} onChange={handleChange} readOnly={!isEditable} />
         </div>
         <div className={`${styles.gridItem8} ${styles.span2} ${styles.rightAlign}`}>
-          <Input label="Date" id="Date" name="Date" value={form.Date} onChange={handleChange} type="date" />
+          <Input label="Valid Until" id="ValidUntil" name="ValidUntil" value={form.ValidUntil} onChange={handleChange} type="date" readOnly={!isEditable} />
         </div>
         
         {/* Row 2: Address (span 5), Quotation Number (span 3, right-aligned) */}
 
 
         <div className={`${styles.gridItem8} ${styles.span3}`}>
-          <Input label="Contact Name" placeholder="Contact Name" id="ContactName" name="ContactName" value={form.ContactName} onChange={handleChange} readOnly />
+          <Input label="Contact Name" placeholder="Contact Name" id="ContactName" name="ContactName" value={form.ContactName} onChange={handleChange} readOnly={!isEditable} />
         </div>
         <div className={`${styles.gridItem8} ${styles.span3}`}>
-          <Input label="Contact Number" placeholder="Contact Number" id="ContactNum" name="ContactNum" value={form.ContactNum} onChange={handleChange} readOnly />
+          <Input label="Contact Number" placeholder="Contact Number" id="ContactNum" name="ContactNum" value={form.ContactNum} onChange={handleChange} readOnly={!isEditable} />
         </div>    
 
         <div className={`${styles.gridItem8} ${styles.span2} ${styles.rightAlign}`}>
@@ -733,7 +823,7 @@ export default function OrderForm() {
         </div>
         
         <div className={`${styles.gridItem8} ${styles.span2} ${styles.rightAlign}`}>
-          <Input label="Purchase Order Number" placeholder="PO Number" id="PurchaseOrderNumber" name="PurchaseOrderNumber" value={form.PurchaseOrderNumber} onChange={handleChange} />
+          <Input label="Purchase Order Number" placeholder="PO Number" id="PurchaseOrderNumber" name="PurchaseOrderNumber" value={form.PurchaseOrderNumber} onChange={handleChange} readOnly={!isEditable} />
         </div>
         
         {/* Row 4: Description full width (span 8) */}
@@ -747,6 +837,7 @@ export default function OrderForm() {
             onChange={handleChange}
             multiline
             rows={3}
+            readOnly={!isEditable}
           />
         </div>
       </div>
@@ -754,20 +845,20 @@ export default function OrderForm() {
       {/* Add blank row to items if needed */}
       {(() => {
         let itemsWithBlank = [...items];
-        if (orderType === "inventory") {
+  if (isEditable && orderType === "inventory") {
           // Create the blank row for adding new products
-          const availableProducts = productCatalog.filter(
+          const availableProductsForBlank = (availableProducts || []).filter(
             product => !productItems.find(item => item.ProductGuid === product.ProductGuid)
           );
-          if (availableProducts.length > 0) {
+          if (availableProductsForBlank.length > 0) {
             itemsWithBlank.push({
               id: 'blank',
               ...blankRowData,
               isBlank: true,
-              availableProducts
+              availableProducts: availableProductsForBlank
             });
           }
-        } else if (orderType === "service") {
+        } else if (isEditable && orderType === "service") {
           itemsWithBlank.push({
             id: 'blank',
             ...blankServiceRow,
@@ -776,7 +867,7 @@ export default function OrderForm() {
         }
         return (
           <DataTable
-            columns={columns}
+            columns={visibleColumns}
             data={itemsWithBlank}
             showActions={false}
             footer={tableFooter}
@@ -786,10 +877,19 @@ export default function OrderForm() {
 
       <div className={styles.bottomFields}>
         <div className={styles.leftBottomFields}>
-          <Input label="Prepared By" placeholder="Prepared By" id="PreparedBy" name="PreparedBy" value={form.PreparedBy} onChange={handleChange} />
-          <Input label="Approved By" placeholder="Approved By" id="ApprovedBy" name="ApprovedBy" value={form.ApprovedBy} onChange={handleChange} />
+          {isView && (
+            <>
+              <Input label="Prepared By" placeholder="Prepared By" id="PreparedBy" name="PreparedBy" value={form.PreparedBy} onChange={handleChange} readOnly={!isEditable} />
+              <Input label="Approved By" placeholder="Approved By" id="ApprovedBy" name="ApprovedBy" value={form.ApprovedBy} onChange={handleChange} readOnly={!isEditable} />
+            </>
+          )}
         </div>
-        <Button type="submit" variant="save">Save</Button>
+        {isEditable && (
+          <>
+            <Button type="submit" variant="save" disabled={isSaving}>{isSaving ? 'Saving...' : 'Save'}</Button>
+            {saveError && <div className={styles.saveError} role="alert" style={{ color: 'var(--danger)', marginTop: 8 }}>{saveError}</div>}
+          </>
+        )}
       </div>
 
     </form>

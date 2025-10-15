@@ -3,9 +3,11 @@
 import { useRouter } from "next/navigation";
 import ThreeColumnLayout from "../ThreeColumnLayout/ThreeColumnLayout";
 import RightPanel from "../RightPanel/RightPanel";
-import React, { useState, useCallback, useMemo } from "react";
+import React, { useState, useCallback, useMemo, useEffect } from "react";
 import styles from "./OrderLanding.module.scss";
-import { StatsCard, SearchBar, DataTable } from "../../components";
+import OrderService from "../../services/orderService";
+import { StatsCard, SearchBar, DataTable, StatusBadge, DropdownAction } from "../../components";
+import { FiEye, FiCheck, FiX } from 'react-icons/fi';
 
 // --- Data & Configs ---
 const TABLE_DATA = [
@@ -119,7 +121,7 @@ const ALL_COLUMNS = [
     key: "Status",
     header: "STATUS",
     sortable: true,
-    render: (item) => <span style={{ textTransform: "capitalize" }}>{item.Status}</span>,
+    render: (item) => <StatusBadge status={item.Status} />,
   },
   {
     key: "SupplierPO",
@@ -160,21 +162,25 @@ export default function OrderLanding() {
     "PurchaseOrderNumber",
     "QuotationNumber",
     "Description",
+    "Status",
     "PurchaseType",
-    "Date",
     "OrderAmount",
+    "Actions",
   ]);
   const [filter, setFilter] = useState({ purchaseType: "" });
   const [isRightPanelCollapsed, setIsRightPanelCollapsed] = useState(false);
+  // items === null -> not loaded yet; [] -> loaded but empty
+  const [items, setItems] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
-  const columns = useMemo(
-    () => ALL_COLUMNS.filter((col) => selectedColumns.includes(col.key)),
-    [selectedColumns]
-  );
+  // columns will be computed after handlers are defined
+  let columns;
 
   // Filtered data based on filter and search
   const filteredData = useMemo(() => {
-    let data = TABLE_DATA;
+    // If items is a non-empty array use it, otherwise fall back to TABLE_DATA
+    let data = items && Array.isArray(items) && items.length > 0 ? items : TABLE_DATA;
     // Filter by purchaseType
     if (filter.purchaseType) {
       data = data.filter(
@@ -193,8 +199,9 @@ export default function OrderLanding() {
       );
     }
     return data;
-  }, [filter, searchTerm]);
+  }, [filter, searchTerm, items]);
 
+  // SearchBar handlers
   const handleSearchChange = useCallback((value) => {
     setSearchTerm(value);
   }, []);
@@ -203,11 +210,28 @@ export default function OrderLanding() {
     console.log("Searching for:", value);
   }, []);
 
+  // Subscribe to OrderService - set items to array when service returns
+  useEffect(() => {
+    let mounted = true;
+    setLoading(true);
+    const unsubscribe = OrderService.subscribe((res) => {
+      if (!mounted) return;
+      setItems(Array.isArray(res) ? res : []);
+      setLoading(false);
+    });
+    return () => {
+      mounted = false;
+      try {
+        unsubscribe && unsubscribe();
+      } catch (e) {}
+    };
+  }, []);
+
   const handleFilterClick = useCallback(() => {
     setIsRightPanelCollapsed(false);
   }, []);
 
-  //Handlers
+  // Handlers
   const handleRowClick = useCallback((order) => {
     console.log("Selected order:", order);
   }, []);
@@ -215,6 +239,85 @@ export default function OrderLanding() {
   const handleActionClick = useCallback((order) => {
     console.log("Action clicked for order:", order);
   }, []);
+
+  const handleView = useCallback((order) => {
+    if (order?.Guid) {
+      router.push(`/purchase/orderform?id=${order.Guid}`);
+    }
+  }, [router]);
+
+  const handleApprove = useCallback((order) => {
+    try {
+      const svc = new OrderService();
+      svc.setOrderStatus({ Guid: order.Guid, Status: 'Approved' }).catch((e) => {
+        console.error('Failed to approve order', e);
+      });
+    } catch (e) {
+      setItems((prev) => prev.map((it) => (it.Guid === order.Guid ? { ...it, Status: 'Approved' } : it)));
+    }
+  }, []);
+
+  const handleCancel = useCallback((order) => {
+    try {
+      const svc = new OrderService();
+      svc.setOrderStatus({ Guid: order.Guid, Status: 'Cancelled' }).catch((e) => {
+        console.error('Failed to cancel order', e);
+      });
+    } catch (e) {
+      setItems((prev) => prev.map((it) => (it.Guid === order.Guid ? { ...it, Status: 'Cancelled' } : it)));
+    }
+  }, []);
+
+  // Compute columns after handlers are available
+  columns = useMemo(() => {
+    const base = ALL_COLUMNS.filter((col) => selectedColumns.includes(col.key));
+    if (selectedColumns.includes('Actions')) {
+      const ACTION_COLUMN = {
+        key: 'Actions',
+        header: '',
+        sortable: false,
+        align: 'end',
+        width: '48px',
+        render: (item) => {
+          const items = [
+            {
+              key: 'view',
+              label: 'View',
+              icon: <FiEye size={16} />,
+              onClick: (it) => handleView(it),
+            },
+            {
+              key: 'approve',
+              label: 'Approve',
+              icon: <FiCheck size={16} />,
+              onClick: (it) => handleApprove(it),
+              disabled: (it) => String(it?.Status || '').toUpperCase() === 'APPROVED',
+              hidden: (it) => {
+                const s = String(it?.Status || '').toUpperCase();
+                return s === 'APPROVED' || s === 'CANCELLED' || s === 'ORDERED';
+              },
+            },
+            {
+              key: 'cancel',
+              label: 'Cancel',
+              icon: <FiX size={16} />,
+              destructive: true,
+              onClick: (it) => handleCancel(it),
+              disabled: (it) => String(it?.Status || '').toUpperCase() === 'CANCELLED',
+              hidden: (it) => {
+                const s = String(it?.Status || '').toUpperCase();
+                return s === 'CANCELLED' || s === 'ORDERED';
+              },
+            },
+          ];
+
+          return <DropdownAction item={item} items={items} />;
+        },
+      };
+      return [...base, ACTION_COLUMN];
+    }
+    return base;
+  }, [selectedColumns, handleView, handleApprove, handleCancel]);
 
   return (
     <ThreeColumnLayout
@@ -254,13 +357,20 @@ export default function OrderLanding() {
             width="300px"
           />
         </div>
-        <DataTable
-          data={filteredData}
-          columns={columns}
-          onRowClick={handleRowClick}
-          onActionClick={handleActionClick}
-          emptyMessage="No orders found"
-        />
+        {loading ? (
+          <div className={styles.loading}>Loading orders...</div>
+        ) : error ? (
+          <div className={styles.error}>Error loading orders: {String(error)}</div>
+        ) : (
+          <DataTable
+            data={filteredData}
+            columns={columns}
+            onRowClick={handleRowClick}
+            onActionClick={handleActionClick}
+            showActions={false}
+            emptyMessage="No orders found"
+          />
+        )}
       </div>
     </ThreeColumnLayout>
   );
