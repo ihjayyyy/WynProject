@@ -76,11 +76,32 @@ export default function EntityForm({ title, icon, fields, initialValues = {}, on
 
       <div className={styles.topFields8Col} style={{ width: normalizedWidth }}>
         {fields.map((f) => {
+          // per-field hidden support: allow boolean or function(values) => boolean
+          const fieldHidden = (() => {
+            if (typeof f.hidden === 'function') return !!f.hidden(values);
+            if (typeof f.hidden === 'boolean') return f.hidden;
+            return false;
+          })();
+
+          // if hidden, don't render the field at all
+          if (fieldHidden) return null;
+
           const classes = `${styles.gridItem8} ${styles[f.span || 'span3'] || ''} ${f.rightAlign ? styles.rightAlign : ''}`;
           // spacer field: render empty grid cell to occupy space
           if (f.type === 'spacer') {
             return <div key={f.name} className={classes} aria-hidden="true" />;
           }
+
+          // field-level readOnly support:
+          // - if `readOnly` prop (component) is true -> field is readonly
+          // - else if field.readOnly is a function -> call with current values
+          // - else if field.readOnly is boolean -> use it
+          const fieldReadOnly = (() => {
+            if (readOnly) return true;
+            if (typeof f.readOnly === 'function') return !!f.readOnly(values);
+            if (typeof f.readOnly === 'boolean') return f.readOnly;
+            return false;
+          })();
 
           return (
             <div key={f.name} className={classes}>
@@ -91,7 +112,7 @@ export default function EntityForm({ title, icon, fields, initialValues = {}, on
                 name={f.name}
                 value={values[f.name] ?? ''}
                 onChange={handleChange}
-                readOnly={readOnly}
+                readOnly={fieldReadOnly}
                 type={f.type}
               />
             </div>
