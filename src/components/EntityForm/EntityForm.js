@@ -15,10 +15,25 @@
  * - initialValues: object
  * - onSubmit: async function(values) => void (optional)
  * - backPath: string (path to navigate to after submit/default back)
+ * - width: string (optional) - controls form width. Accepts '25%','50%','75%','100%' or shorthand '1/4','1/2','3/4'. Defaults to '100%'.
  */
-export default function EntityForm({ title, icon, fields, initialValues = {}, onSubmit, backPath = '/', readOnly = false }) {
+export default function EntityForm({ title, icon, fields, initialValues = {}, onSubmit, backPath = '/', readOnly = false, width = '100%' }) {
   const router = useRouter();
   const [values, setValues] = useState({ ...initialValues });
+
+  // normalize width prop: allow '1/4','1/2','3/4' or percentages
+  const normalizedWidth = (() => {
+    if (!width) return '100%';
+    const w = String(width).trim();
+    if (w === '1/4') return '25%';
+    if (w === '1/2') return '50%';
+    if (w === '3/4') return '75%';
+    // allow plain numbers like '50' -> '50%'
+    if (/^\d+$/.test(w)) return w + '%';
+    // allow values already with %
+    if (/%$/.test(w)) return w;
+    return w; // fallback (user provided valid css unit)
+  })();
 
   // Keep internal state in sync when parent updates `initialValues` (e.g., when loading existing entity)
   useEffect(() => {
@@ -52,14 +67,14 @@ export default function EntityForm({ title, icon, fields, initialValues = {}, on
   };
 
   return (
-    <form className={styles.entityForm} onSubmit={handleSubmit}>
+    <form className={styles.entityForm} onSubmit={handleSubmit} >
       <Breadcrumbs showBack items={[{ label: `${title}` }]} backIcon={icon} />
 
       <div className={styles.headerSection}>
         <h2 className={styles.title}>{title}</h2>
       </div>
 
-      <div className={styles.topFields8Col}>
+      <div className={styles.topFields8Col} style={{ width: normalizedWidth }}>
         {fields.map((f) => {
           const classes = `${styles.gridItem8} ${styles[f.span || 'span3'] || ''} ${f.rightAlign ? styles.rightAlign : ''}`;
           // spacer field: render empty grid cell to occupy space

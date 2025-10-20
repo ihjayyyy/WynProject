@@ -85,6 +85,7 @@ export default function Page() {
       onSubmit={handleSubmit}
       readOnly={readOnly}
       backPath="/supplier"
+      // width='75%'
     />
   );
 }
