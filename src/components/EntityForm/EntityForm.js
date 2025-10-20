@@ -60,20 +60,28 @@ export default function EntityForm({ title, icon, fields, initialValues = {}, on
       </div>
 
       <div className={styles.topFields8Col}>
-        {fields.map((f) => (
-          <div key={f.name} className={`${styles.gridItem8} ${styles[f.span || 'span3'] || ''} ${f.rightAlign ? styles.rightAlign : ''}`}>
-            <Input
-              label={f.label}
-              placeholder={f.placeholder || f.label}
-              id={f.name}
-              name={f.name}
-              value={values[f.name] ?? ''}
-              onChange={handleChange}
-              readOnly={readOnly}
-              type={f.type}
-            />
-          </div>
-        ))}
+        {fields.map((f) => {
+          const classes = `${styles.gridItem8} ${styles[f.span || 'span3'] || ''} ${f.rightAlign ? styles.rightAlign : ''}`;
+          // spacer field: render empty grid cell to occupy space
+          if (f.type === 'spacer') {
+            return <div key={f.name} className={classes} aria-hidden="true" />;
+          }
+
+          return (
+            <div key={f.name} className={classes}>
+              <Input
+                label={f.label}
+                placeholder={f.placeholder || f.label}
+                id={f.name}
+                name={f.name}
+                value={values[f.name] ?? ''}
+                onChange={handleChange}
+                readOnly={readOnly}
+                type={f.type}
+              />
+            </div>
+          );
+        })}
       </div>
 
       {!readOnly && (

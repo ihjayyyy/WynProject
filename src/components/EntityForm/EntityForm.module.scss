@@ -46,6 +46,14 @@
   grid-column: span 3;
 }
 
+.span5{
+  grid-column: span 5;
+}
+
+.span8 {
+  grid-column: 1 / -1; // occupy full row (all 8 columns)
+}
+
 .bottomFields {
   display: flex;
   flex-wrap: wrap;

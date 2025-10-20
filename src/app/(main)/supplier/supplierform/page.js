@@ -32,15 +32,16 @@ export default function Page() {
 
   const fields = [
     { name: 'Name', label: 'Supplier Name', span: 'span3' },
+    { name: '__spacer1', label: '', span: 'span5', type: 'spacer' },
     { name: 'Address', label: 'Address', span: 'span3' },
-    { name: 'CompanyCode', label: 'Company Code', span: 'span2' },
     { name: 'Email', label: 'Email', span: 'span3' },
-    { name: 'Website', label: 'Website', span: 'span2', rightAlign: true },
+    { name: 'CompanyCode', label: 'Company Code', span: 'span2' },
     { name: 'Phone', label: 'Phone', span: 'span3' },
     { name: 'Fax', label: 'Fax', span: 'span3' },
-    { name: 'TaxNumber', label: 'Tax Number', span: 'span2' },
+    { name: 'Website', label: 'Website', span: 'span2', rightAlign: true },
     { name: 'ContactPerson', label: 'Contact Person', span: 'span3' },
     { name: 'ContactNumber', label: 'Contact Number', span: 'span3' },
+    { name: 'TaxNumber', label: 'Tax Number', span: 'span2' },
     { name: 'Logo', label: 'Logo', span: 'span2', type: 'file', rightAlign: true },
   ];
 
