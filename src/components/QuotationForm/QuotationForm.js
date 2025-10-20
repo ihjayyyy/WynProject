@@ -15,6 +15,7 @@ import QuotationService from '../../services/quotationService';
 import { useSearchParams, useRouter } from 'next/navigation';
 import Breadcrumbs from '../ui/Breadcrumbs/Breadcrumbs';
 import StatusBadge from '../ui/StatusBadge/StatusBadge';
+import ConfirmModal from '../ui/ConfirmModal/ConfirmModal';
 
 // Supplier service instance
 const supplierService = new SupplierService();
@@ -736,6 +737,26 @@ export default function QuotationForm() {
     }
   };
 
+  // Confirmation modal state for converting quotation to order
+  const [showConvertConfirm, setShowConvertConfirm] = useState(false);
+
+  const handleConvertClick = () => {
+    setShowConvertConfirm(true);
+  };
+
+  const handleConfirmConvert = () => {
+    setShowConvertConfirm(false);
+    try {
+      router.push(`/purchase/orderform?fromQuotation=${encodeURIComponent(form.Guid)}`);
+    } catch (e) {
+      window.location.href = `/purchase/orderform?fromQuotation=${encodeURIComponent(form.Guid)}`;
+    }
+  };
+
+  const handleCancelConvert = () => {
+    setShowConvertConfirm(false);
+  };
+
   return (
     <form className={styles.quotationForm} onSubmit={handleSubmit}>
       <Breadcrumbs showBack items={[{ label: 'Quotation Form' }]} backIcon={<FiFileText size={18}/>} />
@@ -870,22 +891,25 @@ export default function QuotationForm() {
         {/* Convert to Order button - visible when a quotation exists (view mode) or when the form has been created */}
         <div className={styles.rightBottomButtons}>
           {form.Guid && (
-            <Button
-              type="button"
-              variant="primary"
-              onClick={() => {
-                // Navigate to order form and include a query param so OrderForm can prefill
-                try {
-                  router.push(`/purchase/orderform?fromQuotation=${encodeURIComponent(form.Guid)}`);
-                } catch (e) {
-                  // Fallback: simple location change
-                  window.location.href = `/purchase/orderform?fromQuotation=${encodeURIComponent(form.Guid)}`;
-                }
-              }}
-              title="Convert this quotation into an order"
-            >
-              Convert to order
-            </Button>
+            <>
+              <Button
+                type="button"
+                variant="primary"
+                onClick={handleConvertClick}
+                title="Convert this quotation into an order"
+              >
+                Convert to order
+              </Button>
+              <ConfirmModal
+                open={showConvertConfirm}
+                title="Convert quotation to order"
+                message={`Are you sure you want to convert quotation ${form.QuotationNumber || form.Guid} into an order?`}
+                confirmText="Convert"
+                cancelText="Cancel"
+                onConfirm={handleConfirmConvert}
+                onCancel={handleCancelConvert}
+              />
+            </>
           )}
           {isEditable && (
             <Button type="submit" variant="save">{isView ? 'Save changes' : 'Create'}</Button>
