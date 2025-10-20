@@ -30,29 +30,29 @@ export default function Page() {
     CompanyGuid: undefined,
   });
 
-  //   const fields = [
-  //   { name: 'Name', label: 'Supplier Name', span: 'span3' },
-  //   { name: '__spacer1', label: '', span: 'span5', type: 'spacer' },
-  //   {
-  //     name: 'Address',
-  //     label: 'Address',
-  //     span: 'span3',
-  //     // address should be readonly when Name is blank
-  //     readOnly: (values) => !values?.Name || String(values.Name).trim() === ''
-  //   },
-  //   { name: 'Email', label: 'Email', span: 'span3',
-  //     // hide email initially when Name is blank; show when Name has value
-  //     hidden: (values) => !values?.Name || String(values.Name).trim() === ''
-  //   },
-  //   { name: 'CompanyCode', label: 'Company Code', span: 'span2' },
-  //   { name: 'Phone', label: 'Phone', span: 'span3' },
-  //   { name: 'Fax', label: 'Fax', span: 'span3' },
-  //   { name: 'Website', label: 'Website', span: 'span2', rightAlign: true },
-  //   { name: 'ContactPerson', label: 'Contact Person', span: 'span3' },
-  //   { name: 'ContactNumber', label: 'Contact Number', span: 'span3' },
-  //   { name: 'TaxNumber', label: 'Tax Number', span: 'span2' },
-  //   { name: 'Logo', label: 'Logo', span: 'span2', type: 'file', rightAlign: true },
-  // ];
+//   const fields = [
+//   { name: 'Name', label: 'Supplier Name', span: 'span3' },
+//   { name: '__spacer1', label: '', span: 'span5', type: 'spacer' },
+//   {
+//     name: 'Address',
+//     label: 'Address',
+//     span: 'span3',
+//     // address should be readonly when Name is blank
+//     readOnly: (values) => !values?.Name || String(values.Name).trim() === ''
+//   },
+//   { name: 'Email', label: 'Email', span: 'span3',
+//     // hide email initially when Name is blank; show when Name has value
+//     hidden: (values) => !values?.Name || String(values.Name).trim() === ''
+//   },
+//   { name: 'CompanyCode', label: 'Company Code', span: 'span2' },
+//   { name: 'Phone', label: 'Phone', span: 'span3' },
+//   { name: 'Fax', label: 'Fax', span: 'span3' },
+//   { name: 'Website', label: 'Website', span: 'span2', rightAlign: true },
+//   { name: 'ContactPerson', label: 'Contact Person', span: 'span3' },
+//   { name: 'ContactNumber', label: 'Contact Number', span: 'span3' },
+//   { name: 'TaxNumber', label: 'Tax Number', span: 'span2' },
+//   { name: 'Logo', label: 'Logo', span: 'span2', type: 'file', rightAlign: true },
+// ];
 
   const fields = [
     { name: 'Name', label: 'Supplier Name', span: 'span3' },
