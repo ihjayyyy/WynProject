@@ -1,6 +1,23 @@
 // MOCK DATA
 const SUPPLIERS = [
   {
+    CompanyGuid: 'CUST001',
+    CompanyCode: 'CUST',
+    Name: 'Client One',
+    Logo: '',
+    Address: '10 Client St, Makati City',
+    Phone: '+63 912 345 6789',
+    Fax: '',
+    Email: 'client.one@example.com',
+    Website: '',
+    TaxNumber: '',
+    ContactPerson: 'Client Rep',
+    ContactNumber: '+63 912 345 6789',
+    PaymentTerms: 0,
+    Status: 'ACTIVE',
+    SupplierType: 'Local',
+  },
+  {
     CompanyGuid: 'COMP001',
     CompanyCode: 'ACME',
     Name: 'Acme Corporation',

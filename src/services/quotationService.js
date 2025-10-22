@@ -1,6 +1,6 @@
 // MOCK DATA
-import { InventoryService } from './inventoryService';
-import { ServiceService } from './serviceService';
+import { InventoryService } from './inventoryService.js';
+import { ServiceService } from './serviceService.js';
 const QUOTATIONS = [
   {
     Guid: 'ID123',

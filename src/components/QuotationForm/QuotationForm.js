@@ -33,7 +33,19 @@ const initialBlankServiceRow = {
   Description: '',
   Price: 0,
 };
-export default function QuotationForm() {
+// Default adapter so existing usage remains unchanged
+const defaultServiceFactory = () => {
+  const svc = new QuotationService();
+  return {
+    getById: (id) => svc.getQuotationById(id),
+    getDetailsWithItemsByQuotationGuid: (id) => svc.getDetailsWithItemsByQuotationGuid(id),
+    create: (payload) => svc.createQuotation(payload),
+    update: (payload) => svc.updateQuotation(payload),
+    subscribe: (cb) => QuotationService.subscribe(cb)
+  };
+};
+
+export default function QuotationForm({ serviceFactory = defaultServiceFactory, landingRoute = '/purchase/quotationlanding', title = 'Quotation Form', saveType = null }) {
   const searchParams = useSearchParams();
   const viewId = searchParams ? searchParams.get('id') : null;
   const isView = !!viewId;
@@ -141,9 +153,9 @@ export default function QuotationForm() {
     if (!id) return;
 
     const loadQuotation = async () => {
-      const quotationService = new QuotationService();
+      const service = serviceFactory();
       try {
-        const q = await quotationService.getQuotationById(id);
+        const q = await service.getById(id);
         if (!mounted || !q) return;
 
         // Map quotation fields into form
@@ -157,7 +169,8 @@ export default function QuotationForm() {
           Date: q.Date || prev.Date,
           ValidUntil: q.ValidUntil || prev.ValidUntil,
           Description: q.Description || prev.Description,
-          PurchaseType: q.PurchaseType ? q.PurchaseType.toLowerCase() : prev.PurchaseType,
+          // accept either PurchaseType or SalesType from the record so the form can be reused
+          PurchaseType: (q.PurchaseType || q.SalesType) ? (q.PurchaseType || q.SalesType).toLowerCase() : prev.PurchaseType,
           PreparedBy: q.PreparedBy || prev.PreparedBy,
           ApprovedBy: q.ApprovedBy || prev.ApprovedBy,
           Guid: q.Guid || prev.Guid,
@@ -193,11 +206,11 @@ export default function QuotationForm() {
         }
 
         // Load details with resolved Item records
-        const details = await quotationService.getDetailsWithItemsByQuotationGuid(id);
+  const details = await service.getDetailsWithItemsByQuotationGuid(id);
         if (!mounted) return;
 
-        // Map details into productItems or serviceItems depending on PurchaseType
-        const purchaseType = (q.PurchaseType || '').toLowerCase();
+  // Map details into productItems or serviceItems depending on PurchaseType (or SalesType for sales records)
+  const purchaseType = (q.PurchaseType || q.SalesType || '').toLowerCase();
         if (purchaseType === 'inventory') {
           const mapped = details.map((d) => ({
             id: d.Guid,
@@ -227,7 +240,7 @@ export default function QuotationForm() {
 
     loadQuotation();
     // subscribe to service updates so the opened quotation can reflect status changes
-    const unsubscribe = QuotationService.subscribe((all) => {
+    const unsubscribe = serviceFactory().subscribe((all) => {
       if (!mounted) return;
       const found = (all || []).find((q) => q.Guid === id || q.QuotationNumber === id);
       if (found) {
@@ -235,7 +248,7 @@ export default function QuotationForm() {
       }
     });
     return () => { mounted = false; try { unsubscribe && unsubscribe(); } catch (e) {} };
-  }, [searchParams, suppliers]);
+  }, [searchParams, suppliers, serviceFactory]);
 
   // Handlers and helpers
   const handleChange = (e) => {
@@ -712,12 +725,13 @@ export default function QuotationForm() {
       ...form,
       items: quotationType === "inventory" ? productItems : serviceItems,
     };
-    // Use QuotationService to create (mock) and then redirect to landing so it refreshes
-    const svc = new QuotationService();
+    // optionally map UI PurchaseType into a differently-named backend field (eg. SalesType)
+    if (saveType) payload[saveType] = form.PurchaseType;
+    const svc = serviceFactory();
     if (isView && form.Guid) {
-      svc.updateQuotation(payload).then((updated) => {
+      svc.update(payload).then((updated) => {
         try {
-          router.push('/purchase/quotationlanding');
+          router.push(landingRoute);
         } catch (e) {
           console.log('Updated quotation', updated);
         }
@@ -725,9 +739,9 @@ export default function QuotationForm() {
         console.error('Failed to update quotation', err);
       });
     } else {
-      svc.createQuotation(payload).then((created) => {
+      svc.create(payload).then((created) => {
         try {
-          router.push('/purchase/quotationlanding');
+          router.push(landingRoute);
         } catch (e) {
           console.log('Created quotation', created);
         }
