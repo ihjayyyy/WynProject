@@ -1,5 +1,10 @@
+import React, { Suspense } from 'react';
 import SalesQuotationForm from '@/components/SalesQuotationForm/SalesQuotationForm';
 
 export default function Page() {
-  return <SalesQuotationForm/>;
+  return (
+    <Suspense fallback={<div style={{ padding: 20 }}>Loading form...</div>}>
+      <SalesQuotationForm />
+    </Suspense>
+  );
 }

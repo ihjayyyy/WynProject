@@ -1,5 +1,10 @@
+import React, { Suspense } from 'react';
 import QuotationForm from '@/components/QuotationForm/QuotationForm';
 
 export default function Page() {
-  return <QuotationForm />;
+  return (
+    <Suspense fallback={<div style={{ padding: 20 }}>Loading form...</div>}>
+      <QuotationForm />
+    </Suspense>
+  );
 }
