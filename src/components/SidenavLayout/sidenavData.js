@@ -80,7 +80,7 @@ export const sidenavItems = [
     icon: FiCreditCard, // changed to credit card for business context
     children: [
       { label: 'Quotation', icon: FiFileText, href: '/sales/quotationlanding' },
-      { label: 'Sales Order', icon: FiClipboard, href: '/sales/order' },
+      { label: 'Sales Order', icon: FiClipboard, href: '/sales/orderlanding' },
       {
         label: 'Invoice',
         icon: FiFile,

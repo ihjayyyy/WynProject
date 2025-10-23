@@ -10,59 +10,6 @@ import { StatsCard, SearchBar, DataTable, StatusBadge, DropdownAction } from "..
 import { FiEye, FiCheck, FiX } from 'react-icons/fi';
 
 // --- Data & Configs ---
-const TABLE_DATA = [
-  {
-    Guid: "ORD-001",
-    CompanyGuid: "c0mp-0001-aaaa-bbbb-ccccdddd1111",
-    SupplierGuid: "sup-1001-xxxx-yyyy-zzzz11112222",
-    QuotationGuid: "QTN-2025-0001",
-    QuotationNumber: "QTN-2025-0001",
-    PurchaseOrderNumber: "PO-2025-0001",
-    Date: "2025-10-01",
-    Description: "Bulk order for grooming supplies",
-    PurchaseType: "Inventory",
-    ValidUntil: "2025-10-15",
-    PreparedBy: "Juan Dela Cruz",
-    ApprovedBy: "Maria Santos",
-    Status: "draft",
-    SupplierPO: "SUP-PO-001",
-    OrderAmount: 15000.0,
-  },
-  {
-    Guid: "ORD-002",
-    CompanyGuid: "c0mp-0001-aaaa-bbbb-ccccdddd1111",
-    SupplierGuid: "sup-1002-aaaa-bbbb-cccc22223333",
-    QuotationGuid: "QTN-2025-0002",
-    QuotationNumber: "QTN-2025-0002",
-    PurchaseOrderNumber: "PO-2025-0002",
-    Date: "2025-10-02",
-    Description: "Massage service order",
-    PurchaseType: "Service",
-    ValidUntil: "2025-10-20",
-    PreparedBy: "Carlo Mendoza",
-    ApprovedBy: "Andrea Lopez",
-    Status: "approved",
-    SupplierPO: "SUP-PO-002",
-    OrderAmount: 5000.0,
-  },
-  {
-    Guid: "ORD-003",
-    CompanyGuid: "c0mp-0002-eeee-ffff-gggghhhh2222",
-    SupplierGuid: "sup-1003-pppp-qqqq-rrrr33334444",
-    QuotationGuid: "QTN-2025-0003",
-    QuotationNumber: "QTN-2025-0003",
-    PurchaseOrderNumber: "PO-2025-0003",
-    Date: "2025-10-03",
-    Description: "Extra service order",
-    PurchaseType: "Service",
-    ValidUntil: "2025-11-01",
-    PreparedBy: "Maria Santos",
-    ApprovedBy: "Juan Dela Cruz",
-    Status: "closed",
-    SupplierPO: "SUP-PO-003",
-    OrderAmount: 8000.0,
-  },
-];
 
 const ALL_COLUMNS = [
   {
@@ -148,29 +95,45 @@ function StatsSection() {
   );
 }
 
-export default function OrderLanding() {
+// Default service adapter at module scope to keep identity stable
+const defaultServiceFactory = () => {
+  return {
+    subscribe: (cb) => OrderService.subscribe(cb),
+    setStatus: ({ Guid, Status }) => {
+      const svc = new OrderService();
+      return svc.setOrderStatus({ Guid, Status });
+    },
+  };
+};
+
+export default function OrderLanding({ serviceFactory = null, formRoute = '/purchase/orderform', title = 'Orders', columns: overrideColumns = null, filterConfig = null }) {
   const [searchTerm, setSearchTerm] = useState("");
   const router = useRouter();
 
+  // Use a stable factory reference so effects don't re-run every render
+  const svcFactory = React.useMemo(() => (serviceFactory || defaultServiceFactory), [serviceFactory]);
+
   // Function to redirect to order form
   const redirectToOrderForm = useCallback(() => {
-    router.push("/purchase/orderform");
-  }, [router]);
+    router.push(formRoute);
+  }, [router, formRoute]);
 
-  const [selectedColumns, setSelectedColumns] = useState([
-    "Guid",
-    "PurchaseOrderNumber",
-    "QuotationNumber",
-    "Description",
-    "Status",
-    "PurchaseType",
-    "OrderAmount",
-    "Actions",
-  ]);
-  const [filter, setFilter] = useState({ purchaseType: "" });
+  const cols = overrideColumns || ALL_COLUMNS;
+  const defaultSelected = cols.map((c) => c.key).concat(['Actions']);
+  const [selectedColumns, setSelectedColumns] = useState(defaultSelected);
+  const effectiveFilterConfig = filterConfig || {
+    label: 'Purchase Type',
+    key: 'purchaseType',
+    options: [
+      { value: '', label: 'All' },
+      { value: 'Inventory', label: 'Inventory' },
+      { value: 'Service', label: 'Service' },
+    ],
+  };
+  const [filter, setFilter] = useState({ [effectiveFilterConfig.key]: '' });
   const [isRightPanelCollapsed, setIsRightPanelCollapsed] = useState(false);
   // items === null -> not loaded yet; [] -> loaded but empty
-  const [items, setItems] = useState(null);
+  const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
@@ -179,8 +142,8 @@ export default function OrderLanding() {
 
   // Filtered data based on filter and search
   const filteredData = useMemo(() => {
-    // If items is a non-empty array use it, otherwise fall back to TABLE_DATA
-    let data = items && Array.isArray(items) && items.length > 0 ? items : TABLE_DATA;
+    // Use only the items provided by the service. Default to [] so empty results show empty state.
+    let data = Array.isArray(items) ? items : [];
     // Filter by purchaseType
     if (filter.purchaseType) {
       data = data.filter(
@@ -210,13 +173,13 @@ export default function OrderLanding() {
     console.log("Searching for:", value);
   }, []);
 
-  // Subscribe to OrderService - set items to array when service returns
+  // Subscribe to service so landing reflects additions/updates in real-time
   useEffect(() => {
     let mounted = true;
     setLoading(true);
-    const unsubscribe = OrderService.subscribe((res) => {
+    const unsubscribe = svcFactory().subscribe((res) => {
       if (!mounted) return;
-      setItems(Array.isArray(res) ? res : []);
+      setItems(res || []);
       setLoading(false);
     });
     return () => {
@@ -225,7 +188,7 @@ export default function OrderLanding() {
         unsubscribe && unsubscribe();
       } catch (e) {}
     };
-  }, []);
+  }, [svcFactory]);
 
   const handleFilterClick = useCallback(() => {
     setIsRightPanelCollapsed(false);
@@ -242,35 +205,33 @@ export default function OrderLanding() {
 
   const handleView = useCallback((order) => {
     if (order?.Guid) {
-      router.push(`/purchase/orderform?id=${order.Guid}`);
+      router.push(`${formRoute}?id=${order.Guid}`);
     }
-  }, [router]);
+  }, [router, formRoute]);
 
   const handleApprove = useCallback((order) => {
     try {
-      const svc = new OrderService();
-      svc.setOrderStatus({ Guid: order.Guid, Status: 'Approved' }).catch((e) => {
+      svcFactory().setStatus({ Guid: order.Guid, Status: 'Approved' }).catch((e) => {
         console.error('Failed to approve order', e);
       });
     } catch (e) {
       setItems((prev) => prev.map((it) => (it.Guid === order.Guid ? { ...it, Status: 'Approved' } : it)));
     }
-  }, []);
+  }, [svcFactory]);
 
   const handleCancel = useCallback((order) => {
     try {
-      const svc = new OrderService();
-      svc.setOrderStatus({ Guid: order.Guid, Status: 'Cancelled' }).catch((e) => {
+      svcFactory().setStatus({ Guid: order.Guid, Status: 'Cancelled' }).catch((e) => {
         console.error('Failed to cancel order', e);
       });
     } catch (e) {
       setItems((prev) => prev.map((it) => (it.Guid === order.Guid ? { ...it, Status: 'Cancelled' } : it)));
     }
-  }, []);
+  }, [svcFactory]);
 
   // Compute columns after handlers are available
   columns = useMemo(() => {
-    const base = ALL_COLUMNS.filter((col) => selectedColumns.includes(col.key));
+    const base = cols.filter((col) => selectedColumns.includes(col.key));
     if (selectedColumns.includes('Actions')) {
       const ACTION_COLUMN = {
         key: 'Actions',
@@ -317,35 +278,27 @@ export default function OrderLanding() {
       return [...base, ACTION_COLUMN];
     }
     return base;
-  }, [selectedColumns, handleView, handleApprove, handleCancel]);
+  }, [cols, selectedColumns, handleView, handleApprove, handleCancel]);
 
-  return (
+    return (
     <ThreeColumnLayout
       isRightPanelCollapsed={isRightPanelCollapsed}
       setIsRightPanelCollapsed={setIsRightPanelCollapsed}
       rightPanel={
         <RightPanel
-          allColumns={ALL_COLUMNS}
+          allColumns={cols}
           selectedColumns={selectedColumns}
           setSelectedColumns={setSelectedColumns}
           filter={filter}
           onFilterChange={setFilter}
-          filterConfig={{
-            label: 'Purchase Type',
-            key: 'purchaseType',
-            options: [
-              { value: '', label: 'All' },
-              { value: 'Inventory', label: 'Inventory' },
-              { value: 'Service', label: 'Service' },
-            ],
-          }}
+          filterConfig={effectiveFilterConfig}
         />
       }
     >
       <div className={styles.container}>
         <StatsSection />
         <div className={styles.titleSection}>
-          <h1 className={styles.title}>Orders</h1>
+          <h1 className={styles.title}>{title}</h1>
           <SearchBar
             placeholder="Search orders..."
             value={searchTerm}

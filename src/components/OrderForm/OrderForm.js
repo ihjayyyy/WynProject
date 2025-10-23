@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from "react";
 import { useSearchParams, useRouter } from 'next/navigation';
 import QuotationService from '../../services/quotationService';
+import SalesQuotationService from '../../services/salesQuotationService';
 import OrderService from '../../services/orderService';
 import SupplierService from '../../services/supplierService';
 import { InventoryService } from '../../services/inventoryService';
@@ -35,7 +36,19 @@ const initialBlankServiceRow = {
 
 
 
-export default function OrderForm() {
+// Default adapter so existing usage remains unchanged
+const defaultServiceFactory = () => {
+  const svc = new OrderService();
+  return {
+    getById: (id) => svc.getOrderById(id),
+    getDetailsWithItemsByOrderGuid: (id) => svc.getDetailsWithItemsByOrderGuid(id),
+    create: (payload) => svc.createOrder(payload),
+    update: (payload) => svc.updateOrder(payload),
+    subscribe: (cb) => OrderService.subscribe(cb),
+  };
+};
+
+export default function OrderForm({ serviceFactory = defaultServiceFactory, landingRoute = '/purchase/orderlanding', title = 'Order Form', saveType = null }) {
   const searchParams = useSearchParams();
   const fromQuotation = searchParams ? searchParams.get('fromQuotation') : null;
   const orderId = searchParams ? searchParams.get('id') : null;
@@ -46,12 +59,23 @@ export default function OrderForm() {
     if (!fromQuotation) return;
     const load = async () => {
       try {
-        const svc = new QuotationService();
-        const q = await svc.getQuotationById(fromQuotation);
+        const quotationSvc = new QuotationService();
+        let q = await quotationSvc.getQuotationById(fromQuotation);
+        let usedSales = false;
+        let salesSvc = null;
+
+        // If not found in regular quotations, try sales quotations
+        if (!q) {
+          salesSvc = new SalesQuotationService();
+          q = await salesSvc.getSalesQuotationById(fromQuotation);
+          if (q) usedSales = true;
+        }
+
         if (!mounted || !q) return;
-  // Map fields from quotation to order form state
-  // Try to resolve supplier details to populate address/contact
-  let supplierAddress = '';
+
+        // Map fields from quotation to order form state
+        // Try to resolve supplier details to populate address/contact
+        let supplierAddress = '';
         let supplierContactName = q.SupplierContactPerson || '';
         let supplierContactNum = q.SupplierContactNumber || '';
         try {
@@ -65,6 +89,7 @@ export default function OrderForm() {
         } catch (e) {
           // ignore
         }
+
         setForm((prev) => ({
           ...prev,
           SupplierGuid: q.SupplierGuid || prev.SupplierGuid,
@@ -74,13 +99,15 @@ export default function OrderForm() {
           ContactName: supplierContactName || prev.ContactName,
           Date: q.Date || prev.Date,
           Description: q.Description || prev.Description,
-          PurchaseType: (q.PurchaseType || '').toLowerCase() || prev.PurchaseType,
+          // accept either PurchaseType or SalesType from the record so the form can be reused
+          PurchaseType: (q.PurchaseType || q.SalesType) ? (q.PurchaseType || q.SalesType).toLowerCase() : prev.PurchaseType,
         }));
 
-        // Load details and map to order items
-        const details = await svc.getDetailsWithItemsByQuotationGuid(q.Guid);
+        // Load details and map to order items using the appropriate service
+        const details = usedSales && salesSvc ? await salesSvc.getDetailsWithItemsByQuotationGuid(q.Guid) : await quotationSvc.getDetailsWithItemsByQuotationGuid(q.Guid);
         if (!mounted || !details) return;
-        if ((q.PurchaseType || '').toLowerCase() === 'inventory') {
+        const purchaseType = (q.PurchaseType || q.SalesType || '').toLowerCase();
+        if (purchaseType === 'inventory') {
           const mapped = details.map((d, idx) => ({
             id: Date.now() + idx,
             ProductGuid: d.Item ? d.Item.Guid : d.ItemGuid,
@@ -117,8 +144,8 @@ export default function OrderForm() {
     if (!orderId) return;
     const loadOrder = async () => {
       try {
-        const svc = new OrderService();
-        const ord = await svc.getOrderById(orderId);
+        const svc = serviceFactory();
+        const ord = await svc.getById(orderId);
         if (!mounted || !ord) return;
 
         // Resolve supplier to populate address/contact
@@ -154,7 +181,7 @@ export default function OrderForm() {
           Status: ord.Status || prev.Status,
         }));
 
-        const details = await svc.getDetailsWithItemsByOrderGuid(ord.Guid);
+  const details = await svc.getDetailsWithItemsByOrderGuid(ord.Guid);
         if (!mounted || !details) return;
 
         if ((ord.PurchaseType || '').toLowerCase() === 'inventory') {
@@ -185,7 +212,7 @@ export default function OrderForm() {
     };
     loadOrder();
     return () => { mounted = false; };
-  }, [orderId]);
+  }, [orderId, serviceFactory]);
 
   // Loaded lists from services
   const [suppliers, setSuppliers] = useState([]);

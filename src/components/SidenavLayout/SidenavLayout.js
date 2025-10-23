@@ -52,6 +52,26 @@ export default function SidenavLayout({ children }) {
     return invoiceLandingPaths.includes(path?.toLowerCase());
   };
 
+  // Helper: for sales quotation landing, match /sales/quotationlanding and /sales/quotationform
+  const isSalesQuotationPath = (path) => {
+    const salesQuotationPaths = [
+      '/sales/quotationlanding',
+      '/sales/quotation',
+      '/sales/quotationform',
+    ];
+    return salesQuotationPaths.includes(path?.toLowerCase());
+  };
+
+  // Helper: for sales order, match /sales/order and /sales/orderform
+  const isSalesOrderPath = (path) => {
+    const salesOrderPaths = [
+      '/sales/orderlanding',
+      '/sales/order',
+      '/sales/orderform',
+    ];
+    return salesOrderPaths.includes(path?.toLowerCase());
+  };
+
   // Helper: for order landing, also match /purchase/order and /purchase/orderform
   const isOrderLandingPath = (path) => {
     const orderLandingPaths = [
@@ -88,6 +108,10 @@ export default function SidenavLayout({ children }) {
         if (child.href === '/purchase/orderlanding') {
           return isOrderLandingPath(pathname);
         }
+        // Special case for Sales Order
+        if (child.href === '/sales/orderlanding') {
+          return isSalesOrderPath(pathname);
+        }
         // Special case for Invoice
         if (child.href === '/purchase/invoicelanding') {
           return isInvoiceLandingPath(pathname);
@@ -99,6 +123,10 @@ export default function SidenavLayout({ children }) {
         // Special case for Quotation
         if (child.href === '/purchase/quotationlanding') {
           return isQuotationLandingPath(pathname);
+        }
+        // Special case for Sales Quotation
+        if (child.href === '/sales/quotationlanding') {
+          return isSalesQuotationPath(pathname);
         }
         // also treat child href as active when the current path is under the child's route
         return (
@@ -115,9 +143,17 @@ export default function SidenavLayout({ children }) {
     if (child.href === '/purchase/orderlanding') {
       return isOrderLandingPath(pathname);
     }
+    // Special case for Sales Order
+    if (child.href === '/sales/orderlanding') {
+      return isSalesOrderPath(pathname);
+    }
     // Special case for Quotation
     if (child.href === '/purchase/quotationlanding') {
       return isQuotationLandingPath(pathname);
+    }
+    // Special case for Sales Quotation
+    if (child.href === '/sales/quotationlanding') {
+      return isSalesQuotationPath(pathname);
     }
     // Special case for Invoice
     if (child.href === '/purchase/invoicelanding') {

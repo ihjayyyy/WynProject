@@ -45,7 +45,7 @@ const defaultServiceFactory = () => {
   };
 };
 
-export default function QuotationForm({ serviceFactory = defaultServiceFactory, landingRoute = '/purchase/quotationlanding', title = 'Quotation Form', saveType = null }) {
+export default function QuotationForm({ serviceFactory = defaultServiceFactory, landingRoute = '/purchase/quotationlanding', title = 'Quotation Form', saveType = null, convertRoute = '/purchase/orderform' }) {
   const searchParams = useSearchParams();
   const viewId = searchParams ? searchParams.get('id') : null;
   const isView = !!viewId;
@@ -761,9 +761,9 @@ export default function QuotationForm({ serviceFactory = defaultServiceFactory, 
   const handleConfirmConvert = () => {
     setShowConvertConfirm(false);
     try {
-      router.push(`/purchase/orderform?fromQuotation=${encodeURIComponent(form.Guid)}`);
+      router.push(`${convertRoute}?fromQuotation=${encodeURIComponent(form.Guid)}`);
     } catch (e) {
-      window.location.href = `/purchase/orderform?fromQuotation=${encodeURIComponent(form.Guid)}`;
+      window.location.href = `${convertRoute}?fromQuotation=${encodeURIComponent(form.Guid)}`;
     }
   };
 
