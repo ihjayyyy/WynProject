@@ -15,7 +15,7 @@ import styles from "./OrderForm.module.scss";
 import Input from "../ui/Input/Input";
 import DataTable from "../ui/DataTable/DataTable";
 import Button from "../ui/Button/Button";
-import { FiPlus, FiTrash2 } from "react-icons/fi";
+import { FiPlus, FiTrash2, FiEdit, FiCheck, FiX } from "react-icons/fi";
 import Select from "../ui/Select/Select";
 
 // Data for suppliers, products and services will be loaded from services
@@ -390,6 +390,82 @@ export default function OrderForm({ serviceFactory = defaultServiceFactory, land
     Discount: 0
   });
 
+  // Inline editing state for existing rows (copy behavior from QuotationForm)
+  const [editingItemId, setEditingItemId] = useState(null);
+  const [editedRow, setEditedRow] = useState(null);
+
+  const handleStartEdit = (item) => {
+    setEditingItemId(item.id);
+    setEditedRow({ ...item });
+  };
+
+  const handleEditChange = (name, value) => {
+    setEditedRow((prev) => {
+      if (!prev) return prev;
+      let next = { ...prev, [name]: value };
+
+      // If product selection changed, pull unit price and description from catalog and recalc total
+      if (name === 'ProductGuid') {
+        const selected = (availableProducts || []).find(p => p.ProductGuid === value);
+        if (selected) {
+          next.UnitPrice = selected.UnitPrice || 0;
+          next.Description = selected.Description || next.Description;
+          const qty = Number(next.Quantity || 1);
+          const disc = Number(next.Discount || 0);
+          next.TotalPrice = calculateTotalPrice(next.UnitPrice, qty, disc);
+        }
+      }
+
+      // If service selection changed, pull amount and description from service catalog
+      if (name === 'ServiceGuid') {
+        const selected = (availableServices || []).find(s => s.ServiceGuid === value);
+        if (selected) {
+          next.Amount = selected.Amount || 0;
+          next.Description = selected.Description || next.Description;
+        }
+      }
+
+      // If quantity or discount changed for inventory, recalc total
+      if (name === 'Quantity' || name === 'Discount') {
+        const qty = Math.max(1, Number(name === 'Quantity' ? value : next.Quantity) || 1);
+        const disc = Math.max(0, Math.min(100, Number(name === 'Discount' ? value : next.Discount) || 0));
+        next.Quantity = qty;
+        next.Discount = disc;
+        const unit = Number(next.UnitPrice || 0);
+        next.TotalPrice = calculateTotalPrice(unit, qty, disc);
+      }
+
+      // If unit price edited, recalc total
+      if (name === 'UnitPrice') {
+        const unit = Number(value) || 0;
+        const qty = Math.max(1, Number(next.Quantity || 1) || 1);
+        const disc = Math.max(0, Math.min(100, Number(next.Discount || 0) || 0));
+        next.UnitPrice = unit;
+        next.TotalPrice = calculateTotalPrice(unit, qty, disc);
+      }
+
+      // If amount edited for service, ensure numeric
+      if (name === 'Amount') {
+        next.Amount = Number(value) || 0;
+      }
+
+      return next;
+    });
+  };
+
+  const handleSaveEdit = () => {
+    if (!editedRow) return;
+    setProductItems((prev) => prev.map((it) => (it.id === editedRow.id ? { ...it, ...editedRow } : it)));
+    setServiceItems((prev) => prev.map((it) => (it.id === editedRow.id ? { ...it, ...editedRow } : it)));
+    setEditingItemId(null);
+    setEditedRow(null);
+  };
+
+  const handleCancelEdit = () => {
+    setEditingItemId(null);
+    setEditedRow(null);
+  };
+
   // Calculate total price based on quantity, unit price, and discount
   const calculateTotalPrice = (unitPrice, quantity, discount = 0) => {
     const subtotal = unitPrice * quantity;
@@ -470,229 +546,155 @@ export default function OrderForm({ serviceFactory = defaultServiceFactory, land
     setProductItems(items => items.filter(item => item.id !== itemId));
   };
 
-  // Table columns (editable)
-  const columns = orderType === "inventory"
-    ? [
-        // ...existing code for inventory columns...
-        { 
-          header: 'Product', 
-          key: 'ProductGuid',
-          render: (row) => {
-            if (row.isBlank) {
-              if (!showBlankProductSelector) {
-                return (
-                  <Button variant="transparent" size="sm" onClick={() => setShowBlankProductSelector(true)} icon={<FiPlus />}>Add Product...</Button>
-                );
-              }
-              return (
-                <Select
-                  value={row.ProductGuid}
-                  onChange={(e) => handleProductSelect(e.target.value)}
-                  options={[
-                    { value: "", label: "Select Product..." },
-                    ...row.availableProducts.map(p => ({
-                      value: p.ProductGuid,
-                      label: `${p.ProductGuid} - ${p.Description}`
-                    }))
-                  ]}
-                />
-              );
-            }
-            return row.ProductGuid;
-          }
-        },
-        { 
-          header: 'Description', 
-          key: 'Description',
-          render: (row) => row.isBlank ? row.Description : row.Description
-        },
-        {
-          header: 'Unit Price',
-          key: 'UnitPrice',
-          render: (row) => row.isBlank && !row.ProductGuid ? '' : (
-            <span className={styles.rightAlignNum}>{formatNumber(row.UnitPrice)}</span>
-          )
-        },
-        {
-          header: 'Quantity',
-          key: 'Quantity',
-          render: (row) => {
-            if (row.isBlank) {
-              if (!row.ProductGuid) return '';
-              return (
-                <Input
-                  type="number"
-                  value={row.Quantity}
-                  onChange={(e) => handleBlankRowQuantityChange(e.target.value)}
-                  min="1"
-                  step="1"
-                />
-              );
-            }
-            // Existing items show quantity as read-only
+  // Table columns (use inventory/service column definitions with inline edit support)
+  const inventoryColumns = [
+    {
+      header: 'Product',
+      key: 'ProductGuid',
+      render: (row) => {
+        if (row.isBlank) {
+          if (!showBlankProductSelector) {
             return (
-              <span className={styles.rightAlignNum}>{row.Quantity}</span>
+              <Button variant="transparent" size="sm" onClick={() => setShowBlankProductSelector(true)} icon={<FiPlus />}>Add Product...</Button>
             );
           }
-        },
-        {
-          header: 'Discount (%)',
-          key: 'Discount',
-          render: (row) => {
-            if (row.isBlank) {
-              if (!row.ProductGuid) return '';
-              return (
-                <Input
-                  type="number"
-                  value={row.Discount}
-                  onChange={(e) => handleBlankRowDiscountChange(e.target.value)}
-                  min="0"
-                  max="100"
-                  step="0.01"
-                />
-              );
-            }
-            // Existing items show discount as read-only
-            return (
-              <span className={styles.rightAlignNum}>{formatNumber(row.Discount)}%</span>
-            );
-          }
-        },
-        {
-          header: 'Total Price',
-          key: 'TotalPrice',
-          render: (row) => row.isBlank && !row.ProductGuid ? '' : (
-            <span className={styles.rightAlignNum}>{formatNumber(row.TotalPrice)}</span>
-          )
-        },
-        {
-          header: 'Actions',
-          key: 'actions',
-          render: (row) => {
-            if (row.isBlank) {
-              if (!row.ProductGuid) return '';
-              return (
-                <Button
-                  variant="primary"
-                  size="sm"
-                  onClick={handleAddBlankRowItem}
-                  icon={<FiPlus />}
-                  aria-label="Add"
-                />
-              );
-            }
-            return (
-              <Button
-                variant="danger"
-                size="sm"
-                onClick={() => handleRemoveItem(row.id)}
-                icon={<FiTrash2 />}
-                aria-label="Remove"
-              />
-            );
-          }
+          return (
+            <Select
+              value={row.ProductGuid}
+              onChange={(e) => handleProductSelect(e.target.value)}
+              options={[
+                { value: "", label: "Select Product..." },
+                ...row.availableProducts.map(p => ({ value: p.ProductGuid, label: `${p.ProductGuid} - ${p.Description}` }))
+              ]}
+            />
+          );
         }
-      ]
-    : [
-        {
-          header: 'Service',
-          key: 'ServiceGuid',
-          render: (row) => {
-            if (row.isBlank) {
-              if (!showBlankServiceSelector) {
-                return (
-                  <Button variant="transparent" size="sm" onClick={() => setShowBlankServiceSelector(true)} icon={<FiPlus />}>Add Service...</Button>
-                );
-              }
-              return (
-                <Select
-                  value={row.ServiceGuid}
-                  onChange={(e) => handleServiceSelect(e.target.value)}
-                  options={[
-                    { value: '', label: 'Select Service...' },
-                    ...(availableServices || []).map(s => ({
-                      value: s.ServiceGuid,
-                      label: `${s.ServiceGuid} - ${s.Description}`
-                    }))
-                  ]}
-                />
-              );
-            }
-            return row.ServiceGuid;
-          }
-        },
-        {
-          header: 'Description',
-          key: 'Description',
-          render: (row) => {
-            if (row.isBlank) {
-              // hide description input until the selector is shown or a service/description exists
-              if (!showBlankServiceSelector && !row.ServiceGuid && !row.Description) return '';
-              return (
-                <Input
-                  name="Description"
-                  value={row.Description}
-                  onChange={handleBlankServiceChange}
-                  placeholder="Service Description"
-                  readOnly={!!row.ServiceGuid}
-                />
-              );
-            }
-            return row.Description;
-          }
-        },
-        {
-          header: 'Amount',
-          key: 'Amount',
-          render: (row) => {
-            // For the blank row, don't show the Amount input until the service selector or description is visible
-            if (row.isBlank) {
-              if (!showBlankServiceSelector && !row.ServiceGuid && !row.Description) return '';
-              return (
-                <Input
-                  name="Amount"
-                  type="number"
-                  value={row.Amount}
-                  onChange={handleBlankServiceChange}
-                  min="0"
-                  step="0.01"
-                  placeholder="0.00"
-                  readOnly={!!row.ServiceGuid}
-                />
-              );
-            }
-            return <span className={styles.rightAlignNum}>{formatNumber(row.Amount)}</span>;
-          }
-        },
-        {
-          header: 'Actions',
-          key: 'actions',
-          render: (row) => {
-            if (row.isBlank) {
-              if (!row.ServiceGuid && !row.Description) return '';
-              return (
-                <Button
-                  variant="primary"
-                  size="sm"
-                  onClick={handleAddBlankServiceRow}
-                  icon={<FiPlus />}
-                  aria-label="Add"
-                  disabled={!row.Description || row.Amount <= 0}
-                />
-              );
-            }
-            return (
-              <Button
-                variant="danger"
-                size="sm"
-                onClick={() => handleRemoveServiceItem(row.id)}
-                icon={<FiTrash2 />}
-                aria-label="Remove"
-              />
-            );
-          }
+        if (editingItemId === row.id) {
+          return (
+            <Select
+              value={editedRow ? editedRow.ProductGuid : row.ProductGuid}
+              onChange={(e) => handleEditChange('ProductGuid', e.target.value)}
+              options={[{ value: '', label: 'Select Product...' }, ...(availableProducts || []).map(p => ({ value: p.ProductGuid, label: `${p.ProductGuid} - ${p.Description}` }))]}
+              searchable
+            />
+          );
         }
-      ];
+        return row.ProductGuid;
+      }
+    },
+    {
+      header: 'Description',
+      key: 'Description',
+      render: (row) => {
+        if (row.isBlank) {
+          if (!showBlankProductSelector && !row.ProductGuid) return '';
+          return <Input value={row.Description} onChange={(e) => handleBlankRowDescriptionChange(e.target.value)} placeholder="Description" />;
+        }
+        if (editingItemId === row.id) return <Input value={editedRow ? editedRow.Description : row.Description} onChange={(e) => handleEditChange('Description', e.target.value)} />;
+        return row.Description;
+      }
+    },
+    {
+      header: 'Unit Price',
+      key: 'UnitPrice',
+      render: (row) => row.isBlank && !row.ProductGuid ? '' : (editingItemId === row.id ? <Input type="number" value={editedRow ? editedRow.UnitPrice : row.UnitPrice} onChange={(e) => handleEditChange('UnitPrice', e.target.value)} min="0" step="0.01" /> : <span className={styles.rightAlignNum}>{formatNumber(row.UnitPrice)}</span>)
+    },
+    {
+      header: 'Quantity',
+      key: 'Quantity',
+      render: (row) => {
+        if (row.isBlank) {
+          if (!row.ProductGuid) return '';
+          return <Input type="number" value={row.Quantity} onChange={(e) => handleBlankRowQuantityChange(e.target.value)} min="1" step="1" />;
+        }
+        return editingItemId === row.id ? <Input type="number" value={editedRow ? editedRow.Quantity : row.Quantity} onChange={(e) => handleEditChange('Quantity', e.target.value)} min="1" step="1" /> : <span className={styles.rightAlignNum}>{row.Quantity}</span>;
+      }
+    },
+    {
+      header: 'Discount (%)',
+      key: 'Discount',
+      render: (row) => {
+        if (row.isBlank) {
+          if (!row.ProductGuid) return '';
+          return <Input type="number" value={row.Discount} onChange={(e) => handleBlankRowDiscountChange(e.target.value)} min="0" max="100" step="0.01" />;
+        }
+        return editingItemId === row.id ? <Input type="number" value={editedRow ? editedRow.Discount : row.Discount} onChange={(e) => handleEditChange('Discount', e.target.value)} min="0" max="100" step="0.01" /> : <span className={styles.rightAlignNum}>{formatNumber(row.Discount)}%</span>;
+      }
+    },
+    {
+      header: 'Total Price',
+      key: 'TotalPrice',
+      render: (row) => (row.isBlank && !row.ProductGuid ? '' : <span className={styles.rightAlignNum}>{formatNumber(editingItemId === row.id && editedRow ? editedRow.TotalPrice : row.TotalPrice)}</span>)
+    },
+    {
+      header: 'Actions',
+      key: 'actions',
+      render: (row) => {
+        if (!isEditable) return null;
+        if (row.isBlank) {
+          if (!row.ProductGuid) return '';
+          return <Button variant="transparent" size="sm" onClick={handleAddBlankRowItem} icon={<FiPlus />} aria-label="Add" />;
+        }
+        if (editingItemId === row.id) return (<div style={{ display: 'flex', gap: 8 }}><Button variant="transparent" size="sm" onClick={handleSaveEdit} icon={<FiCheck />} aria-label="Save" /><Button variant="danger" size="sm" onClick={handleCancelEdit} icon={<FiX />} aria-label="Cancel" /></div>);
+        return (<div style={{ display: 'flex', gap: 8 }}><Button variant="transparent" size="sm" onClick={() => handleStartEdit(row)} icon={<FiEdit />} aria-label="Edit" /><Button variant="danger" size="sm" onClick={() => handleRemoveItem(row.id)} icon={<FiTrash2 />} aria-label="Remove" /></div>);
+      }
+    }
+  ];
+
+  const serviceColumns = [
+    {
+      header: 'Service',
+      key: 'ServiceGuid',
+      render: (row) => {
+        if (row.isBlank) {
+          if (!showBlankServiceSelector) {
+            return (<Button variant="transparent" size="sm" onClick={() => setShowBlankServiceSelector(true)} icon={<FiPlus />}>Add Service...</Button>);
+          }
+          return (<Select value={row.ServiceGuid} onChange={(e) => handleServiceSelect(e.target.value)} options={[{ value: '', label: 'Select Service...' }, ...(availableServices || []).map(s => ({ value: s.ServiceGuid, label: `${s.ServiceGuid} - ${s.Description}` }))]} />);
+        }
+        if (editingItemId === row.id) return <Select value={editedRow ? editedRow.ServiceGuid : row.ServiceGuid} onChange={(e) => handleEditChange('ServiceGuid', e.target.value)} options={[{ value: '', label: 'Select Service...' }, ...(availableServices || []).map(s => ({ value: s.ServiceGuid, label: `${s.ServiceGuid} - ${s.Description}` }))]} searchable />;
+        return row.ServiceGuid;
+      }
+    },
+    {
+      header: 'Description',
+      key: 'Description',
+      render: (row) => {
+        if (row.isBlank) {
+          if (!showBlankServiceSelector && !row.ServiceGuid && !row.Description) return '';
+          return (<Input name="Description" value={row.Description} onChange={handleBlankServiceChange} placeholder="Service Description" readOnly={!!row.ServiceGuid} />);
+        }
+        if (editingItemId === row.id) return <Input value={editedRow ? editedRow.Description : row.Description} onChange={(e) => handleEditChange('Description', e.target.value)} />;
+        return row.Description;
+      }
+    },
+    {
+      header: 'Amount',
+      key: 'Amount',
+      render: (row) => {
+        if (row.isBlank) {
+          if (!showBlankServiceSelector && !row.ServiceGuid && !row.Description) return '';
+          return (<Input name="Amount" type="number" value={row.Amount} onChange={handleBlankServiceChange} min="0" step="0.01" placeholder="0.00" readOnly={!!row.ServiceGuid} />);
+        }
+        return editingItemId === row.id ? <Input type="number" value={editedRow ? editedRow.Amount : row.Amount} onChange={(e) => handleEditChange('Amount', e.target.value)} min="0" step="0.01" /> : <span className={styles.rightAlignNum}>{formatNumber(row.Amount)}</span>;
+      }
+    },
+    {
+      header: 'Actions',
+      key: 'actions',
+      render: (row) => {
+        if (!isEditable) return null;
+        if (row.isBlank) {
+          if (!row.ServiceGuid && !row.Description) return '';
+          return (<Button variant="transparent" size="sm" onClick={handleAddBlankServiceRow} icon={<FiPlus />} aria-label="Add" disabled={!row.Description || row.Amount <= 0} />);
+        }
+        if (editingItemId === row.id) return (<div style={{ display: 'flex', gap: 8 }}><Button variant="transparent" size="sm" onClick={handleSaveEdit} icon={<FiCheck />} aria-label="Save" /><Button variant="transparent" size="sm" onClick={handleCancelEdit} icon={<FiX />} aria-label="Cancel" /></div>);
+  return (<div style={{ display: 'flex', gap: 8 }}><Button variant="transparent" size="sm" onClick={() => handleStartEdit(row)} icon={<FiEdit />} aria-label="Edit" /><Button variant="danger" size="sm" onClick={() => handleRemoveServiceItem(row.id)} icon={<FiTrash2 />} aria-label="Remove" /></div>);
+      }
+    }
+  ];
+
+  const columns = orderType === 'inventory' ? inventoryColumns : serviceColumns;
 
   // Calculate OrderAmount
   const orderAmount = orderType === "inventory"

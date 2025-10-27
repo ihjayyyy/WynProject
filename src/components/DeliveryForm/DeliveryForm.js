@@ -6,7 +6,7 @@ import styles from './DeliveryForm.module.scss';
 import Input from '../ui/Input/Input';
 import DataTable from '../ui/DataTable/DataTable';
 import Button from '../ui/Button/Button';
-import { FiFileText, FiPlus, FiTrash2 } from 'react-icons/fi';
+import { FiFileText, FiPlus, FiTrash2, FiEdit, FiCheck, FiX } from 'react-icons/fi';
 import Select from '../ui/Select/Select';
 
 import { InventoryService } from '../../services/inventoryService';
@@ -395,6 +395,40 @@ export default function DeliveryForm() {
     setProductItems((items) => items.filter((item) => item.id !== itemId));
   };
 
+  // Inline editing state for existing rows
+  const [editingItemId, setEditingItemId] = useState(null);
+  const [editedRow, setEditedRow] = useState(null);
+
+  const handleStartEdit = (item) => {
+    setEditingItemId(item.id);
+    setEditedRow({ ...item });
+  };
+
+  const handleEditChange = (name, value) => {
+    // convert numeric fields
+    const numericNames = ['OrderedQuantity', 'DeliveredQuantity'];
+    setEditedRow((prev) => {
+      if (!prev) return prev;
+      return { ...prev, [name]: numericNames.includes(name) ? (Number(value) || 0) : value };
+    });
+  };
+
+  const handleSaveEdit = () => {
+    if (!editedRow) return;
+    if (deliveryType === 'inventory') {
+      setProductItems((prev) => prev.map((it) => (it.id === editedRow.id ? { ...it, ...editedRow } : it)));
+    } else {
+      setServiceItems((prev) => prev.map((it) => (it.id === editedRow.id ? { ...it, ...editedRow } : it)));
+    }
+    setEditingItemId(null);
+    setEditedRow(null);
+  };
+
+  const handleCancelEdit = () => {
+    setEditingItemId(null);
+    setEditedRow(null);
+  };
+
   const items = deliveryType === 'inventory' ? productItems : serviceItems;
 
   const formatNumber = (value) => Number(value).toFixed(2);
@@ -449,6 +483,16 @@ export default function DeliveryForm() {
                   />
                 );
               }
+              if (editingItemId === row.id) {
+                return (
+                  <Select
+                    value={editedRow ? editedRow.ProductGuid : row.ProductGuid}
+                    onChange={(e) => handleEditChange('ProductGuid', e.target.value)}
+                    options={[{ value: '', label: 'Select Product...' }, ...(productCatalog || []).map(p => ({ value: p.ProductGuid, label: `${p.ProductGuid} - ${p.Description}` }))]}
+                    searchable
+                  />
+                );
+              }
               return row.ProductGuid;
             },
           },
@@ -464,7 +508,11 @@ export default function DeliveryForm() {
                   placeholder="Description"
                 />
               ) : (
-                row.Description
+                editingItemId === row.id ? (
+                  <Input value={editedRow ? editedRow.Description : row.Description} onChange={(e) => handleEditChange('Description', e.target.value)} />
+                ) : (
+                  row.Description
+                )
               ),
           },
           {
@@ -484,7 +532,11 @@ export default function DeliveryForm() {
                   />
                 )
               ) : (
-                <span className={styles.rightAlignNum}>{row.OrderedQuantity || 0}</span>
+                editingItemId === row.id ? (
+                  <Input type="number" value={editedRow ? editedRow.OrderedQuantity : row.OrderedQuantity} onChange={(e) => handleEditChange('OrderedQuantity', e.target.value)} min="0" step="1" />
+                ) : (
+                  <span className={styles.rightAlignNum}>{row.OrderedQuantity || 0}</span>
+                )
               ),
           },
           {
@@ -504,7 +556,11 @@ export default function DeliveryForm() {
                   />
                 )
               ) : (
-                <span className={styles.rightAlignNum}>{row.DeliveredQuantity || 0}</span>
+                editingItemId === row.id ? (
+                  <Input type="number" value={editedRow ? editedRow.DeliveredQuantity : row.DeliveredQuantity} onChange={(e) => handleEditChange('DeliveredQuantity', e.target.value)} min="0" step="1" />
+                ) : (
+                  <span className={styles.rightAlignNum}>{row.DeliveredQuantity || 0}</span>
+                )
               ),
           },
           {
@@ -523,14 +579,19 @@ export default function DeliveryForm() {
                   />
                 );
               }
+              if (editingItemId === row.id) {
+                return (
+                  <div style={{ display: 'flex', gap: 8 }}>
+                    <Button variant="transparent" size="sm" onClick={handleSaveEdit} icon={<FiCheck />} aria-label="Save" />
+                    <Button variant="danger" size="sm" onClick={handleCancelEdit} icon={<FiX />} aria-label="Cancel" />
+                  </div>
+                );
+              }
               return (
-                <Button
-                  variant="danger"
-                  size="sm"
-                  onClick={() => handleRemoveItem(row.id)}
-                  icon={<FiTrash2 />}
-                  aria-label="Remove"
-                />
+                <div style={{ display: 'flex', gap: 8 }}>
+                  <Button variant="transparent" size="sm" onClick={() => handleStartEdit(row)} icon={<FiEdit />} aria-label="Edit" />
+                  <Button variant="danger" size="sm" onClick={() => handleRemoveItem(row.id)} icon={<FiTrash2 />} aria-label="Remove" />
+                </div>
               );
             },
           },
@@ -566,7 +627,16 @@ export default function DeliveryForm() {
                   />
                 )
               ) : (
-                row.ServiceGuid
+                editingItemId === row.id ? (
+                  <Select
+                    value={editedRow ? editedRow.ServiceGuid : row.ServiceGuid}
+                    onChange={(e) => handleEditChange('ServiceGuid', e.target.value)}
+                    options={[{ value: '', label: 'Select Service...' }, ...(serviceCatalog || []).map(s => ({ value: s.ServiceGuid, label: `${s.ServiceGuid} - ${s.Description}` }))]}
+                    searchable
+                  />
+                ) : (
+                  row.ServiceGuid
+                )
               ),
           },
           {
@@ -586,7 +656,7 @@ export default function DeliveryForm() {
                   />
                 );
               }
-              return row.Description;
+              return editingItemId === row.id ? <Input value={editedRow ? editedRow.Description : row.Description} onChange={(e) => handleEditChange('Description', e.target.value)} /> : row.Description;
             },
           },
           {
@@ -606,7 +676,7 @@ export default function DeliveryForm() {
                   />
                 );
               }
-              return <span className={styles.rightAlignNum}>{row.OrderedQuantity || 0}</span>;
+              return editingItemId === row.id ? <Input type="number" value={editedRow ? editedRow.OrderedQuantity : row.OrderedQuantity} onChange={(e) => handleEditChange('OrderedQuantity', e.target.value)} min="0" step="1" /> : <span className={styles.rightAlignNum}>{row.OrderedQuantity || 0}</span>;
             },
           },
           {
@@ -626,7 +696,7 @@ export default function DeliveryForm() {
                   />
                 );
               }
-              return <span className={styles.rightAlignNum}>{row.DeliveredQuantity || 0}</span>;
+              return editingItemId === row.id ? <Input type="number" value={editedRow ? editedRow.DeliveredQuantity : row.DeliveredQuantity} onChange={(e) => handleEditChange('DeliveredQuantity', e.target.value)} min="0" step="1" /> : <span className={styles.rightAlignNum}>{row.DeliveredQuantity || 0}</span>;
             },
           },
           {
@@ -646,14 +716,19 @@ export default function DeliveryForm() {
                   />
                 );
               }
+              if (editingItemId === row.id) {
+                return (
+                  <div style={{ display: 'flex', gap: 8 }}>
+                    <Button variant="transparent" size="sm" onClick={handleSaveEdit} icon={<FiCheck />} aria-label="Save" />
+                    <Button variant="transparent" size="sm" onClick={handleCancelEdit} icon={<FiX />} aria-label="Cancel" />
+                  </div>
+                );
+              }
               return (
-                <Button
-                  variant="danger"
-                  size="sm"
-                  onClick={() => handleRemoveServiceItem(row.id)}
-                  icon={<FiTrash2 />}
-                  aria-label="Remove"
-                />
+                <div style={{ display: 'flex', gap: 8 }}>
+                  <Button variant="transparent" size="sm" onClick={() => handleStartEdit(row)} icon={<FiEdit />} aria-label="Edit" />
+                  <Button variant="danger" size="sm" onClick={() => handleRemoveServiceItem(row.id)} icon={<FiTrash2 />} aria-label="Remove" />
+                </div>
               );
             },
           },
