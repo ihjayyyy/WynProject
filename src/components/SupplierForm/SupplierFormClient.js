@@ -46,7 +46,7 @@ export default function SupplierFormClient() {
     { name: 'Logo', label: 'Logo', span: 'span2', type: 'file', rightAlign: true },
   ];
 
-  //   const fields = [
+//     const fields = [
 //   { name: 'Name', label: 'Supplier Name', span: 'span3' },
 //   { name: '__spacer1', label: '', span: 'span5', type: 'spacer' },
 //   {
@@ -110,7 +110,7 @@ export default function SupplierFormClient() {
       onSubmit={handleSubmit}
       readOnly={readOnly}
       backPath="/supplier"
-      // width='75%'
+      width='75%'
     />
   );
 }

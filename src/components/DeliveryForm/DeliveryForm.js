@@ -1,6 +1,7 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
+import { useSearchParams } from 'next/navigation';
 import styles from './DeliveryForm.module.scss';
 import Input from '../ui/Input/Input';
 import DataTable from '../ui/DataTable/DataTable';
@@ -11,6 +12,7 @@ import Select from '../ui/Select/Select';
 import { InventoryService } from '../../services/inventoryService';
 import { ServiceService } from '../../services/serviceService';
 import SupplierService from '../../services/supplierService';
+import DeliveryService from '../../services/deliveryService';
 
 import Breadcrumbs from '../ui/Breadcrumbs/Breadcrumbs';
 
@@ -23,48 +25,21 @@ const supplierService = new SupplierService();
 // Create service instances (lightweight, in-memory mocks)
 const inventoryService = new InventoryService();
 const serviceService = new ServiceService();
-
-const initialProductItems = [
-  {
-    id: 1,
-    ProductGuid: 'P001',
-    Description: 'Premium Widget A',
-    UnitPrice: 150.0,
-    Quantity: 2,
-    TotalPrice: 300.0,
-    Discount: 0,
-  },
-  {
-    id: 2,
-    ProductGuid: 'P002',
-    Description: 'Standard Widget B',
-    UnitPrice: 85.5,
-    Quantity: 1,
-    TotalPrice: 85.5,
-    Discount: 0,
-  },
-];
-
-const initialServiceItems = [
-  {
-    id: 1,
-    ServiceGuid: 'S001',
-    Description: 'Consultation Service',
-    Amount: 250.0,
-  },
-];
+const deliveryService = new DeliveryService();
 
 // State for the blank row for service
 const initialBlankServiceRow = {
   ServiceGuid: '',
   Description: '',
   Amount: 0,
+  OrderedQuantity: 0,
+  DeliveredQuantity: 0,
 };
 export default function DeliveryForm() {
   // Grouped state hooks
   const [deliveryType, setDeliveryType] = useState('inventory');
-  const [productItems, setProductItems] = useState(initialProductItems);
-  const [serviceItems, setServiceItems] = useState(initialServiceItems);
+  const [productItems, setProductItems] = useState([]);
+  const [serviceItems, setServiceItems] = useState([]);
   const [productCatalog, setProductCatalog] = useState([]);
   const [serviceCatalog, setServiceCatalog] = useState([]);
   const [suppliers, setSuppliers] = useState([]);
@@ -97,6 +72,8 @@ export default function DeliveryForm() {
     Quantity: 1,
     TotalPrice: 0,
     Discount: 0,
+    OrderedQuantity: 0,
+    DeliveredQuantity: 0,
   });
 
   // Load catalogs on mount
@@ -138,6 +115,109 @@ export default function DeliveryForm() {
     };
   }, []);
 
+  // Read query param `id` and load the delivery when viewing an existing record.
+  const searchParams = useSearchParams();
+  useEffect(() => {
+    let mounted = true;
+    const id = searchParams ? searchParams.get('id') : null;
+
+    const loadDelivery = async (deliveryId) => {
+      try {
+        const d = await deliveryService.getDeliveryById(deliveryId);
+        if (!d) return;
+
+        // populate top-level form fields
+        if (mounted) {
+          setForm((prev) => ({
+            ...prev,
+            SupplierGuid: d.SupplierGuid || '',
+            PurchaseDeliveryNumber: d.PurchaseDeliveryNumber || '',
+            Date: d.Date || '',
+            Description: d.Description || '',
+            PurchaseType: d.PurchaseType ? d.PurchaseType.toLowerCase() : 'inventory',
+            PreparedBy: d.PreparedBy || '',
+            ApprovedBy: d.AcceptedBy || '',
+          }));
+
+          setDeliveryType(d.PurchaseType && d.PurchaseType.toLowerCase() === 'service' ? 'service' : 'inventory');
+        
+          // populate supplier contact fields (Address, ContactName, ContactNum) from supplier service
+          try {
+            const sup = await supplierService.getSupplierById(d.SupplierGuid);
+            if (mounted && sup) {
+              setForm((prev) => ({
+                ...prev,
+                Address: sup.Address || prev.Address || '',
+                ContactNum: sup.ContactNumber || prev.ContactNum || '',
+                ContactName: sup.ContactPerson || prev.ContactName || '',
+              }));
+            }
+          } catch (e) {
+            // ignore supplier lookup errors
+          }
+        }
+
+        // load details and map to product/service items used by the UI
+        const details = await deliveryService.getDetailsWithItemsByDeliveryGuid(deliveryId);
+        if (!mounted) return;
+
+        if (d.PurchaseType && d.PurchaseType.toLowerCase() === 'service') {
+          const svcItems = (details || []).map((dt, idx) => ({
+            id: idx + 1,
+            ServiceGuid: dt.ItemGuid || dt.Guid || '',
+            Description: dt.Description || (dt.Item && (dt.Item.Name || dt.Item.Description)) || '',
+            Amount: dt.Item ? (dt.Item.Amount || 0) : (dt.Amount || 0),
+            OrderedQuantity: dt.OrderedQuantity || 0,
+            DeliveredQuantity: dt.DeliveredQuantity || 0,
+          }));
+          setServiceItems(svcItems);
+        } else {
+          const prodItems = (details || []).map((dt, idx) => ({
+            id: idx + 1,
+            ProductGuid: dt.ItemGuid || dt.Guid || '',
+            Description: dt.Description || (dt.Item && (dt.Item.Name || dt.Item.Description)) || '',
+            UnitPrice: dt.Item ? (dt.Item.UnitPrice || 0) : 0,
+            Quantity: dt.DeliveredQuantity || dt.OrderedQuantity || 0,
+            TotalPrice: (dt.Item ? (dt.Item.UnitPrice || 0) : 0) * (dt.DeliveredQuantity || dt.OrderedQuantity || 0),
+            Discount: 0,
+            OrderedQuantity: dt.OrderedQuantity || 0,
+            DeliveredQuantity: dt.DeliveredQuantity || 0,
+          }));
+          setProductItems(prodItems);
+        }
+      } catch (err) {
+        console.error('Failed to load delivery', err);
+      }
+    };
+
+    if (id) {
+      loadDelivery(id);
+    } else {
+      // no id => new blank form
+      if (mounted) {
+        setForm({
+          SupplierGuid: '',
+          PurchaseDeliveryNumber: '',
+          Address: '',
+          ContactNum: '',
+          ContactName: '',
+          Date: '',
+          Description: '',
+          PurchaseType: 'inventory',
+          PreparedBy: '',
+          ApprovedBy: '',
+        });
+        setProductItems([]);
+        setServiceItems([]);
+        setDeliveryType('inventory');
+      }
+    }
+
+    return () => {
+      mounted = false;
+    };
+  }, [searchParams]);
+
   // Handlers and helpers
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value });
@@ -167,9 +247,10 @@ export default function DeliveryForm() {
 
   const handleBlankServiceChange = (e) => {
     const { name, value } = e.target;
+    const numNames = ['Amount', 'OrderedQuantity', 'DeliveredQuantity'];
     setBlankServiceRow((prev) => ({
       ...prev,
-      [name]: name === 'Amount' ? Number(value) : value,
+      [name]: numNames.includes(name) ? Number(value) : value,
     }));
   };
 
@@ -186,16 +267,16 @@ export default function DeliveryForm() {
         ServiceGuid: selectedService.ServiceGuid,
         Description: selectedService.Description,
         Amount: selectedService.Amount,
+        OrderedQuantity: blankServiceRow.OrderedQuantity || 0,
+        DeliveredQuantity: blankServiceRow.DeliveredQuantity || 0,
       });
     }
   };
 
   const handleAddBlankServiceRow = () => {
-    if (blankServiceRow.Description && blankServiceRow.Amount > 0) {
-      setServiceItems([
-        ...serviceItems,
-        { id: Date.now(), ...blankServiceRow },
-      ]);
+    // allow adding service rows without requiring Amount (we no longer show Amount in the table)
+    if (blankServiceRow.Description) {
+      setServiceItems([...serviceItems, { id: Date.now(), ...blankServiceRow }]);
       setBlankServiceRow(initialBlankServiceRow);
       // hide the selector again for the next blank row
       setShowBlankServiceSelector(false);
@@ -221,6 +302,8 @@ export default function DeliveryForm() {
         Quantity: 1,
         TotalPrice: 0,
         Discount: 0,
+        OrderedQuantity: 0,
+        DeliveredQuantity: 0,
       });
       return;
     }
@@ -240,6 +323,8 @@ export default function DeliveryForm() {
         Quantity: blankRowData.Quantity,
         TotalPrice: totalPrice,
         Discount: blankRowData.Discount,
+        OrderedQuantity: blankRowData.OrderedQuantity || 0,
+        DeliveredQuantity: blankRowData.DeliveredQuantity || 0,
       });
     }
   };
@@ -256,6 +341,20 @@ export default function DeliveryForm() {
       Quantity: quantity,
       TotalPrice: totalPrice,
     });
+  };
+
+  const handleBlankRowOrderedChange = (newOrdered) => {
+    const ordered = Math.max(0, Number(newOrdered) || 0);
+    setBlankRowData((prev) => ({ ...prev, OrderedQuantity: ordered }));
+  };
+
+  const handleBlankRowDeliveredChange = (newDelivered) => {
+    const delivered = Math.max(0, Number(newDelivered) || 0);
+    setBlankRowData((prev) => ({ ...prev, DeliveredQuantity: delivered }));
+  };
+
+  const handleBlankRowDescriptionChange = (newDesc) => {
+    setBlankRowData((prev) => ({ ...prev, Description: newDesc }));
   };
 
   const handleBlankRowDiscountChange = (newDiscount) => {
@@ -318,11 +417,10 @@ export default function DeliveryForm() {
     deliveryType === 'inventory'
       ? [
           {
-            header: 'Product',
+            header: 'Item GUID',
             key: 'ProductGuid',
             render: (row) => {
               if (row.isBlank) {
-                // show a button first; clicking reveals the product selector
                 if (!showBlankProductSelector) {
                   return (
                     <Button
@@ -357,79 +455,56 @@ export default function DeliveryForm() {
           {
             header: 'Description',
             key: 'Description',
-            render: (row) => (row.isBlank ? row.Description : row.Description),
-          },
-          {
-            header: 'Unit Price',
-            key: 'UnitPrice',
             render: (row) =>
-              row.isBlank && !row.ProductGuid ? (
-                ''
+              row.isBlank ? (
+                // allow editing description for blank rows
+                <Input
+                  value={row.Description}
+                  onChange={(e) => handleBlankRowDescriptionChange(e.target.value)}
+                  placeholder="Description"
+                />
               ) : (
-                <span className={styles.rightAlignNum}>
-                  {formatNumber(row.UnitPrice)}
-                </span>
+                row.Description
               ),
           },
           {
-            header: 'Quantity',
-            key: 'Quantity',
-            render: (row) => {
-              if (row.isBlank) {
-                if (!row.ProductGuid) return '';
-                return (
+            header: 'Ordered Quantity',
+            key: 'OrderedQuantity',
+            render: (row) =>
+              row.isBlank ? (
+                !row.ProductGuid ? (
+                  ''
+                ) : (
                   <Input
                     type="number"
-                    value={row.Quantity}
-                    onChange={(e) =>
-                      handleBlankRowQuantityChange(e.target.value)
-                    }
-                    min="1"
+                    value={row.OrderedQuantity}
+                    onChange={(e) => handleBlankRowOrderedChange(e.target.value)}
+                    min="0"
                     step="1"
                   />
-                );
-              }
-              return (
-                <span className={styles.rightAlignNum}>{row.Quantity}</span>
-              );
-            },
+                )
+              ) : (
+                <span className={styles.rightAlignNum}>{row.OrderedQuantity || 0}</span>
+              ),
           },
           {
-            header: 'Discount (%)',
-            key: 'Discount',
-            render: (row) => {
-              if (row.isBlank) {
-                if (!row.ProductGuid) return '';
-                return (
+            header: 'Delivered Quantity',
+            key: 'DeliveredQuantity',
+            render: (row) =>
+              row.isBlank ? (
+                !row.ProductGuid ? (
+                  ''
+                ) : (
                   <Input
                     type="number"
-                    value={row.Discount}
-                    onChange={(e) =>
-                      handleBlankRowDiscountChange(e.target.value)
-                    }
+                    value={row.DeliveredQuantity}
+                    onChange={(e) => handleBlankRowDeliveredChange(e.target.value)}
                     min="0"
-                    max="100"
-                    step="0.01"
+                    step="1"
                   />
-                );
-              }
-              return (
-                <span className={styles.rightAlignNum}>
-                  {formatNumber(row.Discount)}%
-                </span>
-              );
-            },
-          },
-          {
-            header: 'Total Price',
-            key: 'TotalPrice',
-            render: (row) =>
-              row.isBlank && !row.ProductGuid ? (
-                ''
+                )
               ) : (
-                <span className={styles.rightAlignNum}>
-                  {formatNumber(row.TotalPrice)}
-                </span>
+                <span className={styles.rightAlignNum}>{row.DeliveredQuantity || 0}</span>
               ),
           },
           {
@@ -462,11 +537,10 @@ export default function DeliveryForm() {
         ]
       : [
           {
-            header: 'Service',
+            header: 'Item GUID',
             key: 'ServiceGuid',
             render: (row) =>
               row.isBlank ? (
-                // show a button first; clicking reveals the service selector
                 !showBlankServiceSelector ? (
                   <Button
                     variant="transparent"
@@ -516,26 +590,43 @@ export default function DeliveryForm() {
             },
           },
           {
-            header: 'Amount',
-            key: 'Amount',
+            header: 'Ordered Quantity',
+            key: 'OrderedQuantity',
             render: (row) => {
-              // For the blank row, don't show the Amount input until the selector or description is visible
               if (row.isBlank) {
                 if (!showBlankServiceSelector && !row.ServiceGuid && !row.Description) return '';
                 return (
                   <Input
-                    name="Amount"
+                    name="OrderedQuantity"
                     type="number"
-                    value={row.Amount}
+                    value={row.OrderedQuantity}
                     onChange={handleBlankServiceChange}
                     min="0"
-                    step="0.01"
-                    placeholder="0.00"
-                    readOnly={!!row.ServiceGuid}
+                    step="1"
                   />
                 );
               }
-              return <span className={styles.rightAlignNum}>{formatNumber(row.Amount)}</span>;
+              return <span className={styles.rightAlignNum}>{row.OrderedQuantity || 0}</span>;
+            },
+          },
+          {
+            header: 'Delivered Quantity',
+            key: 'DeliveredQuantity',
+            render: (row) => {
+              if (row.isBlank) {
+                if (!showBlankServiceSelector && !row.ServiceGuid && !row.Description) return '';
+                return (
+                  <Input
+                    name="DeliveredQuantity"
+                    type="number"
+                    value={row.DeliveredQuantity}
+                    onChange={handleBlankServiceChange}
+                    min="0"
+                    step="1"
+                  />
+                );
+              }
+              return <span className={styles.rightAlignNum}>{row.DeliveredQuantity || 0}</span>;
             },
           },
           {
@@ -570,36 +661,31 @@ export default function DeliveryForm() {
 
   let tableFooter = null;
   if (deliveryType === 'inventory') {
+    // show totals for ordered and delivered quantities instead of price
+    const totalOrdered = items.reduce((sum, i) => sum + (Number(i.OrderedQuantity) || 0), 0);
+    const totalDelivered = items.reduce((sum, i) => sum + (Number(i.DeliveredQuantity) || 0), 0);
     tableFooter = (
       <tr>
-        <td
-          colSpan={columns.length - 2}
-          style={{ textAlign: 'right', fontWeight: 'bold' }}>
+        <td colSpan={2} style={{ textAlign: 'right', fontWeight: 'bold' }}>
           Total
         </td>
-        <td style={{ fontWeight: 'bold', textAlign: 'center' }}>
-          {formatNumber(
-            items.reduce((sum, i) => sum + (Number(i.TotalPrice) || 0), 0)
-          )}
-        </td>
+        <td style={{ fontWeight: 'bold', textAlign: 'center' }}>{totalOrdered}</td>
+        <td style={{ fontWeight: 'bold', textAlign: 'center' }}>{totalDelivered}</td>
         <td />
       </tr>
     );
   } else if (deliveryType === 'service') {
     // Only show total when there are real service items (not just the blank add-row)
     if ((serviceItems || []).length > 0) {
+      const totalOrdered = items.reduce((sum, i) => sum + (Number(i.OrderedQuantity) || 0), 0);
+      const totalDelivered = items.reduce((sum, i) => sum + (Number(i.DeliveredQuantity) || 0), 0);
       tableFooter = (
         <tr>
-          <td
-            colSpan={columns.length - 2}
-            style={{ textAlign: 'right', fontWeight: 'bold' }}>
+          <td colSpan={2} style={{ textAlign: 'right', fontWeight: 'bold' }}>
             Total
           </td>
-          <td style={{ fontWeight: 'bold', textAlign: 'center' }}>
-            {formatNumber(
-              items.reduce((sum, i) => sum + (Number(i.Amount) || 0), 0)
-            )}
-          </td>
+          <td style={{ fontWeight: 'bold', textAlign: 'center' }}>{totalOrdered}</td>
+          <td style={{ fontWeight: 'bold', textAlign: 'center' }}>{totalDelivered}</td>
           <td />
         </tr>
       );

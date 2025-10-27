@@ -18,6 +18,14 @@ export default function StatusBadge({ status, className = '' }) {
   const pickVariant = (status) => {
     if (!status) return styles.default;
     switch (status.toString().toUpperCase()) {
+      // Delivery / purchase statuses
+      case 'PREPARED':
+        return styles.prepared;
+      case 'PARTIAL':
+        return styles.partial;
+      case 'DELIVERED':
+        return styles.delivered;
+      
       case 'APPROVED':
         return styles.approved;
       case 'DRAFT':

@@ -42,6 +42,27 @@
   border: 1px solid #92400e;
 }
 
+.prepared {
+  /* soft indigo */
+  background-color: #eef2ff;
+  color: #3730a3;
+  border: 1px solid #3730a3;
+}
+
+.partial {
+  /* warning / amber */
+  background-color: #fff7ed;
+  color: #92400e;
+  border: 1px solid #92400e;
+}
+
+.delivered {
+  /* success / green (same tone as approved) */
+  background-color: #d1fae5;
+  color: #065f46;
+  border: 1px solid #065f46;
+}
+
 .default {
   background-color: #f3f4f6;
   color: #374151;
