@@ -250,9 +250,22 @@
   }
 
   &.childActive{
-    
+    /* child-specific active state (smaller visual weight than parent) */
+    color: var(--color-primary-light);
+    font-weight: 600;
+    background: rgba(15, 23, 42, 0.03);
+    border-left: 3px solid transparent;
+  }
+
+  &.parentActive {
+    /* parent active: stronger indicator (left border) */
+    color: var(--color-primary-light);
+    font-weight: 700;
+    border-left: 3px solid var(--color-primary-light);
+    background: rgba(15, 23, 42, 0.06);
   }
 }
+
 
 .navLabel {
   font-size: 0.875rem;

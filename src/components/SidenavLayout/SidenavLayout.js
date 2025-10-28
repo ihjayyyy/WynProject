@@ -42,6 +42,26 @@ export default function SidenavLayout({ children }) {
     return paymentLandingPaths.includes(path?.toLowerCase());
   };
 
+  // Helper: for delivery landing (purchase), also match /purchase/delivery and /purchase/deliveryform
+  const isDeliveryLandingPath = (path) => {
+    const deliveryPaths = [
+      '/purchase/deliverylanding',
+      '/purchase/delivery',
+      '/purchase/deliveryform',
+    ];
+    return deliveryPaths.includes(path?.toLowerCase());
+  };
+
+  // Helper: for sales delivery, match /sales/deliverylanding and /sales/deliveryform
+  const isSalesDeliveryPath = (path) => {
+    const salesDeliveryPaths = [
+      '/sales/deliverylanding',
+      '/sales/delivery',
+      '/sales/deliveryform',
+    ];
+    return salesDeliveryPaths.includes(path?.toLowerCase());
+  };
+
   // Helper: for invoice landing, also match /purchase/invoice and /purchase/invoiceform
   const isInvoiceLandingPath = (path) => {
     const invoiceLandingPaths = [
@@ -108,9 +128,17 @@ export default function SidenavLayout({ children }) {
         if (child.href === '/purchase/orderlanding') {
           return isOrderLandingPath(pathname);
         }
+        // Special case for Delivery (purchase)
+        if (child.href === '/purchase/deliverylanding') {
+          return isDeliveryLandingPath(pathname);
+        }
         // Special case for Sales Order
         if (child.href === '/sales/orderlanding') {
           return isSalesOrderPath(pathname);
+        }
+        // Special case for Sales Delivery
+        if (child.href === '/sales/deliverylanding') {
+          return isSalesDeliveryPath(pathname);
         }
         // Special case for Invoice
         if (child.href === '/purchase/invoicelanding') {
@@ -143,9 +171,17 @@ export default function SidenavLayout({ children }) {
     if (child.href === '/purchase/orderlanding') {
       return isOrderLandingPath(pathname);
     }
+    // Special case for Delivery (purchase)
+    if (child.href === '/purchase/deliverylanding') {
+      return isDeliveryLandingPath(pathname);
+    }
     // Special case for Sales Order
     if (child.href === '/sales/orderlanding') {
       return isSalesOrderPath(pathname);
+    }
+    // Special case for Sales Delivery
+    if (child.href === '/sales/deliverylanding') {
+      return isSalesDeliveryPath(pathname);
     }
     // Special case for Quotation
     if (child.href === '/purchase/quotationlanding') {
@@ -209,7 +245,7 @@ export default function SidenavLayout({ children }) {
         <div className={styles.parentItem}>
           <button
             className={`${styles.navLink} ${styles.parentNavLink} ${
-              isActive ? styles.active : ''
+              isActive ? styles.parentActive : ''
             }`}
             onClick={() => {
               if (isCollapsed) {
@@ -237,12 +273,12 @@ export default function SidenavLayout({ children }) {
           {!isCollapsed && isExpanded && (
             <ul className={styles.childNavList}>
               {item.children.map((child) => (
-                <li key={child.label} className={styles.childNavItem}>
+                  <li key={child.label} className={styles.childNavItem}>
                   <Link
                     href={child.href}
                     title={child.label}
                     className={`${styles.navLink} ${styles.childNavLink} ${
-                      isChildActive(child) ? styles.active : ''
+                      isChildActive(child) ? styles.childActive : ''
                     }`}>
                     {renderIcon(child.icon, 16)}
                     <span className={styles.navLabel}>{child.label}</span>
