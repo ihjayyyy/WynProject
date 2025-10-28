@@ -13,8 +13,10 @@ import { InventoryService } from '../../services/inventoryService';
 import { ServiceService } from '../../services/serviceService';
 import SupplierService from '../../services/supplierService';
 import DeliveryService from '../../services/deliveryService';
+import OrderService from '../../services/orderService';
 
 import Breadcrumbs from '../ui/Breadcrumbs/Breadcrumbs';
+import StatusBadge from '../ui/StatusBadge/StatusBadge';
 
 // Supplier service instance
 const supplierService = new SupplierService();
@@ -55,6 +57,8 @@ export default function DeliveryForm() {
     PurchaseType: 'inventory', // "inventory" or "service"
     PreparedBy: '',
     ApprovedBy: '',
+    Guid: '',
+    Status: ''
   });
 
   const [blankServiceRow, setBlankServiceRow] = useState(
@@ -117,11 +121,14 @@ export default function DeliveryForm() {
 
   // Read query param `id` and load the delivery when viewing an existing record.
   const searchParams = useSearchParams();
+  const viewId = searchParams ? searchParams.get('id') : null;
+  const isView = !!viewId;
   useEffect(() => {
     let mounted = true;
     const id = searchParams ? searchParams.get('id') : null;
+    const fromOrder = searchParams ? searchParams.get('fromOrder') : null;
 
-    const loadDelivery = async (deliveryId) => {
+  const loadDelivery = async (deliveryId) => {
       try {
         const d = await deliveryService.getDeliveryById(deliveryId);
         if (!d) return;
@@ -137,6 +144,8 @@ export default function DeliveryForm() {
             PurchaseType: d.PurchaseType ? d.PurchaseType.toLowerCase() : 'inventory',
             PreparedBy: d.PreparedBy || '',
             ApprovedBy: d.AcceptedBy || '',
+            Guid: d.Guid || d.DeliveryGuid || prev.Guid || '',
+            Status: d.Status || d.DeliveryStatus || prev.Status || ''
           }));
 
           setDeliveryType(d.PurchaseType && d.PurchaseType.toLowerCase() === 'service' ? 'service' : 'inventory');
@@ -190,7 +199,85 @@ export default function DeliveryForm() {
       }
     };
 
-    if (id) {
+    if (fromOrder) {
+      (async () => {
+        // Prefill delivery from an existing order
+        try {
+          const orderSvc = new OrderService();
+          const ord = await orderSvc.getOrderById(fromOrder);
+          if (mounted && ord) {
+            // populate top-level fields from order
+            setForm((prev) => ({
+              ...prev,
+              SupplierGuid: ord.SupplierGuid || '',
+              PurchaseDeliveryNumber: prev.PurchaseDeliveryNumber || '',
+              Date: ord.Date || prev.Date || '',
+              Description: ord.Description || prev.Description || '',
+              PurchaseType: ord.PurchaseType ? ord.PurchaseType.toLowerCase() : 'inventory',
+              PreparedBy: ord.PreparedBy || prev.PreparedBy || '',
+              AcceptedBy: prev.AcceptedBy || '',
+              Guid: prev.Guid || '',
+              Status: prev.Status || ''
+            }));
+
+            setDeliveryType(ord.PurchaseType && ord.PurchaseType.toLowerCase() === 'service' ? 'service' : 'inventory');
+
+            // populate supplier contact fields (Address, ContactName, ContactNum) from supplier service
+            try {
+              const sup = await supplierService.getSupplierById(ord.SupplierGuid);
+              if (mounted && sup) {
+                setForm((prev) => ({
+                  ...prev,
+                  Address: sup.Address || prev.Address || '',
+                  ContactNum: sup.ContactNumber || prev.ContactNum || '',
+                  ContactName: sup.ContactPerson || prev.ContactName || '',
+                  OrderGuid: ord.Guid || prev.OrderGuid || ''
+                }));
+              } else {
+                setForm((prev) => ({ ...prev, OrderGuid: ord.Guid || prev.OrderGuid || '' }));
+              }
+            } catch (e) {
+              setForm((prev) => ({ ...prev, OrderGuid: ord.Guid || prev.OrderGuid || '' }));
+            }
+
+            // load order details and map to delivery items
+            try {
+              const details = await orderSvc.getDetailsWithItemsByOrderGuid(ord.Guid);
+              if (!mounted) return;
+              if (ord.PurchaseType && ord.PurchaseType.toLowerCase() === 'service') {
+                const svcItems = (details || []).map((dt, idx) => ({
+                  id: idx + 1,
+                  ServiceGuid: dt.ItemGuid || dt.Guid || '',
+                  Description: dt.Description || (dt.Item && (dt.Item.Name || dt.Item.Description)) || '',
+                  Amount: dt.Item ? (dt.Item.Amount || 0) : (dt.UnitPrice || dt.TotalPrice || 0),
+                  OrderedQuantity: dt.Quantity || 0,
+                  DeliveredQuantity: 0,
+                }));
+                setServiceItems(svcItems);
+              } else {
+                const prodItems = (details || []).map((dt, idx) => ({
+                  id: idx + 1,
+                  ProductGuid: dt.ItemGuid || dt.Guid || '',
+                  Description: dt.Description || (dt.Item && (dt.Item.Name || dt.Item.Description)) || '',
+                  UnitPrice: dt.Item ? (dt.Item.UnitPrice || 0) : (dt.UnitPrice || 0),
+                  Quantity: dt.Quantity || 0,
+                  TotalPrice: (dt.Item ? (dt.Item.UnitPrice || 0) : (dt.UnitPrice || 0)) * (dt.Quantity || 0),
+                  Discount: dt.Discount || 0,
+                  OrderedQuantity: dt.Quantity || 0,
+                  DeliveredQuantity: 0,
+                }));
+                setProductItems(prodItems);
+              }
+            } catch (e) {
+              console.error('Failed to load order details for delivery prefilling', e);
+            }
+          }
+        } catch (err) {
+          console.error('Failed to prefill delivery from order', err);
+        }
+      })();
+      // stop here - we filled from order
+    } else if (id) {
       loadDelivery(id);
     } else {
       // no id => new blank form
@@ -784,7 +871,16 @@ export default function DeliveryForm() {
       />
 
       <div className={styles.headerSection}>
-        <h2 className={styles.title}>Delivery Form</h2>
+        {isView ? (
+          <div className={styles.viewHeader}>
+            <h2 className={styles.title}>Delivery: {form.Guid}</h2>
+            <div className={styles.viewStatus}>
+              <StatusBadge status={form.Status} />
+            </div>
+          </div>
+        ) : (
+          <h2 className={styles.title}>Delivery Form</h2>
+        )}
         <div className={styles.typeSelector}>
           <label htmlFor="PurchaseType" className={styles.typeLabel}>
             Type:
@@ -927,22 +1023,28 @@ export default function DeliveryForm() {
 
       <div className={styles.bottomFields}>
         <div className={styles.leftBottomFields}>
-          <Input
-            label="Prepared By"
-            placeholder="Prepared By"
-            id="PreparedBy"
-            name="PreparedBy"
-            value={form.PreparedBy}
-            onChange={handleChange}
-          />
-          <Input
-            label="Approved By"
-            placeholder="Approved By"
-            id="ApprovedBy"
-            name="ApprovedBy"
-            value={form.ApprovedBy}
-            onChange={handleChange}
-          />
+          {isView && (
+            <>
+              <Input
+                label="Prepared By"
+                placeholder="Prepared By"
+                id="PreparedBy"
+                name="PreparedBy"
+                value={form.PreparedBy}
+                onChange={handleChange}
+                readOnly
+              />
+              <Input
+                label="Approved By"
+                placeholder="Approved By"
+                id="ApprovedBy"
+                name="ApprovedBy"
+                value={form.ApprovedBy}
+                onChange={handleChange}
+                readOnly
+              />
+            </>
+          )}
         </div>
         <Button type="submit" variant="save">
           Save

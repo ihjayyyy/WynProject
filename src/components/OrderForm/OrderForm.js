@@ -10,6 +10,7 @@ import { InventoryService } from '../../services/inventoryService';
 import { ServiceService } from '../../services/serviceService';
 import Breadcrumbs from '../ui/Breadcrumbs/Breadcrumbs';
 import StatusBadge from '../ui/StatusBadge/StatusBadge';
+import ConfirmModal from '../ui/ConfirmModal/ConfirmModal';
 import { FiClipboard } from 'react-icons/fi';
 import styles from "./OrderForm.module.scss";
 import Input from "../ui/Input/Input";
@@ -259,6 +260,7 @@ export default function OrderForm({ serviceFactory = defaultServiceFactory, land
   const [serviceItems, setServiceItems] = useState(initialServiceItems);
   const [isSaving, setIsSaving] = useState(false);
   const [saveError, setSaveError] = useState(null);
+  const [showConvertDeliveryConfirm, setShowConvertDeliveryConfirm] = useState(false);
   const [form, setForm] = useState({
     Guid: '',
     SupplierGuid: "",
@@ -913,12 +915,42 @@ export default function OrderForm({ serviceFactory = defaultServiceFactory, land
             </>
           )}
         </div>
-        {isEditable && (
-          <>
-            <Button type="submit" variant="save" disabled={isSaving}>{isSaving ? 'Saving...' : 'Save'}</Button>
-            {saveError && <div className={styles.saveError} role="alert" style={{ color: 'var(--danger)', marginTop: 8 }}>{saveError}</div>}
-          </>
-        )}
+        <div className={styles.rightBottomButtons}>
+          {/* Convert to Delivery button (visible when order exists) */}
+          {form.Guid && (
+            <>
+              <Button
+                type="button"
+                variant="primary"
+                onClick={() => setShowConvertDeliveryConfirm(true)}
+                title="Convert this order into a delivery"
+              >
+                Convert to delivery
+              </Button>
+              <ConfirmModal
+                open={!!showConvertDeliveryConfirm}
+                title="Convert order to delivery"
+                message={`Are you sure you want to convert order ${form.PurchaseOrderNumber || form.Guid} into a delivery?`}
+                confirmText="Convert"
+                cancelText="Cancel"
+                onConfirm={() => {
+                  try {
+                    router.push(`/purchase/deliveryform?fromOrder=${encodeURIComponent(form.Guid)}`);
+                  } catch (e) {
+                    window.location.href = `/purchase/deliveryform?fromOrder=${encodeURIComponent(form.Guid)}`;
+                  }
+                }}
+                onCancel={() => setShowConvertDeliveryConfirm(false)}
+              />
+            </>
+          )}
+          {isEditable && (
+            <>
+              <Button type="submit" variant="save" disabled={isSaving}>{isSaving ? 'Saving...' : 'Save'}</Button>
+              {saveError && <div className={styles.saveError} role="alert" style={{ color: 'var(--danger)', marginTop: 8 }}>{saveError}</div>}
+            </>
+          )}
+        </div>
       </div>
 
     </form>
