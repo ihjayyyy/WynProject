@@ -81,6 +81,7 @@ export const sidenavItems = [
     children: [
       { label: 'Quotation', icon: FiFileText, href: '/sales/quotationlanding' },
       { label: 'Sales Order', icon: FiClipboard, href: '/sales/orderlanding' },
+      { label: 'Delivery', icon: FiBox, href: '/sales/deliverylanding' },
       {
         label: 'Invoice',
         icon: FiFile,

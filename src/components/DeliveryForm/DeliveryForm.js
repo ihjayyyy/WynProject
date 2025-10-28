@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useMemo } from 'react';
-import { useSearchParams } from 'next/navigation';
+import { useSearchParams, useRouter } from 'next/navigation';
 import styles from './DeliveryForm.module.scss';
 import Input from '../ui/Input/Input';
 import DataTable from '../ui/DataTable/DataTable';
@@ -13,7 +13,19 @@ import { InventoryService } from '../../services/inventoryService';
 import { ServiceService } from '../../services/serviceService';
 import SupplierService from '../../services/supplierService';
 import DeliveryService from '../../services/deliveryService';
+// Default adapter so existing usage remains unchanged
+const defaultServiceFactory = () => {
+  const svc = new DeliveryService();
+  return {
+    getById: (id) => svc.getDeliveryById(id),
+    getDetailsWithItemsByDeliveryGuid: (id) => svc.getDetailsWithItemsByDeliveryGuid(id),
+    create: (payload) => svc.createDelivery(payload),
+    update: (payload) => svc.updateDelivery(payload),
+    subscribe: (cb) => DeliveryService.subscribe(cb),
+  };
+};
 import OrderService from '../../services/orderService';
+import SalesOrderService from '../../services/salesOrderService';
 
 import Breadcrumbs from '../ui/Breadcrumbs/Breadcrumbs';
 import StatusBadge from '../ui/StatusBadge/StatusBadge';
@@ -27,7 +39,6 @@ const supplierService = new SupplierService();
 // Create service instances (lightweight, in-memory mocks)
 const inventoryService = new InventoryService();
 const serviceService = new ServiceService();
-const deliveryService = new DeliveryService();
 
 // State for the blank row for service
 const initialBlankServiceRow = {
@@ -37,7 +48,7 @@ const initialBlankServiceRow = {
   OrderedQuantity: 0,
   DeliveredQuantity: 0,
 };
-export default function DeliveryForm() {
+export default function DeliveryForm({ serviceFactory = defaultServiceFactory, landingRoute = '/purchase/deliverylanding' }) {
   // Grouped state hooks
   const [deliveryType, setDeliveryType] = useState('inventory');
   const [productItems, setProductItems] = useState([]);
@@ -130,7 +141,8 @@ export default function DeliveryForm() {
 
   const loadDelivery = async (deliveryId) => {
       try {
-        const d = await deliveryService.getDeliveryById(deliveryId);
+        const svc = serviceFactory();
+        const d = await svc.getById(deliveryId);
         if (!d) return;
 
         // populate top-level form fields
@@ -167,7 +179,8 @@ export default function DeliveryForm() {
         }
 
         // load details and map to product/service items used by the UI
-        const details = await deliveryService.getDetailsWithItemsByDeliveryGuid(deliveryId);
+  const svc2 = serviceFactory();
+  const details = await svc2.getDetailsWithItemsByDeliveryGuid(deliveryId);
         if (!mounted) return;
 
         if (d.PurchaseType && d.PurchaseType.toLowerCase() === 'service') {
@@ -199,13 +212,20 @@ export default function DeliveryForm() {
       }
     };
 
-    if (fromOrder) {
+  if (fromOrder) {
       (async () => {
-        // Prefill delivery from an existing order
-        try {
-          const orderSvc = new OrderService();
-          const ord = await orderSvc.getOrderById(fromOrder);
-          if (mounted && ord) {
+          // Prefill delivery from an existing order (try purchase order first, then sales order)
+          try {
+            const orderSvc = new OrderService();
+            let ord = await orderSvc.getOrderById(fromOrder);
+            let usedSales = false;
+            let salesSvc = null;
+            if (!ord) {
+              salesSvc = new SalesOrderService();
+              ord = await salesSvc.getSalesOrderById(fromOrder);
+              if (ord) usedSales = true;
+            }
+            if (mounted && ord) {
             // populate top-level fields from order
             setForm((prev) => ({
               ...prev,
@@ -242,9 +262,10 @@ export default function DeliveryForm() {
 
             // load order details and map to delivery items
             try {
-              const details = await orderSvc.getDetailsWithItemsByOrderGuid(ord.Guid);
+              const details = usedSales && salesSvc ? await salesSvc.getDetailsWithItemsByOrderGuid(ord.Guid) : await orderSvc.getDetailsWithItemsByOrderGuid(ord.Guid);
               if (!mounted) return;
-              if (ord.PurchaseType && ord.PurchaseType.toLowerCase() === 'service') {
+              const purchaseTypeValue = (ord.PurchaseType || ord.SalesType || '').toLowerCase();
+              if (purchaseTypeValue === 'service') {
                 const svcItems = (details || []).map((dt, idx) => ({
                   id: idx + 1,
                   ServiceGuid: dt.ItemGuid || dt.Guid || '',
@@ -303,7 +324,7 @@ export default function DeliveryForm() {
     return () => {
       mounted = false;
     };
-  }, [searchParams]);
+  }, [searchParams, serviceFactory]);
 
   // Handlers and helpers
   const handleChange = (e) => {
@@ -485,6 +506,10 @@ export default function DeliveryForm() {
   // Inline editing state for existing rows
   const [editingItemId, setEditingItemId] = useState(null);
   const [editedRow, setEditedRow] = useState(null);
+
+  const [isSaving, setIsSaving] = useState(false);
+  const [saveError, setSaveError] = useState(null);
+  const router = useRouter();
 
   const handleStartEdit = (item) => {
     setEditingItemId(item.id);
@@ -856,10 +881,48 @@ export default function DeliveryForm() {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    console.log({
-      ...form,
-      items: deliveryType === 'inventory' ? productItems : serviceItems,
-    });
+    (async () => {
+      try {
+        setIsSaving(true);
+        setSaveError(null);
+        const svc = serviceFactory();
+
+        const items = deliveryType === 'inventory' ? productItems : serviceItems;
+        const details = (items || []).map((it) => ({
+          ItemGuid: it.ProductGuid || it.ServiceGuid || it.ItemGuid || it.Guid || '',
+          OrderedQuantity: it.OrderedQuantity !== undefined ? it.OrderedQuantity : (it.Quantity !== undefined ? it.Quantity : 0),
+          DeliveredQuantity: it.DeliveredQuantity !== undefined ? it.DeliveredQuantity : (it.DeliveredQuantity !== undefined ? it.DeliveredQuantity : 0),
+          Remarks: it.Remarks || '',
+          Description: it.Description || '',
+        }));
+
+        const payload = {
+          ...form,
+          details,
+          PurchaseType: form.PurchaseType || deliveryType,
+        };
+
+        let res;
+        if (form && form.Guid) {
+          res = await svc.update(payload);
+        } else {
+          res = await svc.create(payload);
+        }
+
+        if (res) {
+          try {
+            router.push(landingRoute);
+          } catch (navErr) {
+            window.location.href = landingRoute;
+          }
+        }
+      } catch (err) {
+        console.error('Failed to save delivery', err);
+        setSaveError(String(err || 'Unknown error'));
+      } finally {
+        setIsSaving(false);
+      }
+    })();
   };
 
   return (

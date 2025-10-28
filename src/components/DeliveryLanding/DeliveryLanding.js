@@ -83,14 +83,14 @@ function StatsSection() {
   );
 }
 
-export default function DeliveryLanding() {
+export default function DeliveryLanding({ serviceFactory = null, formRoute = '/purchase/deliveryform', title = 'Deliveries', columns: overrideColumns = null, filterConfig = null }) {
   const [searchTerm, setSearchTerm] = useState("");
   const router = useRouter();
 
   // Function to redirect to delivery form
   const redirectToDeliveryForm = useCallback(() => {
-    router.push("/purchase/deliveryform");
-  }, [router]);
+    router.push(formRoute);
+  }, [router, formRoute]);
 
   const [selectedColumns, setSelectedColumns] = useState([
     "Guid",
@@ -109,14 +109,15 @@ export default function DeliveryLanding() {
   const handleView = useCallback(
     (delivery) => {
       if (delivery?.Guid) {
-        router.push(`/purchase/deliveryform?id=${delivery.Guid}`);
+        router.push(`${formRoute}?id=${delivery.Guid}`);
       }
     },
-    [router]
+    [router, formRoute]
   );
 
   const columns = useMemo(() => {
-    const base = ALL_COLUMNS.filter((col) => selectedColumns.includes(col.key));
+    const cols = overrideColumns || ALL_COLUMNS;
+    const base = cols.filter((col) => selectedColumns.includes(col.key));
     if (selectedColumns.includes('Actions')) {
       const ACTION_COLUMN = {
         key: 'Actions',
@@ -135,57 +136,77 @@ export default function DeliveryLanding() {
       return [...base, ACTION_COLUMN];
     }
     return base;
-  }, [selectedColumns, handleView]);
+  }, [selectedColumns, handleView, overrideColumns]);
 
-  // deliveries state loaded from service (start empty until fetched)
-  const [deliveries, setDeliveries] = useState([]);
-  const [isLoading, setIsLoading] = useState(false);
+  // items state loaded from service (start empty until fetched)
+  const [items, setItems] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
-  // instantiate service once
-  const deliveryService = useMemo(() => new DeliveryService(), []);
+  // Default service adapter at module scope to keep identity stable
+  const defaultServiceFactory = () => {
+    return {
+      subscribe: (cb) => DeliveryService.subscribe(cb),
+      setStatus: ({ Guid, Status }) => {
+        const svc = new DeliveryService();
+        return svc.setDeliveryStatus({ Guid, Status });
+      },
+    };
+  };
 
-  // load deliveries from service on mount
+  // Use a stable factory reference so effects don't re-run every render
+  const svcFactory = React.useMemo(() => (serviceFactory || defaultServiceFactory), [serviceFactory]);
+
+  const effectiveFilterConfig = filterConfig || {
+    label: 'Purchase Type',
+    key: 'purchaseType',
+    options: [
+      { value: '', label: 'All' },
+      { value: 'Inventory', label: 'Inventory' },
+      { value: 'Service', label: 'Service' },
+    ],
+  };
+
+  // Subscribe to service so landing reflects additions/updates in real-time
   useEffect(() => {
     let mounted = true;
-    const load = async () => {
-      setIsLoading(true);
-      try {
-        const result = await deliveryService.getAllDeliveries();
-        if (mounted && Array.isArray(result)) setDeliveries(result);
-      } catch (err) {
-        console.error("Failed to load deliveries:", err);
-      } finally {
-        if (mounted) setIsLoading(false);
-      }
-    };
-    load();
+    setLoading(true);
+    const unsubscribe = svcFactory().subscribe((res) => {
+      if (!mounted) return;
+      setItems(res || []);
+      setLoading(false);
+    });
     return () => {
       mounted = false;
+      try {
+        unsubscribe && unsubscribe();
+      } catch (e) {}
     };
-  }, [deliveryService]);
+  }, [svcFactory]);
 
   // Filtered data based on filter and search
   const filteredData = useMemo(() => {
-    let data = deliveries;
-    // Filter by purchaseType
+    // Use only the items provided by the service. Default to [] so empty results show empty state.
+    let data = Array.isArray(items) ? items : [];
+    // Filter by purchaseType (also accept SalesType for sales deliveries)
     if (filter.purchaseType) {
-      data = data.filter(
-        (item) =>
-          item.PurchaseType &&
-          item.PurchaseType.toLowerCase().includes(filter.purchaseType.toLowerCase())
-      );
+      data = data.filter((item) => {
+        const typeVal = (item.PurchaseType || item.SalesType || '');
+        return typeVal && typeVal.toLowerCase().includes(filter.purchaseType.toLowerCase());
+      });
     }
-    // Filter by search term (searches in Description and PurchaseDeliveryNumber)
+    // Filter by search term (searches in Description and delivery number fields)
     if (searchTerm) {
       const term = searchTerm.toLowerCase();
-      data = data.filter(
-        (item) =>
-          (item.Description && item.Description.toLowerCase().includes(term)) ||
-          (item.PurchaseDeliveryNumber && item.PurchaseDeliveryNumber.toLowerCase().includes(term))
-      );
+      data = data.filter((item) => {
+        const descMatch = item.Description && item.Description.toLowerCase().includes(term);
+        const numberVal = (item.PurchaseDeliveryNumber || item.SalesDeliveryNumber || '');
+        const numMatch = numberVal && numberVal.toLowerCase().includes(term);
+        return descMatch || numMatch;
+      });
     }
     return data;
-  }, [filter, searchTerm, deliveries]);
+  }, [filter, searchTerm, items]);
 
   const handleSearchChange = useCallback((value) => {
     setSearchTerm(value);
@@ -214,27 +235,19 @@ export default function DeliveryLanding() {
       setIsRightPanelCollapsed={setIsRightPanelCollapsed}
       rightPanel={
         <RightPanel
-          allColumns={ALL_COLUMNS}
+          allColumns={overrideColumns || ALL_COLUMNS}
           selectedColumns={selectedColumns}
           setSelectedColumns={setSelectedColumns}
           filter={filter}
           onFilterChange={setFilter}
-          filterConfig={{
-            label: 'Purchase Type',
-            key: 'purchaseType',
-            options: [
-              { value: '', label: 'All' },
-              { value: 'Inventory', label: 'Inventory' },
-              { value: 'Service', label: 'Service' },
-            ],
-          }}
+          filterConfig={effectiveFilterConfig}
         />
       }
     >
       <div className={styles.container}>
         <StatsSection />
         <div className={styles.titleSection}>
-          <h1 className={styles.title}>Deliveries</h1>
+          <h1 className={styles.title}>{title}</h1>
           <SearchBar
             placeholder="Search deliveries..."
             value={searchTerm}
@@ -246,14 +259,20 @@ export default function DeliveryLanding() {
             width="300px"
           />
         </div>
-        <DataTable
-          data={filteredData}
-          columns={columns}
-          onRowClick={handleRowClick}
-          onActionClick={handleActionClick}
-          showActions={false}
-          emptyMessage="No deliveries found"
-        />
+        {loading ? (
+          <div className={styles.loading}>Loading deliveries...</div>
+        ) : error ? (
+          <div className={styles.error}>Error loading deliveries: {String(error)}</div>
+        ) : (
+          <DataTable
+            data={filteredData}
+            columns={columns}
+            onRowClick={handleRowClick}
+            onActionClick={handleActionClick}
+            showActions={false}
+            emptyMessage="No deliveries found"
+          />
+        )}
       </div>
     </ThreeColumnLayout>
   );

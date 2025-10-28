@@ -49,7 +49,7 @@ const defaultServiceFactory = () => {
   };
 };
 
-export default function OrderForm({ serviceFactory = defaultServiceFactory, landingRoute = '/purchase/orderlanding', title = 'Order Form', saveType = null }) {
+export default function OrderForm({ serviceFactory = defaultServiceFactory, landingRoute = '/purchase/orderlanding', title = 'Order Form', saveType = null, deliveryFormRoute = '/purchase/deliveryform' }) {
   const searchParams = useSearchParams();
   const fromQuotation = searchParams ? searchParams.get('fromQuotation') : null;
   const orderId = searchParams ? searchParams.get('id') : null;
@@ -935,7 +935,7 @@ export default function OrderForm({ serviceFactory = defaultServiceFactory, land
                 cancelText="Cancel"
                 onConfirm={() => {
                   try {
-                    router.push(`/purchase/deliveryform?fromOrder=${encodeURIComponent(form.Guid)}`);
+                      router.push(`${deliveryFormRoute}?fromOrder=${encodeURIComponent(form.Guid)}`);
                   } catch (e) {
                     window.location.href = `/purchase/deliveryform?fromOrder=${encodeURIComponent(form.Guid)}`;
                   }
