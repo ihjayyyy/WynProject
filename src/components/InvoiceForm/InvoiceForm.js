@@ -396,6 +396,10 @@ export default function InvoiceForm({ serviceFactory = null, landingRoute = '/pu
   const items = invoiceType === "inventory" ? productItems : serviceItems;
   const formatNumber = (value) => Number(value).toFixed(2);
 
+  // Labels for Order/Invoice number fields — show Sales wording when keys indicate sales
+  const orderNumberLabel = (orderKey && String(orderKey).toLowerCase().includes('sales')) ? 'Sales Order Number' : 'Purchase Order Number';
+  const invoiceNumberLabel = (numberKey && String(numberKey).toLowerCase().includes('sales')) ? 'Sales Invoice Number' : 'Purchase Invoice Number';
+
   // Create the blank row for adding new products
   const createBlankProductRow = () => {
     const availableProducts = productCatalog.filter(
@@ -662,10 +666,10 @@ export default function InvoiceForm({ serviceFactory = null, landingRoute = '/pu
           />
         </div>
         <div className={`${styles.gridItem8} ${styles.span2} ${styles.rightAlign}`}>
-          <Input label="Purchase Order Number" placeholder="PO Number" id="PurchaseOrderNumber" name="PurchaseOrderNumber" value={form.PurchaseOrderNumber} onChange={handleChange} readOnly={!isEditable} />
+          <Input label={orderNumberLabel} placeholder="PO Number" id="PurchaseOrderNumber" name="PurchaseOrderNumber" value={form.PurchaseOrderNumber} onChange={handleChange} readOnly={!isEditable} />
         </div>
         <div className={`${styles.gridItem8} ${styles.span2} ${styles.rightAlign}`}>
-          <Input label="Purchase Invoice Number" placeholder="Invoice Number" id="PurchaseInvoiceNumber" name="PurchaseInvoiceNumber" value={form.PurchaseInvoiceNumber} onChange={handleChange} readOnly={!isEditable} />
+          <Input label={invoiceNumberLabel} placeholder="Invoice Number" id="PurchaseInvoiceNumber" name="PurchaseInvoiceNumber" value={form.PurchaseInvoiceNumber} onChange={handleChange} readOnly={!isEditable} />
         </div>
       </div>
 

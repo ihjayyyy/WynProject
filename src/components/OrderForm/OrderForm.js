@@ -305,6 +305,9 @@ export default function OrderForm({ serviceFactory = defaultServiceFactory, land
   const isView = !!orderId || !!form.Guid;
   const isEditable = !isView || (String(form.Status || '').trim().toUpperCase() === 'DRAFT');
 
+  // Label for Purchase/Sales Order Number - allow Sales forms to show 'Sales Order Number'
+  const purchaseOrderLabel = (saveType && String(saveType).toLowerCase().includes('sales')) ? 'Sales Order Number' : 'Purchase Order Number';
+
   // Control whether the blank-row select controls are visible (hidden behind a button initially)
   const [showBlankProductSelector, setShowBlankProductSelector] = useState(false);
   const [showBlankServiceSelector, setShowBlankServiceSelector] = useState(false);
@@ -855,7 +858,7 @@ export default function OrderForm({ serviceFactory = defaultServiceFactory, land
         </div>
         
         <div className={`${styles.gridItem8} ${styles.span2} ${styles.rightAlign}`}>
-          <Input label="Purchase Order Number" placeholder="PO Number" id="PurchaseOrderNumber" name="PurchaseOrderNumber" value={form.PurchaseOrderNumber} onChange={handleChange} readOnly={!isEditable} />
+          <Input label={purchaseOrderLabel} placeholder="PO Number" id="PurchaseOrderNumber" name="PurchaseOrderNumber" value={form.PurchaseOrderNumber} onChange={handleChange} readOnly={!isEditable} />
         </div>
         
         {/* Row 4: Description full width (span 8) */}

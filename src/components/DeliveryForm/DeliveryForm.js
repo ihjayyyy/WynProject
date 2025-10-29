@@ -48,7 +48,7 @@ const initialBlankServiceRow = {
   OrderedQuantity: 0,
   DeliveredQuantity: 0,
 };
-export default function DeliveryForm({ serviceFactory = defaultServiceFactory, landingRoute = '/purchase/deliverylanding' }) {
+export default function DeliveryForm({ serviceFactory = defaultServiceFactory, landingRoute = '/purchase/deliverylanding', saveType = null }) {
   // Grouped state hooks
   const [deliveryType, setDeliveryType] = useState('inventory');
   const [productItems, setProductItems] = useState([]);
@@ -925,6 +925,9 @@ export default function DeliveryForm({ serviceFactory = defaultServiceFactory, l
     })();
   };
 
+  // Label for Purchase/Sales Delivery Number - allow Sales forms to show 'Sales Delivery Number'
+  const deliveryNumberLabel = (saveType && String(saveType).toLowerCase().includes('sales')) ? 'Sales Delivery Number' : 'Purchase Delivery Number';
+
   return (
     <form className={styles.deliveryForm} onSubmit={handleSubmit}>
       <Breadcrumbs
@@ -1035,8 +1038,8 @@ export default function DeliveryForm({ serviceFactory = defaultServiceFactory, l
         <div
           className={`${styles.gridItem8} ${styles.span2} ${styles.rightAlign}`}>
           <Input
-            label="Purchase Delivery Number"
-            placeholder="Purchase Delivery Number"
+            label={deliveryNumberLabel}
+            placeholder={deliveryNumberLabel}
             id="PurchaseDeliveryNumber"
             name="PurchaseDeliveryNumber"
             value={form.PurchaseDeliveryNumber}
