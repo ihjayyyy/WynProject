@@ -36,6 +36,15 @@
   gap: 1rem;
   margin-bottom: 0.5rem;
 }
+.viewHeader {
+  display: flex;
+  align-items: center;
+  gap: .5rem;
+}
+.viewStatus {
+  display: flex;
+  align-items: center;
+}
 
 .typeSelector {
   display: flex;

@@ -1,6 +1,7 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
+import { useSearchParams, useRouter } from 'next/navigation';
 import styles from "./InvoiceForm.module.scss";
 import Input from "../ui/Input/Input";
 import DataTable from "../ui/DataTable/DataTable";
@@ -8,82 +9,28 @@ import Button from "../ui/Button/Button";
 import { FiFile, FiPlus, FiTrash2 } from "react-icons/fi";
 import Select from "../ui/Select/Select";
 import Breadcrumbs from "../ui/Breadcrumbs/Breadcrumbs";
+import StatusBadge from "../ui/StatusBadge/StatusBadge";
 
-// --- Supplier Data (mock, should match supplier page) ---
-const SUPPLIERS = [
-  {
-    CompanyGuid: 'COMP001',
-    CompanyCode: 'ACME',
-    Name: 'Acme Corporation',
-    Logo: '',
-    Address: '123 Ayala Ave, Makati City',
-    Phone: '+63 2 8123 4567',
-    Fax: '+63 2 8123 4568',
-    Email: 'john.smith@acme.com',
-    Website: 'www.acme.com',
-    TaxNumber: 'TX123456',
-    ContactPerson: 'John Smith',
-    ContactNumber: '+63 917 111 2222',
-    PaymentTerms: 30,
-    Status: 'ACTIVE',
-    SupplierType: 'Local'
-  },
-  {
-    CompanyGuid: 'COMP002',
-    CompanyCode: 'GLOB',
-    Name: 'Global Supplies Ltd',
-    Logo: '',
-    Address: '456 Ortigas Ave, Pasig City',
-    Phone: '+63 2 8987 6543',
-    Fax: '+63 2 8987 6544',
-    Email: 'sarah.j@globalsupplies.com',
-    Website: 'www.globalsupplies.com',
-    TaxNumber: 'TX654321',
-    ContactPerson: 'Sarah Johnson',
-    ContactNumber: '+63 918 333 4444',
-    PaymentTerms: 45,
-    Status: 'ACTIVE',
-    SupplierType: 'International'
-  },
-  {
-    CompanyGuid: 'COMP003',
-    CompanyCode: 'TECH',
-    Name: 'Tech Solutions Inc',
-    Logo: '',
-    Address: '789 IT Park, Cebu City',
-    Phone: '+63 32 456 7890',
-    Fax: '+63 32 456 7891',
-    Email: 'mbrown@techsolutions.com',
-    Website: 'www.techsolutions.com',
-    TaxNumber: 'TX789123',
-    ContactPerson: 'Michael Brown',
-    ContactNumber: '+63 919 555 6666',
-    PaymentTerms: 60,
-    Status: 'PENDING',
-    SupplierType: 'Local'
-  }
-];
+// Use service modules (these are lightweight mock services under src/services)
+import { InventoryService } from "../../services/inventoryService";
+import { ServiceService } from "../../services/serviceService";
+import SupplierService from "../../services/supplierService";
+import PurchaseInvoiceService from "../../services/purchaseInvoiceService";
 
-// Mock product and service catalogs (replace with API in real app)
-const productCatalog = [
-  { ProductGuid: "P001", Description: "Premium Widget A", UnitPrice: 150.0 },
-  { ProductGuid: "P002", Description: "Standard Widget B", UnitPrice: 85.5 },
-  { ProductGuid: "P003", Description: "Deluxe Widget C", UnitPrice: 220.75 },
-  { ProductGuid: "P004", Description: "Basic Widget D", UnitPrice: 45.25 },
-  { ProductGuid: "P005", Description: "Professional Service Package", UnitPrice: 500.0 },
-];
-
-const serviceCatalog = [
-  { ServiceGuid: "S001", Description: "Consultation Service", Amount: 250.0 },
-  { ServiceGuid: "S002", Description: "Installation Service", Amount: 400.0 },
-  { ServiceGuid: "S003", Description: "Maintenance Package", Amount: 150.0 },
-];
+const supplierService = new SupplierService();
+const inventoryService = new InventoryService();
+const serviceService = new ServiceService();
+const purchaseInvoiceService = new PurchaseInvoiceService();
 
 const initialProductItems = [];
 const initialServiceItems = [];
 const initialBlankServiceRow = { ServiceGuid: '', Description: '', Amount: 0 };
 
 export default function InvoiceForm() {
+  const searchParams = useSearchParams();
+  const viewId = searchParams ? searchParams.get('id') : null;
+  const isView = !!viewId;
+  const router = useRouter();
   const [invoiceType, setInvoiceType] = useState("inventory");
   const [productItems, setProductItems] = useState(initialProductItems);
   const [serviceItems, setServiceItems] = useState(initialServiceItems);
@@ -106,6 +53,135 @@ export default function InvoiceForm() {
     InvoiceAmount: 0,
   });
 
+  // runtime catalogs and suppliers loaded from services
+  const [productCatalog, setProductCatalog] = useState([]);
+  const [serviceCatalog, setServiceCatalog] = useState([]);
+  const [suppliers, setSuppliers] = useState([]);
+
+  // Load catalogs/suppliers on mount
+  useEffect(() => {
+    let mounted = true;
+    const load = async () => {
+      try {
+        const inv = await inventoryService.getAllInventories();
+        const mappedProducts = (inv || []).map(item => ({
+          ProductGuid: item.Guid || item.ProductCode,
+          Description: item.Name || item.Description || item.ProductCode,
+          UnitPrice: item.UnitPrice || 0
+        }));
+
+        const sv = await serviceService.getAllServices();
+        const mappedServices = (sv || []).map(s => ({
+          ServiceGuid: s.Guid || s.ServiceCode,
+          Description: s.Name || s.Description || s.ServiceCode,
+          Amount: s.Price || s.Amount || 0
+        }));
+
+        const s = await supplierService.getAllSuppliers();
+
+        if (!mounted) return;
+        setProductCatalog(mappedProducts);
+        setServiceCatalog(mappedServices);
+        setSuppliers(s || []);
+      } catch (err) {
+        console.error('Failed to load catalogs/suppliers', err);
+      }
+    };
+    load();
+    return () => { mounted = false; };
+  }, []);
+
+  // If viewing an existing invoice (via ?id=...), load it and its details
+  useEffect(() => {
+    if (!isView) return;
+    let mounted = true;
+
+    const loadInvoice = async () => {
+      try {
+        const invoice = await purchaseInvoiceService.getInvoiceById(viewId);
+        if (!mounted || !invoice) return;
+
+        // Map invoice fields into form
+        setForm((prev) => ({
+          ...prev,
+          Guid: invoice.Guid || prev.Guid,
+          CompanyGuid: invoice.CompanyGuid || prev.CompanyGuid,
+          SupplierGuid: invoice.SupplierGuid || prev.SupplierGuid,
+          DeliveryGuid: invoice.DeliveryGuid || prev.DeliveryGuid,
+          OrderGuid: invoice.OrderGuid || prev.OrderGuid,
+          PurchaseOrderNumber: invoice.PurchaseOrderNumber || prev.PurchaseOrderNumber,
+          PurchaseInvoiceNumber: invoice.PurchaseInvoiceNumber || prev.PurchaseInvoiceNumber,
+          Date: invoice.Date || prev.Date,
+          Description: invoice.Description || prev.Description,
+          PurchaseType: invoice.PurchaseType ? invoice.PurchaseType.toLowerCase() : prev.PurchaseType,
+          PreparedBy: invoice.PreparedBy || prev.PreparedBy,
+          ApprovedBy: invoice.ApprovedBy || prev.ApprovedBy,
+          Status: invoice.Status || prev.Status,
+          SupplierPO: invoice.SupplierPO || prev.SupplierPO,
+          DueDate: invoice.DueDate || prev.DueDate,
+          InvoiceAmount: invoice.InvoiceAmount || prev.InvoiceAmount,
+        }));
+
+        // Resolve supplier details if not already loaded
+        try {
+          let resolvedSupplier = suppliers.find(s => s.CompanyGuid === invoice.SupplierGuid);
+          if (!resolvedSupplier) {
+            resolvedSupplier = invoice.SupplierGuid ? await supplierService.getSupplierById(invoice.SupplierGuid) : null;
+          }
+          if (mounted && resolvedSupplier) {
+            setForm((prev) => ({
+              ...prev,
+              CompanyGuid: resolvedSupplier.CompanyGuid || prev.CompanyGuid,
+            }));
+          }
+        } catch (e) {
+          // ignore supplier resolution errors
+        }
+
+        // Load details and map into items
+        const details = await purchaseInvoiceService.getDetailsWithItemsByInvoiceGuid(viewId);
+        if (!mounted) return;
+
+        const purchaseType = invoice.PurchaseType ? invoice.PurchaseType.toLowerCase() : '';
+        if (purchaseType === 'inventory') {
+          const mapped = (details || []).map((d) => ({
+            id: d.Guid,
+            ProductGuid: d.Item ? (d.Item.Guid || d.Item.ProductCode) : d.ItemGuid,
+            Description: d.Description || (d.Item && (d.Item.Name || d.Item.Description)),
+            UnitPrice: d.UnitPrice || 0,
+            Quantity: d.Quantity || 1,
+            TotalPrice: d.TotalPrice || 0,
+            Discount: d.Discount || 0,
+          }));
+          setProductItems(mapped);
+          setInvoiceType('inventory');
+        } else if (purchaseType === 'service') {
+          const mapped = (details || []).map((d) => ({
+            id: d.Guid,
+            ServiceGuid: d.Item ? (d.Item.Guid || d.Item.ServiceCode) : d.ItemGuid,
+            Description: d.Description || (d.Item && (d.Item.Name || d.Item.Description)),
+            Amount: d.UnitPrice || d.TotalPrice || 0,
+          }));
+          setServiceItems(mapped);
+          setInvoiceType('service');
+        }
+      } catch (err) {
+        console.error('Failed to load invoice', err);
+      }
+    };
+
+    loadInvoice();
+
+    // subscribe to invoice updates to reflect status changes
+    const unsubscribe = PurchaseInvoiceService.subscribe((all) => {
+      if (!mounted) return;
+      const found = (all || []).find((d) => d.Guid === viewId || d.PurchaseInvoiceNumber === viewId);
+      if (found) setForm((prev) => ({ ...prev, Status: found.Status || prev.Status, ApprovedBy: found.ApprovedBy || prev.ApprovedBy }));
+    });
+
+    return () => { mounted = false; try { unsubscribe && unsubscribe(); } catch (e) {} };
+  }, [isView, viewId, suppliers]);
+
   // Control whether the blank-row select controls are visible (hidden behind a button initially)
   const [showBlankProductSelector, setShowBlankProductSelector] = useState(false);
   const [showBlankServiceSelector, setShowBlankServiceSelector] = useState(false);
@@ -118,7 +194,7 @@ export default function InvoiceForm() {
   // Handle supplier dropdown change
   const handleSupplierChange = (e) => {
     const selectedGuid = e.target.value;
-    const selectedSupplier = SUPPLIERS.find(s => s.CompanyGuid === selectedGuid);
+    const selectedSupplier = suppliers.find(s => s.CompanyGuid === selectedGuid);
     setForm(form => ({
       ...form,
       SupplierGuid: selectedGuid,
@@ -369,11 +445,42 @@ export default function InvoiceForm() {
     const InvoiceAmount = invoiceType === "inventory"
       ? productItems.reduce((sum, i) => sum + (Number(i.TotalPrice) || 0), 0)
       : serviceItems.reduce((sum, i) => sum + (Number(i.Amount) || 0), 0);
-    // Log the form data and items
-    console.log({
+
+    // Map UI items into invoice details accepted by PurchaseInvoiceService
+    const details = (invoiceType === 'inventory' ? productItems : serviceItems).map((it) => {
+      if (invoiceType === 'inventory') {
+        return {
+          ItemGuid: it.ProductGuid,
+          Quantity: it.Quantity || 1,
+          UnitPrice: it.UnitPrice || 0,
+          TotalPrice: it.TotalPrice || 0,
+          Discount: it.Discount || 0,
+          Description: it.Description || ''
+        };
+      }
+      // service
+      return {
+        ItemGuid: it.ServiceGuid,
+        Quantity: it.Quantity || 1,
+        UnitPrice: it.Amount || it.Price || 0,
+        TotalPrice: it.Amount || it.Price || 0,
+        Discount: 0,
+        Description: it.Description || ''
+      };
+    });
+
+    const payload = {
       ...form,
-      items: invoiceType === "inventory" ? productItems : serviceItems,
+      PurchaseType: invoiceType === 'inventory' ? 'Inventory' : 'Service',
       InvoiceAmount,
+      details
+    };
+
+    purchaseInvoiceService.createInvoice(payload).then((created) => {
+      console.log('Created invoice', created);
+      // you may want to reset the form or navigate after creation
+    }).catch((err) => {
+      console.error('Failed to create invoice', err);
     });
   };
 
@@ -382,7 +489,16 @@ export default function InvoiceForm() {
       <Breadcrumbs showBack items={[{ label: 'Invoice Form' }]} backIcon={<FiFile size={18}/>} />
       
       <div className={styles.headerSection}>
-        <h2 className={styles.title}>Invoice Form</h2>
+        {isView ? (
+          <div className={styles.viewHeader}>
+            <h2 className={styles.title}>Invoice: {form.Guid}</h2>
+            <div className={styles.viewStatus}>
+              <StatusBadge status={form.Status} />
+            </div>
+          </div>
+        ) : (
+          <h2 className={styles.title}>Invoice Form</h2>
+        )}
         <div className={styles.typeSelector}>
           <label htmlFor="PurchaseType" className={styles.typeLabel}>Type:</label>
           <Select
@@ -409,7 +525,7 @@ export default function InvoiceForm() {
             onChange={handleSupplierChange}
             options={[
               { value: '', label: 'Select Supplier...' },
-              ...SUPPLIERS.map(s => ({
+              ...suppliers.map(s => ({
                 value: s.CompanyGuid,
                 label: `${s.CompanyCode} - ${s.Name}`
               }))
@@ -480,8 +596,12 @@ export default function InvoiceForm() {
 
       <div className={styles.bottomFields}>
         <div className={styles.leftBottomFields}>
-          <Input label="Prepared By" placeholder="Prepared By" id="PreparedBy" name="PreparedBy" value={form.PreparedBy} onChange={handleChange} />
-          <Input label="Approved By" placeholder="Approved By" id="ApprovedBy" name="ApprovedBy" value={form.ApprovedBy} onChange={handleChange} />
+          {isView && (
+            <>
+              <Input label="Prepared By" placeholder="Prepared By" id="PreparedBy" name="PreparedBy" value={form.PreparedBy} onChange={handleChange} readOnly />
+              <Input label="Approved By" placeholder="Approved By" id="ApprovedBy" name="ApprovedBy" value={form.ApprovedBy} onChange={handleChange} readOnly />
+            </>
+          )}
         </div>
         <Button type="submit" variant="save">Save</Button>
       </div>

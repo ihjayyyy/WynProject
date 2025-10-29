@@ -7,3 +7,4 @@ export { default as SalesQuotationService } from './salesQuotationService.js';
 export { default as SalesOrderService } from './salesOrderService.js';
 export { default as DeliveryService } from './deliveryService.js';
 export { default as SalesDeliveryService } from './salesDeliveryService.js';
+export { default as PurchaseInvoiceService } from './purchaseInvoiceService.js';

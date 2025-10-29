@@ -3,67 +3,12 @@
 import { useRouter } from "next/navigation";
 import ThreeColumnLayout from "../ThreeColumnLayout/ThreeColumnLayout";
 import RightPanel from "../RightPanel/RightPanel";
-import React, { useState, useCallback, useMemo } from "react";
+import React, { useState, useCallback, useMemo, useEffect } from "react";
 import styles from "./InvoiceLanding.module.scss";
-import { StatsCard, SearchBar, DataTable } from "../../components";
-
-// --- Data & Configs ---
-const TABLE_DATA = [
-  {
-    Guid: "INV-001",
-    CompanyGuid: "c0mp-0001-aaaa-bbbb-ccccdddd1111",
-    SupplierGuid: "sup-1001-xxxx-yyyy-zzzz11112222",
-    DeliveryGuid: "DEL-2025-0001",
-    OrderGuid: "ORD-001",
-    PurchaseOrderNumber: "PO-2025-0001",
-    PurchaseInvoiceNumber: "INV-2025-0001",
-    Date: "2025-10-01",
-    Description: "Bulk order for grooming supplies",
-    PurchaseType: "Inventory",
-    PreparedBy: "Juan Dela Cruz",
-    ApprovedBy: "Maria Santos",
-    Status: "draft",
-    SupplierPO: "SUP-PO-001",
-    DueDate: "2025-10-30",
-    InvoiceAmount: 15000.0,
-  },
-  {
-    Guid: "INV-002",
-    CompanyGuid: "c0mp-0001-aaaa-bbbb-ccccdddd1111",
-    SupplierGuid: "sup-1002-aaaa-bbbb-cccc22223333",
-    DeliveryGuid: "DEL-2025-0002",
-    OrderGuid: "ORD-002",
-    PurchaseOrderNumber: "PO-2025-0002",
-    PurchaseInvoiceNumber: "INV-2025-0002",
-    Date: "2025-10-02",
-    Description: "Massage service order",
-    PurchaseType: "Service",
-    PreparedBy: "Carlo Mendoza",
-    ApprovedBy: "Andrea Lopez",
-    Status: "approved",
-    SupplierPO: "SUP-PO-002",
-    DueDate: "2025-10-31",
-    InvoiceAmount: 5000.0,
-  },
-  {
-    Guid: "INV-003",
-    CompanyGuid: "c0mp-0002-eeee-ffff-gggghhhh2222",
-    SupplierGuid: "sup-1003-pppp-qqqq-rrrr33334444",
-    DeliveryGuid: "DEL-2025-0003",
-    OrderGuid: "ORD-003",
-    PurchaseOrderNumber: "PO-2025-0003",
-    PurchaseInvoiceNumber: "INV-2025-0003",
-    Date: "2025-10-03",
-    Description: "Extra service order",
-    PurchaseType: "Service",
-    PreparedBy: "Maria Santos",
-    ApprovedBy: "Juan Dela Cruz",
-    Status: "closed",
-    SupplierPO: "SUP-PO-003",
-    DueDate: "2025-11-15",
-    InvoiceAmount: 8000.0,
-  },
-];
+import { StatsCard, SearchBar, DataTable, DropdownAction } from "../../components";
+import StatusBadge from "../ui/StatusBadge/StatusBadge";
+import { FiEye } from 'react-icons/fi';
+import PurchaseInvoiceService from '../../services/purchaseInvoiceService.js';
 
 const ALL_COLUMNS = [
   {
@@ -122,7 +67,7 @@ const ALL_COLUMNS = [
     key: "Status",
     header: "STATUS",
     sortable: true,
-    render: (item) => <span style={{ textTransform: "capitalize" }}>{item.Status}</span>,
+    render: (item) => <StatusBadge status={item.Status} />,
   },
   {
     key: "SupplierPO",
@@ -166,18 +111,52 @@ export default function InvoiceLanding() {
     "PurchaseType",
     "Date",
     "InvoiceAmount",
+    "Status",
+    "Actions",
   ]);
   const [filter, setFilter] = useState({ purchaseType: "" });
   const [isRightPanelCollapsed, setIsRightPanelCollapsed] = useState(false);
 
-  const columns = useMemo(
-    () => ALL_COLUMNS.filter((col) => selectedColumns.includes(col.key)),
-    [selectedColumns]
+  // items state loaded from service
+  const [items, setItems] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  // compute columns and append an Actions column when selected
+  const handleView = useCallback(
+    (invoice) => {
+      if (invoice?.Guid) {
+        router.push(`/purchase/invoiceform?id=${invoice.Guid}`);
+      }
+    },
+    [router]
   );
 
-  // Filtered data based on filter and search
+  const columns = useMemo(() => {
+    const base = ALL_COLUMNS.filter((col) => selectedColumns.includes(col.key));
+    if (selectedColumns.includes('Actions')) {
+      const ACTION_COLUMN = {
+        key: 'Actions',
+        header: '',
+        sortable: false,
+        align: 'end',
+        width: '48px',
+        render: (item) => {
+          const itemsActions = [
+            { key: 'view', label: 'View', icon: <FiEye size={16} />, onClick: (it) => handleView(it) },
+          ];
+
+          return <DropdownAction item={item} items={itemsActions} />;
+        },
+      };
+      return [...base, ACTION_COLUMN];
+    }
+    return base;
+  }, [selectedColumns, handleView]);
+
+  // Use service-provided items and apply filtering/search
   const filteredData = useMemo(() => {
-    let data = TABLE_DATA;
+    let data = Array.isArray(items) ? items : [];
     // Filter by purchaseType
     if (filter.purchaseType) {
       data = data.filter(
@@ -196,7 +175,7 @@ export default function InvoiceLanding() {
       );
     }
     return data;
-  }, [filter, searchTerm]);
+  }, [filter, searchTerm, items]);
 
   const handleSearchChange = useCallback((value) => {
     setSearchTerm(value);
@@ -209,6 +188,36 @@ export default function InvoiceLanding() {
   const handleFilterClick = useCallback(() => {
     setIsRightPanelCollapsed(false);
   }, []);
+
+  // Default service adapter at module scope to keep identity stable
+  const defaultServiceFactory = () => {
+    return {
+      subscribe: (cb) => PurchaseInvoiceService.subscribe(cb),
+      setStatus: ({ Guid, Status, ApprovedBy }) => {
+        const svc = new PurchaseInvoiceService();
+        return svc.setInvoiceStatus({ Guid, Status, ApprovedBy });
+      },
+    };
+  };
+
+  const svcFactory = React.useMemo(() => defaultServiceFactory, []);
+
+  // Subscribe to service so landing reflects additions/updates in real-time
+  useEffect(() => {
+    let mounted = true;
+    setLoading(true);
+    const unsubscribe = svcFactory().subscribe((res) => {
+      if (!mounted) return;
+      setItems(res || []);
+      setLoading(false);
+    });
+    return () => {
+      mounted = false;
+      try {
+        unsubscribe && unsubscribe();
+      } catch (e) {}
+    };
+  }, [svcFactory]);
 
   //Handlers
   const handleRowClick = useCallback((invoice) => {
@@ -257,13 +266,20 @@ export default function InvoiceLanding() {
             width="300px"
           />
         </div>
-        <DataTable
-          data={filteredData}
-          columns={columns}
-          onRowClick={handleRowClick}
-          onActionClick={handleActionClick}
-          emptyMessage="No invoices found"
-        />
+        {loading ? (
+          <div className={styles.loading}>Loading invoices...</div>
+        ) : error ? (
+          <div className={styles.error}>Error loading invoices: {String(error)}</div>
+        ) : (
+          <DataTable
+            data={filteredData}
+            columns={columns}
+            onRowClick={handleRowClick}
+            onActionClick={handleActionClick}
+            showActions={false}
+            emptyMessage="No invoices found"
+          />
+        )}
       </div>
     </ThreeColumnLayout>
   );
