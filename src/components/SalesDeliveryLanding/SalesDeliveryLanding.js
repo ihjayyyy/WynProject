@@ -18,14 +18,16 @@ const salesServiceFactory = () => {
 
 export default function SalesDeliveryLandingWrapper(props) {
   const salesColumns = [
-    { key: 'Guid', header: 'CODE', sortable: true },
-    { key: 'SalesDeliveryNumber', header: 'SALES DELIVERY NO.', sortable: true },
-    { key: 'Description', header: 'DESCRIPTION', sortable: true },
-    { key: 'SalesType', header: 'TYPE', sortable: true },
+    { key: 'Guid', header: 'DELIVERY CODE', sortable: true, align: 'start', render: (item) => <span style={{ fontWeight: 'bold' }}>{item.Guid}</span> },
+    { key: 'PurchaseDeliveryNumber', header: 'REF NO.', sortable: true, render: (item) => <span>{item.SalesDeliveryNumber || item.PurchaseDeliveryNumber}</span> },
+    { key: 'OrderGuid', header: 'ORDER NO.', sortable: true, render: (item) => <span>{item.SalesOrderNumber || item.OrderGuid}</span> },
+    { key: 'Description', header: 'DESCRIPTION', sortable: true, render: (item) => <span>{item.Description}</span>, align: 'start' },
+    { key: 'PurchaseType', header: 'TYPE', sortable: true, align: 'start', render: (item) => <span>{item.SalesType || item.PurchaseType}</span> },
     { key: 'Date', header: 'DATE', sortable: true },
     { key: 'PreparedBy', header: 'PREPARED BY', sortable: true },
     { key: 'AcceptedBy', header: 'ACCEPTED BY', sortable: true },
     { key: 'Status', header: 'STATUS', sortable: true, render: (item) => <StatusBadge status={item.Status} /> },
+    { key: 'SupplierPO', header: 'SUPPLIER PO', sortable: true, render: (item) => <span>{item.SupplierSO || item.SupplierPO || ''}</span> },
   ];
 
   return (

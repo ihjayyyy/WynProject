@@ -18,16 +18,18 @@ const salesServiceFactory = () => {
 
 export default function SalesInvoiceLandingWrapper(props) {
   const salesColumns = [
-    { key: 'Guid', header: 'CODE', sortable: true },
-    { key: 'SalesInvoiceNumber', header: 'SALES INVOICE NO.', sortable: true },
-    { key: 'SalesOrderNumber', header: 'SALES ORDER NO.', sortable: true },
-    { key: 'Description', header: 'DESCRIPTION', sortable: true },
-    { key: 'SalesType', header: 'TYPE', sortable: true },
+    { key: 'Guid', header: 'CODE', sortable: true, align: 'start', render: (item) => <span style={{ fontWeight: 'bold' }}>{item.Guid}</span> },
+    // Use the purchase keys so InvoiceLanding's selectedColumns (which reference purchase keys) still match.
+    { key: 'PurchaseInvoiceNumber', header: 'REF NO.', sortable: true, render: (item) => <span>{item.SalesInvoiceNumber || item.PurchaseInvoiceNumber}</span> },
+    { key: 'PurchaseOrderNumber', header: 'PO NUMBER', sortable: true, render: (item) => <span>{item.SalesOrderNumber || item.PurchaseOrderNumber}</span> },
+    { key: 'Description', header: 'DESCRIPTION', sortable: true, render: (item) => <span>{item.Description}</span>, align: 'start' },
+    { key: 'PurchaseType', header: 'TYPE', sortable: true, align: 'start', render: (item) => <span>{item.SalesType || item.PurchaseType}</span> },
     { key: 'Date', header: 'DATE', sortable: true },
-    { key: 'DueDate', header: 'DUE DATE', sortable: true },
+    { key: 'DueDate', header: 'DUE DATE', sortable: true, align: 'start' },
     { key: 'PreparedBy', header: 'PREPARED BY', sortable: true },
     { key: 'ApprovedBy', header: 'APPROVED BY', sortable: true },
     { key: 'Status', header: 'STATUS', sortable: true, render: (item) => <StatusBadge status={item.Status} /> },
+    { key: 'SupplierPO', header: 'SUPPLIER PO', sortable: true, render: (item) => <span>{item.SupplierSO || item.SupplierPO || ''}</span> },
     { key: 'InvoiceAmount', header: 'AMOUNT', sortable: true, render: (item) => <span>₱{Number(item.InvoiceAmount || 0).toLocaleString()}</span>, align: 'end' },
   ];
 

@@ -18,13 +18,20 @@ const salesServiceFactory = () => {
 
 export default function SalesOrderLandingWrapper(props) {
   const salesColumns = [
-    { key: 'Guid', header: 'CODE', sortable: true },
-    { key: 'SalesOrderNumber', header: 'SALES ORDER NO.', sortable: true },
-    { key: 'Description', header: 'DESCRIPTION', sortable: true },
-    { key: 'SalesType', header: 'TYPE', sortable: true },
+    { key: 'Guid', header: 'CODE', sortable: true, align: 'start', render: (item) => <span style={{ fontWeight: 'bold' }}>{item.Guid}</span> },
+    // REF NO. corresponds to the sales order number for sales orders
+    { key: 'SalesOrderNumber', header: 'REF NO.', sortable: true, render: (item) => <span>{item.SalesOrderNumber}</span> },
+    // keep quotation number as a column as in OrderLanding
+    { key: 'QuotationNumber', header: 'QUOTATION NO.', sortable: true },
+    { key: 'Description', header: 'DESCRIPTION', sortable: true, render: (item) => <span>{item.Description}</span>, align: 'start' },
+    { key: 'SalesType', header: 'TYPE', sortable: true, align: 'start' },
     { key: 'Date', header: 'DATE', sortable: true },
-    { key: 'ValidUntil', header: 'VALID', sortable: true },
+    { key: 'ValidUntil', header: 'VALID UNTIL', sortable: true, align: 'start' },
+    { key: 'PreparedBy', header: 'PREPARED BY', sortable: true },
+    { key: 'ApprovedBy', header: 'APPROVED BY', sortable: true },
     { key: 'Status', header: 'STATUS', sortable: true, render: (item) => <StatusBadge status={item.Status} /> },
+    { key: 'SupplierSO', header: 'SUPPLIER SO', sortable: true },
+    { key: 'OrderAmount', header: 'AMOUNT', sortable: true, render: (item) => <span>₱{Number(item.OrderAmount || 0).toLocaleString()}</span>, align: 'end' },
   ];
 
   return (

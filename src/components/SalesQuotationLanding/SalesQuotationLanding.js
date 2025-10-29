@@ -18,13 +18,14 @@ const salesServiceFactory = () => {
 
 export default function SalesQuotationLandingWrapper(props) {
   const salesColumns = [
-    { key: 'Guid', header: 'CODE', sortable: true },
+    { key: 'Guid', header: 'CODE', sortable: true, align: 'start', render: (item) => <span style={{ fontWeight: 'bold' }}>{item.Guid}</span> },
     { key: 'QuotationNumber', header: 'QUOTATION NO.', sortable: true },
-    { key: 'Description', header: 'DESCRIPTION', sortable: true },
-    { key: 'SalesType', header: 'TYPE', sortable: true },
+    { key: 'Description', header: 'DESCRIPTION', sortable: true, render: (item) => <span>{item.Description}</span>, align: 'start' },
+    // NOTE: this column key is Sales-specific and mirrors the Purchase landing's column shape
+    { key: 'SalesType', header: 'TYPE', sortable: true, align: 'start' },
     { key: 'Date', header: 'DATE', sortable: true },
-    { key: 'ValidUntil', header: 'VALID', sortable: true },
-    { key: 'Status', header: 'STATUS', sortable: true, render: (item) => <StatusBadge status={item.Status} /> },
+    { key: 'ValidUntil', header: 'VALID', sortable: true, align: 'start' },
+    { key: 'Status', header: 'STATUS', sortable: true, align: 'start', render: (item) => <StatusBadge status={item.Status} /> },
   ];
 
   return (
