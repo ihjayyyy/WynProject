@@ -49,7 +49,7 @@ const defaultServiceFactory = () => {
   };
 };
 
-export default function OrderForm({ serviceFactory = defaultServiceFactory, landingRoute = '/purchase/orderlanding', title = 'Order Form', saveType = null, deliveryFormRoute = '/purchase/deliveryform' }) {
+export default function OrderForm({ serviceFactory = defaultServiceFactory, landingRoute = '/purchase/orderlanding', title = 'Order Form', saveType = null, deliveryFormRoute = '/purchase/deliveryform', invoiceFormRoute = '/purchase/invoiceform' }) {
   const searchParams = useSearchParams();
   const fromQuotation = searchParams ? searchParams.get('fromQuotation') : null;
   const orderId = searchParams ? searchParams.get('id') : null;
@@ -261,6 +261,7 @@ export default function OrderForm({ serviceFactory = defaultServiceFactory, land
   const [isSaving, setIsSaving] = useState(false);
   const [saveError, setSaveError] = useState(null);
   const [showConvertDeliveryConfirm, setShowConvertDeliveryConfirm] = useState(false);
+  const [showConvertInvoiceConfirm, setShowConvertInvoiceConfirm] = useState(false);
   const [form, setForm] = useState({
     Guid: '',
     SupplierGuid: "",
@@ -927,6 +928,16 @@ export default function OrderForm({ serviceFactory = defaultServiceFactory, land
               >
                 Convert to delivery
               </Button>
+              {/* Convert to Invoice button (visible when order exists) */}
+              <Button
+                type="button"
+                variant="primary"
+                onClick={() => setShowConvertInvoiceConfirm(true)}
+                title="Convert this order into an invoice"
+                style={{ marginLeft: 8 }}
+              >
+                Convert to invoice
+              </Button>
               <ConfirmModal
                 open={!!showConvertDeliveryConfirm}
                 title="Convert order to delivery"
@@ -942,6 +953,22 @@ export default function OrderForm({ serviceFactory = defaultServiceFactory, land
                 }}
                 onCancel={() => setShowConvertDeliveryConfirm(false)}
               />
+              <ConfirmModal
+                open={!!showConvertInvoiceConfirm}
+                title="Convert order to invoice"
+                message={`Are you sure you want to convert order ${form.PurchaseOrderNumber || form.Guid} into an invoice?`}
+                confirmText="Convert"
+                cancelText="Cancel"
+                onConfirm={() => {
+                  try {
+                      router.push(`${invoiceFormRoute}?fromOrder=${encodeURIComponent(form.Guid)}`);
+                  } catch (e) {
+                    window.location.href = `${invoiceFormRoute}?fromOrder=${encodeURIComponent(form.Guid)}`;
+                  }
+                }}
+                onCancel={() => setShowConvertInvoiceConfirm(false)}
+              />
+              {/* immediate navigation performed by the button above (no confirm modal) */}
             </>
           )}
           {isEditable && (

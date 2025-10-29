@@ -22,6 +22,7 @@ export default function SalesOrderForm(props) {
       serviceFactory={salesServiceFactory}
       landingRoute="/sales/orderlanding"
       deliveryFormRoute="/sales/deliveryform"
+      invoiceFormRoute="/sales/invoiceform"
       title="Sales Order Form"
       saveType="SalesType"
       {...props}

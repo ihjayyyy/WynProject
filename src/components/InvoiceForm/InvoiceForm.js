@@ -16,6 +16,8 @@ import { InventoryService } from "../../services/inventoryService";
 import { ServiceService } from "../../services/serviceService";
 import SupplierService from "../../services/supplierService";
 import PurchaseInvoiceService from "../../services/purchaseInvoiceService";
+import OrderService from '../../services/orderService';
+import SalesOrderService from '../../services/salesOrderService';
 
 const supplierService = new SupplierService();
 const inventoryService = new InventoryService();
@@ -107,6 +109,83 @@ export default function InvoiceForm({ serviceFactory = null, landingRoute = '/pu
   }, []);
 
   const svcFactory = React.useMemo(() => (serviceFactory || defaultServiceFactory), [serviceFactory]);
+
+  // If navigated from an order (e.g. /purchase/invoiceform?fromOrder=ORD-001), prefill invoice from that order
+  const fromOrder = searchParams ? searchParams.get('fromOrder') : null;
+  useEffect(() => {
+    if (!fromOrder) return;
+    let mounted = true;
+    (async () => {
+      try {
+        const orderSvc = new OrderService();
+        let ord = await orderSvc.getOrderById(fromOrder);
+        let usedSales = false;
+        let salesSvc = null;
+        if (!ord) {
+          salesSvc = new SalesOrderService();
+          ord = await salesSvc.getSalesOrderById(fromOrder);
+          if (ord) usedSales = true;
+        }
+        if (!mounted || !ord) return;
+
+        // populate top-level invoice fields from order
+        setForm((prev) => ({
+          ...prev,
+          SupplierGuid: ord.SupplierGuid || prev.SupplierGuid,
+          OrderGuid: ord.Guid || prev.OrderGuid,
+          PurchaseOrderNumber: ord.PurchaseOrderNumber || prev.PurchaseOrderNumber,
+          Date: ord.Date || prev.Date,
+          Description: ord.Description || prev.Description,
+          PurchaseType: ord.PurchaseType ? ord.PurchaseType.toLowerCase() : prev.PurchaseType,
+          PreparedBy: ord.PreparedBy || prev.PreparedBy,
+          ApprovedBy: ord.ApprovedBy || prev.ApprovedBy,
+        }));
+
+        // try to resolve supplier address/contact
+        try {
+          const sup = await supplierService.getSupplierById(ord.SupplierGuid);
+          if (mounted && sup) {
+            setForm((prev) => ({ ...prev, CompanyGuid: sup.CompanyGuid || prev.CompanyGuid }));
+          }
+        } catch (e) {
+          // ignore
+        }
+
+        // load order details and map to invoice items
+        try {
+          const details = usedSales && salesSvc ? await salesSvc.getDetailsWithItemsByOrderGuid(ord.Guid) : await orderSvc.getDetailsWithItemsByOrderGuid(ord.Guid);
+          const purchaseType = (ord.PurchaseType || ord.SalesType || '').toLowerCase();
+          if (purchaseType === 'inventory') {
+            const mapped = (details || []).map((d, idx) => ({
+              id: Date.now() + idx,
+              ProductGuid: d.Item ? d.Item.Guid : d.ItemGuid,
+              Description: d.Description || (d.Item && (d.Item.Name || d.Item.Description)),
+              UnitPrice: d.UnitPrice || 0,
+              Quantity: d.Quantity || 1,
+              TotalPrice: d.TotalPrice || 0,
+              Discount: d.Discount || 0,
+            }));
+            setProductItems(mapped);
+            setInvoiceType('inventory');
+          } else {
+            const mapped = (details || []).map((d, idx) => ({
+              id: Date.now() + idx,
+              ServiceGuid: d.Item ? d.Item.Guid : d.ItemGuid,
+              Description: d.Description || (d.Item && (d.Item.Name || d.Item.Description)),
+              Amount: d.UnitPrice || d.TotalPrice || 0,
+            }));
+            setServiceItems(mapped);
+            setInvoiceType('service');
+          }
+        } catch (e) {
+          console.error('Failed to load order details for invoice prefilling', e);
+        }
+      } catch (err) {
+        console.error('Failed to prefill invoice from order', err);
+      }
+    })();
+    return () => { mounted = false; };
+  }, [fromOrder]);
 
   // If viewing an existing invoice (via ?id=...), load it and its details
   useEffect(() => {
