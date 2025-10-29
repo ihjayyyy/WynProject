@@ -7,7 +7,8 @@ import React, { useState, useCallback, useMemo, useEffect } from "react";
 import styles from "./InvoiceLanding.module.scss";
 import { StatsCard, SearchBar, DataTable, DropdownAction } from "../../components";
 import StatusBadge from "../ui/StatusBadge/StatusBadge";
-import { FiEye } from 'react-icons/fi';
+import ConfirmModal from "../ui/ConfirmModal/ConfirmModal";
+import { FiEye, FiCheck, FiX } from 'react-icons/fi';
 import PurchaseInvoiceService from '../../services/purchaseInvoiceService.js';
 
 const ALL_COLUMNS = [
@@ -132,28 +133,6 @@ export default function InvoiceLanding() {
     [router]
   );
 
-  const columns = useMemo(() => {
-    const base = ALL_COLUMNS.filter((col) => selectedColumns.includes(col.key));
-    if (selectedColumns.includes('Actions')) {
-      const ACTION_COLUMN = {
-        key: 'Actions',
-        header: '',
-        sortable: false,
-        align: 'end',
-        width: '48px',
-        render: (item) => {
-          const itemsActions = [
-            { key: 'view', label: 'View', icon: <FiEye size={16} />, onClick: (it) => handleView(it) },
-          ];
-
-          return <DropdownAction item={item} items={itemsActions} />;
-        },
-      };
-      return [...base, ACTION_COLUMN];
-    }
-    return base;
-  }, [selectedColumns, handleView]);
-
   // Use service-provided items and apply filtering/search
   const filteredData = useMemo(() => {
     let data = Array.isArray(items) ? items : [];
@@ -228,6 +207,120 @@ export default function InvoiceLanding() {
     console.log("Action clicked for invoice:", invoice);
   }, []);
 
+  // Confirmation modal state
+  const [confirmState, setConfirmState] = useState({ open: false, type: null, invoice: null });
+
+  const openConfirm = useCallback((type, invoice) => {
+    setConfirmState({ open: true, type, invoice });
+  }, []);
+
+  const closeConfirm = useCallback(() => {
+    setConfirmState({ open: false, type: null, invoice: null });
+  }, []);
+
+  // Action executors (no UI confirmations here)
+  const doApprove = useCallback(async (invoice) => {
+    if (!invoice || !invoice.Guid) return;
+    try {
+      await svcFactory().setStatus({ Guid: invoice.Guid, Status: 'approved', ApprovedBy: 'Admin' });
+      console.log('Invoice approved by Admin', invoice?.Guid);
+    } catch (e) {
+      console.error('Approve failed', e);
+      // no UI alert - operation failed
+    }
+  }, [svcFactory]);
+
+  // Close (finalize) invoice
+  const doClose = useCallback(async (invoice) => {
+    if (!invoice || !invoice.Guid) return;
+    try {
+      await svcFactory().setStatus({ Guid: invoice.Guid, Status: 'closed' });
+      console.log('Invoice closed', invoice?.Guid);
+    } catch (e) {
+      console.error('Close failed', e);
+      // no UI alert - operation failed
+    }
+  }, [svcFactory]);
+
+  // Cancel action (set invoice to 'cancelled')
+  const doCancel = useCallback(async (invoice) => {
+    if (!invoice || !invoice.Guid) return;
+    try {
+      await svcFactory().setStatus({ Guid: invoice.Guid, Status: 'cancelled' });
+      console.log('Invoice cancelled', invoice?.Guid);
+    } catch (e) {
+      console.error('Cancel failed', e);
+      // no UI alert - operation failed
+    }
+  }, [svcFactory]);
+
+  // Called when user confirms in modal
+  const handleConfirm = useCallback(async () => {
+    const { type, invoice } = confirmState;
+    if (!type || !invoice) {
+      closeConfirm();
+      return;
+    }
+    try {
+      if (type === 'approve') await doApprove(invoice);
+      else if (type === 'close') await doClose(invoice);
+      else if (type === 'cancel') await doCancel(invoice);
+    } finally {
+      closeConfirm();
+    }
+  }, [confirmState, closeConfirm, doApprove, doClose, doCancel]);
+
+  const columns = useMemo(() => {
+    const base = ALL_COLUMNS.filter((col) => selectedColumns.includes(col.key));
+      if (selectedColumns.includes('Actions')) {
+        const ACTION_COLUMN = {
+          key: 'Actions',
+          header: '',
+          sortable: false,
+          align: 'end',
+          width: '48px',
+          render: (item) => {
+            const status = (item?.Status || '').toLowerCase();
+
+            // Visibility rules (per request):
+            // - draft: show view, approve, cancel, close
+            // - approved: show view, close, cancel
+            // - cancelled: show view, close
+            // For safety: hide approve when not draft; hide cancel unless draft or approved; hide close when already closed
+            const itemsActions = [
+              { key: 'view', label: 'View', icon: <FiEye size={16} />, onClick: (it) => handleView(it) },
+              {
+                key: 'approve',
+                label: 'Approve',
+                icon: <FiCheck size={14} />,
+                onClick: (it) => openConfirm('approve', it),
+                hidden: (it) => (it?.Status || '').toLowerCase() !== 'draft',
+              },
+              {
+                key: 'cancel',
+                label: 'Cancel',
+                icon: <FiX size={14} />,
+                destructive: true,
+                onClick: (it) => openConfirm('cancel', it),
+                hidden: (it) => !['draft', 'approved'].includes((it?.Status || '').toLowerCase()),
+              },
+              {
+                key: 'close',
+                label: 'Close',
+                icon: <FiCheck size={14} />,
+                onClick: (it) => openConfirm('close', it),
+                hidden: (it) => (it?.Status || '').toLowerCase() === 'closed',
+              },
+            ];
+
+            return <DropdownAction item={item} items={itemsActions} />;
+          },
+        };
+        return [...base, ACTION_COLUMN];
+      }
+    return base;
+  }, [selectedColumns, handleView, openConfirm]);
+
   return (
     <ThreeColumnLayout
       isRightPanelCollapsed={isRightPanelCollapsed}
@@ -280,6 +373,40 @@ export default function InvoiceLanding() {
             emptyMessage="No invoices found"
           />
         )}
+        {/* Confirmation modal for status actions */}
+        <ConfirmModal
+          open={confirmState.open}
+          title={
+            confirmState.type === 'approve'
+              ? 'Approve Invoice'
+              : confirmState.type === 'close'
+              ? 'Close Invoice'
+              : confirmState.type === 'cancel'
+              ? 'Cancel Invoice'
+              : ''
+          }
+          message={
+            confirmState.type === 'approve'
+              ? `Approve invoice ${confirmState.invoice?.PurchaseInvoiceNumber || confirmState.invoice?.Guid}?`
+              : confirmState.type === 'close'
+              ? `Close invoice ${confirmState.invoice?.PurchaseInvoiceNumber || confirmState.invoice?.Guid}? This will mark the invoice as final.`
+              : confirmState.type === 'cancel'
+              ? `Cancel invoice ${confirmState.invoice?.PurchaseInvoiceNumber || confirmState.invoice?.Guid}?`
+              : ''
+          }
+          confirmText={
+            confirmState.type === 'approve'
+              ? 'Approve'
+              : confirmState.type === 'close'
+              ? 'Close'
+              : confirmState.type === 'cancel'
+              ? 'Cancel'
+              : 'Confirm'
+          }
+          cancelText="Cancel"
+          onConfirm={handleConfirm}
+          onCancel={closeConfirm}
+        />
       </div>
     </ThreeColumnLayout>
   );
