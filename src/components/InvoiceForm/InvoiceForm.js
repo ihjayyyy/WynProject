@@ -20,13 +20,25 @@ import PurchaseInvoiceService from "../../services/purchaseInvoiceService";
 const supplierService = new SupplierService();
 const inventoryService = new InventoryService();
 const serviceService = new ServiceService();
-const purchaseInvoiceService = new PurchaseInvoiceService();
+// purchaseInvoiceService is created via defaultServiceFactory below for flexibility
+
+// Default service factory mapping to the existing PurchaseInvoiceService implementation
+const defaultServiceFactory = () => {
+  const svc = new PurchaseInvoiceService();
+  return {
+    getById: (id) => svc.getInvoiceById(id),
+    getDetailsWithItemsByInvoiceGuid: (id) => svc.getDetailsWithItemsByInvoiceGuid(id),
+    create: (payload) => svc.createInvoice(payload),
+    update: (payload) => svc.updateInvoice(payload),
+    subscribe: (cb) => PurchaseInvoiceService.subscribe(cb),
+  };
+};
 
 const initialProductItems = [];
 const initialServiceItems = [];
 const initialBlankServiceRow = { ServiceGuid: '', Description: '', Amount: 0 };
 
-export default function InvoiceForm() {
+export default function InvoiceForm({ serviceFactory = null, landingRoute = '/purchase/invoicelanding', title = 'Invoice Form', saveType = 'PurchaseType', numberKey = 'PurchaseInvoiceNumber', orderKey = 'PurchaseOrderNumber' }) {
   const searchParams = useSearchParams();
   const viewId = searchParams ? searchParams.get('id') : null;
   const isView = !!viewId;
@@ -47,11 +59,14 @@ export default function InvoiceForm() {
     PurchaseType: "inventory",
     PreparedBy: "",
     ApprovedBy: "",
-    Status: "",
+  Status: "draft",
     SupplierPO: "",
     DueDate: "",
     InvoiceAmount: 0,
   });
+
+  // Determine if the form is editable: only editable when status is 'draft'
+  const isEditable = (form.Status || '').toLowerCase() === 'draft';
 
   // runtime catalogs and suppliers loaded from services
   const [productCatalog, setProductCatalog] = useState([]);
@@ -91,6 +106,8 @@ export default function InvoiceForm() {
     return () => { mounted = false; };
   }, []);
 
+  const svcFactory = React.useMemo(() => (serviceFactory || defaultServiceFactory), [serviceFactory]);
+
   // If viewing an existing invoice (via ?id=...), load it and its details
   useEffect(() => {
     if (!isView) return;
@@ -98,7 +115,7 @@ export default function InvoiceForm() {
 
     const loadInvoice = async () => {
       try {
-        const invoice = await purchaseInvoiceService.getInvoiceById(viewId);
+  const invoice = await svcFactory().getById(viewId);
         if (!mounted || !invoice) return;
 
         // Map invoice fields into form
@@ -109,8 +126,8 @@ export default function InvoiceForm() {
           SupplierGuid: invoice.SupplierGuid || prev.SupplierGuid,
           DeliveryGuid: invoice.DeliveryGuid || prev.DeliveryGuid,
           OrderGuid: invoice.OrderGuid || prev.OrderGuid,
-          PurchaseOrderNumber: invoice.PurchaseOrderNumber || prev.PurchaseOrderNumber,
-          PurchaseInvoiceNumber: invoice.PurchaseInvoiceNumber || prev.PurchaseInvoiceNumber,
+          PurchaseOrderNumber: invoice.PurchaseOrderNumber || invoice.SalesOrderNumber || prev.PurchaseOrderNumber,
+          PurchaseInvoiceNumber: invoice.PurchaseInvoiceNumber || invoice.SalesInvoiceNumber || prev.PurchaseInvoiceNumber,
           Date: invoice.Date || prev.Date,
           Description: invoice.Description || prev.Description,
           PurchaseType: invoice.PurchaseType ? invoice.PurchaseType.toLowerCase() : prev.PurchaseType,
@@ -139,10 +156,10 @@ export default function InvoiceForm() {
         }
 
         // Load details and map into items
-        const details = await purchaseInvoiceService.getDetailsWithItemsByInvoiceGuid(viewId);
+  const details = await svcFactory().getDetailsWithItemsByInvoiceGuid(viewId);
         if (!mounted) return;
 
-        const purchaseType = invoice.PurchaseType ? invoice.PurchaseType.toLowerCase() : '';
+  const purchaseType = (invoice.PurchaseType || invoice.SalesType) ? (invoice.PurchaseType || invoice.SalesType).toLowerCase() : '';
         if (purchaseType === 'inventory') {
           const mapped = (details || []).map((d) => ({
             id: d.Guid,
@@ -173,14 +190,14 @@ export default function InvoiceForm() {
     loadInvoice();
 
     // subscribe to invoice updates to reflect status changes
-    const unsubscribe = PurchaseInvoiceService.subscribe((all) => {
+    const unsubscribe = svcFactory().subscribe((all) => {
       if (!mounted) return;
-      const found = (all || []).find((d) => d.Guid === viewId || d.PurchaseInvoiceNumber === viewId);
+      const found = (all || []).find((d) => d.Guid === viewId || d.PurchaseInvoiceNumber === viewId || d.SalesInvoiceNumber === viewId);
       if (found) setForm((prev) => ({ ...prev, Status: found.Status || prev.Status, ApprovedBy: found.ApprovedBy || prev.ApprovedBy }));
     });
 
     return () => { mounted = false; try { unsubscribe && unsubscribe(); } catch (e) {} };
-  }, [isView, viewId, suppliers]);
+  }, [isView, viewId, suppliers, svcFactory]);
 
   // Control whether the blank-row select controls are visible (hidden behind a button initially)
   const [showBlankProductSelector, setShowBlankProductSelector] = useState(false);
@@ -321,7 +338,7 @@ export default function InvoiceForm() {
             if (row.isBlank) {
               if (!showBlankProductSelector) {
                 return (
-                  <Button variant="transparent" size="sm" onClick={() => setShowBlankProductSelector(true)} icon={<FiPlus />}>Add Product...</Button>
+                  <Button variant="transparent" size="sm" onClick={() => setShowBlankProductSelector(true)} icon={<FiPlus />} disabled={!isEditable}>Add Product...</Button>
                 );
               }
               return (
@@ -356,10 +373,10 @@ export default function InvoiceForm() {
           ) },
         { header: 'Actions', key: 'actions', render: (row) => row.isBlank ? (
             row.ProductGuid ? (
-              <Button variant="primary" size="sm" onClick={handleAddBlankRowItem} icon={<FiPlus />} aria-label="Add" />
+              <Button variant="primary" size="sm" onClick={handleAddBlankRowItem} icon={<FiPlus />} aria-label="Add" disabled={!isEditable} />
             ) : ''
           ) : (
-            <Button variant="danger" size="sm" onClick={() => handleRemoveItem(row.id)} icon={<FiTrash2 />} aria-label="Remove" />
+            <Button variant="danger" size="sm" onClick={() => handleRemoveItem(row.id)} icon={<FiTrash2 />} aria-label="Remove" disabled={!isEditable} />
           ) },
       ]
     : [
@@ -367,7 +384,7 @@ export default function InvoiceForm() {
             if (row.isBlank) {
               if (!showBlankServiceSelector) {
                 return (
-                  <Button variant="transparent" size="sm" onClick={() => setShowBlankServiceSelector(true)} icon={<FiPlus />}>Add Service...</Button>
+                  <Button variant="transparent" size="sm" onClick={() => setShowBlankServiceSelector(true)} icon={<FiPlus />} disabled={!isEditable}>Add Service...</Button>
                 );
               }
               return (
@@ -405,10 +422,10 @@ export default function InvoiceForm() {
           } },
         { header: 'Actions', key: 'actions', render: (row) => row.isBlank ? (
             (!row.ServiceGuid && !row.Description) ? '' : (
-              <Button variant="primary" size="sm" onClick={handleAddBlankServiceRow} icon={<FiPlus />} aria-label="Add" disabled={!row.Description || row.Amount <= 0} />
+              <Button variant="primary" size="sm" onClick={handleAddBlankServiceRow} icon={<FiPlus />} aria-label="Add" disabled={!isEditable || !row.Description || row.Amount <= 0} />
             )
           ) : (
-            <Button variant="danger" size="sm" onClick={() => handleRemoveServiceItem(row.id)} icon={<FiTrash2 />} aria-label="Remove" />
+            <Button variant="danger" size="sm" onClick={() => handleRemoveServiceItem(row.id)} icon={<FiTrash2 />} aria-label="Remove" disabled={!isEditable} />
           ) },
       ];
 
@@ -510,6 +527,7 @@ export default function InvoiceForm() {
               { value: "inventory", label: "Inventory" },
               { value: "service", label: "Service" }
             ]}
+            disabled={!isEditable}
           />
         </div>
       </div>
@@ -530,28 +548,27 @@ export default function InvoiceForm() {
                 label: `${s.CompanyCode} - ${s.Name}`
               }))
             ]}
+            disabled={!isEditable}
           />
         </div>
         <div className={`${styles.gridItem8} ${styles.span2}`}>
-          <Input label="Company" placeholder="Company" id="CompanyGuid" name="CompanyGuid" value={form.CompanyGuid} onChange={handleChange} />
+          <Input label="Company" placeholder="Company" id="CompanyGuid" name="CompanyGuid" value={form.CompanyGuid} onChange={handleChange} readOnly={!isEditable} />
         </div>
         <div className={`${styles.gridItem8} ${styles.span2}`}>
-          <Input label="Delivery" placeholder="Delivery" id="DeliveryGuid" name="DeliveryGuid" value={form.DeliveryGuid} onChange={handleChange} />
+          <Input label="Delivery" placeholder="Delivery" id="DeliveryGuid" name="DeliveryGuid" value={form.DeliveryGuid} onChange={handleChange} readOnly={!isEditable} />
         </div>
         <div className={`${styles.gridItem8} ${styles.span2} ${styles.rightAlign}`}>
-          <Input label="Date" id="Date" name="Date" value={form.Date} onChange={handleChange} type="date" />
+          <Input label="Date" id="Date" name="Date" value={form.Date} onChange={handleChange} type="date" readOnly={!isEditable} />
         </div>
         <div className={`${styles.gridItem8} ${styles.span2}`}>
-          <Input label="Order" placeholder="Order" id="OrderGuid" name="OrderGuid" value={form.OrderGuid} onChange={handleChange} />
+          <Input label="Order" placeholder="Order" id="OrderGuid" name="OrderGuid" value={form.OrderGuid} onChange={handleChange} readOnly={!isEditable} />
         </div>
         <div className={`${styles.gridItem8} ${styles.span2}`}>
-          <Input label="Supplier PO" placeholder="Supplier PO" id="SupplierPO" name="SupplierPO" value={form.SupplierPO} onChange={handleChange} />
+          <Input label="Supplier PO" placeholder="Supplier PO" id="SupplierPO" name="SupplierPO" value={form.SupplierPO} onChange={handleChange} readOnly={!isEditable} />
         </div>
-        <div className={`${styles.gridItem8} ${styles.span2}`}>
-          <Input label="Status" placeholder="Status" id="Status" name="Status" value={form.Status} onChange={handleChange} />
-        </div>
+        {/* Status is not editable and should not be an input per requirement */}
         <div className={`${styles.gridItem8} ${styles.span2} ${styles.rightAlign}`}>
-          <Input label="Due Date" id="DueDate" name="DueDate" value={form.DueDate} onChange={handleChange} type="date" />
+          <Input label="Due Date" id="DueDate" name="DueDate" value={form.DueDate} onChange={handleChange} type="date" readOnly={!isEditable} />
         </div>
         <div className={`${styles.gridItem8} ${styles.span6}`}>
           <Input
@@ -566,10 +583,10 @@ export default function InvoiceForm() {
           />
         </div>
         <div className={`${styles.gridItem8} ${styles.span2} ${styles.rightAlign}`}>
-          <Input label="Purchase Order Number" placeholder="PO Number" id="PurchaseOrderNumber" name="PurchaseOrderNumber" value={form.PurchaseOrderNumber} onChange={handleChange} />
+          <Input label="Purchase Order Number" placeholder="PO Number" id="PurchaseOrderNumber" name="PurchaseOrderNumber" value={form.PurchaseOrderNumber} onChange={handleChange} readOnly={!isEditable} />
         </div>
         <div className={`${styles.gridItem8} ${styles.span2} ${styles.rightAlign}`}>
-          <Input label="Purchase Invoice Number" placeholder="Invoice Number" id="PurchaseInvoiceNumber" name="PurchaseInvoiceNumber" value={form.PurchaseInvoiceNumber} onChange={handleChange} />
+          <Input label="Purchase Invoice Number" placeholder="Invoice Number" id="PurchaseInvoiceNumber" name="PurchaseInvoiceNumber" value={form.PurchaseInvoiceNumber} onChange={handleChange} readOnly={!isEditable} />
         </div>
       </div>
 
@@ -578,11 +595,11 @@ export default function InvoiceForm() {
         let itemsWithBlank = [...items];
         if (invoiceType === "inventory") {
           const blankRow = createBlankProductRow();
-          if (blankRow) {
+          if (blankRow && isEditable) {
             itemsWithBlank.push(blankRow);
           }
         } else if (invoiceType === "service") {
-          itemsWithBlank.push({ id: 'blank', ...blankServiceRow, isBlank: true });
+          if (isEditable) itemsWithBlank.push({ id: 'blank', ...blankServiceRow, isBlank: true });
         }
         return (
           <DataTable
@@ -603,7 +620,7 @@ export default function InvoiceForm() {
             </>
           )}
         </div>
-        <Button type="submit" variant="save">Save</Button>
+        <Button type="submit" variant="save" disabled={!isEditable}>Save</Button>
       </div>
     </form>
   );

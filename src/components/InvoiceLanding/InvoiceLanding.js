@@ -95,14 +95,14 @@ function StatsSection() {
   );
 }
 
-export default function InvoiceLanding() {
+export default function InvoiceLanding({ serviceFactory = null, formRoute = '/purchase/invoiceform', title = 'Invoices', columns: overrideColumns = null, filterConfig = null }) {
   const [searchTerm, setSearchTerm] = useState("");
   const router = useRouter();
 
-  // Function to redirect to invoice form
+  // Function to redirect to invoice form (uses provided formRoute)
   const redirectToInvoiceForm = useCallback(() => {
-    router.push("/purchase/invoiceform");
-  }, [router]);
+    router.push(formRoute);
+  }, [router, formRoute]);
 
   const [selectedColumns, setSelectedColumns] = useState([
     "Guid",
@@ -127,10 +127,10 @@ export default function InvoiceLanding() {
   const handleView = useCallback(
     (invoice) => {
       if (invoice?.Guid) {
-        router.push(`/purchase/invoiceform?id=${invoice.Guid}`);
+        router.push(`${formRoute}?id=${invoice.Guid}`);
       }
     },
-    [router]
+    [router, formRoute]
   );
 
   // Use service-provided items and apply filtering/search
@@ -139,9 +139,10 @@ export default function InvoiceLanding() {
     // Filter by purchaseType
     if (filter.purchaseType) {
       data = data.filter(
-        (item) =>
-          item.PurchaseType &&
-          item.PurchaseType.toLowerCase().includes(filter.purchaseType.toLowerCase())
+        (item) => {
+          const typeVal = (item.PurchaseType || item.SalesType || '');
+          return typeVal && typeVal.toLowerCase().includes(filter.purchaseType.toLowerCase());
+        }
       );
     }
     // Filter by search term (searches in Description and PurchaseInvoiceNumber)
@@ -150,7 +151,7 @@ export default function InvoiceLanding() {
       data = data.filter(
         (item) =>
           (item.Description && item.Description.toLowerCase().includes(term)) ||
-          (item.PurchaseInvoiceNumber && item.PurchaseInvoiceNumber.toLowerCase().includes(term))
+          ((item.PurchaseInvoiceNumber || item.SalesInvoiceNumber || '').toLowerCase().includes(term))
       );
     }
     return data;
@@ -179,7 +180,8 @@ export default function InvoiceLanding() {
     };
   };
 
-  const svcFactory = React.useMemo(() => defaultServiceFactory, []);
+  // Allow caller to provide a serviceFactory (SalesInvoiceLanding passes one). Use provided or default.
+  const svcFactory = React.useMemo(() => (serviceFactory || defaultServiceFactory), [serviceFactory]);
 
   // Subscribe to service so landing reflects additions/updates in real-time
   useEffect(() => {
@@ -271,7 +273,8 @@ export default function InvoiceLanding() {
   }, [confirmState, closeConfirm, doApprove, doClose, doCancel]);
 
   const columns = useMemo(() => {
-    const base = ALL_COLUMNS.filter((col) => selectedColumns.includes(col.key));
+    const cols = overrideColumns || ALL_COLUMNS;
+    const base = cols.filter((col) => selectedColumns.includes(col.key));
       if (selectedColumns.includes('Actions')) {
         const ACTION_COLUMN = {
           key: 'Actions',
@@ -319,7 +322,7 @@ export default function InvoiceLanding() {
         return [...base, ACTION_COLUMN];
       }
     return base;
-  }, [selectedColumns, handleView, openConfirm]);
+  }, [selectedColumns, handleView, openConfirm, overrideColumns]);
 
   return (
     <ThreeColumnLayout
@@ -327,27 +330,29 @@ export default function InvoiceLanding() {
       setIsRightPanelCollapsed={setIsRightPanelCollapsed}
       rightPanel={
         <RightPanel
-          allColumns={ALL_COLUMNS}
+          allColumns={overrideColumns || ALL_COLUMNS}
           selectedColumns={selectedColumns}
           setSelectedColumns={setSelectedColumns}
           filter={filter}
           onFilterChange={setFilter}
-          filterConfig={{
-            label: 'Purchase Type',
-            key: 'purchaseType',
-            options: [
-              { value: '', label: 'All' },
-              { value: 'Inventory', label: 'Inventory' },
-              { value: 'Service', label: 'Service' },
-            ],
-          }}
+          filterConfig={
+            filterConfig || {
+              label: 'Purchase Type',
+              key: 'purchaseType',
+              options: [
+                { value: '', label: 'All' },
+                { value: 'Inventory', label: 'Inventory' },
+                { value: 'Service', label: 'Service' },
+              ],
+            }
+          }
         />
       }
     >
       <div className={styles.container}>
         <StatsSection />
         <div className={styles.titleSection}>
-          <h1 className={styles.title}>Invoices</h1>
+          <h1 className={styles.title}>{title}</h1>
           <SearchBar
             placeholder="Search invoices..."
             value={searchTerm}
@@ -374,7 +379,7 @@ export default function InvoiceLanding() {
           />
         )}
         {/* Confirmation modal for status actions */}
-        <ConfirmModal
+          <ConfirmModal
           open={confirmState.open}
           title={
             confirmState.type === 'approve'
@@ -387,11 +392,11 @@ export default function InvoiceLanding() {
           }
           message={
             confirmState.type === 'approve'
-              ? `Approve invoice ${confirmState.invoice?.PurchaseInvoiceNumber || confirmState.invoice?.Guid}?`
+              ? `Approve invoice ${confirmState.invoice?.PurchaseInvoiceNumber || confirmState.invoice?.SalesInvoiceNumber || confirmState.invoice?.Guid}?`
               : confirmState.type === 'close'
-              ? `Close invoice ${confirmState.invoice?.PurchaseInvoiceNumber || confirmState.invoice?.Guid}? This will mark the invoice as final.`
+              ? `Close invoice ${confirmState.invoice?.PurchaseInvoiceNumber || confirmState.invoice?.SalesInvoiceNumber || confirmState.invoice?.Guid}? This will mark the invoice as final.`
               : confirmState.type === 'cancel'
-              ? `Cancel invoice ${confirmState.invoice?.PurchaseInvoiceNumber || confirmState.invoice?.Guid}?`
+              ? `Cancel invoice ${confirmState.invoice?.PurchaseInvoiceNumber || confirmState.invoice?.SalesInvoiceNumber || confirmState.invoice?.Guid}?`
               : ''
           }
           confirmText={

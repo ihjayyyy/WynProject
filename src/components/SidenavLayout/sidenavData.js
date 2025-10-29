@@ -85,7 +85,7 @@ export const sidenavItems = [
       {
         label: 'Invoice',
         icon: FiFile,
-        href: '/sales/invoice',
+        href: '/sales/invoicelanding',
       },
       { label: 'Payment', icon: FiDollarSign, href: '/sales/payment' },
     ],
