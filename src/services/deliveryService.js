@@ -33,6 +33,20 @@ const DELIVERIES = [
     Status: 'Partial',
     SupplierPO: 'SUP-PO-002',
   },
+  {
+    Guid: 'DEL-1003',
+    CompanyGuid: 'c0mp-0001-aaaa-bbbb-ccccdddd1111',
+    SupplierGuid: 'COMP003',
+    OrderGuid: 'ORD-003',
+    PurchaseDeliveryNumber: 'DEL-2025-0003',
+    Date: '2025-10-03',
+    Description: 'Completed delivery of pet accessories',
+    PurchaseType: 'Inventory',
+    PreparedBy: 'Luz Ramos',
+    AcceptedBy: 'Supplier B',
+    Status: 'Delivered',
+    SupplierPO: 'SUP-PO-003',
+  },
 ];
 
 // Delivery detail lines
@@ -54,6 +68,15 @@ const DELIVERYDETAILS = [
     DeliveredQuantity: 1,
     Remarks: '',
     Description: 'Full body massage (60min)',
+  },
+  {
+    Guid: 'DD-1003',
+    DeliveryGuid: 'DEL-1003',
+    ItemGuid: 'INV-020',
+    OrderedQuantity: 5,
+    DeliveredQuantity: 5,
+    Remarks: '',
+    Description: 'Dog collar - medium',
   },
 ];
 

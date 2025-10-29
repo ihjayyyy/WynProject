@@ -2,7 +2,7 @@
 import { InventoryService } from './inventoryService.js';
 import { ServiceService } from './serviceService.js';
 
-// In-memory sales deliveries
+// In-memory sales deliveries — provide one sample for each status: Prepared, Partial, Delivered
 const SALESDELIVERIES = [
   {
     Guid: 'SD-1001',
@@ -18,6 +18,34 @@ const SALESDELIVERIES = [
     Status: 'Prepared',
     SupplierSO: 'SUP-SO-001',
   },
+  {
+    Guid: 'SD-1002',
+    CompanyGuid: 'c0mp-0001-aaaa-bbbb-ccccdddd1111',
+    SupplierGuid: 'COMP002',
+    OrderGuid: 'SORD-002',
+    SalesDeliveryNumber: 'SD-2025-0002',
+    Date: '2025-10-05',
+    Description: 'Partial delivery for pet food',
+    SalesType: 'Inventory',
+    PreparedBy: 'Ana Lopez',
+    AcceptedBy: '',
+    Status: 'Partial',
+    SupplierSO: 'SUP-SO-002',
+  },
+  {
+    Guid: 'SD-1003',
+    CompanyGuid: 'c0mp-0001-aaaa-bbbb-ccccdddd1111',
+    SupplierGuid: 'COMP003',
+    OrderGuid: 'SORD-003',
+    SalesDeliveryNumber: 'SD-2025-0003',
+    Date: '2025-10-10',
+    Description: 'Completed delivery for grooming services',
+    SalesType: 'Service',
+    PreparedBy: 'Ramon Cruz',
+    AcceptedBy: 'Client A',
+    Status: 'Delivered',
+    SupplierSO: 'SUP-SO-003',
+  },
 ];
 
 // Sales delivery detail lines
@@ -30,6 +58,24 @@ const SALESDELIVERYDETAILS = [
     DeliveredQuantity: 10,
     Remarks: '',
     Description: 'Shampoo bottles - 250ml',
+  },
+  {
+    Guid: 'SDD-1002',
+    DeliveryGuid: 'SD-1002',
+    ItemGuid: 'INV-010',
+    OrderedQuantity: 20,
+    DeliveredQuantity: 5,
+    Remarks: 'Partial fulfillment',
+    Description: 'Premium dog food - 5kg',
+  },
+  {
+    Guid: 'SDD-1003',
+    DeliveryGuid: 'SD-1003',
+    ItemGuid: 'SRV-001',
+    OrderedQuantity: 1,
+    DeliveredQuantity: 1,
+    Remarks: '',
+    Description: 'Full grooming service',
   },
 ];
 
