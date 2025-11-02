@@ -4,6 +4,8 @@
  import styles from './EntityForm.module.scss';
  import Breadcrumbs from '../ui/Breadcrumbs/Breadcrumbs';
  import Input from '../ui/Input/Input';
+import Select from '../ui/Select/Select';
+import inputStyles from '../ui/Input/Input.module.scss';
  import Button from '../ui/Button/Button';
 
 /**
@@ -105,16 +107,36 @@ export default function EntityForm({ title, icon, fields, initialValues = {}, on
 
           return (
             <div key={f.name} className={classes}>
-              <Input
-                label={f.label}
-                placeholder={f.placeholder || f.label}
-                id={f.name}
-                name={f.name}
-                value={values[f.name] ?? ''}
-                onChange={handleChange}
-                readOnly={fieldReadOnly}
-                type={f.type}
-              />
+              {f.type === 'select' ? (
+                <div className={inputStyles.field}>
+                  {f.label && <label htmlFor={f.name}>{f.label}</label>}
+                  <Select
+                    id={f.name}
+                    value={values[f.name] ?? ''}
+                    // Wrap onChange to provide a `name` on the event target so
+                    // EntityForm.handleChange can pick up which field changed.
+                    onChange={(ev) =>
+                      handleChange({ target: { name: f.name, value: ev?.target?.value ?? ev } })
+                    }
+                    options={f.options || []}
+                    placeholder={f.placeholder || f.label}
+                    searchable={!!f.searchable}
+                    className={f.className}
+                    disabled={fieldReadOnly}
+                  />
+                </div>
+              ) : (
+                <Input
+                  label={f.label}
+                  placeholder={f.placeholder || f.label}
+                  id={f.name}
+                  name={f.name}
+                  value={values[f.name] ?? ''}
+                  onChange={handleChange}
+                  readOnly={fieldReadOnly}
+                  type={f.type}
+                />
+              )}
             </div>
           );
         })}

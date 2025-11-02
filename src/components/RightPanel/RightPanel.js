@@ -17,6 +17,7 @@ import styles from './RightPanel.module.scss';
  *     key: string (e.g. 'purchaseType'),
  *     options: array of { value, label }
  *   }
+ * - OR filterConfigs: array of the above to render multiple filter controls
  */
 function RightPanel({
   allColumns,
@@ -24,11 +25,19 @@ function RightPanel({
   setSelectedColumns,
   filter,
   onFilterChange,
+  // support both single config for backward compatibility and array of configs
   filterConfig = { label: '', key: '', options: [] },
+  filterConfigs = null,
 }) {
   const [expanded, setExpanded] = useState(false);
   const [filterExpanded, setFilterExpanded] = useState(true);
-  const [filterValue, setFilterValue] = useState(filter?.[filterConfig.key] || '');
+
+  // normalize to array of configs
+  const configs = filterConfigs && Array.isArray(filterConfigs)
+    ? filterConfigs
+    : filterConfig && filterConfig.label
+    ? [filterConfig]
+    : [];
 
   const handleColumnToggle = (columnKey, isChecked) => {
     if (isChecked) {
@@ -64,7 +73,7 @@ function RightPanel({
   return (
     <div className={styles.rightPanel}>
       {/* Filter Section */}
-      {filterConfig.label && (
+      {configs.length > 0 && (
         <>
           <div className={styles.panelHeader}>
             <div className={styles.headerContent}>
@@ -87,21 +96,22 @@ function RightPanel({
           {filterExpanded && (
             <div className={styles.panelContent}>
               <div className={styles.filterSection}>
-                <label className={styles.filterLabel}>
-                  <span className={styles.filterLabelText}>{filterConfig.label}</span>
-                  <Select
-                    id={filterConfig.key + 'Filter'}
-                    value={filterValue}
-                    onChange={(e) => {
-                      setFilterValue(e.target.value);
-                      if (onFilterChange) {
-                        onFilterChange({ ...filter, [filterConfig.key]: e.target.value });
-                      }
-                    }}
-                    options={filterConfig.options}
-                    label={null}
-                  />
-                </label>
+                {configs.map((cfg) => (
+                  <label key={cfg.key} className={styles.filterLabel}>
+                    <span className={styles.filterLabelText}>{cfg.label}</span>
+                    <Select
+                      id={cfg.key + 'Filter'}
+                      value={filter?.[cfg.key] || ''}
+                      onChange={(e) => {
+                        if (onFilterChange) {
+                          onFilterChange({ ...filter, [cfg.key]: e.target.value });
+                        }
+                      }}
+                      options={cfg.options}
+                      label={null}
+                    />
+                  </label>
+                ))}
               </div>
             </div>
           )}
