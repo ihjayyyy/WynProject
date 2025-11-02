@@ -1,4 +1,4 @@
-import DeliveryForm from '@/components/DeliveryForm/DeliveryForm';
+import DeliveryForm from '@/components/Purchase/DeliveryForm/DeliveryForm';
 import React from 'react';
 
 export default function page() {

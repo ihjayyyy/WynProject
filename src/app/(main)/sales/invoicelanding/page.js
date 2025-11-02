@@ -1,4 +1,4 @@
-import SalesInvoiceLanding from '@/components/SalesInvoiceLanding/SalesInvoiceLanding';
+import SalesInvoiceLanding from '@/components/Sales/SalesInvoiceLanding/SalesInvoiceLanding';
 
 export default function Page() {
   return <SalesInvoiceLanding />;

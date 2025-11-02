@@ -1,4 +1,4 @@
-import OrderLanding from "@/components/OrderLanding/OrderLanding";
+import OrderLanding from "@/components/Purchase/OrderLanding/OrderLanding";
 
 export default function page() {
    return <OrderLanding />;

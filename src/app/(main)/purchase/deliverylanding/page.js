@@ -1,4 +1,4 @@
-import DeliveryLanding from "@/components/DeliveryLanding/DeliveryLanding";
+import DeliveryLanding from "@/components/Purchase/DeliveryLanding/DeliveryLanding";
 
 export default function page() {
    return <DeliveryLanding />;

@@ -1,5 +1,5 @@
 import React, { Suspense } from 'react';
-import OrderForm from '@/components/OrderForm/OrderForm';
+import OrderForm from '@/components/Purchase/OrderForm/OrderForm';
 
 export default function Page() {
   return (

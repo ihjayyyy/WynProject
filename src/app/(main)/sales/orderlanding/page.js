@@ -1,4 +1,4 @@
-import SalesOrderLandingWrapper from "@/components/SalesOrderLanding/SalesOrderLanding";
+import SalesOrderLandingWrapper from "@/components/Sales/SalesOrderLanding/SalesOrderLanding";
 
 export default function page() {
    return <SalesOrderLandingWrapper />;

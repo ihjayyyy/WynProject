@@ -1,4 +1,4 @@
-import SalesInvoiceForm from '@/components/SalesInvoiceForm/SalesInvoiceForm';
+import SalesInvoiceForm from '@/components/Sales/SalesInvoiceForm/SalesInvoiceForm';
 
 export default function Page() {
   return <SalesInvoiceForm />;

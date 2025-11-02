@@ -1,4 +1,4 @@
-import QuotationLanding from '@/components/QuotationLanding/QuotationLanding';
+import QuotationLanding from '@/components/Purchase/QuotationLanding/QuotationLanding';
 
 export default function Page() {
   return (
