@@ -18,6 +18,12 @@
   margin-bottom: 0.5rem;
 }
 
+.headerActions {
+  display: flex;
+  align-items: center;
+  gap: $spacing-sm;
+}
+
 .title {
   font-size: $font-size-lg;
   font-weight: $font-weight-bold;
@@ -32,6 +38,13 @@
   width: 100%;
 }
 
+.topFields3Col {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1rem 1.5rem;
+  width: 100%;
+}
+
 .gridItem8 {
   display: flex;
   flex-direction: column;
@@ -41,6 +54,10 @@
 
 .span2 {
   grid-column: span 2;
+}
+
+.span1 {
+  grid-column: span 1;
 }
 
 .span3 {
@@ -64,6 +81,10 @@
   width: 100%;
 }
 
+.extraContent {
+  width: 100%;
+}
+
 .rightBottomButtons {
   display: flex;
   gap: 1.25rem;
@@ -82,4 +103,36 @@
   &.span3 {
     grid-column-start: -4; // Start from 3 columns from the end
   }
+}
+
+.readOnlyField {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-xs;
+}
+
+.readOnlyLabel {
+  font-weight: $font-weight-medium;
+  color: $color-text-secondary-light;
+  font-size: $font-size-xs;
+  margin-bottom: $spacing-xs;
+}
+
+.readOnlyValue {
+  display: block;
+  min-height: 1.5rem;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  border-radius: 0;
+  color: $color-text-primary-light;
+  font-size: $font-size-md;
+  font-weight: $font-weight-medium;
+  line-height: 1.5;
+}
+
+.multilineValue {
+  white-space: pre-wrap;
+  word-break: break-word;
+  min-height: 3rem;
 }

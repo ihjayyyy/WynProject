@@ -326,7 +326,7 @@ export default function SidenavLayout({ children }) {
             </div>
             {!isCollapsed && (
               <div className={styles.brandInfo}>
-                <h1 className={styles.brandTitle}>ODR Accounting</h1>
+                <h1 className={styles.brandTitle}>WynProject</h1>
                 <p className={styles.brandSubtitle}>AM System</p>
               </div>
             )}

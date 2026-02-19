@@ -46,6 +46,34 @@
     }
   }
 
+  &.outlinedPrimary {
+    background: transparent;
+    color: $color-primary-light;
+    border: 1px solid $color-primary-light;
+    box-shadow: none;
+
+    &:hover {
+      background: rgba(15, 23, 42, 0.06);
+      border-color: $color-primary-light;
+      color: $color-primary-light;
+      transform: none;
+    }
+  }
+
+  &.outlineDanger {
+    background: transparent;
+    color: $color-error-light;
+    border: 1px solid $color-error-light;
+    box-shadow: none;
+
+    &:hover {
+      background: rgba(220,34,34,0.06);
+      border-color: color.scale($color-error-light, $lightness: -10%);
+      color: color.scale($color-error-light, $lightness: -10%);
+      transform: none;
+    }
+  }
+
   &.danger {
     background: $color-error-light;
     color: $color-text-primary-dark;

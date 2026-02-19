@@ -9,8 +9,3 @@ export { default as DataTable } from './ui/DataTable/DataTable';
 export { default as StatusDot } from './ui/StatusDot/StatusDot';
 export { default as StatusBadge } from './ui/StatusBadge/StatusBadge';
 export { default as DropdownAction } from './ui/DropdownAction/DropdownAction';
-export { default as OrderForm } from './Purchase/OrderForm/OrderForm';
-export { default as InvoiceForm } from './Purchase/InvoiceForm/InvoiceForm';
-export { default as PaymentForm } from './Purchase/PaymentForm/PaymentForm';
-export { default as SalesOrderLanding } from './Sales/SalesOrderLanding/SalesOrderLanding';
-export { default as SalesOrderForm } from './Sales/SalesOrderForm/SalesOrderForm';

@@ -1,0 +1,54 @@
+@use '../../styles/variables' as *;
+
+.customersWrap {
+  background: var(--color-background-light);
+  color: var(--color-text-primary-light);
+  padding: $spacing-lg;
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-md;
+  box-shadow: $shadow-md;
+}
+
+.title {
+  font-size: $font-size-lg;
+  margin: 0;
+  font-weight: $font-weight-bold;
+}
+
+.headerRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: $spacing-md;
+}
+
+.headerActions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+}
+
+.statsSection {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: $spacing-md;
+}
+
+.tableSection {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-md;
+}
+
+@media (max-width: 900px) {
+  .headerRow {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .headerActions {
+    width: 100%;
+    justify-content: flex-start;
+  }
+}

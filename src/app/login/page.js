@@ -10,8 +10,8 @@ export default function LoginPage() {
 
   const handleLogin = (credentials) => {
     // Here you would normally validate credentials with an API
-    // For now, just redirect to /supplier
-    router.push('/supplier');
+    // For now, just redirect to /dashboard
+    router.push('/dashboard');
   };
 
   return (

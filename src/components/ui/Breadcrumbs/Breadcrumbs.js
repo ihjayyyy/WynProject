@@ -11,12 +11,17 @@ import styles from './Breadcrumbs.module.scss';
  * @param {boolean} [props.showBack] - Show a back button as the first breadcrumb
  * @param {React.ReactNode} [props.backIcon] - Custom icon for the back button
  * @param {string} [props.backLabel] - Custom label for the back button
+ * @param {string} [props.backHref] - Optional fixed route for back button
  */
 
-export default function Breadcrumbs({ items = [], showBack = false, backIcon, backLabel }) {
+export default function Breadcrumbs({ items = [], showBack = false, backIcon, backLabel, backHref }) {
   const router = useRouter();
 
   const handleBack = () => {
+    if (backHref) {
+      router.push(backHref);
+      return;
+    }
     router.back();
   };
 

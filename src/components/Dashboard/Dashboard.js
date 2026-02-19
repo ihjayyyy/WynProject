@@ -1,6 +1,4 @@
 import React from "react";
-
-import ThreeColumnLayout from "../ThreeColumnLayout/ThreeColumnLayout";
 import StatsCard from "../ui/StatsCard/StatsCard";
 import DataTable from "../ui/DataTable/DataTable";
 import styles from "./Dashboard.module.scss";

@@ -86,6 +86,7 @@ export default function DataTable({
               {showActions && (
                 <td>
                   <button 
+                    type="button"
                     className={styles.menuButton}
                     onClick={(e) => handleActionClick(e, item)}
                   >

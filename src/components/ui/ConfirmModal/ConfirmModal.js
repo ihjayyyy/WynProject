@@ -4,7 +4,7 @@ import { createPortal } from 'react-dom';
 import styles from './ConfirmModal.module.scss';
 import Button from '../Button/Button';
 
-export default function ConfirmModal({ open, title, message, confirmText = 'Confirm', cancelText = 'Cancel', onConfirm, onCancel }) {
+export default function ConfirmModal({ open, title, message, confirmText = 'Confirm', cancelText = 'Cancel', confirmVariant = 'primary', onConfirm, onCancel }) {
   useEffect(() => {
     if (!open) return;
     const onKey = (e) => {
@@ -31,8 +31,8 @@ export default function ConfirmModal({ open, title, message, confirmText = 'Conf
         {title && <h3 className={styles.title}>{title}</h3>}
         {message && <p className={styles.message}>{message}</p>}
         <div className={styles.actions}>
-          <Button variant="secondary" onClick={onCancel}>{cancelText}</Button>
-          <Button variant="primary" onClick={onConfirm}>{confirmText}</Button>
+          <Button variant="secondary" className={styles.button} onClick={onCancel}>{cancelText}</Button>
+          <Button variant={confirmVariant} className={styles.button} onClick={onConfirm}>{confirmText}</Button>
         </div>
       </div>
     </div>

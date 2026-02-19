@@ -7,8 +7,8 @@ const inter = Inter({
 });
 
 export const metadata = {
-  title: "ODR Accounting",
-  description: "ODR Accounting Management System",
+  title: "WynProject",
+  description: "WynProject Management System",
 };
 
 export default function RootLayout({ children }) {

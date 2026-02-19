@@ -18,8 +18,10 @@ import inputStyles from '../ui/Input/Input.module.scss';
  * - onSubmit: async function(values) => void (optional)
  * - backPath: string (path to navigate to after submit/default back)
  * - width: string (optional) - controls form width. Accepts '25%','50%','75%','100%' or shorthand '1/4','1/2','3/4'. Defaults to '100%'.
+ * - submitPosition: 'bottom' | 'beforeExtra' (optional) - placement of submit/right actions area. Defaults to 'bottom'.
+ * - showSubmitButton: boolean (optional) - controls rendering of default Create/Save button. Defaults to true.
  */
-export default function EntityForm({ title, icon, fields, initialValues = {}, onSubmit, backPath = '/', readOnly = false, width = '100%' }) {
+export default function EntityForm({ title, icon, fields, initialValues = {}, onSubmit, backPath = '/', readOnly = false, width = '100%', columns = 8, extraContent = null, rightActions = null, headerActions = null, breadcrumbLabel, breadcrumbItems, submitPosition = 'bottom', showSubmitButton = true }) {
   const router = useRouter();
   const [values, setValues] = useState({ ...initialValues });
 
@@ -68,15 +70,42 @@ export default function EntityForm({ title, icon, fields, initialValues = {}, on
     }
   };
 
+  const formatDisplayValue = (value) => {
+    if (value === null || value === undefined || value === '') {
+      return '—';
+    }
+    return String(value);
+  };
+
+  const shouldRenderActions = !readOnly || rightActions;
+  const actionBlock = shouldRenderActions ? (
+    <div className={styles.bottomFields}>
+      <div className={styles.rightBottomButtons}>
+        {rightActions}
+        {!readOnly && showSubmitButton && (
+          <Button type="submit" variant="save">{(initialValues && (initialValues.Guid || initialValues.id)) ? 'Save' : 'Create'}</Button>
+        )}
+      </div>
+    </div>
+  ) : null;
+
   return (
     <form className={styles.entityForm} onSubmit={handleSubmit} >
-      <Breadcrumbs showBack items={[{ label: `${title}` }]} backIcon={icon} />
+      <Breadcrumbs
+        showBack
+        items={breadcrumbItems || [{ label: breadcrumbLabel || `${title}` }]}
+        backIcon={icon}
+        backHref={backPath}
+      />
 
       <div className={styles.headerSection}>
         <h2 className={styles.title}>{title}</h2>
+        {headerActions ? <div className={styles.headerActions}>{headerActions}</div> : null}
       </div>
 
-      <div className={styles.topFields8Col} style={{ width: normalizedWidth }}>
+      <div
+        className={columns === 3 ? styles.topFields3Col : styles.topFields8Col}
+        style={{ width: normalizedWidth }}>
         {fields.map((f) => {
           // per-field hidden support: allow boolean or function(values) => boolean
           const fieldHidden = (() => {
@@ -88,7 +117,8 @@ export default function EntityForm({ title, icon, fields, initialValues = {}, on
           // if hidden, don't render the field at all
           if (fieldHidden) return null;
 
-          const classes = `${styles.gridItem8} ${styles[f.span || 'span3'] || ''} ${f.rightAlign ? styles.rightAlign : ''}`;
+          const defaultSpan = columns === 3 ? 'span1' : 'span3';
+          const classes = `${styles.gridItem8} ${styles[f.span || defaultSpan] || ''} ${f.rightAlign ? styles.rightAlign : ''}`;
           // spacer field: render empty grid cell to occupy space
           if (f.type === 'spacer') {
             return <div key={f.name} className={classes} aria-hidden="true" />;
@@ -104,6 +134,19 @@ export default function EntityForm({ title, icon, fields, initialValues = {}, on
             if (typeof f.readOnly === 'boolean') return f.readOnly;
             return false;
           })();
+
+          if (fieldReadOnly) {
+            return (
+              <div key={f.name} className={classes}>
+                <div className={styles.readOnlyField}>
+                  {f.label && <label className={styles.readOnlyLabel}>{f.label}</label>}
+                  <div className={`${styles.readOnlyValue} ${f.multiline ? styles.multilineValue : ''}`}>
+                    {formatDisplayValue(values[f.name])}
+                  </div>
+                </div>
+              </div>
+            );
+          }
 
           return (
             <div key={f.name} className={classes}>
@@ -135,6 +178,8 @@ export default function EntityForm({ title, icon, fields, initialValues = {}, on
                   onChange={handleChange}
                   readOnly={fieldReadOnly}
                   type={f.type}
+                  multiline={!!f.multiline}
+                  rows={f.rows || 3}
                 />
               )}
             </div>
@@ -142,13 +187,11 @@ export default function EntityForm({ title, icon, fields, initialValues = {}, on
         })}
       </div>
 
-      {!readOnly && (
-        <div className={styles.bottomFields}>
-          <div className={styles.rightBottomButtons}>
-            <Button type="submit" variant="save">{(initialValues && (initialValues.Guid || initialValues.id)) ? 'Save' : 'Create'}</Button>
-          </div>
-        </div>
-      )}
+      {submitPosition === 'beforeExtra' ? actionBlock : null}
+
+      {extraContent ? <div className={styles.extraContent}>{extraContent}</div> : null}
+
+      {submitPosition !== 'beforeExtra' ? actionBlock : null}
     </form>
   );
 }

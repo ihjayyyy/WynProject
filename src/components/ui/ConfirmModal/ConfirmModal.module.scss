@@ -1,34 +1,66 @@
+@use '../../../styles/variables' as *;
+
 .overlay {
   position: fixed;
   inset: 0;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(0,0,0,0.4);
-  z-index: 9999; /* ensure overlay appears above app chrome */
+  padding: $spacing-lg;
+  background: rgba(15, 23, 42, 0.45);
+  backdrop-filter: blur(2px);
+  z-index: $z-index-modal;
 }
 
 .panel {
-  background: var(--color-background-100, #fff);
-  padding: 16px;
-  border-radius: 8px;
-  width: 380px;
-  max-width: calc(100% - 32px);
-  box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+  background: $color-background-light;
+  border: 1px solid $color-secondary-light;
+  border-radius: $border-radius-md;
+  box-shadow: $shadow-lg;
+  width: min(440px, 100%);
+  padding: $spacing-lg;
 }
 
 .title {
-  margin: 0 0 8px 0;
-  font-size: 16px;
+  margin: 0 0 $spacing-sm 0;
+  font-size: $font-size-lg;
+  line-height: 1.3;
+  font-weight: $font-weight-bold;
+  color: $color-text-primary-light;
 }
 
 .message {
-  margin: 0 0 16px 0;
-  color: var(--color-accents-2, #333);
+  margin: 0 0 $spacing-lg 0;
+  color: $color-text-secondary-light;
+  font-size: $font-size-sm;
+  line-height: 1.5;
 }
 
 .actions {
   display: flex;
   justify-content: flex-end;
-  gap: 8px;
+  gap: $spacing-sm;
+}
+
+.button {
+  min-width: 96px;
+}
+
+@media (max-width: 480px) {
+  .overlay {
+    padding: $spacing-md;
+  }
+
+  .panel {
+    padding: $spacing-md;
+  }
+
+  .actions {
+    flex-direction: column-reverse;
+    align-items: stretch;
+  }
+
+  .button {
+    width: 100%;
+  }
 }

@@ -48,20 +48,19 @@ export default function DropdownAction({ item, items }) {
     const preferredWidth = Math.max(120, rect.width * 1.5, 160);
     const maxWidth = Math.min(260, viewportWidth - 24); // leave some margin
     const width = Math.min(preferredWidth, maxWidth);
+    const menuHeight = menuRef.current?.offsetHeight || 160;
 
     // decide open below or above
     const spaceBelow = viewportHeight - rect.bottom;
     const spaceAbove = rect.top;
     const openAbove = spaceBelow < 160 && spaceAbove > spaceBelow;
 
-    let top = openAbove ? rect.top - gap : rect.bottom + gap;
-    if (openAbove) {
-      // adjust to place menu above the trigger (subtract menu height later if needed)
-      // We'll position the bottom at rect.top - gap by setting top to rect.top - estimatedHeight
-      // but since we don't know height, position at rect.top - 200 (will adjust if it overflows)
-      top = rect.top - 200;
-      if (top < 8) top = 8; // clamp
+    let top = openAbove ? rect.top - gap - menuHeight : rect.bottom + gap;
+
+    if (!openAbove && top + menuHeight > viewportHeight - 8) {
+      top = viewportHeight - menuHeight - 8;
     }
+    if (top < 8) top = 8;
 
     // align right of menu with trigger right, but keep within viewport
     let left = rect.right - width;
@@ -73,7 +72,7 @@ export default function DropdownAction({ item, items }) {
 
   useEffect(() => {
     if (open) {
-      computePosition();
+      requestAnimationFrame(() => computePosition());
       window.addEventListener('resize', computePosition);
       window.addEventListener('scroll', computePosition, true);
     }
@@ -106,6 +105,7 @@ export default function DropdownAction({ item, items }) {
       const cls = `${styles.menuItem} ${it.destructive ? styles.destructive : ''}`;
       return (
         <button
+          type="button"
           key={it.key || idx}
           className={cls}
           onClick={(e) => {
@@ -137,6 +137,7 @@ export default function DropdownAction({ item, items }) {
   return (
     <div className={styles.container} ref={triggerRef}>
       <button
+        type="button"
         className={styles.trigger}
         onClick={toggle}
         aria-expanded={open}
