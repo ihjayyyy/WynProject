@@ -31,6 +31,65 @@
   gap: $spacing-md;
 }
 
+.scopeText {
+  margin-bottom: $spacing-sm;
+}
+
+.nestedMaterials {
+  margin-top: $spacing-sm;
+}
+
+/* Styles for the nested materials table inside each scope row */
+.nestedMaterials table {
+  width: 100%;
+  font-size: $font-size-xs;
+  border-collapse: collapse;
+  background: transparent;
+}
+
+.nestedMaterials {
+  background: #fbfdfe;
+  border: 1px solid #e6eef4;
+  padding: 0.6rem;
+  border-radius: $border-radius-sm;
+}
+
+.nestedMaterials th {
+  background: #f1f8fb;
+  color: #0f4b61;
+  font-weight: $font-weight-medium;
+  padding: 0.5rem 0.75rem;
+  text-transform: uppercase;
+  font-size: $font-size-xs;
+  border-bottom: 1px solid #ddeff6;
+}
+
+.nestedMaterials td {
+  padding: 0.5rem 0.75rem;
+  border-bottom: 1px solid #eef6fa;
+  color: $color-text-primary-light;
+}
+
+.nestedMaterials tr:last-child td {
+  border-bottom: none;
+}
+
+.nestedMaterials .emptyContainer {
+  padding: 1rem 0;
+}
+
+.scopeRow {
+  display: flex;
+  align-items: center;
+  gap: $spacing-sm;
+}
+
+.scopeRow .scopeText {
+  font-weight: 600;
+  color: $color-text-primary-light;
+  margin: 0;
+}
+
 @media (max-width: 900px) {
   .scopeHeaderRow {
     flex-direction: column;

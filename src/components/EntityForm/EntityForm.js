@@ -48,10 +48,32 @@ export default function EntityForm({ title, icon, fields, initialValues = {}, on
     const { name, value, type, files } = e.target;
     if (type === 'file') {
       const file = files && files[0];
-      setValues((s) => ({ ...s, [name]: file ? file.name : '' }));
+      const newValues = { ...values, [name]: file ? file.name : '' };
+      setValues(newValues);
+      // call field-level onChange if provided
+      const field = (fields || []).find((f) => f.name === name);
+      if (field && typeof field.onChange === 'function') {
+        try {
+          field.onChange(newValues[name], newValues, setValues);
+        } catch (err) {
+          // swallow
+        }
+      }
       return;
     }
-    setValues((s) => ({ ...s, [name]: type === 'number' ? Number(value) : value }));
+    const parsedValue = type === 'number' ? Number(value) : value;
+    const newValues = { ...values, [name]: parsedValue };
+    setValues(newValues);
+
+    // call field-level onChange if provided
+    const field = (fields || []).find((f) => f.name === name);
+    if (field && typeof field.onChange === 'function') {
+      try {
+        field.onChange(newValues[name], newValues, setValues);
+      } catch (err) {
+        // ignore errors from onChange
+      }
+    }
   };
 
   const handleSubmit = async (e) => {
@@ -144,6 +166,15 @@ export default function EntityForm({ title, icon, fields, initialValues = {}, on
                     {formatDisplayValue(values[f.name])}
                   </div>
                 </div>
+              </div>
+            );
+          }
+
+          // custom render field support: allow embedding arbitrary nodes
+          if (f.type === 'custom') {
+            return (
+              <div key={f.name} className={classes}>
+                {typeof f.render === 'function' ? f.render({ values, setValues }) : f.component || null}
               </div>
             );
           }

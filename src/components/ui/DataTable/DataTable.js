@@ -67,35 +67,48 @@ export default function DataTable({
           </tr>
         </thead>
         <tbody>
-          {data.map((item, index) => (
-            <tr 
+          {data.map((item, index) => {
+            if (item && item.fullRow) {
+              const span = columns.length + (showActions ? 1 : 0);
+              return (
+                <tr key={item.id || index} className={styles.tableRow} onClick={() => handleRowClick(item)}>
+                  <td colSpan={span}>
+                    {item.fullRowContent}
+                  </td>
+                </tr>
+              );
+            }
+
+            return (
+              <tr
                 key={item.id || index}
                 className={styles.tableRow}
                 onClick={() => handleRowClick(item)}
               >
-              {columns.map((column, colIndex) => (
-                <td 
-                  key={column.key || colIndex}
-                  style={{ 
-                    textAlign: column.align || 'left'
-                  }}
-                >
-                  {renderCellContent(item, column)}
-                </td>
-              ))}
-              {showActions && (
-                <td>
-                  <button 
-                    type="button"
-                    className={styles.menuButton}
-                    onClick={(e) => handleActionClick(e, item)}
+                {columns.map((column, colIndex) => (
+                  <td
+                    key={column.key || colIndex}
+                    style={{
+                      textAlign: column.align || 'left'
+                    }}
                   >
-                    <FiMoreVertical size={16} />
-                  </button>
-                </td>
-              )}
-            </tr>
-          ))}
+                    {renderCellContent(item, column)}
+                  </td>
+                ))}
+                {showActions && (
+                  <td>
+                    <button
+                      type="button"
+                      className={styles.menuButton}
+                      onClick={(e) => handleActionClick(e, item)}
+                    >
+                      <FiMoreVertical size={16} />
+                    </button>
+                  </td>
+                )}
+              </tr>
+            );
+          })}
         </tbody>
         {footer && (
           <tfoot>

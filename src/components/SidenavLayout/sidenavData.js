@@ -1,4 +1,4 @@
-import { FiBarChart, FiFileText, FiMessageSquare, FiUsers } from 'react-icons/fi';
+import { FiBarChart, FiBox, FiFileText, FiMessageSquare, FiUsers } from 'react-icons/fi';
 
 export const sidenavItems = [
   {
@@ -20,5 +20,10 @@ export const sidenavItems = [
     label: 'Proposal',
     icon: FiFileText,
     href: '/proposal',
+  },
+  {
+    label: 'Material Inventory',
+    icon: FiBox,
+    href: '/materialinventory',
   },
 ];

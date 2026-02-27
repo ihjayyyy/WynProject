@@ -28,6 +28,10 @@ export default function StatusBadge({ status, className = '' }) {
       
       case 'APPROVED':
         return styles.approved;
+      case 'FORAPPROVAL':
+      case 'FOR APPROVAL':
+      case 'FOR_APPROVAL':
+        return styles.forApproval;
       case 'DRAFT':
         return styles.draft;
       case 'ORDERED':

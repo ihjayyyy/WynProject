@@ -1,6 +1,6 @@
 @use '../../styles/variables' as *;
 
-.proposalWrap {
+.inventoryWrap {
   background: var(--color-background-light);
   color: var(--color-text-primary-light);
   padding: $spacing-lg;
@@ -27,12 +27,6 @@
   display: flex;
   align-items: center;
   justify-content: flex-end;
-}
-
-.statsSection {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: $spacing-md;
 }
 
 .tableSection {

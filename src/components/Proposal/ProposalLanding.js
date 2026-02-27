@@ -2,23 +2,21 @@
 
 import React, { useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { FiEdit2, FiEye } from 'react-icons/fi';
 import SearchBar from '../ui/SearchBar/SearchBar';
 import DataTable from '../ui/DataTable/DataTable';
-import DropdownAction from '../ui/DropdownAction/DropdownAction';
+import { FiEye, FiEdit2 } from 'react-icons/fi';
 import StatsCard from '../ui/StatsCard/StatsCard';
+import DropdownAction from '../ui/DropdownAction/DropdownAction';
+import StatusBadge from '../ui/StatusBadge/StatusBadge';
 import { sampleProposals } from './proposalData';
 import styles from './ProposalLanding.module.scss';
 
 const baseColumns = [
+  { header: 'Date', key: 'createdDate' },
   { header: 'Proposal Number', key: 'proposalNumber' },
-  { header: 'Project Name', key: 'projectName' },
   { header: 'Customer Name', key: 'customerName' },
   { header: 'Proposal Total', key: 'proposalTotal' },
-  { header: 'Location', key: 'location' },
-  { header: 'Created Date', key: 'createdDate' },
-  { header: 'Code', key: 'code' },
-  { header: 'Name', key: 'name' },
+  { header: 'Status', key: 'status' },
 ];
 
 export default function ProposalLanding() {
@@ -26,8 +24,19 @@ export default function ProposalLanding() {
   const [proposals] = useState(sampleProposals);
   const router = useRouter();
 
-  const actionItems = useMemo(
-    () => [
+  const columns = useMemo(() => {
+    const cols = baseColumns.map((col) => {
+      if (col.key === 'status') {
+        return {
+          ...col,
+          render: (item) => <StatusBadge status={item.status} />,
+        };
+      }
+
+      return col;
+    });
+
+    const actionItems = [
       {
         key: 'view',
         label: 'View',
@@ -40,22 +49,17 @@ export default function ProposalLanding() {
         icon: <FiEdit2 size={14} />,
         onClick: (item) => router.push(`/proposal/proposalform?id=${item.id}&mode=edit`),
       },
-    ],
-    [router]
-  );
+    ];
 
-  const columns = useMemo(
-    () => [
-      ...baseColumns,
-      {
-        header: 'Action',
-        key: 'actions',
-        align: 'right',
-        render: (item) => <DropdownAction item={item} items={actionItems} />,
-      },
-    ],
-    [actionItems]
-  );
+    cols.push({
+      header: 'Action',
+      key: 'action',
+      align: 'right',
+      render: (item) => <DropdownAction item={item} items={actionItems} />,
+    });
+
+    return cols;
+  }, [router]);
 
   const filteredProposals = useMemo(() => {
     const keyword = searchTerm.trim().toLowerCase();
@@ -90,48 +94,23 @@ export default function ProposalLanding() {
   }, [searchTerm, proposals]);
 
   const proposalStats = useMemo(() => {
-    const total = proposals.length;
-    const totalValue = proposals.reduce((sum, item) => sum + Number(item.proposalTotal || 0), 0);
-    const averageValue = total ? totalValue / total : 0;
-    const uniqueCustomers = new Set(proposals.map((item) => item.customerName).filter(Boolean)).size;
+    const statuses = ['Draft', 'Approved', 'forApproval'];
 
-    const formatAmount = (value) =>
-      new Intl.NumberFormat('en-PH', {
-        style: 'currency',
-        currency: 'PHP',
-        maximumFractionDigits: 0,
-      }).format(value);
+    const stats = statuses.map((s) => {
+      const count = proposals.filter(
+        (p) => (p.status || '').toString().toLowerCase() === s.toLowerCase()
+      ).length;
 
-    return [
-      {
-        key: 'total',
-        label: 'Total Proposals',
-        number: total,
-        change: `${total} records`,
+      return {
+        key: s.toLowerCase(),
+        label: s === 'forApproval' ? 'For Approval' : s,
+        number: count,
+        change: `${count} proposals`,
         isPositive: true,
-      },
-      {
-        key: 'totalValue',
-        label: 'Total Value',
-        number: formatAmount(totalValue),
-        change: 'Combined amount',
-        isPositive: true,
-      },
-      {
-        key: 'avgValue',
-        label: 'Average Value',
-        number: formatAmount(averageValue),
-        change: 'Per proposal',
-        isPositive: true,
-      },
-      {
-        key: 'customers',
-        label: 'Customers',
-        number: uniqueCustomers,
-        change: `${uniqueCustomers} unique`,
-        isPositive: true,
-      },
-    ];
+      };
+    });
+
+    return stats;
   }, [proposals]);
 
   return (

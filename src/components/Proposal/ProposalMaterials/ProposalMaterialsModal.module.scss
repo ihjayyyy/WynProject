@@ -1,0 +1,60 @@
+@use '../../../styles/variables' as *;
+
+.overlay {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(6, 12, 17, 0.45);
+  z-index: 1200;
+}
+
+.panel {
+  width: 560px;
+  max-width: 90vw;
+  background: #fff;
+  border-radius: 8px;
+  padding: 16px;
+  box-shadow: 0 6px 20px rgba(12,24,36,0.12);
+}
+
+.title {
+  margin: 0 0 8px 0;
+  font-size: 1rem;
+  color: #111827;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 0.75rem;
+  margin-bottom: $spacing-sm;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+}
+
+.fullWidth {
+  grid-column: 1 / -1;
+}
+
+.label {
+    font-weight: $font-weight-medium;
+    color: $color-text-secondary-light;
+    font-size: $font-size-xs;
+    margin-bottom: $spacing-xs;
+}
+
+.actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.button {
+  min-width: 96px;
+}

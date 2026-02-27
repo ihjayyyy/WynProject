@@ -56,6 +56,13 @@
   border: 1px solid #92400e;
 }
 
+.forApproval {
+  /* orange for 'for approval' */
+  background-color: #fff7ed;
+  color: #b45309;
+  border: 1px solid #b45309;
+}
+
 .delivered {
   /* success / green (same tone as approved) */
   background-color: #d1fae5;
