@@ -82,12 +82,13 @@ export default function DataTable({
             return (
               <tr
                 key={item.id || index}
-                className={styles.tableRow}
+                className={`${styles.tableRow} ${item.isTotalRow ? styles.totalRow : ''}`}
                 onClick={() => handleRowClick(item)}
               >
                 {columns.map((column, colIndex) => (
                   <td
                     key={column.key || colIndex}
+                    className={item.isTotalRow ? styles.totalCell : ''}
                     style={{
                       textAlign: column.align || 'left'
                     }}

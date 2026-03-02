@@ -79,13 +79,20 @@ export default function EntityForm({ title, icon, fields, initialValues = {}, on
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
+      let redirectTo = null;
       if (onSubmit) {
-        await onSubmit(values);
+        const result = await onSubmit(values);
+        if (typeof result === 'string') {
+          redirectTo = result;
+        } else if (result && typeof result === 'object' && result.redirect) {
+          redirectTo = result.redirect;
+        }
       } else {
-        // default behavior: log and navigate back to list
+        // default behavior: log
         console.log('Form submitted', values);
       }
-      router.push(backPath);
+
+      router.push(redirectTo || backPath);
     } catch (err) {
       console.error('EntityForm submit error', err);
       alert('Failed to submit: ' + (err.message || err));

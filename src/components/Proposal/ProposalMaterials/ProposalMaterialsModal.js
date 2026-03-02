@@ -73,7 +73,7 @@ export default function ProposalMaterialsModal({ open, onCancel, onConfirm, init
             />
           </div>
 
-          <div className={styles.field}>
+          <div className={`${styles.field} ${styles.fullWidth}`}>
             <Input id="material-name" label="Material Name" value={name} onChange={(e) => setName(e.target.value)} />
           </div>
 

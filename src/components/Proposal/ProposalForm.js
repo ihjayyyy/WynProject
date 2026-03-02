@@ -12,6 +12,7 @@ import {
 } from './proposalData';
 import { sampleCustomers } from '../Customers/customersData';
 import ProposalScopeTable from './ProposalScope/ProposalScopeTable';
+import ConfirmModal from '../ui/ConfirmModal/ConfirmModal';
 import StatusBadge from '../ui/StatusBadge/StatusBadge';
 
 export default function ProposalForm() {
@@ -42,10 +43,108 @@ export default function ProposalForm() {
     }));
   }, []);
 
-  const isReadOnly = useMemo(
-    () => Boolean(proposalId && !isEditMode && sampleProposals.some((item) => item.id === proposalId)),
-    [proposalId, isEditMode]
-  );
+  const { isReadOnly, canEnterEditMode } = useMemo(() => {
+    const exists = Boolean(proposalId && sampleProposals.some((item) => item.id === proposalId));
+    const statusRaw = String(initialValues?.status || '').toLowerCase();
+    const normalizedStatus = statusRaw.replace(/\s+/g, '');
+    const isLockedStatus = normalizedStatus === 'approved' || normalizedStatus === 'forapproval';
+    const canEdit = exists && !isLockedStatus;
+    const readOnly = exists && (isLockedStatus || !isEditMode);
+    return { isReadOnly: readOnly, canEnterEditMode: canEdit };
+  }, [proposalId, isEditMode, initialValues]);
+
+  // Hold temporary scopes/materials created before the proposal is saved.
+  const [preCreateScopes, setPreCreateScopes] = useState([]);
+  const [preCreateMaterials, setPreCreateMaterials] = useState([]);
+  const [proposalTotal, setProposalTotal] = useState(0);
+  const [isSubmitModalOpen, setIsSubmitModalOpen] = useState(false);
+
+  // keep proposalTotal in sync when initialValues change (e.g., loading existing proposal)
+  React.useEffect(() => {
+    setProposalTotal(Number(initialValues?.proposalTotal || 0));
+  }, [initialValues]);
+
+  // Handle create / save for proposals. When creating, add to sampleProposals
+  // and return the new URL so EntityForm will redirect to it and show scopes/materials.
+  const handleProposalSubmit = async (values) => {
+    // create new proposal
+    if (!proposalId) {
+      const now = Date.now();
+      const newId = `PROP-${now}`;
+      const newProposalNumber = `PRP-${now}`;
+      const newProposal = {
+        ...initialProposalFormState,
+        ...values,
+        id: newId,
+        proposalNumber: newProposalNumber,
+        status: 'Draft',
+        createdBy: 'You',
+        createdDate: new Date().toISOString().slice(0, 10),
+      };
+      try {
+        newProposal.proposalTotal = String(values.proposalTotal || proposalTotal || '');
+        (sampleProposals || []).unshift(newProposal);
+
+        // attach any pre-created scopes to the new proposal
+        try {
+          const { sampleProposalScopes, sampleProposalMaterials } = await import('./proposalData');
+          (preCreateScopes || []).forEach((s) => {
+            const scope = { ...s, proposalId: newId };
+            (sampleProposalScopes || []).unshift(scope);
+          });
+          (preCreateMaterials || []).forEach((m) => {
+            const mat = { ...m };
+            (sampleProposalMaterials || []).unshift(mat);
+          });
+        } catch (err) {
+          // module import may not allow mutation in some bundlers; fallback to best-effort
+        }
+
+        // clear temporary states
+        setPreCreateScopes([]);
+        setPreCreateMaterials([]);
+      } catch (err) {
+        console.warn('Failed to push to sampleProposals', err);
+      }
+      return `/proposal/proposalform?id=${newId}`;
+    }
+
+    // update existing
+    try {
+      const idx = (sampleProposals || []).findIndex((p) => p.id === proposalId);
+      if (idx >= 0) {
+        sampleProposals[idx] = {
+          ...sampleProposals[idx],
+          ...values,
+          proposalTotal: String(values.proposalTotal || proposalTotal || sampleProposals[idx].proposalTotal || ''),
+          updatedBy: 'You',
+          updatedDate: new Date().toISOString().slice(0, 10),
+        };
+      }
+    } catch (err) {
+      console.warn('Failed to update sampleProposals', err);
+    }
+    return `/proposal/proposalform?id=${proposalId}`;
+  };
+
+  const handleSubmitForApproval = async () => {
+    if (!proposalId) return;
+    try {
+      const idx = (sampleProposals || []).findIndex((p) => p.id === proposalId);
+      if (idx >= 0) {
+        sampleProposals[idx] = {
+          ...sampleProposals[idx],
+          status: 'forApproval',
+          updatedBy: 'You',
+          updatedDate: new Date().toISOString().slice(0, 10),
+        };
+      }
+    } catch (err) {
+      console.warn('Failed to set status for approval', err);
+    }
+    // redirect to landing after submitting for approval
+    router.push('/proposal');
+  };
 
   const formTitle = useMemo(() => {
     if (!proposalId) return 'Proposal Form';
@@ -57,7 +156,8 @@ export default function ProposalForm() {
   // otherwise show the textual form title for new proposals.
   const headerTitle = useMemo(() => {
     if (!proposalId) return formTitle;
-    const titleText = initialValues?.projectName || initialValues?.name || initialValues?.proposalNumber || 'Proposal';
+    // For existing proposals (view or edit) show the proposal number next to the status.
+    const titleText = initialValues?.proposalNumber || initialValues?.projectName || initialValues?.name || 'Proposal';
     return (
       <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem' }}>
         <span>{titleText}</span>
@@ -118,27 +218,48 @@ export default function ProposalForm() {
 
   
 
+  const mergedInitialValues = React.useMemo(() => ({ ...initialValues, proposalTotal: String(proposalTotal || initialValues?.proposalTotal || '') }), [initialValues, proposalTotal]);
+
   return (
     <>
+      <ConfirmModal
+        open={isSubmitModalOpen}
+        title="Submit Proposal for Approval"
+        message="Are you sure you want to submit this proposal for approval?"
+        confirmText="Submit"
+        cancelText="Cancel"
+        confirmVariant="primary"
+        onCancel={() => setIsSubmitModalOpen(false)}
+        onConfirm={() => {
+          setIsSubmitModalOpen(false);
+          handleSubmitForApproval();
+        }}
+      />
       <EntityForm
         title={headerTitle}
         breadcrumbLabel="Proposal Details"
         icon={<FiFileText />}
         fields={fields}
-        initialValues={initialValues}
+        initialValues={mergedInitialValues}
         backPath="/proposal"
+        onSubmit={handleProposalSubmit}
         width="100%"
         columns={3}
         showSubmitButton={false}
         readOnly={isReadOnly}
         extraContent={
-          proposalId ? (
-            <ProposalScopeTable
-              proposalId={proposalId}
-              proposalNumber={initialValues.proposalNumber}
-              projectName={initialValues.projectName}
-            />
-          ) : null
+          <ProposalScopeTable
+            proposalId={proposalId}
+            proposalNumber={initialValues.proposalNumber}
+            projectName={initialValues.projectName}
+            allowCreateBeforeSave={!proposalId}
+            initialScopes={preCreateScopes}
+            initialMaterials={preCreateMaterials}
+            onCreateScope={(s) => setPreCreateScopes((prev) => [s, ...(prev || [])])}
+            onCreateMaterial={(m) => setPreCreateMaterials((prev) => [m, ...(prev || [])])}
+            onTotalChange={(t) => setProposalTotal(Number(t || 0))}
+            readOnly={isReadOnly}
+          />
         }
         headerActions={
           !proposalId ? (
@@ -148,11 +269,24 @@ export default function ProposalForm() {
           ) : (
             <>
               {isReadOnly ? (
-                <Button
-                  variant="outlinedPrimary"
-                  onClick={() => setIsEditModeLocal(true)}>
-                  Edit
-                </Button>
+                // show Edit only if the proposal can enter edit mode (not locked by status)
+                canEnterEditMode ? (
+                  <>
+                    <Button
+                      variant="outlinedPrimary"
+                      onClick={() => setIsEditModeLocal(true)}>
+                      Edit
+                    </Button>
+                    {String(initialValues?.status || '').toLowerCase().replace(/\s+/g, '') === 'draft' && (
+                      <Button
+                        variant="primary"
+                        onClick={() => setIsSubmitModalOpen(true)}
+                        style={{ marginLeft: '0.5rem' }}>
+                        Submit for Approval
+                      </Button>
+                    )}
+                  </>
+                ) : null
               ) : (
                 <>
                   <Button

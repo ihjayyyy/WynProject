@@ -36,26 +36,35 @@ export default function ProposalLanding() {
       return col;
     });
 
-    const actionItems = [
-      {
-        key: 'view',
-        label: 'View',
-        icon: <FiEye size={14} />,
-        onClick: (item) => router.push(`/proposal/proposalform?id=${item.id}`),
-      },
-      {
-        key: 'edit',
-        label: 'Edit',
-        icon: <FiEdit2 size={14} />,
-        onClick: (item) => router.push(`/proposal/proposalform?id=${item.id}&mode=edit`),
-      },
-    ];
-
     cols.push({
       header: 'Action',
       key: 'action',
       align: 'right',
-      render: (item) => <DropdownAction item={item} items={actionItems} />,
+      render: (item) => {
+        const items = [
+          {
+            key: 'view',
+            label: 'View',
+            icon: <FiEye size={14} />,
+            onClick: () => router.push(`/proposal/proposalform?id=${item.id}`),
+          },
+        ];
+
+        const statusRaw = String(item.status || '').toLowerCase();
+        const normalized = statusRaw.replace(/\s+/g, '');
+        const locked = normalized === 'approved' || normalized === 'forapproval';
+
+        if (!locked) {
+          items.push({
+            key: 'edit',
+            label: 'Edit',
+            icon: <FiEdit2 size={14} />,
+            onClick: () => router.push(`/proposal/proposalform?id=${item.id}&mode=edit`),
+          });
+        }
+
+        return <DropdownAction item={item} items={items} />;
+      },
     });
 
     return cols;

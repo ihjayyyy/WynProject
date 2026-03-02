@@ -137,15 +137,49 @@ export const sampleProposalScopes = [
     scopeOfWork: 'Tools and equipment mobilization',
     percentage: '25',
   },
+  {
+    id: 'PS-0003',
+    createdBy: 'Luis Dela Cruz',
+    createdDate: '2026-02-10',
+    updatedBy: 'Luis Dela Cruz',
+    updatedDate: '2026-02-12',
+    code: 'PS-RETL-01',
+    name: 'Retail Fit-out Scope',
+    proposalId: 'PROP-0002',
+    forecastedStartDate: '2026-03-10',
+    forecastedEndDate: '2026-04-05',
+    actualStartDate: '',
+    actualEndDate: '',
+    scopeOfWork: 'Retail display fixtures and lighting',
+    percentage: '60',
+  },
+  {
+    id: 'PS-0004',
+    createdBy: 'Maria Lopez',
+    createdDate: '2026-02-20',
+    updatedBy: 'Maria Lopez',
+    updatedDate: '2026-02-21',
+    code: 'PS-REN-01',
+    name: 'Renovation Scope',
+    proposalId: 'PROP-0003',
+    forecastedStartDate: '2026-04-01',
+    forecastedEndDate: '2026-04-20',
+    actualStartDate: '',
+    actualEndDate: '',
+    scopeOfWork: 'Small office demolition and refinish',
+    percentage: '30',
+  },
 ];
 import { sampleMaterialInventory } from '../MaterialInventory/materialInventoryData';
 
 // Derive proposal materials from material inventory for sample data.
-export const sampleProposalMaterials = (sampleMaterialInventory || []).map((mi, idx) => {
+const _baseProposalMaterials = (sampleMaterialInventory || []).map((mi, idx) => {
   const quantity = mi.quantity || '1';
   const unitCost = mi.unitCost || '0';
   const total = (Number(unitCost) * Number(quantity)) || 0;
-  const proposalScopeId = idx === 0 ? 'PS-0001' : 'PS-0002';
+  // distribute materials across available scopes so each proposal has materials
+  const scopeIds = ['PS-0001', 'PS-0002', 'PS-0003', 'PS-0004'];
+  const proposalScopeId = scopeIds[idx % scopeIds.length];
   return {
     proposalScopeId,
     remarks: mi.name || '',
@@ -172,3 +206,59 @@ export const sampleProposalMaterials = (sampleMaterialInventory || []).map((mi, 
     name: mi.name || '',
   };
 });
+
+// Ensure each scope has at least one sample material. Add explicit materials for PS-0003 and PS-0004
+const extraMaterials = [
+  {
+    proposalScopeId: 'PS-0003',
+    remarks: 'Retail display LED strip',
+    assemblyUOM: 'pcs',
+    assemblyId: 'MI-0003',
+    assemblyName: 'LED Strip Light',
+    extendedCost: '12000',
+    materialId: 'MAT-LED-003',
+    materialType: 'material',
+    uom: 'm',
+    unitCost: '1200',
+    quantity: '10',
+    vat: '12%',
+    wt: '2%',
+    totalCost: '12000',
+    margin: '',
+    scopeOfWork: '',
+    id: 'PM-0003',
+    createdBy: 'Luis Dela Cruz',
+    createdDate: '2026-02-11',
+    updatedBy: 'Luis Dela Cruz',
+    updatedDate: '2026-02-12',
+    code: 'PM-MAT-LED-003',
+    name: 'LED Strip Light',
+  },
+  {
+    proposalScopeId: 'PS-0004',
+    remarks: 'Flooring tiles',
+    assemblyUOM: 'sqm',
+    assemblyId: 'MI-0004',
+    assemblyName: 'Porcelain Tile',
+    extendedCost: '50000',
+    materialId: 'MAT-TIL-004',
+    materialType: 'material',
+    uom: 'sqm',
+    unitCost: '500',
+    quantity: '100',
+    vat: '12%',
+    wt: '2%',
+    totalCost: '50000',
+    margin: '',
+    scopeOfWork: '',
+    id: 'PM-0004',
+    createdBy: 'Maria Lopez',
+    createdDate: '2026-02-21',
+    updatedBy: 'Maria Lopez',
+    updatedDate: '2026-02-21',
+    code: 'PM-MAT-TIL-004',
+    name: 'Porcelain Tile',
+  },
+];
+
+export const sampleProposalMaterials = [ ..._baseProposalMaterials, ...extraMaterials ];

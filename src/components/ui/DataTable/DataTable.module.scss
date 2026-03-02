@@ -91,6 +91,15 @@
   }
 }
 
+.totalRow {
+  background: rgba(15, 75, 97, 0.03);
+}
+
+.totalCell {
+  font-weight: $font-weight-bold;
+  border-top: 1px solid $color-secondary-light;
+}
+
 .menuButton {
   background: none;
   border: none;
