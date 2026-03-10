@@ -1,0 +1,47 @@
+export const sampleWarehouses = [
+  {
+    id: 'W1',
+    createdBy: 'system',
+    createdDate: '2026-01-10',
+    updatedBy: 'system',
+    updatedDate: '2026-02-01',
+    code: 'WH-001',
+    name: 'Main Warehouse',
+    location: 'Building A',
+    quantity: 1200,
+  },
+  {
+    id: 'W2',
+    createdBy: 'user1',
+    createdDate: '2026-01-15',
+    updatedBy: 'user2',
+    updatedDate: '2026-02-05',
+    code: 'WH-002',
+    name: 'Overflow Warehouse',
+    location: 'Building B',
+    quantity: 450,
+  },
+  {
+    id: 'W3',
+    createdBy: 'user3',
+    createdDate: '2026-02-01',
+    updatedBy: 'user3',
+    updatedDate: '2026-02-20',
+    code: 'WH-003',
+    name: 'Remote Storage',
+    location: 'Offsite',
+    quantity: 78,
+  },
+];
+
+export const initialWarehouseState = {
+  id: '',
+  createdBy: '',
+  createdDate: '',
+  updatedBy: '',
+  updatedDate: '',
+  code: '',
+  name: '',
+  location: '',
+  quantity: 0,
+};
