@@ -1,4 +1,4 @@
-import { FiBarChart, FiBox, FiFileText, FiMessageSquare, FiUsers, FiSettings, FiArchive, FiLayers } from 'react-icons/fi';
+import { FiBarChart, FiBox, FiFileText, FiMessageSquare, FiUsers, FiSettings, FiArchive, FiPackage, FiLayers } from 'react-icons/fi';
 
 export const sidenavItems = [
   {
@@ -38,8 +38,19 @@ export const sidenavItems = [
     ],
   },
   {
-    label: 'Material Inventory',
-    icon: FiBox,
-    href: '/materialinventory',
+    label: 'Materials Settings',
+    icon: FiPackage,
+    children: [
+      {
+        label: 'Materials',
+        icon: FiBox,
+        href: '/materialsSettings/materials',
+      },
+      {
+        label: 'Assembly',
+        icon: FiFileText,
+        href: '/materialsSettings/assembly',
+      },
+    ],
   },
 ];

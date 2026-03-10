@@ -4,7 +4,7 @@ import { createPortal } from 'react-dom';
 import Button from '../../ui/Button/Button';
 import Select from '../../ui/Select/Select';
 import Input from '../../ui/Input/Input';
-import { sampleMaterialInventory } from '../../MaterialInventory/materialInventoryData';
+import { sampleMaterials } from '../../Materials/materialsData';
 import styles from './ProposalMaterialsModal.module.scss';
 
 export default function ProposalMaterialsModal({ open, onCancel, onConfirm, initial, scopeName }) {
@@ -30,7 +30,7 @@ export default function ProposalMaterialsModal({ open, onCancel, onConfirm, init
   }, [open, onCancel]);
 
   useEffect(() => {
-    const mi = sampleMaterialInventory.find((m) => m.code === materialId || m.id === materialId);
+    const mi = sampleMaterials.find((m) => m.code === materialId || m.id === materialId);
     if (mi) {
       setName(mi.name || '');
       if (!initial) setQuantity(mi.quantity || '1');
@@ -39,7 +39,7 @@ export default function ProposalMaterialsModal({ open, onCancel, onConfirm, init
 
   if (!open) return null;
 
-  const selected = sampleMaterialInventory.find((m) => m.code === materialId || m.id === materialId) || {};
+  const selected = sampleMaterials.find((m) => m.code === materialId || m.id === materialId) || {};
   const unitPrice = Number(selected.unitCost || 0);
   const qty = Number(quantity || 0);
   const total = unitPrice * qty;
@@ -67,7 +67,7 @@ export default function ProposalMaterialsModal({ open, onCancel, onConfirm, init
               id="material-select"
               value={materialId}
               onChange={(e) => setMaterialId(e.target.value)}
-              options={(sampleMaterialInventory || []).map((m) => ({ value: m.code || m.id, label: `${m.code || m.id} — ${m.name}` }))}
+              options={(sampleMaterials || []).map((m) => ({ value: m.code || m.id, label: `${m.code || m.id} — ${m.name}` }))}
               placeholder="Select material"
               className={styles.select}
             />

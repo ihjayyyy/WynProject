@@ -1,0 +1,42 @@
+export const sampleMaterials = [
+  {
+    id: 'M1',
+    createdBy: 'system',
+    createdDate: '2026-01-05',
+    updatedBy: 'system',
+    updatedDate: '2026-02-01',
+    code: 'MAT-001',
+    name: 'Concrete Mix',
+    materialType: 'material',
+    uom: 'kg',
+    unitCost: 12.5,
+    defaultPurchaseUOM: 'bag',
+  },
+  {
+    id: 'M2',
+    createdBy: 'user1',
+    createdDate: '2026-01-10',
+    updatedBy: 'user2',
+    updatedDate: '2026-02-10',
+    code: 'TOOL-001',
+    name: 'Hammer',
+    materialType: 'tool',
+    uom: 'pc',
+    unitCost: 8.75,
+    defaultPurchaseUOM: 'box',
+  },
+];
+
+export const initialMaterialsState = {
+  id: '',
+  createdBy: '',
+  createdDate: '',
+  updatedBy: '',
+  updatedDate: '',
+  code: '',
+  name: '',
+  materialType: 'material',
+  uom: '',
+  unitCost: 0,
+  defaultPurchaseUOM: '',
+};

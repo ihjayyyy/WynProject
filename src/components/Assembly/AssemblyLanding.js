@@ -5,18 +5,13 @@ import { useRouter } from 'next/navigation';
 import { FiEdit2, FiEye } from 'react-icons/fi';
 import SearchBar from '../ui/SearchBar/SearchBar';
 import DataTable from '../ui/DataTable/DataTable';
+import StatsCard from '../ui/StatsCard/StatsCard';
 import DropdownAction from '../ui/DropdownAction/DropdownAction';
-import { sampleMaterialInventory } from './materialInventoryData';
-import styles from './MaterialInventoryLanding.module.scss';
+import { sampleAssemblies } from './assemblyData';
+import styles from '../Materials/MaterialsLanding.module.scss';
 
 const baseColumns = [
-  { header: 'MaterialType', key: 'materialType' },
   { header: 'UOM', key: 'uom' },
-  { header: 'UnitCost', key: 'unitCost' },
-  { header: 'Quantity', key: 'quantity' },
-  { header: 'VAT', key: 'vat' },
-  { header: 'WT', key: 'wt' },
-  { header: 'TotalCost', key: 'totalCost' },
   { header: 'Id', key: 'id' },
   { header: 'CreatedBy', key: 'createdBy' },
   { header: 'CreatedDate', key: 'createdDate' },
@@ -26,10 +21,10 @@ const baseColumns = [
   { header: 'Name', key: 'name' },
 ];
 
-export default function MaterialInventoryLanding() {
+export default function AssemblyLanding() {
   const router = useRouter();
   const [searchTerm, setSearchTerm] = useState('');
-  const [inventory] = useState(sampleMaterialInventory);
+  const [inventory] = useState(sampleAssemblies);
 
   const actionItems = useMemo(
     () => [
@@ -37,15 +32,13 @@ export default function MaterialInventoryLanding() {
         key: 'view',
         label: 'View',
         icon: <FiEye size={14} />,
-        onClick: (item) =>
-          router.push(`/materialinventory/materialinventoryform?id=${item.id}`),
+        onClick: (item) => router.push(`/materialsSettings/assembly/assemblyForm?id=${item.id}`),
       },
       {
         key: 'edit',
         label: 'Edit',
         icon: <FiEdit2 size={14} />,
-        onClick: (item) =>
-          router.push(`/materialinventory/materialinventoryform?id=${item.id}&mode=edit`),
+        onClick: (item) => router.push(`/materialsSettings/assembly/assemblyForm?id=${item.id}&mode=edit`),
       },
     ],
     [router]
@@ -64,61 +57,48 @@ export default function MaterialInventoryLanding() {
     [actionItems]
   );
 
-  const filteredInventory = useMemo(() => {
+  const stats = useMemo(() => {
+    const total = inventory.length;
+    return [{ key: 'total', label: 'Total Assemblies', number: total, change: `${total} records`, isPositive: true }];
+  }, [inventory]);
+
+  const filtered = useMemo(() => {
     const keyword = searchTerm.trim().toLowerCase();
-
-    if (!keyword) {
-      return inventory;
-    }
-
+    if (!keyword) return inventory;
     return inventory.filter((item) =>
-      [
-        item.materialType,
-        item.uom,
-        item.unitCost,
-        item.quantity,
-        item.vat,
-        item.wt,
-        item.totalCost,
-        item.id,
-        item.createdBy,
-        item.createdDate,
-        item.updatedBy,
-        item.updatedDate,
-        item.code,
-        item.name,
-      ]
+      [item.uom, item.id, item.createdBy, item.createdDate, item.updatedBy, item.updatedDate, item.code, item.name]
         .filter(Boolean)
-        .some((value) => value.toLowerCase().includes(keyword))
+        .some((v) => String(v).toLowerCase().includes(keyword))
     );
   }, [searchTerm, inventory]);
 
   return (
-    <div className={styles.inventoryWrap}>
+    <div className={styles.materialsWrap}>
       <div className={styles.headerRow}>
-        <h1 className={styles.title}>Material Inventory</h1>
+        <h1 className={styles.title}>Assembly</h1>
 
         <div className={styles.headerActions}>
           <SearchBar
-            placeholder="Search material inventory"
+            placeholder="Search assemblies"
             value={searchTerm}
             onChange={setSearchTerm}
             showFilter={false}
             showButton
-            buttonLabel="New Materials"
-            handleOnClick={() => router.push('/materialinventory/materialinventoryform')}
+            buttonLabel="New Assembly"
+            handleOnClick={() => router.push('/materialsSettings/assembly/assemblyForm')}
             width="320px"
           />
         </div>
       </div>
 
+      <div className={styles.statsSection}>
+        {stats.map((stat) => (
+          <StatsCard key={stat.key} number={stat.number} label={stat.label} change={stat.change} isPositive={stat.isPositive} />
+        ))}
+      </div>
+
       <div className={styles.tableSection}>
-        <DataTable
-          columns={columns}
-          data={filteredInventory}
-          showActions={false}
-          emptyMessage="No material inventory records found"
-        />
+        <DataTable columns={columns} data={filtered} showActions={false} emptyMessage="No assembly records found" />
       </div>
     </div>
   );

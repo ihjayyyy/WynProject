@@ -170,10 +170,10 @@ export const sampleProposalScopes = [
     percentage: '30',
   },
 ];
-import { sampleMaterialInventory } from '../MaterialInventory/materialInventoryData';
+import { sampleMaterials } from '../Materials/materialsData';
 
 // Derive proposal materials from material inventory for sample data.
-const _baseProposalMaterials = (sampleMaterialInventory || []).map((mi, idx) => {
+const _baseProposalMaterials = (sampleMaterials || []).map((mi, idx) => {
   const quantity = mi.quantity || '1';
   const unitCost = mi.unitCost || '0';
   const total = (Number(unitCost) * Number(quantity)) || 0;
