@@ -12,10 +12,10 @@ import styles from './CustomersLanding.module.scss';
 
 const baseColumns = [
   { header: 'Id', key: 'id' },
-  { header: 'CreatedBy', key: 'createdBy' },
-  { header: 'CreatedDate', key: 'createdDate' },
-  { header: 'UpdatedBy', key: 'updatedBy' },
-  { header: 'UpdatedDate', key: 'updatedDate' },
+  // { header: 'CreatedBy', key: 'createdBy' },
+  // { header: 'CreatedDate', key: 'createdDate' },
+  // { header: 'UpdatedBy', key: 'updatedBy' },
+  // { header: 'UpdatedDate', key: 'updatedDate' },
   { header: 'Code', key: 'code' },
   { header: 'Name', key: 'name' },
   { header: 'CustomerName', key: 'customerName' },

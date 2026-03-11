@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useSearchParams } from 'next/navigation';
 import { FiFileText } from 'react-icons/fi';
@@ -13,7 +13,8 @@ export default function AssemblyForm() {
   const searchParams = useSearchParams();
   const assemblyId = searchParams.get('id');
   const mode = searchParams.get('mode');
-  const isEditMode = mode === 'edit';
+  const [isEditModeLocal, setIsEditModeLocal] = useState(false);
+  const isEditMode = mode === 'edit' || isEditModeLocal;
 
   const initialValues = useMemo(() => {
     if (!assemblyId) return initialAssemblyState;
@@ -21,10 +22,11 @@ export default function AssemblyForm() {
     return selected || initialAssemblyState;
   }, [assemblyId]);
 
-  const isReadOnly = useMemo(
-    () => Boolean(assemblyId && !isEditMode && sampleAssemblies.some((item) => item.id === assemblyId)),
-    [assemblyId, isEditMode]
-  );
+  const { isReadOnly, canEnterEditMode } = useMemo(() => {
+    const exists = Boolean(assemblyId && sampleAssemblies.some((item) => item.id === assemblyId));
+    const readOnly = exists && !isEditMode;
+    return { isReadOnly: readOnly, canEnterEditMode: exists };
+  }, [assemblyId, isEditMode]);
 
   const formTitle = useMemo(() => {
     if (!assemblyId) return 'Assembly Settings Form';
@@ -33,14 +35,23 @@ export default function AssemblyForm() {
   }, [assemblyId, isEditMode]);
 
   const fields = [
+    { name: 'createdBy', label: 'Created By', hidden: true },
+    { name: 'createdDate', label: 'Created Date', type: 'date', hidden: true },
+    { name: 'updatedBy', label: 'Updated By', hidden: true },
+    { name: 'updatedDate', label: 'Updated Date', type: 'date', hidden: true },
+
+    // Row 1: Code | spacer | Name
+    { name: 'code', label: 'Code', span: 'span1' },
+    { name: 'spacer-1', type: 'spacer', span: 'span1' },
+    { name: 'name', label: 'Name', span: 'span1' },
+
+    // Row 2: UOM (left) with two empty cols
+    { name: 'uom', label: 'UOM', span: 'span1' },
+    { name: 'spacer-2', type: 'spacer', span: 'span1' },
+    { name: 'spacer-3', type: 'spacer', span: 'span1' },
+
+    // place id at end so it doesn't affect top layout
     { name: 'id', label: 'Id' },
-    { name: 'createdBy', label: 'Created By' },
-    { name: 'createdDate', label: 'Created Date', type: 'date' },
-    { name: 'updatedBy', label: 'Updated By' },
-    { name: 'updatedDate', label: 'Updated Date', type: 'date' },
-    { name: 'code', label: 'Code' },
-    { name: 'name', label: 'Name' },
-    { name: 'uom', label: 'UOM' },
   ];
 
   return (
@@ -49,20 +60,46 @@ export default function AssemblyForm() {
       icon={<FiFileText />}
       fields={fields}
       initialValues={initialValues}
+      onSubmit={async (values) => {
+        const now = new Date().toISOString().slice(0, 10);
+        if (!assemblyId) {
+          const nextNumber = (sampleAssemblies || []).reduce((max, item) => {
+            const num = Number(String(item.id || '').replace(/[^0-9]/g, '')) || 0;
+            return Math.max(max, num);
+          }, 0) + 1;
+          const newId = `A${nextNumber}`;
+          const newItem = { ...values, id: newId, createdBy: 'You', createdDate: now, updatedBy: 'You', updatedDate: now };
+          (sampleAssemblies || []).push(newItem);
+          return `/materialsSettings/assembly/assemblyForm?id=${newId}`;
+        }
+        const idx = (sampleAssemblies || []).findIndex((i) => i.id === assemblyId);
+        const updatedItem = { ...values, id: assemblyId, updatedBy: 'You', updatedDate: now };
+        if (idx !== -1) sampleAssemblies[idx] = updatedItem;
+        return `/materialsSettings/assembly/assemblyForm?id=${assemblyId}`;
+      }}
       backPath="/materialsSettings/assembly"
       width="100%"
-      columns={2}
+      columns={3}
       showSubmitButton={false}
       readOnly={isReadOnly}
       headerActions={
         !assemblyId ? (
           <Button type="submit" variant="save">Create</Button>
-        ) : isReadOnly ? (
-          <Button variant="outlinedPrimary" onClick={() => router.push(`/materialsSettings/assembly/assemblyForm?id=${assemblyId}&mode=edit`)}>Edit</Button>
         ) : (
           <>
-            <Button variant="outlineDanger" onClick={() => router.push(`/materialsSettings/assembly/assemblyForm?id=${assemblyId}`)}>Cancel</Button>
-            <Button type="submit" variant="save">Save</Button>
+            {isReadOnly ? (
+              canEnterEditMode ? (
+                <Button variant="outlinedPrimary" onClick={() => setIsEditModeLocal(true)}>Edit</Button>
+              ) : null
+            ) : (
+              <>
+                <Button variant="outlineDanger" onClick={() => {
+                  if (mode === 'edit') { router.push(`/materialsSettings/assembly/assemblyForm?id=${assemblyId}`); return; }
+                  setIsEditModeLocal(false);
+                }}>Cancel</Button>
+                <Button type="submit" variant="save">Save</Button>
+              </>
+            )}
           </>
         )
       }
