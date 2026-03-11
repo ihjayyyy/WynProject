@@ -46,6 +46,11 @@ export const sidenavItems = [
         icon: FiBox,
         href: '/materialsSettings/materials',
       },
+        {
+          label: 'Tools & Equipment',
+          icon: FiArchive,
+          href: '/materialsSettings/tools',
+        },
       {
         label: 'Assembly',
         icon: FiFileText,

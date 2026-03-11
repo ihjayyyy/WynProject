@@ -26,7 +26,7 @@ const baseColumns = [
 export default function MaterialsLanding() {
   const router = useRouter();
   const [searchTerm, setSearchTerm] = useState('');
-  const [inventory] = useState(sampleMaterials);
+  const [materials] = useState(() => sampleMaterials.filter((i) => i.materialType === 'material'));
 
   const actionItems = useMemo(
     () => [
@@ -60,23 +60,23 @@ export default function MaterialsLanding() {
   );
 
   const materialStats = useMemo(() => {
-    const total = inventory.length;
-    const typesCount = new Set(inventory.map((i) => i.materialType).filter(Boolean)).size;
+    const total = materials.length;
+    const typesCount = new Set(materials.map((i) => i.materialType).filter(Boolean)).size;
 
     return [
       { key: 'total', label: 'Total Materials', number: total, change: `${total} records`, isPositive: true },
       { key: 'types', label: 'Material Types', number: typesCount, change: `${typesCount} types`, isPositive: true },
     ];
-  }, [inventory]);
+  }, [materials]);
 
-  const filteredInventory = useMemo(() => {
+  const filteredMaterials = useMemo(() => {
     const keyword = searchTerm.trim().toLowerCase();
 
     if (!keyword) {
-      return inventory;
+      return materials;
     }
 
-    return inventory.filter((item) =>
+    return materials.filter((item) =>
       [
         item.materialType,
         item.uom,
@@ -93,7 +93,7 @@ export default function MaterialsLanding() {
         .filter(Boolean)
         .some((value) => String(value).toLowerCase().includes(keyword))
     );
-  }, [searchTerm, inventory]);
+  }, [searchTerm, materials]);
 
   return (
     <div className={styles.materialsWrap}>
@@ -123,7 +123,7 @@ export default function MaterialsLanding() {
       <div className={styles.tableSection}>
         <DataTable
           columns={columns}
-          data={filteredInventory}
+          data={filteredMaterials}
           showActions={false}
           emptyMessage="No material records found"
         />
