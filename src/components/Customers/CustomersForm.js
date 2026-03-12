@@ -38,16 +38,13 @@ export default function CustomersForm() {
   }, [customerId, isEditMode]);
 
   const fields = [
-    { name: 'id', label: 'Id' },
-    { name: 'code', label: 'Code', span: 'span1' },
-    { name: 'name', label: 'Name', span: 'span1' },
-
-    { name: 'customerName', label: 'Customer Name', span: 'span1' },
-    { name: 'contactNumber', label: 'Contact Number', type: 'tel', span: 'span1' },
-
-    { name: 'email', label: 'Email', type: 'email', span: 'span1' },
-    { name: 'companyName', label: 'Company Name', span: 'span1' },
-
+    { name: 'id', label: 'Id', span: 'span2' },
+    { name: 'code', label: 'Code', span: 'span2' },
+    { name: 'name', label: 'Name', span: 'span2' },
+    { name: 'customerName', label: 'Customer Name', span: 'span2' },
+    { name: 'contactNumber', label: 'Contact Number', type: 'tel', span: 'span2' },
+    { name: 'email', label: 'Email', type: 'email', span: 'span2' },
+    { name: 'companyName', label: 'Company Name', span: 'span2' },
     // Address on its own full row
     { name: 'address', label: 'Address', span: 'span3', multiline: true, rows: 3 },
   ];

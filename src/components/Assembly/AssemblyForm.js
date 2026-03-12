@@ -36,23 +36,11 @@ export default function AssemblyForm() {
   }, [assemblyId, isEditMode]);
 
   const fields = [
-    { name: 'createdBy', label: 'Created By', hidden: true },
-    { name: 'createdDate', label: 'Created Date', type: 'date', hidden: true },
-    { name: 'updatedBy', label: 'Updated By', hidden: true },
-    { name: 'updatedDate', label: 'Updated Date', type: 'date', hidden: true },
-
-    // Row 1: Code | spacer | Name
-    { name: 'code', label: 'Code', span: 'span1' },
-    { name: 'spacer-1', type: 'spacer', span: 'span1' },
-    { name: 'name', label: 'Name', span: 'span1' },
-
-    // Row 2: UOM (left) with two empty cols
-    { name: 'uom', label: 'UOM', span: 'span1' },
-    { name: 'spacer-2', type: 'spacer', span: 'span1' },
-    { name: 'spacer-3', type: 'spacer', span: 'span1' },
-
-    // place id at end so it doesn't affect top layout
-    { name: 'id', label: 'Id' },
+    { name: 'code', label: 'Code', span: 'span2' },
+    { name: 'spacer-1', type: 'spacer', span: 'span2' },
+    { name: 'name', label: 'Name', span: 'span2' },
+    { name: 'uom', label: 'UOM', span: 'span2' },
+    { name: 'id', label: 'Id', span: 'span2' },
   ];
 
   return (

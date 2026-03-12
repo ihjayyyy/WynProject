@@ -38,23 +38,11 @@ export default function RackForm() {
   const warehouseOptions = sampleWarehouses.map((w) => ({ label: w.name, value: w.id }));
 
   const fields = [
-    { name: 'createdBy', label: 'Created By', hidden: true },
-    { name: 'createdDate', label: 'Created Date', type: 'date', hidden: true },
-    { name: 'updatedBy', label: 'Updated By', hidden: true },
-    { name: 'updatedDate', label: 'Updated Date', type: 'date', hidden: true },
-
-    // Row 1: Code | spacer | Name
-    { name: 'code', label: 'Code', span: 'span1' },
+    { name: 'code', label: 'Code', span: 'span2' },
+    { name: 'name', label: 'Name', span: 'span2' },
+    { name: 'id', label: 'Id', span: 'span2' },
     { name: 'spacer-1', type: 'spacer', span: 'span1' },
-    { name: 'name', label: 'Name', span: 'span1' },
-
-    // Row 2: Warehouse select on left
     { name: 'warehouseId', label: 'Warehouse', type: 'select', options: warehouseOptions, searchable: true, span: 'span1' },
-    { name: 'spacer-2', type: 'spacer', span: 'span1' },
-    { name: 'spacer-3', type: 'spacer', span: 'span1' },
-
-    // id last so it doesn't affect header layout
-    { name: 'id', label: 'Id' },
   ];
 
   return (

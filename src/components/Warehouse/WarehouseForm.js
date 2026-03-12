@@ -35,23 +35,11 @@ export default function WarehouseForm() {
   }, [warehouseId, isEditMode]);
 
   const fields = [
-    { name: 'createdBy', label: 'Created By', hidden: true },
-    { name: 'createdDate', label: 'Created Date', type: 'date', hidden: true },
-    { name: 'updatedBy', label: 'Updated By', hidden: true },
-    { name: 'updatedDate', label: 'Updated Date', type: 'date', hidden: true },
-
-    // Row 1: Code | spacer | Name
-    { name: 'code', label: 'Code', span: 'span1' },
-    { name: 'spacer-1', type: 'spacer', span: 'span1' },
-    { name: 'name', label: 'Name', span: 'span1' },
-
-    // Row 2: Location | spacer | Quantity
-    { name: 'location', label: 'Location', span: 'span1' },
-    { name: 'spacer-2', type: 'spacer', span: 'span1' },
-    { name: 'quantity', label: 'Quantity', type: 'number', span: 'span1' },
-
-    // id last
-    { name: 'id', label: 'Id' },
+    { name: 'code', label: 'Code', span: 'span2' },
+    { name: 'name', label: 'Name', span: 'span2' },
+    { name: 'location', label: 'Location', span: 'span2' },
+    { name: 'quantity', label: 'Quantity', type: 'number', span: 'span2' },
+    { name: 'id', label: 'Id', span: 'span2' },
   ];
 
   return (

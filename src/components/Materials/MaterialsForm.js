@@ -29,29 +29,18 @@ export default function MaterialsForm() {
   }, [materialId, isEditMode]);
 
   const formTitle = useMemo(() => {
-    if (!materialId) return 'Materials Settings Form';
+    if (!materialId) return 'Materials Form';
     if (isEditMode) return 'Edit Material';
     return 'View Material';
   }, [materialId, isEditMode]);
 
   const fields = [
-    { name: 'createdBy', label: 'Created By', hidden: true },
-    { name: 'createdDate', label: 'Created Date', type: 'date', hidden: true },
-    { name: 'updatedBy', label: 'Updated By', hidden: true },
-    { name: 'updatedDate', label: 'Updated Date', type: 'date', hidden: true },
-
-    // Row1: Code | spacer | Name
-    { name: 'code', label: 'Code', span: 'span1' },
-    { name: 'spacer-1', type: 'spacer', span: 'span1' },
-    { name: 'name', label: 'Name', span: 'span1' },
-
-    { name: 'unitCost', label: 'Unit Cost', type: 'number', span: 'span1' },
-    { name: 'spacer-2', type: 'spacer', span: 'span1' },
-    { name: 'uom', label: 'UOM', span: 'span1' },
-
-    { name: 'id', label: 'Id' },
-    { name: 'spacer-3', type: 'spacer', span: 'span1' },
-    { name: 'defaultPurchaseUOM', label: 'Default Purchase UOM', span: 'span1' },
+    { name: 'code', label: 'Code', span: 'span2' },
+    { name: 'name', label: 'Name', span: 'span2' },
+    { name: 'unitCost', label: 'Unit Cost', type: 'number', span: 'span2' },
+    { name: 'uom', label: 'UOM', span: 'span2' },
+    { name: 'id', label: 'Id', span: 'span2' },
+    { name: 'defaultPurchaseUOM', label: 'Default Purchase UOM', span: 'span2' },
 ];
 
   return (

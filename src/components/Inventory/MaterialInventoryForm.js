@@ -47,23 +47,14 @@ export default function MaterialInventoryForm() {
   }, []);
 
   const fields = [
-    { name: 'createdBy', label: 'Created By', hidden: true },
-    { name: 'createdDate', label: 'Created Date', type: 'date', hidden: true },
-    { name: 'updatedBy', label: 'Updated By', hidden: true },
-    { name: 'updatedDate', label: 'Updated Date', type: 'date', hidden: true },
-
-    // Row1: Name | spacer | RackId
-    { name: 'name', label: 'Name', span: 'span1' },
+    { name: 'name', label: 'Name', span: 'span2' },
+    { name: 'quantity', label: 'Quantity', type: 'number', span: 'span2' },
+    { name: 'id', label: 'Id', span: 'span2' },
     { name: 'spacer-1', type: 'spacer', span: 'span1' },
     { name: 'rackId', label: 'Rack', span: 'span1', type: 'select', options: rackOptions, searchable: true },
-
-    // Row2: MaterialId | spacer | Quantity
+    { name: 'spacer-2', type: 'spacer', span: 'span2' },
     { name: 'materialId', label: 'Material', span: 'span1', type: 'select', options: materialOptions, searchable: true },
-    { name: 'spacer-2', type: 'spacer', span: 'span1' },
-    { name: 'quantity', label: 'Quantity', type: 'number', span: 'span1' },
 
-    // id last
-    { name: 'id', label: 'Id' },
   ];
 
   return (
