@@ -7,6 +7,7 @@ import { FiFileText } from 'react-icons/fi';
 import EntityForm from '../EntityForm/EntityForm';
 import Button from '../ui/Button/Button';
 import { initialAssemblyState, sampleAssemblies } from './assemblyData';
+import AssemblyMaterialsTable from './AssemblyMaterialsTable';
 
 export default function AssemblyForm() {
   const router = useRouter();
@@ -82,6 +83,7 @@ export default function AssemblyForm() {
       columns={3}
       showSubmitButton={false}
       readOnly={isReadOnly}
+      extraContent={<AssemblyMaterialsTable assemblyId={assemblyId} allowCreateBeforeSave={!assemblyId} readOnly={isReadOnly} />}
       headerActions={
         !assemblyId ? (
           <Button type="submit" variant="save">Create</Button>

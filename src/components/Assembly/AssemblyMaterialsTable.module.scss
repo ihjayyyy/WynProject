@@ -1,0 +1,37 @@
+@use '../../styles/variables' as *;
+
+.container {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-md;
+  border: 1px solid $color-secondary-light;
+  border-radius: $border-radius-md;
+  padding: $spacing-md;
+  margin-top: $spacing-sm;
+  background: $color-background-light;
+}
+
+.headerRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.title {
+  margin: 0;
+  font-size: $font-size-md;
+  font-weight: $font-weight-bold;
+  color: $color-text-primary-light;
+}
+
+.actions {
+  display: flex;
+  gap: $spacing-sm;
+}
+
+@media (max-width: 900px) {
+  .headerRow {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}

@@ -31,3 +31,32 @@ export const initialAssemblyState = {
   name: '',
   uom: '',
 };
+
+export const sampleAssemblyMaterials = [
+  {
+    id: 'AM1',
+    assemblyId: 'A1',
+    materialId: 'M1',
+    quantity: 10,
+    uom: 'kg',
+    createdBy: 'system',
+    createdDate: '2026-02-10',
+  },
+  {
+    id: 'AM2',
+    assemblyId: 'A1',
+    materialId: 'M2',
+    quantity: 2,
+    uom: 'pc',
+    createdBy: 'user1',
+    createdDate: '2026-02-12',
+  },
+];
+
+export const initialAssemblyMaterialState = {
+  id: '',
+  assemblyId: '',
+  materialId: '',
+  quantity: 0,
+  uom: '',
+};

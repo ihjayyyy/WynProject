@@ -5,6 +5,8 @@ import { useRouter } from 'next/navigation';
 import SearchBar from '../ui/SearchBar/SearchBar';
 import DataTable from '../ui/DataTable/DataTable';
 import StatsCard from '../ui/StatsCard/StatsCard';
+import DropdownAction from '../ui/DropdownAction/DropdownAction';
+import { FiEdit2, FiEye } from 'react-icons/fi';
 import { sampleMaterials } from './materialsData';
 import styles from './MaterialsLanding.module.scss';
 
@@ -26,7 +28,35 @@ export default function ToolsLanding() {
   const [searchTerm, setSearchTerm] = useState('');
   const [inventory] = useState(() => sampleMaterials.filter((i) => i.materialType === 'tool'));
 
-  const columns = useMemo(() => baseColumns, []);
+  const actionItems = useMemo(
+    () => [
+      {
+        key: 'view',
+        label: 'View',
+        icon: <FiEye size={14} />,
+        onClick: (item) => router.push(`/materialsSettings/tools/toolsForm?id=${item.id}`),
+      },
+      {
+        key: 'edit',
+        label: 'Edit',
+        icon: <FiEdit2 size={14} />,
+        onClick: (item) => router.push(`/materialsSettings/tools/toolsForm?id=${item.id}&mode=edit`),
+      },
+    ],
+    [router]
+  );
+
+  const columns = useMemo(() => {
+    return [
+      ...baseColumns,
+      {
+        header: 'Action',
+        key: 'actions',
+        align: 'right',
+        render: (item) => <DropdownAction item={item} items={actionItems} />,
+      },
+    ];
+  }, [actionItems]);
 
   const toolStats = useMemo(() => {
     const total = inventory.length;
