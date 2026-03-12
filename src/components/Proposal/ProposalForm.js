@@ -56,6 +56,7 @@ export default function ProposalForm() {
   // Hold temporary scopes/materials created before the proposal is saved.
   const [preCreateScopes, setPreCreateScopes] = useState([]);
   const [preCreateMaterials, setPreCreateMaterials] = useState([]);
+  const [collapsed, setCollapsed] = useState(false);
   const [proposalTotal, setProposalTotal] = useState(0);
   const [isSubmitModalOpen, setIsSubmitModalOpen] = useState(false);
 
@@ -247,6 +248,8 @@ export default function ProposalForm() {
         columns={3}
         showSubmitButton={false}
         readOnly={isReadOnly}
+        collapsed={collapsed}
+        onCollapsedChange={setCollapsed}
         extraContent={
           <ProposalScopeTable
             proposalId={proposalId}
@@ -255,8 +258,14 @@ export default function ProposalForm() {
             allowCreateBeforeSave={!proposalId}
             initialScopes={preCreateScopes}
             initialMaterials={preCreateMaterials}
-            onCreateScope={(s) => setPreCreateScopes((prev) => [s, ...(prev || [])])}
-            onCreateMaterial={(m) => setPreCreateMaterials((prev) => [m, ...(prev || [])])}
+            onCreateScope={(s) => {
+              setPreCreateScopes((prev) => [s, ...(prev || [])]);
+              setCollapsed(true);
+            }}
+            onCreateMaterial={(m) => {
+              setPreCreateMaterials((prev) => [m, ...(prev || [])]);
+              setCollapsed(true);
+            }}
             onTotalChange={(t) => setProposalTotal(Number(t || 0))}
             readOnly={isReadOnly}
           />

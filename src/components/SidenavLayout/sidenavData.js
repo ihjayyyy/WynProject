@@ -1,4 +1,4 @@
-import { FiBarChart, FiBox, FiFileText, FiMessageSquare, FiUsers, FiSettings, FiArchive, FiPackage, FiLayers, FiTool, FiDatabase, FiList, FiGrid } from 'react-icons/fi';
+import { FiBarChart, FiBox, FiFileText, FiMessageSquare, FiUsers, FiSettings, FiArchive, FiPackage, FiLayers, FiTool, FiDatabase, FiList, FiGrid, FiUser, FiShoppingCart, FiTruck, FiFile, FiCreditCard, FiUserCheck } from 'react-icons/fi';
 
 export const sidenavItems = [
   {
@@ -12,6 +12,11 @@ export const sidenavItems = [
     href: '/customers',
   },
   {
+    label: 'Suppliers',
+    icon: FiUser,
+    href: '/suppliers',
+  },
+  {
     label: 'Inquiry',
     icon: FiMessageSquare,
     href: '/inquiry',
@@ -22,7 +27,33 @@ export const sidenavItems = [
     href: '/proposal',
   },
   {
-    label: 'Storage Settings',
+    label: 'Purchase',
+    icon: FiShoppingCart,
+    children: [
+      {
+        label: 'Orders',
+        icon: FiList,
+        href: '/purchase/orders',
+      },
+      {
+        label: 'Deliveries',
+        icon: FiTruck,
+        href: '/purchase/deliveries',
+      },
+      {
+        label: 'Invoices',
+        icon: FiFile,
+        href: '/purchase/invoices',
+      },
+      {
+        label: 'Payments',
+        icon: FiCreditCard,
+        href: '/purchase/payments',
+      },
+    ],
+  },
+  {
+    label: 'Storage',
     icon: FiSettings,
     children: [
       {
@@ -38,7 +69,7 @@ export const sidenavItems = [
     ],
   },
   {
-    label: 'Materials Settings',
+    label: 'Materials',
     icon: FiPackage,
     children: [
       {
@@ -73,5 +104,15 @@ export const sidenavItems = [
         href: '/inventory/tools-inventory',
       },
     ],
+  },
+  {
+    label: 'Employees',
+    icon: FiUserCheck,
+    href: '/employees',
+  },
+  {
+    label: 'Maintenance',
+    icon: FiTool,
+    href: '/maintenance',
   },
 ];

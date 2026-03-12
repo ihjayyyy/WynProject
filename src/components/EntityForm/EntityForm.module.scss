@@ -18,6 +18,40 @@
   margin-bottom: 0.5rem;
 }
 
+.titleRow {
+  display: flex;
+  align-items: center;
+  gap: $spacing-sm;
+}
+
+.collapseToggle {
+  display: inline-flex;
+  align-items: center;
+  gap: $spacing-xs;
+  background: transparent;
+  border: 0;
+  color: $color-text-secondary-light;
+  cursor: pointer;
+  font-size: $font-size-sm;
+  padding: $spacing-xs $spacing-sm;
+}
+
+.caret {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+}
+
+.collapseToggle:hover {
+  background: rgba(0,0,0,0.02);
+  border-radius: 4px;
+}
+
+.collapseLabel {
+  display: inline-block;
+}
+
 .headerActions {
   display: flex;
   align-items: center;
@@ -43,6 +77,10 @@
   grid-template-columns: repeat(3, 1fr);
   gap: 1rem 1.5rem;
   width: 100%;
+}
+
+.collapsed {
+  display: none !important;
 }
 
 .gridItem8 {
