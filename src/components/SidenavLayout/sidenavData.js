@@ -1,4 +1,4 @@
-import { FiBarChart, FiBox, FiFileText, FiMessageSquare, FiUsers, FiSettings, FiArchive, FiPackage, FiLayers, FiTool, FiDatabase, FiList, FiGrid, FiUser, FiShoppingCart, FiTruck, FiFile, FiCreditCard, FiUserCheck } from 'react-icons/fi';
+import { FiBarChart, FiBox, FiFileText, FiMessageSquare, FiUsers, FiSettings, FiArchive, FiPackage, FiLayers, FiTool, FiDatabase, FiList, FiGrid, FiUser, FiShoppingCart, FiTruck, FiFile, FiCreditCard, FiUserCheck, FiBriefcase, FiClipboard, FiDollarSign, FiFolder } from 'react-icons/fi';
 
 export const sidenavItems = [
   {
@@ -22,9 +22,35 @@ export const sidenavItems = [
     href: '/inquiry',
   },
   {
-    label: 'Proposal',
-    icon: FiFileText,
-    href: '/proposal',
+    label: 'Projects',
+    icon: FiLayers,
+    children: [
+      {
+        label: 'Proposal',
+        icon: FiFileText,
+        href: '/projects/proposal',
+      },
+      {
+        label: 'Projects',
+        icon: FiBriefcase,
+        href: '/projects/projects',
+      },
+      {
+        label: 'Material Requests',
+        icon: FiClipboard,
+        href: '/projects/material-requests',
+      },
+      {
+        label: 'Billings',
+        icon: FiDollarSign,
+        href: '/projects/billings',
+      },
+      {
+        label: 'Collections',
+        icon: FiFolder,
+        href: '/projects/collections',
+      },
+    ],
   },
   {
     label: 'Purchase',

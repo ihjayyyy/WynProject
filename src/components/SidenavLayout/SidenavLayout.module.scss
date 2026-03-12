@@ -99,20 +99,8 @@
 }
 
 .expandIcon {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  color: var(--color-accent-light);
-  background: rgba(255, 255, 255, 0.9);
-  border-radius: 50%;
-  width: 24px;
-  height: 24px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  animation: pulseGlow 2s infinite;
-  box-shadow: 0 1px 6px rgba(0, 0, 0, 0.15);
+  /* hide the small arrow overlay shown on collapsed logo hover */
+  display: none !important;
 }
 
 @keyframes pulseGlow {
@@ -175,7 +163,11 @@
 // ============================================
 .navigation {
   flex: 1;
-  overflow: hidden; // Prevent scrollbars in navigation
+  overflow-y: auto; // allow vertical scrolling when content exceeds available height
+  -webkit-overflow-scrolling: touch;
+  padding-right: 0.25rem; // space for scrollbar
+  scrollbar-width: thin; /* Firefox */
+  scrollbar-color: rgba(0,0,0,0.12) transparent; /* Firefox thumb + track */
 }
 
 .navList {
@@ -185,14 +177,30 @@
   display: flex;
   flex-direction: column;
   gap: 0.25rem;
-  overflow: hidden; // Prevent scrollbars
   width: 100%; // Ensure consistent width
 }
 
 .navItem {
   display: flex;
   width: 100%; // Ensure consistent width
-  overflow: hidden; // Prevent any overflow
+}
+
+/* custom scrollbar for the sidenav navigation area */
+.navigation::-webkit-scrollbar {
+  width: 6px; /* slimmer */
+}
+
+.navigation::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.navigation::-webkit-scrollbar-thumb {
+  background: rgba(0,0,0,0.10);
+  border-radius: 8px;
+}
+
+.navigation:hover::-webkit-scrollbar-thumb {
+  background: rgba(0,0,0,0.16);
 }
 
 .navLink {
