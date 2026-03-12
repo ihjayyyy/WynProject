@@ -107,7 +107,7 @@ export default function ProposalForm() {
       } catch (err) {
         console.warn('Failed to push to sampleProposals', err);
       }
-      return `/proposal/proposalform?id=${newId}`;
+      return `/projects/proposal/proposalform?id=${newId}`;
     }
 
     // update existing
@@ -125,7 +125,7 @@ export default function ProposalForm() {
     } catch (err) {
       console.warn('Failed to update sampleProposals', err);
     }
-    return `/proposal/proposalform?id=${proposalId}`;
+    return `/projects/proposal/proposalform?id=${proposalId}`;
   };
 
   const handleSubmitForApproval = async () => {
@@ -144,7 +144,7 @@ export default function ProposalForm() {
       console.warn('Failed to set status for approval', err);
     }
     // redirect to landing after submitting for approval
-    router.push('/proposal');
+    router.push('/projects/proposal');
   };
 
   const formTitle = useMemo(() => {
@@ -242,7 +242,7 @@ export default function ProposalForm() {
         icon={<FiFileText />}
         fields={fields}
         initialValues={mergedInitialValues}
-        backPath="/proposal"
+        backPath="/projects/proposal"
         onSubmit={handleProposalSubmit}
         width="100%"
         columns={3}
@@ -250,6 +250,7 @@ export default function ProposalForm() {
         readOnly={isReadOnly}
         collapsed={collapsed}
         onCollapsedChange={setCollapsed}
+        allowCollapse
         extraContent={
           <ProposalScopeTable
             proposalId={proposalId}
@@ -302,7 +303,7 @@ export default function ProposalForm() {
                     variant="outlineDanger"
                     onClick={() => {
                       if (mode === 'edit') {
-                        router.push(`/proposal/proposalform?id=${proposalId}`);
+                        router.push(`/projects/proposal/proposalform?id=${proposalId}`);
                         return;
                       }
                       setIsEditModeLocal(false);

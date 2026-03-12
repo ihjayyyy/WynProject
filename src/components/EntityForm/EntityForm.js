@@ -1,8 +1,8 @@
  'use client';
  import React, { useState, useEffect } from 'react';
+import { FiChevronDown, FiChevronUp } from 'react-icons/fi';
  import { useRouter } from 'next/navigation';
 import styles from './EntityForm.module.scss';
-import { FiChevronDown, FiChevronUp } from 'react-icons/fi';
  import Breadcrumbs from '../ui/Breadcrumbs/Breadcrumbs';
  import Input from '../ui/Input/Input';
 import Select from '../ui/Select/Select';
@@ -22,7 +22,7 @@ import inputStyles from '../ui/Input/Input.module.scss';
  * - submitPosition: 'bottom' | 'beforeExtra' (optional) - placement of submit/right actions area. Defaults to 'bottom'.
  * - showSubmitButton: boolean (optional) - controls rendering of default Create/Save button. Defaults to true.
  */
-export default function EntityForm({ title, icon, fields, initialValues = {}, onSubmit, backPath = '/', readOnly = false, width = '100%', columns = 8, extraContent = null, rightActions = null, headerActions = null, breadcrumbLabel, breadcrumbItems, submitPosition = 'bottom', showSubmitButton = true, collapsed: collapsedProp, onCollapsedChange }) {
+export default function EntityForm({ title, icon, fields, initialValues = {}, onSubmit, backPath = '/', readOnly = false, width = '100%', columns = 8, extraContent = null, rightActions = null, headerActions = null, breadcrumbLabel, breadcrumbItems, submitPosition = 'bottom', showSubmitButton = true, collapsed: collapsedProp, onCollapsedChange, allowCollapse = false }) {
   const router = useRouter();
   const [values, setValues] = useState({ ...initialValues });
   const [internalCollapsed, setInternalCollapsed] = useState(false);
@@ -142,25 +142,25 @@ export default function EntityForm({ title, icon, fields, initialValues = {}, on
       <div className={styles.headerSection}>
         <div className={styles.titleRow}>
           <h2 className={styles.title}>{title}</h2>
-          <button
-            type="button"
-            className={styles.collapseToggle}
-            onClick={() => setCollapsed(!collapsed)}
-            aria-expanded={!collapsed}
-            aria-label={collapsed ? 'Show details' : 'Hide details'}
-          >
-            <span className={styles.caret}>
-              {collapsed ? <FiChevronDown size={16} /> : <FiChevronUp size={16} />}
-            </span>
-            <span className={styles.collapseLabel}>{collapsed ? 'Show details' : 'Hide details'}</span>
-          </button>
+          {allowCollapse ? (
+            <button
+              type="button"
+              className={styles.collapseToggle}
+              onClick={() => setCollapsed(!collapsed)}
+              aria-expanded={!collapsed}
+              aria-label={collapsed ? 'Show details' : 'Hide details'}
+            >
+              <span className={styles.caret}>
+                {collapsed ? <FiChevronDown size={16} /> : <FiChevronUp size={16} />}
+              </span>
+              <span className={styles.collapseLabel}>{collapsed ? 'Show details' : 'Hide details'}</span>
+            </button>
+          ) : null}
         </div>
         {headerActions ? <div className={styles.headerActions}>{headerActions}</div> : null}
       </div>
 
-      <div
-        className={`${columns === 3 ? styles.topFields3Col : styles.topFields8Col} ${collapsed ? styles.collapsed : ''}`}
-        style={{ width: normalizedWidth }}>
+      <div className={`${columns === 3 ? styles.topFields3Col : styles.topFields8Col} ${collapsed ? styles.collapsed : ''}`} style={{ width: normalizedWidth }}>
         {fields.map((f) => {
           // per-field hidden support: allow boolean or function(values) => boolean
           const fieldHidden = (() => {
