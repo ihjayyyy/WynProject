@@ -11,14 +11,12 @@ import { sampleAssemblies } from './assemblyData';
 import styles from '../Materials/MaterialsLanding.module.scss';
 
 const baseColumns = [
-  { header: 'UOM', key: 'uom' },
   { header: 'Id', key: 'id' },
-  { header: 'CreatedBy', key: 'createdBy' },
-  { header: 'CreatedDate', key: 'createdDate' },
-  { header: 'UpdatedBy', key: 'updatedBy' },
-  { header: 'UpdatedDate', key: 'updatedDate' },
-  { header: 'Code', key: 'code' },
+    { header: 'Code', key: 'code' },
   { header: 'Name', key: 'name' },
+  { header: 'UOM', key: 'uom' },
+    { header: 'UpdatedBy', key: 'updatedBy' },
+  { header: 'UpdatedDate', key: 'updatedDate' },
 ];
 
 export default function AssemblyLanding() {

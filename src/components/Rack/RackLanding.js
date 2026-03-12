@@ -13,13 +13,11 @@ import styles from './RackLanding.module.scss';
 
 const baseColumns = [
   { header: 'Id', key: 'id' },
-  { header: 'CreatedBy', key: 'createdBy' },
-  { header: 'CreatedDate', key: 'createdDate' },
-  { header: 'UpdatedBy', key: 'updatedBy' },
-  { header: 'UpdatedDate', key: 'updatedDate' },
   { header: 'Code', key: 'code' },
   { header: 'Name', key: 'name' },
   { header: 'Warehouse', key: 'warehouseId' },
+    { header: 'UpdatedBy', key: 'updatedBy' },
+  { header: 'UpdatedDate', key: 'updatedDate' },
 ];
 
 export default function RackLanding() {

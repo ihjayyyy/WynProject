@@ -19,6 +19,8 @@ const baseColumns = [
   { header: 'Rack Name', key: 'rackId' },
   { header: 'Material Name', key: 'materialId' },
   { header: 'Quantity', key: 'quantity' },
+      { header: 'UpdatedBy', key: 'updatedBy' },
+  { header: 'UpdatedDate', key: 'updatedDate' },
 ];
 
 export default function MaterialInventoryLanding() {

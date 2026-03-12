@@ -11,16 +11,13 @@ import { sampleMaterials } from './materialsData';
 import styles from './MaterialsLanding.module.scss';
 
 const baseColumns = [
-  { header: 'MaterialType', key: 'materialType' },
+  { header: 'Id', key: 'id' },
+    { header: 'Code', key: 'code' },
+  { header: 'Name', key: 'name' },
   { header: 'UOM', key: 'uom' },
   { header: 'UnitCost', key: 'unitCost' },
-  { header: 'Id', key: 'id' },
-  { header: 'CreatedBy', key: 'createdBy' },
-  { header: 'CreatedDate', key: 'createdDate' },
-  { header: 'UpdatedBy', key: 'updatedBy' },
+    { header: 'UpdatedBy', key: 'updatedBy' },
   { header: 'UpdatedDate', key: 'updatedDate' },
-  { header: 'Code', key: 'code' },
-  { header: 'Name', key: 'name' },
 ];
 
 export default function MaterialsLanding() {

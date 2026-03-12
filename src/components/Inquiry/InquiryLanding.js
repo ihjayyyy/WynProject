@@ -25,6 +25,8 @@ const baseColumns = [
   },
   { header: 'Reference', key: 'reference' },
   { header: 'Date', key: 'date' },
+      { header: 'UpdatedBy', key: 'updatedBy' },
+  { header: 'UpdatedDate', key: 'updatedDate' },
 ];
 
 export default function InquiryLanding() {

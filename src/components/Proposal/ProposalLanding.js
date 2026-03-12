@@ -17,6 +17,8 @@ const baseColumns = [
   { header: 'Customer Name', key: 'customerName' },
   { header: 'Proposal Total', key: 'proposalTotal' },
   { header: 'Status', key: 'status' },
+      { header: 'UpdatedBy', key: 'updatedBy' },
+  { header: 'UpdatedDate', key: 'updatedDate' },
 ];
 
 export default function ProposalLanding() {
