@@ -9,7 +9,7 @@ import { sampleWarehouses } from '../Warehouse/warehouseData';
 import Landing from '../ui/Landing/Landing';
 
 const baseColumns = [
-  { header: 'Id', key: 'id' },
+  // { header: 'Id', key: 'id' },
   { header: 'Code', key: 'code' },
   { header: 'Name', key: 'name' },
   { header: 'Warehouse', key: 'warehouseId' },

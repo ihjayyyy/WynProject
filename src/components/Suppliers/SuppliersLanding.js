@@ -9,7 +9,7 @@ import { sampleSuppliers } from './suppliersData';
 import { sampleCustomers } from '../Customers/customersData';
 
 const baseColumns = [
-  { header: 'Id', key: 'id' },
+  // { header: 'Id', key: 'id' },
   { header: 'Code', key: 'code' },
   { header: 'Name', key: 'name' },
   { header: 'CustomerNameId', key: 'CustomerNameId' },

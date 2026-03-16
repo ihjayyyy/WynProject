@@ -9,11 +9,11 @@ import StatusBadge from '../ui/StatusBadge/StatusBadge';
 import { sampleProposals } from './proposalData';
 
 const baseColumns = [
-  { header: 'Date', key: 'createdDate' },
   { header: 'Proposal Number', key: 'proposalNumber' },
   { header: 'Customer Name', key: 'customerName' },
   { header: 'Proposal Total', key: 'proposalTotal' },
   { header: 'Status', key: 'status' },
+  { header: 'Date', key: 'createdDate' },
   { header: 'UpdatedBy', key: 'updatedBy' },
   { header: 'UpdatedDate', key: 'updatedDate' },
 ];
