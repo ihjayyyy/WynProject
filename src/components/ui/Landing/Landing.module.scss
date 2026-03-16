@@ -7,6 +7,7 @@
     flex-direction: column;
     gap: $spacing-md;
     box-shadow: $shadow-md;
+    height: calc(100% - 48px);
 }
 .headerRow { 
   display: flex;
