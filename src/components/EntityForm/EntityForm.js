@@ -53,7 +53,26 @@ export default function EntityForm({ title, icon, fields, initialValues = {}, on
 
   // Keep internal state in sync when parent updates `initialValues` (e.g., when loading existing entity)
   useEffect(() => {
-    setValues({ ...initialValues });
+    try {
+      const incomingId = initialValues && (initialValues.id || initialValues.Guid || null);
+      const currentId = values && (values.id || values.Guid || null);
+
+      // If incoming values represent a different entity (different id), replace values.
+      if (incomingId && incomingId !== currentId) {
+        setValues({ ...initialValues });
+        return;
+      }
+
+      // If there is no id (new entity flow), avoid overwriting the user's in-progress edits
+      // when parent updates props (for example, when a derived `proposalTotal` changes).
+      // Only initialize empty values on first mount when values are empty.
+      if (!incomingId && (!values || Object.keys(values).length === 0)) {
+        setValues({ ...initialValues });
+      }
+    } catch (err) {
+      // fallback to safe behavior
+      setValues({ ...initialValues });
+    }
   }, [initialValues]);
 
   const handleChange = (e) => {
