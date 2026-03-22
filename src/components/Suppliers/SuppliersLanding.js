@@ -5,23 +5,39 @@ import { useRouter } from 'next/navigation';
 import { FiEdit2, FiEye } from 'react-icons/fi';
 import DropdownAction from '../ui/DropdownAction/DropdownAction';
 import Landing from '../ui/Landing/Landing';
-import { sampleSuppliers } from './suppliersData';
-import { sampleCustomers } from '../Customers/customersData';
+import { getSuppliers } from '../../services/Supplier';
+import { useEffect } from 'react';
 
 const baseColumns = [
-  // { header: 'Id', key: 'id' },
   { header: 'Code', key: 'code' },
   { header: 'Name', key: 'name' },
-  { header: 'CustomerNameId', key: 'CustomerNameId' },
+  { header: 'Customer', key: 'customerName' },
+  { header: 'Company', key: 'companyName' },
+  { header: 'Contact', key: 'contactNumber' },
+  { header: 'Email', key: 'email' },
   { header: 'UpdatedBy', key: 'updatedBy' },
-  { header: 'UpdatedDate', key: 'updatedDate' },
+  { header: 'UpdatedDate', key: 'updatedAt' },
 ];
 
 export default function SuppliersLanding() {
-  const [suppliers] = useState(sampleSuppliers);
+  const [suppliers, setSuppliers] = useState([]);
   const router = useRouter();
 
-  const customerMap = useMemo(() => Object.fromEntries(sampleCustomers.map((c) => [c.id, c.customerName])), []);
+  useEffect(() => {
+    let mounted = true;
+    async function load() {
+      const res = await getSuppliers();
+      if (!mounted) return;
+      if (res.error || !res.data) {
+        console.error('Failed to load suppliers', res.error);
+        setSuppliers([]);
+        return;
+      }
+      setSuppliers(res.data || []);
+    }
+    load();
+    return () => { mounted = false; };
+  }, []);
 
   const actionItems = useMemo(
     () => [
@@ -33,20 +49,21 @@ export default function SuppliersLanding() {
 
   const columns = useMemo(() => {
     const cols = baseColumns.map((col) => {
-      if (col.key === 'CustomerNameId') {
-        return { ...col, header: 'Customer', render: (item) => customerMap[item.CustomerNameId] ?? item.CustomerNameId };
+      if (col.key === 'customerName') {
+        return { ...col, render: (item) => item.customerName || '' };
+      }
+      if (col.key === 'isDeleted') {
+        return { ...col, render: (item) => (item.isDeleted ? 'Yes' : 'No') };
       }
       return col;
     });
     return [...cols, { header: 'Action', key: 'actions', align: 'right', render: (item) => <DropdownAction item={item} items={actionItems} /> }];
-  }, [actionItems, customerMap]);
+  }, [actionItems]);
 
   const supplierStats = useMemo(() => {
     const total = suppliers.length;
-    const byCustomerRefs = new Set(suppliers.map((s) => s.CustomerNameId).filter(Boolean)).size;
     return [
       { key: 'total', label: 'Total Suppliers', number: total, change: `${total} records`, isPositive: true },
-      { key: 'refs', label: 'Customer Refs', number: byCustomerRefs, change: `${byCustomerRefs} unique`, isPositive: true },
     ];
   }, [suppliers]);
 
