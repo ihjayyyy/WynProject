@@ -1,11 +1,11 @@
 'use client';
 
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { FiEdit2, FiEye } from 'react-icons/fi';
 import DropdownAction from '../ui/DropdownAction/DropdownAction';
-import { sampleRacks } from './rackData';
-import { sampleWarehouses } from '../Warehouse/warehouseData';
+import { getRacks } from '../../services/Rack';
+import { getWarehouses } from '../../services/Warehouse';
 import Landing from '../ui/Landing/Landing';
 
 const baseColumns = [
@@ -14,11 +14,24 @@ const baseColumns = [
   { header: 'Name', key: 'name' },
   { header: 'Warehouse', key: 'warehouseId' },
   { header: 'UpdatedBy', key: 'updatedBy' },
-  { header: 'UpdatedDate', key: 'updatedDate' },
+  { header: 'UpdatedDate', key: 'updatedAt', render: (item) => (item.updatedAt ? new Date(item.updatedAt).toLocaleString() : '') },
 ];
 
 export default function RackLanding() {
-  const [racks] = useState(sampleRacks);
+  const [racks, setRacks] = useState([]);
+  const [warehouses, setWarehouses] = useState([]);
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await getRacks();
+        if (!cancelled && !res?.error) setRacks(res.data || []);
+        const res2 = await getWarehouses();
+        if (!cancelled && !res2?.error) setWarehouses(res2.data || []);
+      } catch (e) {}
+    })();
+    return () => { cancelled = true; };
+  }, []);
   const router = useRouter();
 
   const actionItems = useMemo(
@@ -62,7 +75,7 @@ export default function RackLanding() {
     ];
   }, [racks]);
 
-  const getWarehouseName = (id) => sampleWarehouses.find((w) => w.id === id)?.name || id;
+  const getWarehouseName = (id) => warehouses.find((w) => w.id === id)?.name || id;
 
   const displayedColumns = useMemo(
     () =>

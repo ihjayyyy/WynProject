@@ -12,7 +12,7 @@ const baseColumns = [
   { header: 'Name', key: 'name' },
   { header: 'Location', key: 'location' },
   { header: 'UpdatedBy', key: 'updatedBy' },
-  { header: 'UpdatedDate', key: 'updatedAt' },
+  { header: 'UpdatedDate', key: 'updatedAt',render: (item) => (item.updatedAt ? new Date(item.updatedAt).toLocaleString() : '') },
 ];
 
 export default function WarehouseLanding() {

@@ -1,14 +1,14 @@
 'use client';
 
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useSearchParams } from 'next/navigation';
 import { FiBox } from 'react-icons/fi';
 import EntityForm from '../EntityForm/EntityForm';
 import Button from '../ui/Button/Button';
 import { initialMaterialInventoryState, sampleMaterialInventory } from './materialInventoryData';
-import { sampleMaterials } from '../Materials/materialsData';
-import { sampleRacks } from '../Rack/rackData';
+import { byTypeMaterials as fetchByTypeMaterials } from '../../services/Materials';
+import { getRacks } from '../../services/Rack';
 
 export default function MaterialInventoryForm() {
   const router = useRouter();
@@ -16,7 +16,19 @@ export default function MaterialInventoryForm() {
   const inventoryId = searchParams.get('id');
   const mode = searchParams.get('mode');
   const [isEditModeLocal, setIsEditModeLocal] = useState(false);
+  const [racks, setRacks] = useState([]);
   const isEditMode = mode === 'edit' || isEditModeLocal;
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await getRacks();
+        if (!cancelled && !res?.error) setRacks(res.data || []);
+      } catch (e) {}
+    })();
+    return () => { cancelled = true; };
+  }, []);
 
   const initialValues = useMemo(() => {
     if (!inventoryId) return initialMaterialInventoryState;
@@ -37,14 +49,26 @@ export default function MaterialInventoryForm() {
   }, [inventoryId, isEditMode]);
 
   const materialOptions = useMemo(() => {
-    return (sampleMaterials || [])
-      .filter((m) => m.materialType === 'material')
+    return (materials || [])
       .map((m) => ({ label: `${m.code ? m.code + ' - ' : ''}${m.name}`, value: m.id }));
   }, []);
 
-  const rackOptions = useMemo(() => {
-    return (sampleRacks || []).map((r) => ({ label: `${r.code ? r.code + ' - ' : ''}${r.name}`, value: r.id }));
+  const [materials, setMaterials] = useState([]);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetchByTypeMaterials({ materialType: 'Material', isAssembly: false });
+        if (!cancelled && !res?.error) setMaterials(res.data || []);
+      } catch (e) {}
+    })();
+    return () => { cancelled = true; };
   }, []);
+
+  const rackOptions = useMemo(() => {
+    return (racks || []).map((r) => ({ label: `${r.code ? r.code + ' - ' : ''}${r.name}`, value: r.id }));
+  }, [racks]);
 
   const fields = [
     { name: 'name', label: 'Name', span: 'span2' },

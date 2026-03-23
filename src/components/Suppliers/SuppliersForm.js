@@ -6,6 +6,7 @@ import { useSearchParams } from 'next/navigation';
 import { FiPackage } from 'react-icons/fi';
 import EntityForm from '../EntityForm/EntityForm';
 import Button from '../ui/Button/Button';
+import { useToast } from '../ui/Toast/Toast';
 // customer options will be loaded from the API in the future; remove sample data import
 import { getSuppliers, createSupplier, updateSupplier, INITIAL_SUPPLIER } from '../../services/Supplier';
 
@@ -18,6 +19,7 @@ export default function SuppliersForm() {
   const isEditMode = mode === 'edit' || isEditModeLocal;
 
   const [initialValues, setInitialValues] = useState(INITIAL_SUPPLIER);
+  const toast = useToast();
 
   useEffect(() => {
     let mounted = true;
@@ -95,27 +97,28 @@ export default function SuppliersForm() {
         if (!supplierId) {
           try {
             const result = await createSupplier(payload);
-            if (result.error) throw new Error(result.error);
-            let created = null;
-            if (result.data) {
-              if (Array.isArray(result.data.value) && result.data.value.length > 0) created = result.data.value[0];
-              else if (result.data.value && typeof result.data.value === 'object') created = result.data.value;
-              else created = result.data;
+            if (result?.error) {
+              toast.error('Failed to create supplier');
+            } else {
+              toast.success('Supplier created');
             }
             // After create, redirect to landing
             return '/suppliers';
           } catch (err) {
             console.error('Create supplier failed', err);
+            toast.error('Failed to create supplier');
             return '/suppliers';
           }
         }
 
         try {
           const result = await updateSupplier(supplierId, payload);
-          if (result.error) throw new Error(result.error);
+          if (result?.error) toast.error('Failed to save supplier');
+          else toast.success('Supplier saved');
           return '/suppliers';
         } catch (err) {
           console.error('Update supplier failed', err);
+          toast.error('Failed to save supplier');
           return '/suppliers';
         }
       }}

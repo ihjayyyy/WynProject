@@ -6,7 +6,8 @@ import { useSearchParams } from 'next/navigation';
 import { FiUsers } from 'react-icons/fi';
 import EntityForm from '../EntityForm/EntityForm';
 import Button from '../ui/Button/Button';
-import { initialCustomerState, sampleCustomers } from './customersData';
+import { useToast } from '../ui/Toast/Toast';
+import { INITIAL_CUSTOMER, getCustomers, createCustomer, updateCustomer } from '../../services/Customer';
 
 export default function CustomersForm() {
   const router = useRouter();
@@ -16,20 +17,31 @@ export default function CustomersForm() {
   const [isEditModeLocal, setIsEditModeLocal] = useState(false);
   const isEditMode = mode === 'edit' || isEditModeLocal;
 
-  const initialValues = useMemo(() => {
-    if (!customerId) {
-      return initialCustomerState;
-    }
+  const [customers, setCustomers] = useState(null);
+  const toast = useToast();
 
-    const selectedCustomer = sampleCustomers.find((item) => item.id === customerId);
-    return selectedCustomer || initialCustomerState;
+  React.useEffect(() => {
+    let mounted = true;
+    if (!customerId) return;
+    (async () => {
+      const res = await getCustomers();
+      if (!mounted) return;
+      if (!res.error) setCustomers(res.data || []);
+    })();
+    return () => (mounted = false);
   }, [customerId]);
 
+  const initialValues = useMemo(() => {
+    if (!customerId) return INITIAL_CUSTOMER;
+    const selectedCustomer = (customers || []).find((item) => String(item.id) === String(customerId));
+    return selectedCustomer || INITIAL_CUSTOMER;
+  }, [customerId, customers]);
+
   const { isReadOnly, canEnterEditMode } = useMemo(() => {
-    const exists = Boolean(customerId && sampleCustomers.some((item) => item.id === customerId));
+    const exists = Boolean(customerId && (customers || []).some((item) => String(item.id) === String(customerId)));
     const readOnly = exists && !isEditMode;
     return { isReadOnly: readOnly, canEnterEditMode: exists };
-  }, [customerId, isEditMode]);
+  }, [customerId, isEditMode, customers]);
 
   const formTitle = useMemo(() => {
     if (!customerId) return 'Customers Form';
@@ -38,7 +50,6 @@ export default function CustomersForm() {
   }, [customerId, isEditMode]);
 
   const fields = [
-    { name: 'id', label: 'Id', span: 'span2' },
     { name: 'code', label: 'Code', span: 'span2' },
     { name: 'name', label: 'Name', span: 'span2' },
     { name: 'customerName', label: 'Customer Name', span: 'span2' },
@@ -57,36 +68,22 @@ export default function CustomersForm() {
       fields={fields}
       initialValues={initialValues}
       onSubmit={async (values) => {
-        const now = new Date().toISOString().slice(0, 10);
-        // Create
+        // Only send fields expected by the API
+        const { name, code, customerName, contactNumber, address, companyName, email } = values || {};
+        const payload = { name, code, customerName, contactNumber, address, companyName, email };
+
         if (!customerId) {
-          const nextNumber = (sampleCustomers || []).reduce((max, item) => {
-            const parts = (item.id || '').split('-');
-            const num = Number(parts[1]) || 0;
-            return Math.max(max, num);
-          }, 0) + 1;
-          const newId = `CUST-${String(nextNumber).padStart(4, '0')}`;
-          const newItem = {
-            ...values,
-            id: newId,
-            createdBy: 'You',
-            createdDate: now,
-            updatedBy: 'You',
-            updatedDate: now,
-          };
-          sampleCustomers.push(newItem);
+          const res = await createCustomer(payload);
+          if (res?.error) toast.error('Failed to create customer');
+          else toast.success('Customer created');
+          try { router.push('/customers'); } catch (err) { }
           return '/customers';
         }
 
-        // Update
-        const idx = (sampleCustomers || []).findIndex((i) => i.id === customerId);
-        const updatedItem = {
-          ...values,
-          id: customerId,
-          updatedBy: 'You',
-          updatedDate: now,
-        };
-        if (idx !== -1) sampleCustomers[idx] = updatedItem;
+        const res = await updateCustomer(customerId, payload);
+        if (res?.error) toast.error('Failed to save customer');
+        else toast.success('Customer saved');
+        try { router.push('/customers'); } catch (err) { }
         return '/customers';
       }}
       backPath="/customers"

@@ -8,30 +8,41 @@ import StatusBadge from '../ui/StatusBadge/StatusBadge';
 import DropdownAction from '../ui/DropdownAction/DropdownAction';
 import ConfirmModal from '../ui/ConfirmModal/ConfirmModal';
 import StatsCard from '../ui/StatsCard/StatsCard';
-import { sampleInquiries } from './inquiryData';
+import { getInquiries, updateInquiry } from '../../services/Inquiry';
+import { useToast } from '../ui/Toast/Toast';
 
 const baseColumns = [
   { header: 'Id', key: 'id' },
   { header: 'Code', key: 'code' },
   { header: 'Name', key: 'name' },
-  { header: 'Requested By', key: 'requestedBy' },
-  { header: 'Request Date', key: 'requestDate' },
-  {
-    header: 'Approval Status',
-    key: 'approvalStatus',
-    render: (item) => <StatusBadge status={item.approvalStatus} />,
-  },
+  { header: 'Company', key: 'companyName' },
+  { header: 'Contact Person', key: 'contactPerson' },
+  { header: 'Contact Number', key: 'contactNumber' },
+  { header: 'Email', key: 'email' },
+  { header: 'Attention', key: 'attention' },
   { header: 'Reference', key: 'reference' },
-  { header: 'Date', key: 'date' },
-      { header: 'UpdatedBy', key: 'updatedBy' },
-  { header: 'UpdatedDate', key: 'updatedDate' },
+  { header: 'Date', key: 'date', render: (item) => (item.date ? new Date(item.date).toLocaleString() : '') },
+  { header: 'Updated At', key: 'updatedAt', render: (item) => (item.updatedAt ? new Date(item.updatedAt).toLocaleString() : '') },
 ];
 
 export default function InquiryLanding() {
   const [searchTerm, setSearchTerm] = useState('');
-  const [inquiries, setInquiries] = useState(sampleInquiries);
+  const [inquiries, setInquiries] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [confirmAction, setConfirmAction] = useState(null);
   const router = useRouter();
+  const toast = useToast();
+
+  React.useEffect(() => {
+    let mounted = true;
+    (async () => {
+      const res = await getInquiries();
+      if (!mounted) return;
+      if (!res.error) setInquiries(res.data || []);
+      setLoading(false);
+    })();
+    return () => (mounted = false);
+  }, []);
 
   const handleStatusChange = useCallback((id, approvalStatus) => {
     setInquiries((prev) => prev.map((item) => (item.id === id ? { ...item, approvalStatus } : item)));
@@ -41,9 +52,18 @@ export default function InquiryLanding() {
 
   const confirmStatusChange = useCallback(() => {
     if (!confirmAction) return;
-    handleStatusChange(confirmAction.id, confirmAction.approvalStatus);
-    if (confirmAction.approvalStatus === 'Approved') router.push(`/projects/proposal/proposalform?inquiryId=${confirmAction.id}`);
-    closeConfirm();
+    (async () => {
+      try {
+        const res = await updateInquiry(confirmAction.id, { approvalStatus: confirmAction.approvalStatus });
+        if (res?.error) toast.error('Failed to update inquiry status');
+        else toast.success('Inquiry status updated');
+      } catch (err) {
+        toast.error('Failed to update inquiry status');
+      }
+      handleStatusChange(confirmAction.id, confirmAction.approvalStatus);
+      if (confirmAction.approvalStatus === 'Approved') router.push(`/projects/proposal/proposalform?inquiryId=${confirmAction.id}`);
+      closeConfirm();
+    })();
   }, [confirmAction, handleStatusChange, closeConfirm, router]);
 
   const actionItems = useMemo(
@@ -87,19 +107,32 @@ export default function InquiryLanding() {
 
   const inquiryStats = useMemo(() => {
     const total = inquiries.length;
-    const approved = inquiries.filter((item) => item.approvalStatus === 'Approved').length;
-    const pending = inquiries.filter((item) => item.approvalStatus === 'Pending').length;
-    const cancelled = inquiries.filter((item) => item.approvalStatus === 'Cancelled').length;
+    const companies = new Set(inquiries.map((i) => i.companyName).filter(Boolean)).size;
+    const withEmail = inquiries.filter((i) => i.email).length;
+    const withContact = inquiries.filter((i) => i.contactNumber).length;
     return [
       { key: 'total', label: 'Total Inquiries', number: total, change: `${total} records`, isPositive: true },
-      { key: 'pending', label: 'Pending', number: pending, change: total ? `${Math.round((pending / total) * 100)}%` : '0%', isPositive: pending === 0 },
-      { key: 'approved', label: 'Approved', number: approved, change: total ? `${Math.round((approved / total) * 100)}%` : '0%', isPositive: true },
-      { key: 'cancelled', label: 'Cancelled', number: cancelled, change: total ? `${Math.round((cancelled / total) * 100)}%` : '0%', isPositive: false },
+      { key: 'companies', label: 'Companies', number: companies, change: `${companies} unique`, isPositive: true },
+      { key: 'email', label: 'With Email', number: withEmail, change: `${withEmail}/${total || 0}`, isPositive: true },
+      { key: 'contact', label: 'With Contact', number: withContact, change: `${withContact}/${total || 0}`, isPositive: true },
     ];
   }, [inquiries]);
 
   const filterFn = (item, keyword) => {
-    return [item.id, item.requestedBy, item.approvalStatus, item.responseBy, item.reference, item.code, item.name, item.details]
+    return [
+      item.id,
+      item.code,
+      item.name,
+      item.companyName,
+      item.contactPerson,
+      item.contactNumber,
+      item.email,
+      item.attention,
+      item.preparedBy,
+      item.notedBy,
+      item.reference,
+      item.details,
+    ]
       .filter(Boolean)
       .some((value) => String(value).toLowerCase().includes(keyword));
   };

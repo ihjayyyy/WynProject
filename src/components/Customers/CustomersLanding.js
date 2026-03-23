@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { FiEdit2, FiEye } from 'react-icons/fi';
 import DropdownAction from '../ui/DropdownAction/DropdownAction';
 import Landing from '../ui/Landing/Landing';
-import { sampleCustomers } from './customersData';
+import { getCustomers } from '../../services/Customer';
 
 const baseColumns = [
   { header: 'Id', key: 'id' },
@@ -17,11 +17,12 @@ const baseColumns = [
   { header: 'Company Name', key: 'companyName' },
   { header: 'Email', key: 'email' },
   { header: 'UpdatedBy', key: 'updatedBy' },
-  { header: 'UpdatedDate', key: 'updatedDate' },
+  { header: 'UpdatedDate', key: 'updatedAt', render: (item) => (item.updatedAt ? new Date(item.updatedAt).toLocaleString() : '') },
 ];
 
 export default function CustomersLanding() {
-  const [customers] = useState(sampleCustomers);
+  const [customers, setCustomers] = useState([]);
+  const [loading, setLoading] = useState(true);
   const router = useRouter();
 
   const actionItems = useMemo(
@@ -46,6 +47,21 @@ export default function CustomersLanding() {
       { key: 'contact', label: 'With Contact', number: withContact, change: `${withContact}/${total || 0}`, isPositive: true },
     ];
   }, [customers]);
+
+  React.useEffect(() => {
+    let mounted = true;
+    (async () => {
+      const res = await getCustomers();
+      if (!mounted) return;
+      if (res.error) {
+        setCustomers([]);
+      } else {
+        setCustomers(res.data || []);
+      }
+      setLoading(false);
+    })();
+    return () => (mounted = false);
+  }, []);
 
   const filterFn = (item, keyword) => {
     return [

@@ -7,8 +7,8 @@ import DataTable from '../ui/DataTable/DataTable';
 import DropdownAction from '../ui/DropdownAction/DropdownAction';
 import ProposalMaterialsModal from '../Proposal/ProposalMaterials/ProposalMaterialsModal';
 import { sampleAssemblyMaterials } from './assemblyData';
-import { sampleMaterials } from '../Materials/materialsData';
 import { sampleMaterialInventory } from '../Inventory/materialInventoryData';
+import { getMaterials } from '../../services/Materials';
 import styles from './AssemblyMaterialsTable.module.scss';
 
 export default function AssemblyMaterialsTable({ assemblyId, allowCreateBeforeSave = false, initialMaterials = null, onCreateMaterial, readOnly = false }) {
@@ -16,6 +16,7 @@ export default function AssemblyMaterialsTable({ assemblyId, allowCreateBeforeSa
   const [materialsState, setMaterialsState] = useState([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editing, setEditing] = useState(null);
+  const [materials, setMaterials] = useState([]);
 
   useEffect(() => {
     if (!assemblyId) {
@@ -75,7 +76,7 @@ export default function AssemblyMaterialsTable({ assemblyId, allowCreateBeforeSa
     const mapName = (mid) => {
       const inv = (sampleMaterialInventory || []).find((si) => si.materialId === mid);
       if (inv && inv.name) return inv.name;
-      const mat = (sampleMaterials || []).find((s) => s.id === mid);
+      const mat = (materials || []).find((s) => s.id === mid);
       return (mat && (mat.name || mat.code)) || '';
     };
 
@@ -85,6 +86,17 @@ export default function AssemblyMaterialsTable({ assemblyId, allowCreateBeforeSa
       .map((m) => ({ ...m, materialName: mapName(m.materialId) }))
       .filter((m) => [m.id, m.materialId, m.materialName, String(m.quantity), m.uom].filter(Boolean).some((v) => String(v).toLowerCase().includes(k)));
   }, [combined, searchTerm]);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await getMaterials();
+        if (!cancelled && !res?.error) setMaterials(res.data || []);
+      } catch (e) {}
+    })();
+    return () => { cancelled = true; };
+  }, []);
 
   if (!assemblyId && !allowCreateBeforeSave) return null;
 
@@ -100,14 +112,14 @@ export default function AssemblyMaterialsTable({ assemblyId, allowCreateBeforeSa
         scopeName={null}
         initial={editing}
         onCancel={() => { setIsModalOpen(false); setEditing(null); }}
-        onConfirm={(m) => {
+            onConfirm={(m) => {
           const mat = {
             id: editing?.id || `AM-${Date.now()}`,
             assemblyId: assemblyId || '',
             materialId: m.materialId || m.code || m.id || '',
             materialName: m.name || '',
             quantity: m.quantity || m.qty || '',
-            uom: (sampleMaterials.find(s => s.id === (m.materialId || m.code || m.id)) || {}).uom || '',
+                uom: (materials.find(s => s.id === (m.materialId || m.code || m.id)) || {}).uom || '',
             createdBy: m.createdBy || 'You',
             createdDate: m.createdDate || new Date().toISOString().slice(0,10),
           };

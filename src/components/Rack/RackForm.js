@@ -6,8 +6,10 @@ import { useSearchParams } from 'next/navigation';
 import { FiLayers } from 'react-icons/fi';
 import EntityForm from '../EntityForm/EntityForm';
 import Button from '../ui/Button/Button';
-import { initialRackState, sampleRacks } from './rackData';
-import { sampleWarehouses } from '../Warehouse/warehouseData';
+import { useToast } from '../ui/Toast/Toast';
+import { getRacks, createRack, updateRack, INITIAL_RACK } from '../../services/Rack';
+import { getWarehouses } from '../../services/Warehouse';
+import { useEffect } from 'react';
 
 export default function RackForm() {
   const router = useRouter();
@@ -15,19 +17,37 @@ export default function RackForm() {
   const rackId = searchParams.get('id');
   const mode = searchParams.get('mode');
   const [isEditModeLocal, setIsEditModeLocal] = useState(false);
+  const [racks, setRacks] = useState([]);
+  const toast = useToast();
+  const [warehouses, setWarehouses] = useState([]);
   const isEditMode = mode === 'edit' || isEditModeLocal;
 
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await getRacks();
+        if (!cancelled && !res?.error) setRacks(res.data || []);
+        const res2 = await getWarehouses();
+        if (!cancelled && !res2?.error) setWarehouses(res2.data || []);
+      } catch (e) {
+        // ignore
+      }
+    })();
+    return () => { cancelled = true; };
+  }, []);
+
   const initialValues = useMemo(() => {
-    if (!rackId) return initialRackState;
-    const selected = sampleRacks.find((r) => r.id === rackId);
-    return selected || initialRackState;
-  }, [rackId]);
+    if (!rackId) return INITIAL_RACK;
+    const selected = (racks || []).find((r) => String(r.id) === String(rackId));
+    return selected || INITIAL_RACK;
+  }, [rackId, racks]);
 
   const { isReadOnly, canEnterEditMode } = useMemo(() => {
-    const exists = Boolean(rackId && sampleRacks.some((r) => r.id === rackId));
+    const exists = Boolean(rackId && (racks || []).some((r) => String(r.id) === String(rackId)));
     const readOnly = exists && !isEditMode;
     return { isReadOnly: readOnly, canEnterEditMode: exists };
-  }, [rackId, isEditMode]);
+  }, [rackId, isEditMode, racks]);
 
   const formTitle = useMemo(() => {
     if (!rackId) return 'Rack Form';
@@ -35,12 +55,12 @@ export default function RackForm() {
     return 'View Rack';
   }, [rackId, isEditMode]);
 
-  const warehouseOptions = sampleWarehouses.map((w) => ({ label: w.name, value: w.id }));
+  const warehouseOptions = (warehouses || []).map((w) => ({ label: w.name, value: w.id }));
 
   const fields = [
     { name: 'code', label: 'Code', span: 'span2' },
     { name: 'name', label: 'Name', span: 'span2' },
-    { name: 'id', label: 'Id', span: 'span2' },
+    
     { name: 'spacer-1', type: 'spacer', span: 'span1' },
     { name: 'warehouseId', label: 'Warehouse', type: 'select', options: warehouseOptions, searchable: true, span: 'span1' },
   ];
@@ -53,20 +73,19 @@ export default function RackForm() {
       fields={fields}
       initialValues={initialValues}
       onSubmit={async (values) => {
-        const now = new Date().toISOString().slice(0, 10);
         if (!rackId) {
-          const nextNumber = (sampleRacks || []).reduce((max, item) => {
-            const num = Number(String(item.id || '').replace(/[^0-9]/g, '')) || 0;
-            return Math.max(max, num);
-          }, 0) + 1;
-          const newId = `R${nextNumber}`;
-          const newItem = { ...values, id: newId, createdBy: 'You', createdDate: now, updatedBy: 'You', updatedDate: now };
-          (sampleRacks || []).push(newItem);
-          return `/storagesettings/rack/rackform?id=${newId}`;
+          const res = await createRack(values);
+          if (res?.error) toast.error('Failed to create rack');
+          else toast.success('Rack created');
+          const data = res?.data;
+          let newId = null;
+          if (data && data.value && Array.isArray(data.value) && data.value.length > 0) newId = data.value[0].id;
+          else if (data && data.id) newId = data.id;
+          return `/storagesettings/rack/rackform?id=${newId || ''}`;
         }
-        const idx = (sampleRacks || []).findIndex((r) => r.id === rackId);
-        const updatedItem = { ...values, id: rackId, updatedBy: 'You', updatedDate: now };
-        if (idx !== -1) sampleRacks[idx] = updatedItem;
+        const res = await updateRack(rackId, values);
+        if (res?.error) toast.error('Failed to save rack');
+        else toast.success('Rack saved');
         return `/storagesettings/rack/rackform?id=${rackId}`;
       }}
       backPath="/storagesettings/rack"
@@ -98,3 +117,6 @@ export default function RackForm() {
     />
   );
 }
+
+// load racks when component mounts or rackId changes
+// racks are loaded in a component-level effect above

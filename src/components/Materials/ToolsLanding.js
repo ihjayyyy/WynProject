@@ -1,11 +1,11 @@
  'use client';
 
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { FiEdit2, FiEye } from 'react-icons/fi';
 import DropdownAction from '../ui/DropdownAction/DropdownAction';
 import Landing from '../ui/Landing/Landing';
-import { sampleMaterials } from './materialsData';
+import { byTypeMaterials } from '../../services/Materials';
 
 const baseColumns = [
   { header: 'Id', key: 'id' },
@@ -14,12 +14,26 @@ const baseColumns = [
   { header: 'UOM', key: 'uom' },
   { header: 'UnitCost', key: 'unitCost' },
   { header: 'UpdatedBy', key: 'updatedBy' },
-  { header: 'UpdatedDate', key: 'updatedDate' },
+  { header: 'UpdatedDate', key: 'updatedAt', render: (item) => (item.updatedAt ? new Date(item.updatedAt).toLocaleString() : '') },
 ];
 
 export default function ToolsLanding() {
   const router = useRouter();
-  const [inventory] = useState(() => sampleMaterials.filter((i) => i.materialType === 'tool'));
+  const [inventory, setInventory] = useState([]);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await byTypeMaterials({ materialType: 'Tool', isAssembly: false });
+        if (!cancelled && !res?.error) {
+          const items = (res.data || []).map((m) => ({ ...m, uom: m.unitOfMeasure, unitCost: m.unitCost }));
+          setInventory(items);
+        }
+      } catch (e) {}
+    })();
+    return () => { cancelled = true; };
+  }, []);
 
   const actionItems = useMemo(
     () => [
@@ -49,7 +63,7 @@ export default function ToolsLanding() {
       item.createdBy,
       item.createdDate,
       item.updatedBy,
-      item.updatedDate,
+      item.updatedAt,
       item.code,
       item.name,
     ]

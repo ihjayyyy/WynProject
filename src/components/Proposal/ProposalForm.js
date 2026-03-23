@@ -10,7 +10,7 @@ import {
   initialProposalFormState,
   sampleProposals,
 } from './proposalData';
-import { sampleCustomers } from '../Customers/customersData';
+import { getCustomers } from '../../services/Customer';
 import ProposalScopeTable from './ProposalScope/ProposalScopeTable';
 import ConfirmModal from '../ui/ConfirmModal/ConfirmModal';
 import StatusBadge from '../ui/StatusBadge/StatusBadge';
@@ -36,12 +36,24 @@ export default function ProposalForm() {
     return selectedProposal || initialProposalFormState;
   }, [proposalId, inquiryIdFromQuery]);
 
+  const [customers, setCustomers] = useState([]);
+
+  React.useEffect(() => {
+    let mounted = true;
+    (async () => {
+      const res = await getCustomers();
+      if (!mounted) return;
+      if (!res.error) setCustomers(res.data || []);
+    })();
+    return () => (mounted = false);
+  }, []);
+
   const customerOptions = useMemo(() => {
-    return (sampleCustomers || []).map((c) => ({
+    return (customers || []).map((c) => ({
       value: c.id,
       label: c.customerName || c.name || c.companyName || c.id,
     }));
-  }, []);
+  }, [customers]);
 
   const { isReadOnly, canEnterEditMode } = useMemo(() => {
     const exists = Boolean(proposalId && sampleProposals.some((item) => item.id === proposalId));
@@ -183,7 +195,7 @@ export default function ProposalForm() {
       searchable: true,
       span: 'span1',
       onChange: (value, allValues, setValues) => {
-        const cust = (sampleCustomers || []).find((c) => c.id === value);
+        const cust = (customers || []).find((c) => c.id === value);
         if (!cust) return;
         setValues((prev) => ({
           ...prev,

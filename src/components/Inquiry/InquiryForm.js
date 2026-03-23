@@ -6,7 +6,8 @@ import { useSearchParams } from 'next/navigation';
 import { FiMessageSquare } from 'react-icons/fi';
 import EntityForm from '../EntityForm/EntityForm';
 import Button from '../ui/Button/Button';
-import { initialInquiryFormState, sampleInquiries } from './inquiryData';
+import { useToast } from '../ui/Toast/Toast';
+import { INITIAL_INQUIRY, getInquiries, createInquiry, updateInquiry } from '../../services/Inquiry';
 
 export default function InquiryForm() {
   const router = useRouter();
@@ -16,20 +17,31 @@ export default function InquiryForm() {
   const [isEditModeLocal, setIsEditModeLocal] = useState(false);
   const isEditMode = mode === 'edit' || isEditModeLocal;
 
-  const initialValues = useMemo(() => {
-    if (!inquiryId) {
-      return initialInquiryFormState;
-    }
+  const [inquiries, setInquiries] = useState(null);
+  const toast = useToast();
 
-    const selectedInquiry = sampleInquiries.find((item) => item.id === inquiryId);
-    return selectedInquiry || initialInquiryFormState;
+  React.useEffect(() => {
+    let mounted = true;
+    if (!inquiryId) return;
+    (async () => {
+      const res = await getInquiries();
+      if (!mounted) return;
+      if (!res.error) setInquiries(res.data || []);
+    })();
+    return () => (mounted = false);
   }, [inquiryId]);
 
+  const initialValues = useMemo(() => {
+    if (!inquiryId) return INITIAL_INQUIRY;
+    const selectedInquiry = (inquiries || []).find((item) => String(item.id) === String(inquiryId));
+    return selectedInquiry || INITIAL_INQUIRY;
+  }, [inquiryId, inquiries]);
+
   const { isReadOnly, canEnterEditMode } = useMemo(() => {
-    const exists = Boolean(inquiryId && sampleInquiries.some((item) => item.id === inquiryId));
+    const exists = Boolean(inquiryId && (inquiries || []).some((item) => String(item.id) === String(inquiryId)));
     const readOnly = exists && !isEditMode;
     return { isReadOnly: readOnly, canEnterEditMode: exists };
-  }, [inquiryId, isEditMode]);
+  }, [inquiryId, isEditMode, inquiries]);
 
   const formTitle = useMemo(() => {
     if (!inquiryId) return 'Inquiry Form';
@@ -38,46 +50,34 @@ export default function InquiryForm() {
   }, [inquiryId, isEditMode]);
 
   const fields = [
-    { name: 'createdBy', label: 'Created By', hidden: true },
-    { name: 'createdDate', label: 'Created Date', type: 'date', hidden: true },
-    { name: 'updatedBy', label: 'Updated By', hidden: true },
-    { name: 'updatedDate', label: 'Updated Date', type: 'date', hidden: true },
-
-    // Row 1: Code (left) | spacer | Approval Status (right)
-    { name: 'code', label: 'Code', span: 'span1' },
+    // Arrange as: left field (span1) | spacer (span1) | right field (span1)
+    { name: 'companyName', label: 'Company Name', span: 'span1' },
     { name: 'spacer-1', type: 'spacer', span: 'span1' },
-    { name: 'approvalStatus', label: 'Approval Status', span: 'span1' },
+    { name: 'code', label: 'Code', span: 'span1' },
 
-    // Row 2: Name (left) | spacer | Response By (right)
     { name: 'name', label: 'Name', span: 'span1' },
     { name: 'spacer-2', type: 'spacer', span: 'span1' },
-    { name: 'responseBy', label: 'Response By', span: 'span1' },
-
-    // Row 3: Requested By (left) | spacer | Response Date (right)
-    { name: 'requestedBy', label: 'Requested By', span: 'span1' },
-    { name: 'spacer-3', type: 'spacer', span: 'span1' },
-    { name: 'responseDate', label: 'Response Date', type: 'date', span: 'span1' },
-
-    // Row 4: Request Date (left) | spacer | Attention (right)
-    { name: 'requestDate', label: 'Request Date', type: 'date', span: 'span1' },
-    { name: 'spacer-4', type: 'spacer', span: 'span1' },
-    { name: 'attention', label: 'Attention', span: 'span1' },
-
-    // Row 5: Prepared By (left) | spacer | Noted By (right)
     { name: 'preparedBy', label: 'Prepared By', span: 'span1' },
-    { name: 'spacer-5', type: 'spacer', span: 'span1' },
+
+    { name: 'contactPerson', label: 'Contact Person', span: 'span1' },
+    { name: 'spacer-3', type: 'spacer', span: 'span1' },
     { name: 'notedBy', label: 'Noted By', span: 'span1' },
 
-    // Row 6: Reference (left) | spacer | Date (right)
+    { name: 'email', label: 'Email', type: 'email', span: 'span1' },
+    { name: 'spacer-4', type: 'spacer', span: 'span1' },
     { name: 'reference', label: 'Reference', span: 'span1' },
-    { name: 'spacer-6', type: 'spacer', span: 'span1' },
+
+    { name: 'contactNumber', label: 'Contact Number', type: 'tel', span: 'span1' },
+    { name: 'spacer-5', type: 'spacer', span: 'span1' },
     { name: 'date', label: 'Date', type: 'date', span: 'span1' },
 
-    // Details full width
-    { name: 'details', label: 'Details', multiline: true, rows: 4, span: 'span3' },
+    { name: 'attention', label: 'Attention', span: 'span1' },
+    { name: 'spacer-6', type: 'spacer', span: 'span1' },
+    { name: 'spacer-7', type: 'spacer', span: 'span1' },
 
-    // Id placed at end so it doesn't disturb the header layout
-    { name: 'id', label: 'Id' },
+    // Full width fields
+    { name: 'address', label: 'Address', span: 'span3', multiline: true, rows: 2 },
+    { name: 'details', label: 'Details', multiline: true, rows: 4, span: 'span3' },
   ];
 
   return (
@@ -87,43 +87,52 @@ export default function InquiryForm() {
       fields={fields}
       initialValues={initialValues}
       onSubmit={async (values) => {
-        const now = new Date().toISOString().slice(0, 10);
+        const now = new Date().toISOString();
+        // Only send fields that are part of the request model
+        const modelPayload = ({
+          code: values.code || '',
+          name: values.name || '',
+          companyName: values.companyName || '',
+          contactNumber: values.contactNumber || '',
+          address: values.address || '',
+          contactPerson: values.contactPerson || '',
+          email: values.email || '',
+          attention: values.attention || '',
+          preparedBy: values.preparedBy || '',
+          notedBy: values.notedBy || '',
+          reference: values.reference || '',
+          date: values.date || '',
+          details: values.details || '',
+        });
+
         if (!inquiryId) {
-          // create new id by incrementing existing numeric suffix
-          const nextNumber = (sampleInquiries || []).reduce((max, item) => {
-            const parts = (item.id || '').split('-');
-            const num = Number(parts[1]) || 0;
-            return Math.max(max, num);
-          }, 0) + 1;
-          const newId = `INQ-${String(nextNumber).padStart(4, '0')}`;
-          const newItem = {
-            ...values,
-            id: newId,
+          const payload = {
+            ...modelPayload,
             createdBy: 'You',
-            createdDate: now,
+            createdAt: now,
             updatedBy: 'You',
-            updatedDate: now,
+            updatedAt: now,
           };
-          (sampleInquiries || []).push(newItem);
-          return `/inquiry/inquiryform?id=${newId}`;
+          const res = await createInquiry(payload);
+          if (res?.error) {
+            toast.error('Failed to create inquiry');
+          } else {
+            toast.success('Inquiry created');
+          }
+          try { router.push('/inquiry'); } catch (err) { }
+          return '/inquiry';
         }
 
-        // update
-        try {
-          const idx = (sampleInquiries || []).findIndex((i) => i.id === inquiryId);
-          if (idx >= 0) {
-            sampleInquiries[idx] = {
-              ...sampleInquiries[idx],
-              ...values,
-              id: inquiryId,
-              updatedBy: 'You',
-              updatedDate: now,
-            };
-          }
-        } catch (err) {
-          console.warn('Failed to update sampleInquiries', err);
-        }
-        return `/inquiry/inquiryform?id=${inquiryId}`;
+        const payload = {
+          ...modelPayload,
+          updatedBy: 'You',
+          updatedAt: now,
+        };
+        const res = await updateInquiry(inquiryId, payload);
+        if (res?.error) toast.error('Failed to save inquiry');
+        else toast.success('Inquiry saved');
+        try { router.push('/inquiry'); } catch (err) { }
+        return '/inquiry';
       }}
       backPath="/inquiry"
       width="100%"

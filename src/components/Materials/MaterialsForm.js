@@ -1,12 +1,13 @@
 'use client';
 
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useSearchParams } from 'next/navigation';
 import { FiBox } from 'react-icons/fi';
 import EntityForm from '../EntityForm/EntityForm';
 import Button from '../ui/Button/Button';
-import { initialMaterialsState, sampleMaterials } from './materialsData';
+import { createMaterial, updateMaterial, getMaterial, INITIAL_MATERIAL } from '../../services/Materials';
+import { useToast } from '../ui/Toast/Toast';
 
 export default function MaterialsForm() {
   const router = useRouter();
@@ -15,18 +16,43 @@ export default function MaterialsForm() {
   const mode = searchParams.get('mode');
   const [isEditModeLocal, setIsEditModeLocal] = useState(false);
   const isEditMode = mode === 'edit' || isEditModeLocal;
+  const toast = useToast();
 
-  const initialValues = useMemo(() => {
-    if (!materialId) return initialMaterialsState;
-    const selected = sampleMaterials.find((item) => item.id === materialId);
-    return selected ? { ...selected, materialType: 'material' } : initialMaterialsState;
+  const [initialValues, setInitialValues] = useState({ ...INITIAL_MATERIAL, materialType: 'Material', isAssembly: false });
+  const [exists, setExists] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      if (!materialId) {
+        setInitialValues({ ...INITIAL_MATERIAL, materialType: 'Material', isAssembly: false });
+        setExists(false);
+        return;
+      }
+      try {
+        const res = await getMaterial(materialId);
+        if (cancelled) return;
+        if (res?.error || !res?.data) {
+          setInitialValues({ ...INITIAL_MATERIAL, materialType: 'Material', isAssembly: false });
+          setExists(false);
+        } else {
+          setInitialValues({ ...res.data, materialType: 'Material', isAssembly: false });
+          setExists(true);
+        }
+      } catch (e) {
+        if (!cancelled) {
+          setInitialValues({ ...INITIAL_MATERIAL, materialType: 'Material', isAssembly: false });
+          setExists(false);
+        }
+      }
+    })();
+    return () => { cancelled = true; };
   }, [materialId]);
 
   const { isReadOnly, canEnterEditMode } = useMemo(() => {
-    const exists = Boolean(materialId && sampleMaterials.some((item) => item.id === materialId));
     const readOnly = exists && !isEditMode;
     return { isReadOnly: readOnly, canEnterEditMode: exists };
-  }, [materialId, isEditMode]);
+  }, [exists, isEditMode]);
 
   const formTitle = useMemo(() => {
     if (!materialId) return 'Materials Form';
@@ -39,7 +65,6 @@ export default function MaterialsForm() {
     { name: 'name', label: 'Name', span: 'span2' },
     { name: 'unitCost', label: 'Unit Cost', type: 'number', span: 'span2' },
     { name: 'uom', label: 'UOM', span: 'span2' },
-    { name: 'id', label: 'Id', span: 'span2' },
     { name: 'defaultPurchaseUOM', label: 'Default Purchase UOM', span: 'span2' },
 ];
 
@@ -51,25 +76,52 @@ export default function MaterialsForm() {
       initialValues={initialValues}
       onSubmit={async (values) => {
         const now = new Date().toISOString().slice(0, 10);
-        if (!materialId) {
-          const nextNumber = (sampleMaterials || []).reduce((max, item) => {
-            const num = Number(String(item.id || '').replace(/[^0-9]/g, '')) || 0;
-            return Math.max(max, num);
-          }, 0) + 1;
-          const newId = `M${nextNumber}`;
-          const newItem = { ...values, materialType: 'material', id: newId, createdBy: 'You', createdDate: now, updatedBy: 'You', updatedDate: now };
-          (sampleMaterials || []).push(newItem);
-          return `/materialsSettings/materials/materialsForm?id=${newId}`;
-        }
-        try {
-          const idx = (sampleMaterials || []).findIndex((m) => m.id === materialId);
-          if (idx >= 0) {
-            sampleMaterials[idx] = { ...sampleMaterials[idx], ...values, materialType: 'material', id: materialId, updatedBy: 'You', updatedDate: now };
+          if (!materialId) {
+              const payload = {
+                name: values.name,
+                code: values.code,
+                materialType: 'Material',
+                unitOfMeasure: values.uom || values.unitOfMeasure || '',
+                purchaseUnitOfMeasure: values.defaultPurchaseUOM || values.purchaseUnitOfMeasure || '',
+                unitCost: Number(values.unitCost) || 0,
+                isAssembly: false,
+              };
+            try {
+              const res = await createMaterial(payload);
+              if (res?.error) {
+                console.error('Create material failed', res.error);
+                toast.error('Failed to create material');
+                return `/materialsSettings/materials`;
+              }
+              toast.success('Material created');
+              return `/materialsSettings/materials`;
+            } catch (err) {
+              console.error('Create material exception', err);
+              toast.error('Failed to create material');
+              return `/materialsSettings/materials`;
+            }
           }
-        } catch (err) {
-          console.warn('Failed to update sampleMaterials', err);
-        }
-        return `/materialsSettings/materials/materialsForm?id=${materialId}`;
+          try {
+            const payload = {
+              name: values.name,
+              code: values.code,
+              materialType: 'Material',
+              unitOfMeasure: values.uom || values.unitOfMeasure || '',
+              purchaseUnitOfMeasure: values.defaultPurchaseUOM || values.purchaseUnitOfMeasure || '',
+              unitCost: Number(values.unitCost) || 0,
+              isAssembly: false,
+            };
+            const res = await updateMaterial(materialId, payload);
+              if (res?.error) {
+                console.error('Update material failed', res.error);
+                toast.error('Failed to save material');
+              } else {
+                toast.success('Material saved');
+              }
+            } catch (err) {
+              console.error('Update material exception', err);
+            }
+            return `/materialsSettings/materials`;
       }}
       backPath="/materialsSettings/materials"
       width="100%"

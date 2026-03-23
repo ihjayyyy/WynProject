@@ -7,6 +7,7 @@ import { FiArchive } from 'react-icons/fi';
 import EntityForm from '../EntityForm/EntityForm';
 import Button from '../ui/Button/Button';
 import { createWarehouse, getWarehouses, updateWarehouse, INITIAL_WAREHOUSE } from '../../services/Warehouse';
+import { useToast } from '../ui/Toast/Toast';
 
 export default function WarehouseForm() {
   const router = useRouter();
@@ -19,6 +20,7 @@ export default function WarehouseForm() {
   const [initialValuesState, setInitialValuesState] = useState(INITIAL_WAREHOUSE);
   const [loading, setLoading] = useState(false);
   const [exists, setExists] = useState(false);
+  const toast = useToast();
 
   useEffect(() => {
     let mounted = true;
@@ -99,15 +101,14 @@ export default function WarehouseForm() {
               else if (result.data.value && typeof result.data.value === 'object') created = result.data.value;
               else created = result.data;
             }
-            if (created && (created.id || created.ID)) {
-              const newId = created.id || created.ID;
-              return `/storagesettings/warehouse/warehouseform?id=${newId}`;
-            }
-            // If API didn't return a created id, navigate back to list
-            console.warn('Create returned no id, redirecting to list');
+            // Redirect to landing after create
+            toast.success('Warehouse created');
+            try { router.push('/storagesettings/warehouse'); } catch (err) { }
             return '/storagesettings/warehouse';
           } catch (err) {
             console.error('Create warehouse failed', err);
+            toast.error('Failed to create warehouse');
+            try { router.push('/storagesettings/warehouse'); } catch (e) { }
             return '/storagesettings/warehouse';
           }
         }
@@ -116,10 +117,14 @@ export default function WarehouseForm() {
           const payload = { name: values.name, code: values.code, location: values.location };
           const result = await updateWarehouse(warehouseId, payload);
           if (result.error) throw new Error(result.error);
-          return `/storagesettings/warehouse/warehouseform?id=${warehouseId}`;
+          toast.success('Warehouse updated');
+          try { router.push('/storagesettings/warehouse'); } catch (err) { }
+          return '/storagesettings/warehouse';
         } catch (err) {
           console.error('Update warehouse failed', err);
-          return `/storagesettings/warehouse/warehouseform?id=${warehouseId}`;
+          toast.error('Failed to update warehouse');
+          try { router.push('/storagesettings/warehouse'); } catch (e) { }
+          return '/storagesettings/warehouse';
         }
       }}
       backPath="/storagesettings/warehouse"

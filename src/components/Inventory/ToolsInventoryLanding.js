@@ -1,14 +1,14 @@
 'use client';
 
-import React, { useMemo } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import DropdownAction from '../ui/DropdownAction/DropdownAction';
 import Landing from '../ui/Landing/Landing';
 import { FiEdit2, FiEye } from 'react-icons/fi';
 import { sampleMaterialInventory } from './materialInventoryData';
-import { sampleMaterials } from '../Materials/materialsData';
-import { sampleRacks } from '../Rack/rackData';
-import { sampleWarehouses } from '../Warehouse/warehouseData';
+import { getMaterials } from '../../services/Materials';
+import { getRacks } from '../../services/Rack';
+import { getWarehouses } from '../../services/Warehouse';
 
 const baseColumns = [
   { header: 'Id', key: 'id' },
@@ -24,11 +24,29 @@ const baseColumns = [
 export default function ToolsInventoryLanding() {
   const router = useRouter();
 
-  const materialsMap = useMemo(() => (sampleMaterials || []).reduce((acc, m) => { acc[m.id] = m; return acc; }, {}), []);
+  const [racks, setRacks] = useState([]);
+  const [materials, setMaterials] = useState([]);
+  const [warehouses, setWarehouses] = useState([]);
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await getRacks();
+        if (!cancelled && !res?.error) setRacks(res.data || []);
+        const res2 = await getWarehouses();
+        if (!cancelled && !res2?.error) setWarehouses(res2.data || []);
+        const res3 = await getMaterials();
+        if (!cancelled && !res3?.error) setMaterials((res3.data || []).map((m) => ({ ...m, uom: m.unitOfMeasure, unitCost: m.unitCost })));
+      } catch (e) {}
+    })();
+    return () => { cancelled = true; };
+  }, []);
 
-  const racksMap = useMemo(() => (sampleRacks || []).reduce((acc, r) => { acc[r.id] = r; return acc; }, {}), []);
+  const materialsMap = useMemo(() => (materials || []).reduce((acc, m) => { acc[m.id] = m; return acc; }, {}), [materials]);
 
-  const warehousesMap = useMemo(() => (sampleWarehouses || []).reduce((acc, w) => { acc[w.id] = w.name || w.code || w.id; return acc; }, {}), []);
+  const racksMap = useMemo(() => (racks || []).reduce((acc, r) => { acc[r.id] = r; return acc; }, {}), [racks]);
+
+  const warehousesMap = useMemo(() => (warehouses || []).reduce((acc, w) => { acc[w.id] = w.name || w.code || w.id; return acc; }, {}), [warehouses]);
 
   const inventory = useMemo(() => (sampleMaterialInventory || []).filter((it) => { const mat = materialsMap[it.materialId]; return mat && String(mat.materialType).toLowerCase() === 'tool'; }), [materialsMap]);
 

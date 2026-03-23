@@ -4,13 +4,14 @@ import { createPortal } from 'react-dom';
 import Button from '../../ui/Button/Button';
 import Select from '../../ui/Select/Select';
 import Input from '../../ui/Input/Input';
-import { sampleMaterials } from '../../Materials/materialsData';
+import { byTypeMaterials } from '../../../services/Materials';
 import styles from './ProposalMaterialsModal.module.scss';
 
 export default function ProposalMaterialsModal({ open, onCancel, onConfirm, initial, scopeName }) {
   const [materialId, setMaterialId] = useState(initial?.materialId || '');
   const [name, setName] = useState(initial?.name || '');
   const [quantity, setQuantity] = useState(initial?.quantity || '1');
+  const [materials, setMaterials] = useState([]);
 
   useEffect(() => {
     if (!open) return;
@@ -30,16 +31,27 @@ export default function ProposalMaterialsModal({ open, onCancel, onConfirm, init
   }, [open, onCancel]);
 
   useEffect(() => {
-    const mi = sampleMaterials.find((m) => m.code === materialId || m.id === materialId);
+    const mi = (materials || []).find((m) => m.code === materialId || m.id === materialId);
     if (mi) {
       setName(mi.name || '');
       if (!initial) setQuantity(mi.quantity || '1');
     }
   }, [materialId]);
 
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await byTypeMaterials({ materialType: 'Material', isAssembly: false });
+        if (!cancelled && !res?.error) setMaterials(res.data || []);
+      } catch (e) {}
+    })();
+    return () => { cancelled = true; };
+  }, [open]);
+
   if (!open) return null;
 
-  const selected = sampleMaterials.find((m) => m.code === materialId || m.id === materialId) || {};
+  const selected = (materials || []).find((m) => m.code === materialId || m.id === materialId) || {};
   const unitPrice = Number(selected.unitCost || 0);
   const qty = Number(quantity || 0);
   const total = unitPrice * qty;
@@ -67,7 +79,7 @@ export default function ProposalMaterialsModal({ open, onCancel, onConfirm, init
               id="material-select"
               value={materialId}
               onChange={(e) => setMaterialId(e.target.value)}
-              options={(sampleMaterials || []).map((m) => ({ value: m.code || m.id, label: `${m.code || m.id} — ${m.name}` }))}
+              options={(materials || []).map((m) => ({ value: m.code || m.id, label: `${m.code || m.id} — ${m.name}` }))}
               placeholder="Select material"
               className={styles.select}
             />
@@ -103,3 +115,5 @@ export default function ProposalMaterialsModal({ open, onCancel, onConfirm, init
   }
   return null;
 }
+
+

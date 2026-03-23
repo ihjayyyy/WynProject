@@ -170,42 +170,9 @@ export const sampleProposalScopes = [
     percentage: '30',
   },
 ];
-import { sampleMaterials } from '../Materials/materialsData';
-
 // Derive proposal materials from material inventory for sample data.
-const _baseProposalMaterials = (sampleMaterials || []).map((mi, idx) => {
-  const quantity = mi.quantity || '1';
-  const unitCost = mi.unitCost || '0';
-  const total = (Number(unitCost) * Number(quantity)) || 0;
-  // distribute materials across available scopes so each proposal has materials
-  const scopeIds = ['PS-0001', 'PS-0002', 'PS-0003', 'PS-0004'];
-  const proposalScopeId = scopeIds[idx % scopeIds.length];
-  return {
-    proposalScopeId,
-    remarks: mi.name || '',
-    assemblyUOM: mi.uom || '',
-    assemblyId: mi.id || '',
-    assemblyName: mi.name || '',
-    extendedCost: String(total),
-    materialId: mi.code || mi.id || `MAT-${idx + 1}`,
-    materialType: mi.materialType || 'material',
-    uom: mi.uom || '',
-    unitCost: String(unitCost),
-    quantity: String(quantity),
-    vat: mi.vat || '',
-    wt: mi.wt || '',
-    totalCost: String(total),
-    margin: '',
-    scopeOfWork: '',
-    id: `PM-000${idx + 1}`,
-    createdBy: mi.createdBy || '',
-    createdDate: mi.createdDate || '',
-    updatedBy: mi.updatedBy || '',
-    updatedDate: mi.updatedDate || '',
-    code: mi.code ? `PM-${mi.code}` : `PM-${idx + 1}`,
-    name: mi.name || '',
-  };
-});
+// materialsData has been removed; _baseProposalMaterials is now empty.
+const _baseProposalMaterials = [];
 
 // Ensure each scope has at least one sample material. Add explicit materials for PS-0003 and PS-0004
 const extraMaterials = [
