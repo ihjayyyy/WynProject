@@ -206,6 +206,13 @@ export default function EntityForm({ title, icon, fields, initialValues = {}, on
             if (readOnly) return true;
             if (typeof f.readOnly === 'function') return !!f.readOnly(values);
             if (typeof f.readOnly === 'boolean') return f.readOnly;
+            // Make `code` non-editable for existing entities (when values contain an id/Guid).
+            // This enforces that the `code` field cannot be changed during edit flows across forms.
+            try {
+              if (f && f.name === 'code' && values && (values.id || values.Guid)) return true;
+            } catch (err) {
+              // ignore
+            }
             return false;
           })();
 
