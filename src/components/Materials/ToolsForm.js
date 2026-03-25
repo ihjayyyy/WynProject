@@ -64,8 +64,8 @@ export default function ToolsForm() {
       { name: 'code', label: 'Code', span: 'span2' },
     { name: 'name', label: 'Name', span: 'span2' },
     { name: 'unitCost', label: 'Unit Cost', type: 'number', span: 'span2' },
-    { name: 'uom', label: 'UOM', span: 'span2' },
-    { name: 'defaultPurchaseUOM', label: 'Default Purchase UOM', span: 'span2' },
+    { name: 'unitOfMeasure', label: 'UOM', span: 'span2' },
+    { name: 'purchaseUnitOfMeasure', label: 'Default Purchase UOM', span: 'span2' },
   ];
 
   return (

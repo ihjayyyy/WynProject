@@ -1,5 +1,5 @@
 import ProposalForm from '../../../../../components/Proposal/ProposalForm';
 
-export default function ProposalFormPage() {
+export default function Page() {
   return <ProposalForm />;
 }

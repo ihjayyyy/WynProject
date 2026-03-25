@@ -54,12 +54,48 @@ export default function EntityForm({ title, icon, fields, initialValues = {}, on
   // Keep internal state in sync when parent updates `initialValues` (e.g., when loading existing entity)
   useEffect(() => {
     try {
+      const normalize = (vals) => {
+        if (!vals || !fields) return { ...vals };
+        const out = { ...vals };
+        (fields || []).forEach((f) => {
+          try {
+            const key = f && f.name;
+            if (!key) return;
+            const val = out[key];
+            if (val === undefined || val === null || val === '') return;
+            const t = f.type ? String(f.type).toLowerCase() : '';
+            if (t === 'date') {
+              const d = new Date(val);
+              if (!isNaN(d)) {
+                const yyyy = d.getFullYear();
+                const mm = String(d.getMonth() + 1).padStart(2, '0');
+                const dd = String(d.getDate()).padStart(2, '0');
+                out[key] = `${yyyy}-${mm}-${dd}`;
+              }
+            }
+            if (t === 'datetime-local' || t === 'datetime') {
+              const d = new Date(val);
+              if (!isNaN(d)) {
+                const yyyy = d.getFullYear();
+                const mm = String(d.getMonth() + 1).padStart(2, '0');
+                const dd = String(d.getDate()).padStart(2, '0');
+                const hh = String(d.getHours()).padStart(2, '0');
+                const min = String(d.getMinutes()).padStart(2, '0');
+                out[key] = `${yyyy}-${mm}-${dd}T${hh}:${min}`;
+              }
+            }
+          } catch (err) {
+            // ignore per-field normalization errors
+          }
+        });
+        return out;
+      };
       const incomingId = initialValues && (initialValues.id || initialValues.Guid || null);
       const currentId = values && (values.id || values.Guid || null);
 
       // If incoming values represent a different entity (different id), replace values.
       if (incomingId && incomingId !== currentId) {
-        setValues({ ...initialValues });
+        setValues(normalize(initialValues));
         return;
       }
 
@@ -67,11 +103,13 @@ export default function EntityForm({ title, icon, fields, initialValues = {}, on
       // when parent updates props (for example, when a derived `proposalTotal` changes).
       // Only initialize empty values on first mount when values are empty.
       if (!incomingId && (!values || Object.keys(values).length === 0)) {
-        setValues({ ...initialValues });
+        setValues(normalize(initialValues));
       }
     } catch (err) {
       // fallback to safe behavior
-      setValues({ ...initialValues });
+      setValues((() => {
+        try { return normalize(initialValues); } catch (e) { return { ...initialValues }; }
+      })());
     }
   }, [initialValues]);
 
@@ -130,10 +168,26 @@ export default function EntityForm({ title, icon, fields, initialValues = {}, on
     }
   };
 
-  const formatDisplayValue = (value) => {
+  const formatDisplayValue = (value, field) => {
     if (value === null || value === undefined || value === '') {
       return '—';
     }
+
+    // Format date/datetime values for read-only display when field type is provided
+    try {
+      const fieldType = field && field.type ? String(field.type).toLowerCase() : '';
+      if (fieldType === 'date') {
+        const d = new Date(value);
+        if (!isNaN(d)) return d.toLocaleDateString();
+      }
+      if (fieldType === 'datetime-local' || fieldType === 'datetime') {
+        const d = new Date(value);
+        if (!isNaN(d)) return d.toLocaleString();
+      }
+    } catch (err) {
+      // fallthrough to default
+    }
+
     return String(value);
   };
 
@@ -222,7 +276,7 @@ export default function EntityForm({ title, icon, fields, initialValues = {}, on
                 <div className={styles.readOnlyField}>
                   {f.label && <label className={styles.readOnlyLabel}>{f.label}</label>}
                   <div className={`${styles.readOnlyValue} ${f.multiline ? styles.multilineValue : ''}`}>
-                    {formatDisplayValue(values[f.name])}
+                    {formatDisplayValue(values[f.name], f)}
                   </div>
                 </div>
               </div>

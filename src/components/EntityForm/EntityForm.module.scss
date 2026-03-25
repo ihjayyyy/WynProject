@@ -4,8 +4,9 @@
   background: #fff;
   padding: 1.5rem;
   display: flex;
-  height: calc(100% - 48px);
+  height: calc(100vh - 48px);
   flex-direction: column;
+  overflow-y: auto;
   gap: 1rem;
   box-shadow: 0 2px 16px rgba(0, 0, 0, 0.08);
 }
