@@ -1,4 +1,4 @@
-import AssemblyForm from '../../../../../components/Assembly/AssemblyForm';
+import AssemblyForm from "@/components/Materials/AssemblyForm";
 
 export default function AssemblyFormPage() {
   return <AssemblyForm />;
