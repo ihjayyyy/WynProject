@@ -38,8 +38,18 @@ export default function StatusBadge({ status, className = '' }) {
         return styles.ordered;
       case 'CANCELLED':
         return styles.cancelled;
+      case 'REJECTED':
+        return styles.rejected;
+      case 'SUBMITTED':
+        return styles.submitted;
       case 'PENDING':
         return styles.pending;
+      case 'WON':
+      case 'WIN':
+        return styles.won;
+      case 'LOST':
+      case 'LOSE':
+        return styles.lost;
       default:
         return styles.default;
     }

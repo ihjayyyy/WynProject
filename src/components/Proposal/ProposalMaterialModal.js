@@ -1,7 +1,7 @@
 "use client";
 import React, { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
-import styles from '../ui/ConfirmModal/ConfirmModal.module.scss';
+import styles from './ProposalMaterialModal.module.scss';
 import Button from '../ui/Button/Button';
 import Input from '../ui/Input/Input';
 import Select from '../ui/Select/Select';
@@ -101,10 +101,15 @@ export default function ProposalMaterialModal({ open, initial = {}, onCancel, on
     const uc = Number(form.unitCost) || 0;
     const qty = Number(form.quantity) || 0;
     const lab = Number(form.laborCost) || 0;
-    const materialCost = uc * qty;
-    const totalPrice = materialCost + lab;
-    setForm((f) => ({ ...f, materialCost, totalPrice, totalAmount: totalPrice, extendedCost: totalPrice }));
-  }, [form.unitCost, form.quantity, form.laborCost]);
+    const disc = Number(form.discount) || 0;
+    const base = uc * qty;
+    const materialBase = base - disc;
+    const rawVat = materialBase * 0.12;
+    const vatAmount = Number.isFinite(rawVat) ? Math.max(0, Number(rawVat.toFixed(2))) : 0;
+    const materialCost = Number((materialBase + vatAmount).toFixed(2));
+    const totalPrice = Number((materialCost + lab).toFixed(2));
+    setForm((f) => ({ ...f, materialCost, totalPrice, totalAmount: totalPrice, extendedCost: totalPrice, vat: vatAmount }));
+  }, [form.unitCost, form.quantity, form.laborCost, form.discount]);
 
   if (!open) return null;
 
@@ -139,7 +144,8 @@ export default function ProposalMaterialModal({ open, initial = {}, onCancel, on
               <Select
                 id="material-select"
                 value={form.materialId || 0}
-                onChange={(e) => handleMaterialSelect(e.target.value)}
+                 onChange={(e) => handleMaterialSelect(e.target.value)}
+                 disabled={false}
                 options={(materials || []).map((m) => ({ value: m.id, label: `${m.name || m.code || ''}`.trim() }))}
                 placeholder="Select material"
                 searchable={true}
@@ -147,12 +153,18 @@ export default function ProposalMaterialModal({ open, initial = {}, onCancel, on
               />
             </div>
             <Input id="material-code" label="Material Code" placeholder="Code" value={form.code} onChange={handleChange('code')} readOnly={true} />
-            <Input id="material-type" label="Type" placeholder="Type" value={form.materialType} onChange={handleChange('materialType')} />
-            <Input id="material-uom" label="UoM" placeholder="UoM" value={form.uom} onChange={handleChange('uom')} />
-            <Input id="material-unitCost" label="Unit Cost" type="number" placeholder="Unit Cost" value={form.unitCost} onChange={handleChange('unitCost')} />
-            <Input id="material-quantity" label="Quantity" type="number" placeholder="Quantity" value={form.quantity} onChange={handleChange('quantity')} />
+              <Input id="material-type" label="Type" placeholder="Type" value={form.materialType} readOnly={true} />
+            <div className={styles.inlineRow}>
+                <Input id="material-uom" label="UoM" placeholder="UoM" value={form.uom} readOnly={true} />
+                <Input id="material-unitCost" label="Unit Cost" type="number" placeholder="Unit Cost" value={form.unitCost} readOnly={true} />
+                <Input id="material-quantity" label="Quantity" type="number" placeholder="Quantity" value={form.quantity} onChange={handleChange('quantity')} />
+                <Input id="material-discount" label="Discount" type="number" placeholder="Discount" value={form.discount} onChange={handleChange('discount')} />
+                <Input id="material-vat" label="VAT" type="number" placeholder="VAT" value={form.vat} readOnly={true} />
+                <Input id="material-materialCost" label="Material Cost" type="number" placeholder="Material Cost" value={form.materialCost} readOnly={true} />
+                <Input id="material-totalAmount" label="Total Amount" type="number" placeholder="Total Amount" value={form.totalAmount} readOnly={true} />
+            </div>
             <Input id="material-laborCost" label="Labor Cost" type="number" placeholder="Labor Cost" value={form.laborCost} onChange={handleChange('laborCost')} />
-            <Input id="material-remarks" label="Remarks" placeholder="Remarks" value={form.remarks} onChange={handleChange('remarks')} />
+            <Input id="material-totalAmount" label="Total Amount" type="number" placeholder="Total Amount" value={form.totalAmount} readOnly={true} />
           </div>
         </div>
         <div className={styles.actions}>
@@ -181,7 +193,7 @@ export default function ProposalMaterialModal({ open, initial = {}, onCancel, on
               forecastedStartDate: form.forecastedStartDate || null,
               forecastedEndDate: form.forecastedEndDate || null,
               scopeOfWork: form.scopeOfWork || '',
-              remarks: form.remarks || '',
+              remarks: '',
             };
             onConfirm(payload);
           }}>Save</Button>

@@ -84,5 +84,95 @@ async function updateProposal(id, payload) {
     }
 }
 
-export { getProposals, getProposalById, createProposal, updateProposal };
-export default { getProposals, getProposalById, createProposal, updateProposal };
+async function submitProposal(id) {
+    try {
+        const url = `${API_BASE_URL}/Submit/${id}`;
+        const res = await fetch(url, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+        });
+        const json = await res.json();
+        return { data: json, error: null };
+    } catch (error) {
+        return { data: null, error: error?.message || error };
+    }
+}
+
+async function approveProposal(id) {
+    try {
+        const url = `${API_BASE_URL}/Approve/${id}`;
+        const res = await fetch(url, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+        });
+        const json = await res.json();
+        return { data: json, error: null };
+    } catch (error) {
+        return { data: null, error: error?.message || error };
+    }
+}
+
+async function rejectProposal(id) {
+    try {
+        const url = `${API_BASE_URL}/Reject/${id}`;
+        const res = await fetch(url, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+        });
+        const json = await res.json();
+        return { data: json, error: null };
+    } catch (error) {
+        return { data: null, error: error?.message || error };
+    }
+}
+
+async function winProposal(id) {
+    try {
+        const url = `${API_BASE_URL}/Win/${id}`;
+        const res = await fetch(url, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+        });
+        const json = await res.json();
+        return { data: json, error: null };
+    } catch (error) {
+        return { data: null, error: error?.message || error };
+    }
+}
+
+async function loseProposal(id) {
+    try {
+        const url = `${API_BASE_URL}/Lose/${id}`;
+        const res = await fetch(url, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+        });
+        const json = await res.json();
+        return { data: json, error: null };
+    } catch (error) {
+        return { data: null, error: error?.message || error };
+    }
+}
+export { 
+    getProposals, 
+    getProposalById, 
+    createProposal, 
+    updateProposal, 
+    submitProposal, 
+    approveProposal, 
+    rejectProposal,
+    winProposal,
+    loseProposal
+};
+
+export default { 
+    getProposals, 
+    getProposalById, 
+    createProposal, 
+    updateProposal, 
+    submitProposal, 
+    approveProposal, 
+    rejectProposal,
+    winProposal,
+    loseProposal
+};

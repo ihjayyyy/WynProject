@@ -9,7 +9,8 @@ import inputStyles from '../ui/Input/Input.module.scss';
 import ProposalMaterialsTable from './ProposalMaterialsTable';
 import Button from '../ui/Button/Button';
 import { useToast } from '../ui/Toast/Toast';
-import { INITIAL_PROPOSAL, getProposalById, createProposal, updateProposal } from '../../services/Proposal';
+import { INITIAL_PROPOSAL, getProposalById, createProposal, updateProposal, submitProposal } from '../../services/Proposal';
+import ConfirmModal from '../ui/ConfirmModal/ConfirmModal';
 import { getCustomers } from '../../services/Customer';
 import { getInquiries } from '../../services/Inquiry';
 
@@ -85,11 +86,19 @@ export default function ProposalForm() {
     return Array.from(seen.values());
   };
 
-  const { isReadOnly, canEnterEditMode } = useMemo(() => {
+  const { isReadOnly, canEnterEditMode, isDraft } = useMemo(() => {
     const exists = Boolean(proposalId && (items || []).some((item) => String(item.id) === String(proposalId)));
-    const readOnly = exists && !isEditMode;
-    return { isReadOnly: readOnly, canEnterEditMode: exists };
+    const selected = (items || []).find((item) => String(item.id) === String(proposalId));
+    const status = selected && selected.proposalStatus ? String(selected.proposalStatus) : '';
+    const draft = status.toLowerCase() === 'draft';
+    const readOnly = exists && (!isEditMode || !draft);
+    return { isReadOnly: readOnly, canEnterEditMode: exists && draft, isDraft: draft };
   }, [proposalId, isEditMode, items]);
+
+  const [isConfirmOpen, setIsConfirmOpen] = useState(false);
+  const [confirmTitle, setConfirmTitle] = useState('');
+  const [confirmMessage, setConfirmMessage] = useState('');
+  const [confirmCallback, setConfirmCallback] = useState(null);
 
   const formTitle = useMemo(() => {
     if (!proposalId) return 'Proposal Form';
@@ -109,7 +118,30 @@ export default function ProposalForm() {
   }, [childrenState]);
 
   const fields = [
-    // Customer name select (full width)
+
+    { name: 'inquiryId', label: 'Inquiry', type: 'select', options: inquiryOptions, searchable: true, placeholder: 'Select inquiry (optional)', span: 'span1', onChange: (val, values, setValues) => {
+      const sel = (inquiries || []).find((q) => String(q.id) === String(val));
+      if (sel) {
+        setValues({
+          ...values,
+          inquiryId: sel.id,
+          customerName: sel.customerName || sel.name || '',
+          contactNumber: sel.contactNumber || values.contactNumber || '',
+          address: sel.address || values.address || '',
+          contactPerson: sel.contactPerson || values.contactPerson || '',
+          email: sel.email || values.email || '',
+          customerReferenceNumber: sel.reference || sel.code || values.customerReferenceNumber || '',
+        });
+      }
+    } },
+    { name: 'spacer-1', type: 'spacer', span: 'span1' },
+    { name: 'code', label: 'Proposal Number', span: 'span1' },
+
+   
+    { name: 'name', label: 'Proposal Name', span: 'span1' },
+    { name: 'spacer-2', type: 'spacer', span: 'span1' },
+    { name: 'customerReferenceNumber', label: 'Customer Reference No.', span: 'span1' },
+
     {
       name: 'customerName',
       label: 'Customer',
@@ -142,49 +174,24 @@ export default function ProposalForm() {
         }
       },
     },
-    { name: 'spacer-1', type: 'spacer', span: 'span1' },
-    { name: 'inquiryId', label: 'Inquiry', type: 'select', options: inquiryOptions, searchable: true, placeholder: 'Select inquiry (optional)', span: 'span1', onChange: (val, values, setValues) => {
-        const sel = (inquiries || []).find((q) => String(q.id) === String(val));
-        if (sel) {
-          setValues({
-            ...values,
-            inquiryId: sel.id,
-            contactNumber: sel.contactNumber || values.contactNumber || '',
-            address: sel.address || values.address || '',
-            contactPerson: sel.contactPerson || values.contactPerson || '',
-            email: sel.email || values.email || '',
-            customerReferenceNumber: sel.reference || sel.code || values.customerReferenceNumber || '',
-          });
-        }
-      } },
-
-    { name: 'customerCode', label: 'Customer Code', span: 'span1' },
-    { name: 'spacer-2', type: 'spacer', span: 'span1' },
-    { name: 'name', label: 'Proposal Name', span: 'span1' },
-
-    { name: 'contactNumber', label: 'Contact Number', span: 'span1' },
     { name: 'spacer-3', type: 'spacer', span: 'span1' },
-    { name: 'code', label: 'Proposal Code', span: 'span1' },
-
-    { name: 'address', label: 'Address', span: 'span1' },
-    { name: 'spacer-4', type: 'spacer', span: 'span1' },
     { name: 'forecastedStartDate', label: 'Forecast Start', type: 'date', span: 'span1' },
 
-    { name: 'contactPerson', label: 'Contact Person', span: 'span1' },
-    { name: 'spacer-5', type: 'spacer', span: 'span1' },
+    { name: 'customerCode', label: 'Customer Code', span: 'span1' },
+    { name: 'spacer-4', type: 'spacer', span: 'span1' },
     { name: 'forecastedEndDate', label: 'Forecast End', type: 'date', span: 'span1' },
 
-    { name: 'email', label: 'Email', type: 'email', span: 'span1' },
-    { name: 'spacer-6', type: 'spacer', span: 'span1' },
+    { name: 'contactPerson', label: 'Contact Person', span: 'span1' }, 
+    { name: 'spacer-5', type: 'spacer', span: 'span1' },
     { name: 'expirationDate', label: 'Expiration Date', type: 'date', span: 'span1' },
 
-    { name: 'location', label: 'Location', span: 'span1' },
-    { name: 'spacer-7', type: 'spacer', span: 'span1' },
-    { name: 'margin', label: 'Margin (%)', type: 'number', span: 'span1' },
+    { name: 'contactNumber', label: 'Contact Number', span: 'span1' },
+    { name: 'spacer-6', type: 'spacer', span: 'span1' },
+    (isReadOnly ? { name: 'margin', label: 'Margin (%)', type: 'number', span: 'span1' } : { name: 'spacer-margin', type: 'spacer', span: 'span1' }),
 
-    { name: 'customerReferenceNumber', label: 'Customer Reference No.', span: 'span1' },
-    { name: 'spacer-8', type: 'spacer', span: 'span1' },
-    { name: 'proposalTotal', label: 'Proposal Total', type: 'custom', span: 'span1', render: ({ values, setValues }) => {
+    { name: 'address', label: 'Address', span: 'span1' },
+    { name: 'spacer-7', type: 'spacer', span: 'span1' },
+    (isReadOnly ? { name: 'proposalTotal', label: 'Proposal Total', type: 'custom', span: 'span1', render: ({ values, setValues }) => {
         const v = Number(values.proposalTotal) || 0;
         if (v !== totals.proposalTotal) setValues({ ...values, proposalTotal: totals.proposalTotal });
         return (
@@ -193,12 +200,12 @@ export default function ProposalForm() {
             <Input id="proposalTotal" value={totals.proposalTotal} readOnly />
           </div>
         );
-      } },
-
-
-    { name: 'spacer-9', type: 'spacer', span: 'span1' },
-    { name: 'spacer-10', type: 'spacer', span: 'span1' },
-    { name: 'laborCostTotal', label: 'Labor Cost Total', type: 'custom', span: 'span1', render: ({ values, setValues }) => {
+      } } : { name: 'spacer-proposalTotal', type: 'spacer', span: 'span1' }),
+  
+    { name: 'email', label: 'Email', type: 'email', span: 'span1' },
+    { name: 'spacer-8', type: 'spacer', span: 'span1' },
+    
+    (isReadOnly ? { name: 'laborCostTotal', label: 'Labor Cost Total', type: 'custom', span: 'span1', render: ({ values, setValues }) => {
         const v = Number(values.laborCostTotal) || 0;
         if (v !== totals.laborCostTotal) setValues({ ...values, laborCostTotal: totals.laborCostTotal });
         return (
@@ -207,11 +214,11 @@ export default function ProposalForm() {
             <Input id="laborCostTotal" value={totals.laborCostTotal} readOnly />
           </div>
         );
-      } },
+      } } : { name: 'spacer-laborCostTotal', type: 'spacer', span: 'span1' }),
 
-      { name: 'spacer-11', type: 'spacer', span: 'span1' },
-      { name: 'spacer-12', type: 'spacer', span: 'span1' },
-      { name: 'materialCostTotal', label: 'Material Cost Total', type: 'custom', span: 'span1', render: ({ values, setValues }) => {
+    { name: 'location', label: 'Location', span: 'span1' },
+    { name: 'spacer-9', type: 'spacer', span: 'span1' },
+    (isReadOnly ? { name: 'materialCostTotal', label: 'Material Cost Total', type: 'custom', span: 'span1', render: ({ values, setValues }) => {
         const v = Number(values.materialCostTotal) || 0;
         if (v !== totals.materialCostTotal) setValues({ ...values, materialCostTotal: totals.materialCostTotal });
         return (
@@ -220,7 +227,7 @@ export default function ProposalForm() {
             <Input id="materialCostTotal" value={totals.materialCostTotal} readOnly />
           </div>
         );
-      } },
+      } } : { name: 'spacer-materialCostTotal', type: 'spacer', span: 'span1' }),
   ];
 
   // sanitize child objects before sending to API (fill defaults, coerce types)
@@ -335,7 +342,7 @@ export default function ProposalForm() {
 
         if (!proposalId) {
           const payload = {
-            id: 0,
+            // id: 0,
             ...modelPayload,
             children: (childrenState || []).filter((c) => !c || !c.__isScope).map(({ _localId, __isScope, ...rest }) => sanitizeChild(rest, proposalId ? Number(proposalId) : 0)),
             deletedChildren: dedupeDeleted((deletedChildrenState || []).filter((c) => !c || !c.__isScope)).map(({ _localId, __isScope, ...rest }) => sanitizeChild(rest, proposalId ? Number(proposalId) : 0)),
@@ -351,7 +358,7 @@ export default function ProposalForm() {
         }
 
         const payload = {
-          id: Number(proposalId),
+          // id: Number(proposalId),
           ...modelPayload,
           children: (childrenState || []).filter((c) => !c || !c.__isScope).map(({ _localId, __isScope, ...rest }) => sanitizeChild(rest, proposalId ? Number(proposalId) : 0)),
           deletedChildren: dedupeDeleted((deletedChildrenState || []).filter((c) => !c || !c.__isScope)).map(({ _localId, __isScope, ...rest }) => sanitizeChild(rest, proposalId ? Number(proposalId) : 0)),
@@ -373,9 +380,30 @@ export default function ProposalForm() {
         ) : (
           <>
             {isReadOnly ? (
-              canEnterEditMode ? (
-                <Button variant="outlinedPrimary" onClick={() => setIsEditModeLocal(true)}>Edit</Button>
-              ) : null
+              (
+                <>
+                  {canEnterEditMode ? (
+                    <Button variant="outlinedPrimary" onClick={() => setIsEditModeLocal(true)}>Edit</Button>
+                  ) : null}
+                  {isDraft ? (
+                    <Button variant="primary" onClick={() => {
+                      setConfirmTitle('Submit proposal?');
+                      setConfirmMessage(`Submit proposal \"${initialValues.name || initialValues.code || ''}\"?`);
+                      setConfirmCallback(() => async () => {
+                        try {
+                          const res = await submitProposal(proposalId);
+                          if (res?.error) toast.error('Failed to submit proposal');
+                          else toast.success('Proposal submitted');
+                          try { router.push('/projects/proposal'); } catch (err) {}
+                        } catch (err) {
+                          toast.error('Failed to submit proposal');
+                        }
+                      });
+                      setIsConfirmOpen(true);
+                    }}>Submit</Button>
+                  ) : null}
+                </>
+              )
             ) : (
               <>
                 <Button

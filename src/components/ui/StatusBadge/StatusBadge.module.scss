@@ -36,6 +36,20 @@
   border: 1px solid #991b1b;
 }
 
+.rejected {
+  /* use distinct red for rejected */
+  background-color: #fee2e2;
+  color: #7f1d1d;
+  border: 1px solid #7f1d1d;
+}
+
+.submitted {
+  /* soft indigo for submitted */
+  background-color: #eef2ff;
+  color: #1e3a8a;
+  border: 1px solid #1e3a8a;
+}
+
 .pending {
   background-color: #fffbeb;
   color: #92400e;
@@ -68,6 +82,20 @@
   background-color: #d1fae5;
   color: #065f46;
   border: 1px solid #065f46;
+}
+
+.won {
+  /* stronger success variant for won */
+  background-color: #d1fae5;
+  color: #065f46;
+  border: 1px solid #065f46;
+}
+
+.lost {
+  /* distinct muted red for lost */
+  background-color: #fff1f2;
+  color: #7f1d1d;
+  border: 1px solid #ef4444;
 }
 
 .default {

@@ -77,3 +77,19 @@
   align-items: center;
   justify-content: flex-end;
 }
+
+.materialCell {
+  display: flex;
+  flex-direction: column;
+}
+
+.materialCode {
+  font-weight: $font-weight-medium;
+  color: $color-text-secondary-light;
+  font-size: $font-size-sm;
+}
+
+.materialName {
+  color: $color-text-primary-light;
+  font-weight: $font-weight-bold;
+}

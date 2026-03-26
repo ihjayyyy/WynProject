@@ -43,7 +43,7 @@ export default function ProposalMaterialsTable({ items = [], onChange, editable 
     const k = (searchTerm || '').trim().toLowerCase();
     if (!k) return localItems || [];
     return (localItems || []).filter((it) =>
-      [it.code, it.name, it.materialType, it.uom, it.remarks]
+      [it.code, it.name, it.materialType, it.uom]
         .filter(Boolean)
         .some((v) => String(v).toLowerCase().includes(k))
     );
@@ -63,15 +63,23 @@ export default function ProposalMaterialsTable({ items = [], onChange, editable 
 
   // build columns (omit Actions column when not editable)
   const columns = [
-    { header: 'Material Code', key: 'code', width: '120px' },
-    { header: 'Material Name', key: 'name' },
+    { header: 'Material', key: 'material', width: '260px', render: (it) => {
+      if (!it || it.isTotalRow) return '';
+      return (
+        <div className={pmStyles.materialCell}>
+          <div className={pmStyles.materialCode}>{it.code || ''}</div>
+          <div className={pmStyles.materialName}>{it.name || ''}</div>
+        </div>
+      );
+    } },
     { header: 'Type', key: 'materialType', width: '100px' },
-    { header: 'UoM', key: 'uom', width: '80px' },
-    { header: 'Remarks', key: 'remarks' },
-    { header: 'Qty', key: 'quantity', align: 'right', width: '80px' },
     { header: 'Unit Cost', key: 'unitCost', align: 'right', width: '120px', render: (it) => (((it && it.isTotalRow) || it.unitCost === '' || it.unitCost == null) ? '' : Number(it.unitCost).toLocaleString()) },
+    { header: 'UoM', key: 'uom', width: '80px' },
+    { header: 'Qty', key: 'quantity', align: 'right', width: '80px' },
+    { header: 'VAT', key: 'vat', align: 'right', width: '100px', render: (it) => Number(it.vat || 0).toLocaleString() },
     { header: 'Material Cost', key: 'materialCost', align: 'right', width: '140px', render: (it) => Number(it.materialCost || 0).toLocaleString() },
     { header: 'Labor Cost', key: 'laborCost', align: 'right', width: '120px', render: (it) => Number(it.laborCost || 0).toLocaleString() },
+    { header: 'Margin', key: 'margin', align: 'right', width: '100px', render: (it) => (it && (it.margin !== undefined && it.margin !== null) ? Number(it.margin).toLocaleString() : '') },
     { header: 'Total', key: 'totalPrice', align: 'right', width: '140px', render: (it) => Number(it.totalPrice || it.totalAmount || 0).toLocaleString() },
   ];
 
