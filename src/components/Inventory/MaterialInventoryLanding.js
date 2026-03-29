@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import DropdownAction from '../ui/DropdownAction/DropdownAction';
 import Landing from '../ui/Landing/Landing';
 import { FiEdit2, FiEye } from 'react-icons/fi';
-import { sampleMaterialInventory } from './materialInventoryData';
+import { getMaterialInventories } from '../../services/MaterialInventory';
 import { byTypeMaterials as fetchByTypeMaterials } from '../../services/Materials';
 import { getRacks } from '../../services/Rack';
 import { getWarehouses } from '../../services/Warehouse';
@@ -37,8 +37,14 @@ export default function MaterialInventoryLanding() {
         const matRes = await fetchByTypeMaterials({ materialType: 'Material', isAssembly: false });
         if (!cancelled && !matRes?.error) {
           setMaterials(matRes.data || []);
-          const inv = (sampleMaterialInventory || []).filter((it) => (matRes.data || []).some((m) => m.id === it.materialId));
-          setInventory(inv);
+          const invRes = await getMaterialInventories({ materialType: 'Material'});
+          if (!cancelled && !invRes?.error) {
+            const invData = invRes.data || [];
+            const inv = invData.filter((it) => (matRes.data || []).some((m) => m.id === it.materialId));
+            setInventory(inv);
+          } else {
+            setInventory([]);
+          }
         }
       } catch (e) {}
     })();

@@ -5,8 +5,8 @@ import { useRouter } from 'next/navigation';
 import DropdownAction from '../ui/DropdownAction/DropdownAction';
 import Landing from '../ui/Landing/Landing';
 import { FiEdit2, FiEye } from 'react-icons/fi';
-import { sampleMaterialInventory } from './materialInventoryData';
-import { getMaterials } from '../../services/Materials';
+import { getMaterialInventories } from '../../services/MaterialInventory';
+import { byTypeMaterials as fetchByTypeMaterials } from '../../services/Materials';
 import { getRacks } from '../../services/Rack';
 import { getWarehouses } from '../../services/Warehouse';
 
@@ -23,10 +23,11 @@ const baseColumns = [
 
 export default function ToolsInventoryLanding() {
   const router = useRouter();
-
   const [racks, setRacks] = useState([]);
   const [materials, setMaterials] = useState([]);
   const [warehouses, setWarehouses] = useState([]);
+  const [inventory, setInventory] = useState([]);
+
   useEffect(() => {
     let cancelled = false;
     (async () => {
@@ -35,8 +36,18 @@ export default function ToolsInventoryLanding() {
         if (!cancelled && !res?.error) setRacks(res.data || []);
         const res2 = await getWarehouses();
         if (!cancelled && !res2?.error) setWarehouses(res2.data || []);
-        const res3 = await getMaterials();
-        if (!cancelled && !res3?.error) setMaterials((res3.data || []).map((m) => ({ ...m, uom: m.unitOfMeasure, unitCost: m.unitCost })));
+        const matRes = await fetchByTypeMaterials({ materialType: 'Tool' });
+        if (!cancelled && !matRes?.error) {
+          setMaterials((matRes.data || []).map((m) => ({ ...m, uom: m.unitOfMeasure, unitCost: m.unitCost })));
+          const invRes = await getMaterialInventories({ materialType: 'Tool' });
+          if (!cancelled && !invRes?.error) {
+            const invData = invRes.data || [];
+            const toolInv = invData.filter((it) => (matRes.data || []).some((m) => m.id === it.materialId));
+            setInventory(toolInv);
+          } else {
+            setInventory([]);
+          }
+        }
       } catch (e) {}
     })();
     return () => { cancelled = true; };
@@ -48,7 +59,7 @@ export default function ToolsInventoryLanding() {
 
   const warehousesMap = useMemo(() => (warehouses || []).reduce((acc, w) => { acc[w.id] = w.name || w.code || w.id; return acc; }, {}), [warehouses]);
 
-  const inventory = useMemo(() => (sampleMaterialInventory || []).filter((it) => { const mat = materialsMap[it.materialId]; return mat && String(mat.materialType).toLowerCase() === 'tool'; }), [materialsMap]);
+  
 
   const actionItems = useMemo(
     () => [

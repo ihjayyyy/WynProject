@@ -6,7 +6,8 @@ import { useSearchParams } from 'next/navigation';
 import { FiBox } from 'react-icons/fi';
 import EntityForm from '../EntityForm/EntityForm';
 import Button from '../ui/Button/Button';
-import { initialMaterialInventoryState, sampleMaterialInventory } from './materialInventoryData';
+import { INITIAL_MATERIAL_INVENTORY, getMaterialInventory, createMaterialInventory, updateMaterialInventory } from '../../services/MaterialInventory';
+import { useToast } from '../ui/Toast/Toast';
 import { byTypeMaterials as fetchByTypeMaterials } from '../../services/Materials';
 import { getRacks } from '../../services/Rack';
 
@@ -30,17 +31,34 @@ export default function MaterialInventoryForm() {
     return () => { cancelled = true; };
   }, []);
 
-  const initialValues = useMemo(() => {
-    if (!inventoryId) return initialMaterialInventoryState;
-    const selected = sampleMaterialInventory.find((item) => item.id === inventoryId);
-    return selected || initialMaterialInventoryState;
+  const [initialValues, setInitialValues] = useState(INITIAL_MATERIAL_INVENTORY);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      if (!inventoryId) {
+        setInitialValues(INITIAL_MATERIAL_INVENTORY);
+        return;
+      }
+      try {
+        const res = await getMaterialInventory(inventoryId);
+        const data = res?.data;
+        if (!cancelled && !res?.error && data) {
+          const item = Array.isArray(data) ? data[0] : data;
+          setInitialValues(item || INITIAL_MATERIAL_INVENTORY);
+        }
+      } catch (e) {}
+    })();
+    return () => { cancelled = true; };
   }, [inventoryId]);
 
+  const [exists, setExists] = useState(false);
   const { isReadOnly, canEnterEditMode } = useMemo(() => {
-    const exists = Boolean(inventoryId && sampleMaterialInventory.some((item) => item.id === inventoryId));
     const readOnly = exists && !isEditMode;
     return { isReadOnly: readOnly, canEnterEditMode: exists };
-  }, [inventoryId, isEditMode]);
+  }, [exists, isEditMode]);
+
+  useEffect(() => { setExists(Boolean(initialValues && initialValues.id)); }, [initialValues]);
 
   const formTitle = useMemo(() => {
     if (!inventoryId) return 'Material Inventory Form';
@@ -48,12 +66,12 @@ export default function MaterialInventoryForm() {
     return 'View Inventory Record';
   }, [inventoryId, isEditMode]);
 
-  const materialOptions = useMemo(() => {
-    return (materials || [])
-      .map((m) => ({ label: `${m.code ? m.code + ' - ' : ''}${m.name}`, value: m.id }));
-  }, []);
-
   const [materials, setMaterials] = useState([]);
+  const toast = useToast();
+
+  const materialOptions = useMemo(() => {
+    return (materials || []).map((m) => ({ label: `${m.code ? m.code + ' - ' : ''}${m.name}`, value: m.id }));
+  }, [materials]);
 
   useEffect(() => {
     let cancelled = false;
@@ -71,14 +89,12 @@ export default function MaterialInventoryForm() {
   }, [racks]);
 
   const fields = [
-    { name: 'name', label: 'Name', span: 'span2' },
-    { name: 'quantity', label: 'Quantity', type: 'number', span: 'span2' },
-    { name: 'id', label: 'Id', span: 'span2' },
-    { name: 'spacer-1', type: 'spacer', span: 'span1' },
+    { name: 'materialId', label: 'Material', span: 'span1', type: 'select', options: materialOptions, searchable: true },
+    { name: 'spacer-1', type: 'spacer', span: 'span2' },
     { name: 'rackId', label: 'Rack', span: 'span1', type: 'select', options: rackOptions, searchable: true },
     { name: 'spacer-2', type: 'spacer', span: 'span2' },
-    { name: 'materialId', label: 'Material', span: 'span1', type: 'select', options: materialOptions, searchable: true },
-
+    { name: 'name', label: 'Name', span: 'span2' },
+    { name: 'quantity', label: 'Quantity', type: 'number', span: 'span2' },
   ];
 
   return (
@@ -90,24 +106,39 @@ export default function MaterialInventoryForm() {
       onSubmit={async (values) => {
         const now = new Date().toISOString().slice(0, 10);
         if (!inventoryId) {
-          const nextNumber = (sampleMaterialInventory || []).reduce((max, item) => {
-            const num = Number(String(item.id || '').replace(/[^0-9]/g, '')) || 0;
-            return Math.max(max, num);
-          }, 0) + 1;
-          const newId = `I${nextNumber}`;
-          const newItem = { ...values, id: newId, createdBy: 'You', createdDate: now, updatedBy: 'You', updatedDate: now };
-          (sampleMaterialInventory || []).push(newItem);
-          return `/inventory/material-inventory/materialInventoryForm?id=${newId}`;
+          try {
+            const payload = { name: values.name, code: values.code || '', rackId: values.rackId, materialId: values.materialId, quantity: values.quantity };
+            const result = await createMaterialInventory(payload);
+            if (result.error) throw new Error(result.error);
+            let created = null;
+            if (result.data) {
+              if (Array.isArray(result.data.value) && result.data.value.length > 0) created = result.data.value[0];
+              else if (result.data.value && typeof result.data.value === 'object') created = result.data.value;
+              else created = result.data;
+            }
+            toast.success('Inventory record created');
+            try { router.push('/inventory/material-inventory'); } catch (err) {}
+            return '/inventory/material-inventory';
+          } catch (err) {
+            console.error('Create inventory failed', err);
+            toast.error('Failed to create inventory record');
+            try { router.push('/inventory/material-inventory'); } catch (e) {}
+            return '/inventory/material-inventory';
+          }
         }
         try {
-          const idx = (sampleMaterialInventory || []).findIndex((m) => m.id === inventoryId);
-          if (idx >= 0) {
-            sampleMaterialInventory[idx] = { ...sampleMaterialInventory[idx], ...values, id: inventoryId, updatedBy: 'You', updatedDate: now };
-          }
+          const payload = { name: values.name, code: values.code || '', rackId: values.rackId, materialId: values.materialId, quantity: values.quantity };
+          const result = await updateMaterialInventory(inventoryId, payload);
+          if (result.error) throw new Error(result.error);
+          toast.success('Inventory record updated');
+          try { router.push('/inventory/material-inventory'); } catch (err) {}
+          return '/inventory/material-inventory';
         } catch (err) {
-          console.warn('Failed to update sampleMaterialInventory', err);
+          console.error('Update inventory failed', err);
+          toast.error('Failed to update inventory record');
+          try { router.push('/inventory/material-inventory'); } catch (e) {}
+          return '/inventory/material-inventory';
         }
-        return `/inventory/material-inventory/materialInventoryForm?id=${inventoryId}`;
       }}
       backPath="/inventory/material-inventory"
       width="100%"
