@@ -43,6 +43,21 @@ async function getMaterialInventory(id) {
   }
 }
 
+// ✅ NEW FUNCTION
+async function getMaterialInventoryByMaterialId(materialId) {
+  try {
+    const url = `${API_BASE_URL}/ByMaterialId/${materialId}`;
+    const res = await fetch(url, {
+      method: 'GET',
+      headers: { Accept: '*/*' },
+    });
+    const json = await res.json();
+    return { data: json && json.value ? json.value : json, error: null };
+  } catch (error) {
+    return { data: null, error: error?.message || error };
+  }
+}
+
 async function createMaterialInventory(payload) {
   try {
     const res = await fetch(API_BASE_URL, {
@@ -72,5 +87,18 @@ async function updateMaterialInventory(id, payload) {
   }
 }
 
-export { getMaterialInventories, getMaterialInventory, createMaterialInventory, updateMaterialInventory };
-export default { getMaterialInventories, getMaterialInventory, createMaterialInventory, updateMaterialInventory };
+export {
+  getMaterialInventories,
+  getMaterialInventory,
+  getMaterialInventoryByMaterialId, // ✅ export it
+  createMaterialInventory,
+  updateMaterialInventory
+};
+
+export default {
+  getMaterialInventories,
+  getMaterialInventory,
+  getMaterialInventoryByMaterialId, // ✅ include in default
+  createMaterialInventory,
+  updateMaterialInventory
+};

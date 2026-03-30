@@ -27,6 +27,7 @@ export default function ProposalForm() {
   const [inquiries, setInquiries] = useState([]);
   const [childrenState, setChildrenState] = useState([]);
   const [deletedChildrenState, setDeletedChildrenState] = useState([]);
+  const [isAdminView, setIsAdminView] = useState(false); // toggle for testing admin view
   const toast = useToast();
 
   React.useEffect(() => {
@@ -187,7 +188,8 @@ export default function ProposalForm() {
 
     { name: 'contactNumber', label: 'Contact Number', span: 'span1' },
     { name: 'spacer-6', type: 'spacer', span: 'span1' },
-    (isReadOnly ? { name: 'margin', label: 'Margin (%)', type: 'number', span: 'span1' } : { name: 'spacer-margin', type: 'spacer', span: 'span1' }),
+    // Margin field: editable when not read-only, or when admin view is active
+    { name: 'margin', label: 'Margin (%)', type: 'number', span: 'span1', readOnly: (values) => (isReadOnly && !isAdminView) },
 
     { name: 'address', label: 'Address', span: 'span1' },
     { name: 'spacer-7', type: 'spacer', span: 'span1' },
@@ -302,7 +304,7 @@ export default function ProposalForm() {
       icon={<FiFileText />}
       fields={fields}
       initialValues={initialValues}
-      extraContent={<ProposalMaterialsTable proposalId={proposalId} editable={!isReadOnly} items={childrenState || []} onChange={(updated, deleted) => {
+      extraContent={<ProposalMaterialsTable proposalId={proposalId} editable={!isReadOnly} items={childrenState || []} isAdmin={isAdminView} hideCostColumns={true} onChange={(updated, deleted) => {
         setChildrenState(updated || []);
         if (deleted) setDeletedChildrenState((prev) => dedupeDeleted(deleted || []));
         // debug: log full proposal form data when materials/scopes change
@@ -335,9 +337,10 @@ export default function ProposalForm() {
           customerReferenceNumber: values.customerReferenceNumber || '',
           margin: Number(values.margin) || 0,
           inquiryId: values.inquiryId || null,
-          proposalTotal: Number(values.proposalTotal) || 0,
-          laborCostTotal: Number(values.laborCostTotal) || 0,
-          materialCostTotal: Number(values.materialCostTotal) || 0,
+          // compute totals from children only (ignore form-entered totals)
+          proposalTotal: Number(totals.proposalTotal) || 0,
+          laborCostTotal: Number(totals.laborCostTotal) || 0,
+          materialCostTotal: Number(totals.materialCostTotal) || 0,
         });
 
         if (!proposalId) {
