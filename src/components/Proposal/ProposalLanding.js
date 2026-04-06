@@ -7,6 +7,7 @@ import DropdownAction from '../ui/DropdownAction/DropdownAction';
 import Landing from '../ui/Landing/Landing';
 import StatusBadge from '../ui/StatusBadge/StatusBadge';
 import { getProposals, submitProposal, approveProposal, rejectProposal, winProposal, loseProposal } from '../../services/Proposal';
+import { convertProposal } from '../../services/Project';
 import { useToast } from '../ui/Toast/Toast';
 import { FiCheck, FiX } from 'react-icons/fi';
 import ConfirmModal from '../ui/ConfirmModal/ConfirmModal';
@@ -33,6 +34,8 @@ export default function ProposalLanding() {
   const [confirmMessage, setConfirmMessage] = useState('');
   const [confirmAction, setConfirmAction] = useState(null);
   const [confirmTarget, setConfirmTarget] = useState(null);
+  const [confirmIncludeCreateProject, setConfirmIncludeCreateProject] = useState(false);
+  const [createProjectChecked, setCreateProjectChecked] = useState(false);
 
   const actionItems = useMemo(
     () => [
@@ -119,6 +122,8 @@ export default function ProposalLanding() {
           setConfirmTarget(it);
           setConfirmTitle('Mark proposal as Won?');
           setConfirmMessage(`Mark proposal "${it.name || it.code || ''}" as Won?`);
+          setConfirmIncludeCreateProject(true);
+          setCreateProjectChecked(false);
           setConfirmAction(() => async (target) => {
             setLoading(true);
             const res = await winProposal(target.id);
@@ -190,10 +195,27 @@ return (
         setIsConfirmOpen(false);
         if (confirmAction && confirmTarget) {
           await confirmAction(confirmTarget);
+
+          if (confirmIncludeCreateProject && createProjectChecked) {
+            const conv = await convertProposal(confirmTarget.id);
+            if (conv?.error) toast.error('Failed to create project from proposal');
+            else toast.success('Project created from proposal');
+          }
         }
+        setConfirmIncludeCreateProject(false);
+        setCreateProjectChecked(false);
       }}
       onCancel={() => setIsConfirmOpen(false)}
-    />
+    >
+      {confirmIncludeCreateProject && (
+        <div style={{ marginTop: 12, marginBottom: 12 }}>
+          <label style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
+            <input type="checkbox" checked={createProjectChecked} onChange={(e) => setCreateProjectChecked(e.target.checked)} />
+            <span>Create project from this proposal</span>
+          </label>
+        </div>
+      )}
+    </ConfirmModal>
   </>
 );
 }
