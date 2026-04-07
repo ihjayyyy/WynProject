@@ -33,7 +33,7 @@ export const sidenavItems = [
       {
         label: 'Projects',
         icon: FiBriefcase,
-        href: '/projects/projects',
+        href: '/projects/project',
       },
       {
         label: 'Material Requests',

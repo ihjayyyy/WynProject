@@ -22,6 +22,7 @@ function formatDate(v) {
 export default function ProposalMaterialsTable({ items = [], onChange, editable = true, proposalId = 0 }) {
   const [searchTerm, setSearchTerm] = useState('');
   const [localItems, setLocalItems] = useState([]);
+  const [isAdmin, setIsAdmin] = useState(true); // toggle to simulate admin view
   const [deletedChildren, setDeletedChildren] = useState([]);
   const [isScopeModalOpen, setIsScopeModalOpen] = useState(false);
   const [scopeEditing, setScopeEditing] = useState(null);
@@ -62,7 +63,7 @@ export default function ProposalMaterialsTable({ items = [], onChange, editable 
   const groupKeys = Object.keys(groups);
 
   // build columns (omit Actions column when not editable)
-  const columns = [
+  let columns = [
     { header: 'Material', key: 'material', width: '260px', render: (it) => {
       if (!it || it.isTotalRow) return '';
       return (
@@ -97,6 +98,10 @@ export default function ProposalMaterialsTable({ items = [], onChange, editable 
       );
     } });
   }
+
+  // hide these columns for admin view
+  const hiddenForAdmin = ['vat', 'materialCost', 'laborCost', 'margin', 'totalPrice'];
+  const displayedColumns = isAdmin ? columns.filter((c) => !hiddenForAdmin.includes(c.key)) : columns;
 
   // build grouped data with headers and totals
   const data = [];
@@ -143,7 +148,9 @@ export default function ProposalMaterialsTable({ items = [], onChange, editable 
       });
     });
 
-    data.push({ id: `${scope}-total`, isTotalRow: true, code: '', name: '', quantity: '', unitCost: '', materialCost: materialTotal, laborCost: laborTotal, totalPrice: totalPrice });
+    if (!isAdmin) {
+      data.push({ id: `${scope}-total`, isTotalRow: true, code: '', name: '', quantity: '', unitCost: '', materialCost: materialTotal, laborCost: laborTotal, totalPrice: totalPrice });
+    }
   });
 
   return (
@@ -159,7 +166,7 @@ export default function ProposalMaterialsTable({ items = [], onChange, editable 
         {groupKeys.length === 0 ? (
           <div className={pmStyles.empty}>No materials match your search</div>
         ) : (
-          <DataTable columns={columns} data={data} showActions={false} emptyMessage="No materials" />
+          <DataTable columns={displayedColumns} data={data} showActions={false} emptyMessage="No materials" />
         )}
       </div>
 
