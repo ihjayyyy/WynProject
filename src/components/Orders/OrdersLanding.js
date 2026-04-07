@@ -6,8 +6,9 @@ import { FiEdit2, FiEye } from 'react-icons/fi';
 import DropdownAction from '../ui/DropdownAction/DropdownAction';
 import Landing from '../ui/Landing/Landing';
 import { orders as sampleOrders } from './ordersData';
-import { sampleSuppliers } from '../Suppliers/suppliersData';
+//import { sampleSuppliers } from '../Suppliers/suppliersData';
 
+const sampleSuppliers = [];
 const baseColumns = [
   { header: 'Id', key: 'id' },
   { header: 'Code', key: 'code' },

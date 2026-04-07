@@ -114,6 +114,7 @@ export default function EntityForm({ title, icon, fields, initialValues = {}, on
   }, [initialValues]);
 
   const handleChange = (e) => {
+
     const { name, value, type, files } = e.target;
     if (type === 'file') {
       const file = files && files[0];
@@ -121,7 +122,9 @@ export default function EntityForm({ title, icon, fields, initialValues = {}, on
       setValues(newValues);
       // call field-level onChange if provided
       const field = (fields || []).find((f) => f.name === name);
+
       if (field && typeof field.onChange === 'function') {
+        console.log('on change')
         try {
           field.onChange(newValues[name], newValues, setValues);
         } catch (err) {
@@ -136,10 +139,13 @@ export default function EntityForm({ title, icon, fields, initialValues = {}, on
 
     // call field-level onChange if provided
     const field = (fields || []).find((f) => f.name === name);
+    
     if (field && typeof field.onChange === 'function') {
       try {
+        
         field.onChange(newValues[name], newValues, setValues);
       } catch (err) {
+        console.log(err)
         // ignore errors from onChange
       }
     }
