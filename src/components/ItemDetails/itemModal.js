@@ -47,13 +47,18 @@ const schema = buildSchema();
   const handleSave = () => {
     console.log("Save clicked")
 
-    const returnFields = itemFields.map((item)=>({
-      name:item.name,
-      value:item.value,
-      type:item.type
-    }));
+    // const returnFields = itemFields.map((item)=>({
+    //   name:item.name,
+    //   value:item.value,
+    //   type:item.type
+    // }));
 
-    onClose(returnFields);
+   const itemData =  itemFields.reduce((item, data)=>{
+      item[data.name] = data.value;
+      return item;
+    },{})
+
+    onClose(itemData);
     reset();
   };    
 

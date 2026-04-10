@@ -3,20 +3,25 @@ import React, { useMemo, useState,useEffect } from 'react';
 import DataTable from '../ui/DataTable/DataTable';
 import ItemModal from './itemModal'; 
 import * as Yup from "yup";
+import { FiPlus, FiEdit2, FiTrash2 } from 'react-icons/fi';
+import Button from '../ui/Button/Button';
 
-export default function DetailsTable({itemModalHeader, columns = [], items = [], itemFields=[], onChange, editable = true, emptyMessage='No current items', parentId = 0}) {
-    const [searchTerm, setSearchTerm] = useState('');
-    const [localItems, setLocalItems] = useState([]);
+export default function DetailsTable({itemModalHeader, columns = [], data  = {items:[],deletedItems:[]}, itemFields=[], onChange, editable = true, emptyMessage='No current items', parentId = 0}) {
+    
+    const [items, setItems] = useState([]);
+    const [deleteditems, setDeletedItems] = useState([]);
     const [isModalOpen, setModalOpen] = useState(false);
-    const [deletedItems, setDeletedItems] = useState([]);
-    const [inputFields, setInputFields] = useState([]);
-    const [itemValues, setItemValues] = useState(itemFields || []);
+    const [modalFields, setModalFields] = useState(itemFields || []);
+
+
 
 
       useEffect(() => {
-        const mapped = (items || []).map((item) => ({ ...item}));
-        setLocalItems(mapped);
-      }, [items]);
+        const mapped = (data.items || []).map((item) => ({ ...item}));
+        const deletedItems = (data.deletedItems || []).map((item) => ({ ...item}));
+        setItems(mapped);
+        setDeletedItems(deletedItems);
+      }, [data]);
     
 
       const initializeNewItem = () => {
@@ -42,46 +47,78 @@ export default function DetailsTable({itemModalHeader, columns = [], items = [],
            }
            
            
-            return({...i, hidden: item.hidden ? item.hidden: false})     
+            return({...i, parentId:parentId, hidden: item.hidden ? item.hidden: false})     
         });
         console.log(initializedFields)
-        setItemValues(initializedFields);
+        setModalFields(initializedFields);
       };
 
       useEffect(()=>{
 
         initializeNewItem();
 
+       if (editable) {
+        columns.push({ header: 'Actions', key: '__actions', align: 'right', width: '120px', render: (it) => {
+          return (
+            <div>
+              <Button size="sm" variant="outlinedPrimary" icon={<FiEdit2 />} title="Edit" onClick={() => { openModal(it); }} />
+              <Button size="sm" variant="danger" icon={<FiTrash2 />} title="Delete" onClick={() => {
+                setConfirmTarget(it);
+                setIsConfirmOpen(true);
+              }} />
+            </div>
+          );
+        } });
+      }
+
       },[])
 
-      const openNewModal = () =>{
+      const openModal = (data) =>{
        
         console.log('Open Item Modal');
 
-        initializeNewItem();
+        data ? loadItems(data) : initializeNewItem();
         setModalOpen(true);
-    
+    }
+
+    const loadItem = (data) =>{
+
     }
     const close = (data) =>{
         console.log('Close Item Modal');
         console.log(data);
+        data && data.id === 0 && addDataTableItem(data);
+
         setModalOpen(false);
     }
 
-    const addToTable = (data) =>{
+      const addDataTableItem = (item) =>{
 
-      setLocalItems(mapped);
-    }
+      console.log('add item')
+
+      const itemCopy = items.map((item) => ({ ...item}));
+      itemCopy.push(item)
+      setItems(itemCopy);
+  };
+
+    const updateDataTableItem = (item) =>{
+      console.log('update item')
+  };
+    const deleteDataTableItem = () =>{
+      console.log('delete item')
+  };
+
+
       return (
         <div className="detail-container">
             <div className='new-button'>
                 <button type="button" onClick={(e)=>{
                     e.stopPropagation();
-                    openNewModal()
+                    openModal()
                 }}>New</button>
             </div>
-             <DataTable columns={columns} data={items} showActions={false} emptyMessage={emptyMessage} />
-             <ItemModal headerLabel={itemModalHeader} isOpen={isModalOpen} onClose = {close} fields={[...itemValues]}> </ItemModal>
+             <DataTable columns={columns} data={items} showActions={true} emptyMessage={emptyMessage} />
+             <ItemModal headerLabel={itemModalHeader} isOpen={isModalOpen} onClose = {close} fields={[...modalFields]}> </ItemModal>
         </div>
 
        );
