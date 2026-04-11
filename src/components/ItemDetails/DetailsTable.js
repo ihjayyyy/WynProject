@@ -11,9 +11,13 @@ export default function DetailsTable({itemModalHeader, columns = [], data  = {it
     const [items, setItems] = useState([]);
     const [deleteditems, setDeletedItems] = useState([]);
     const [isModalOpen, setModalOpen] = useState(false);
-    const [modalFields, setModalFields] = useState(itemFields || []);
+    const [modalFields, setModalFields] = useState(itemFields);
 
-
+      useEffect(()=>{
+        console.log("use effect item fields")
+        const localizeItemFields = itemFields.map((item)=>({...item}));
+        setModalFields(localizeItemFields);
+      },[itemFields])
 
 
       useEffect(() => {
@@ -24,68 +28,66 @@ export default function DetailsTable({itemModalHeader, columns = [], data  = {it
       }, [data]);
     
 
-      const initializeNewItem = () => {
-        console.log(itemFields)
-       const initializedFields = itemFields.map((item)=>{
+      const initializeItem = (data) => {
+        console.log(modalFields)
+       const initializedFields = modalFields.map((item)=>{
+           const keyValue = data ? data.find(k => k.key === item.name) : null; 
+           const value = keyValue ? keyValue.value : item.initialvalue && item.initialvalue !== "undefined" ? item.initialvalue : "";
+        
            let i = {...item};
            switch(item.type){
             case "text" || "select" :
-                i = item.initialvalue && item.initialvalue !== "undefined" ? {...item, value:item.initialvalue} : {...item, value:""};
+                i =  {...item, value:value};
                 break;
             case "number":
-                i = item.initialvalue && item.initialvalue !== "undefined" ? {...item, value:parseFloat(item.initialvalue)} : {...item, value:0};
+                i = {...item, value: value ? value : 0}; 
                 break;
             case "currency":
-                 i = item.initialvalue && item.initialvalue !== "undefined" ? {...item, value:parseFloat(item.initialvalue)} : {...item, value:0};
+                 i = {...item, value: value ? value : 0};  
                 break;
             case "checkbox" :
-                i = item.initialvalue && item.initialvalue !== "undefined" ? {...item, value:item.initialvalue} : {...item, value:false};
+                i = {...item,  value: value ? value : false}; 
                 break;
             default:
-              i = item.initialvalue && item.initialvalue !== "undefined" ? {...item, value:item.initialvalue} : {...item, value:""};
+              i = {...item, value:value};
                 break;
            }
            
            
             return({...i, parentId:parentId, hidden: item.hidden ? item.hidden: false})     
         });
-        console.log(initializedFields)
+
         setModalFields(initializedFields);
       };
 
       useEffect(()=>{
 
-        initializeNewItem();
-
-       if (editable) {
-        columns.push({ header: 'Actions', key: '__actions', align: 'right', width: '120px', render: (it) => {
-          return (
-            <div>
-              <Button size="sm" variant="outlinedPrimary" icon={<FiEdit2 />} title="Edit" onClick={() => { openModal(it); }} />
-              <Button size="sm" variant="danger" icon={<FiTrash2 />} title="Delete" onClick={() => {
-                setConfirmTarget(it);
-                setIsConfirmOpen(true);
-              }} />
-            </div>
-          );
-        } });
-      }
+        initializeItem();
 
       },[])
 
       const openModal = (data) =>{
        
         console.log('Open Item Modal');
-
-        data ? loadItems(data) : initializeNewItem();
+        console.log(modalFields)
+        initializeItem();
+        data ? loadItem(data) : initializeItem();
         setModalOpen(true);
     }
 
     const loadItem = (data) =>{
 
+      const itemKeyValue = Object.entries(data).map(([key, value]) => ({
+        key: key,
+        value: value
+      }));
+      initializeItem(itemKeyValue);
+
     }
+
     const close = (data) =>{
         console.log('Close Item Modal');
+        console.log(modalFields)
         console.log(data);
         data && data.id === 0 && addDataTableItem(data);
 
@@ -117,7 +119,7 @@ export default function DetailsTable({itemModalHeader, columns = [], data  = {it
                     openModal()
                 }}>New</button>
             </div>
-             <DataTable columns={columns} data={items} showActions={true} emptyMessage={emptyMessage} />
+             <DataTable columns={columns} data={items} showActions={true} emptyMessage={emptyMessage} onActionClick={openModal} />
              <ItemModal headerLabel={itemModalHeader} isOpen={isModalOpen} onClose = {close} fields={[...modalFields]}> </ItemModal>
         </div>
 

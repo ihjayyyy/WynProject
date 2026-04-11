@@ -50,6 +50,7 @@ export const PODetailsColumns = [
                onChange : (item, updateField, fields) => {
 
                   const material = materials.find(a=>a.id == item.value)
+                  console.log(material)
                   const itemfields = [...fields]
 
                   updateField("unitcost", material.unitCost);

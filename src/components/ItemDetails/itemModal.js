@@ -99,16 +99,16 @@ const content = (
                     <label>{item.label}</label>
                     <div className={modalstyle.inputcontainer}>
                     {item.type === "currency" || item.type ==="number" ? (
-                        <input className={modalstyle.number} {...register(item.name)} readOnly={item.readonly} type="number" step="0.01" placeholder="Enter value" value={item.value} onChange={(e)=>{handleChange(e,item)}} />
+                        <input className={modalstyle.number} {...register(item.name)} readOnly={item.readonly} type="number" step="0.01" placeholder="Enter value" value={item.value ? item.value : 0} onChange={(e)=>{handleChange(e,item)}} />
                     ) : item.type === "select" ? (
-                         <select {...register(item.name)} value={item.value} onChange={(e)=>{handleChange(e,item)}}  >
+                         <select {...register(item.name)} value={item.value !== "undefined" ? item.value : ""} onChange={(e)=>{handleChange(e,item)}}  >
                             <option value="">Select {item.label}</option>
                             {item.options && item.options.map((opt) =>  (
                                 <option key={opt.value} value={opt.value}>{opt.name}</option>
                             ))}
                             </select>
                     ) : (
-                    <input {...register(item.name)} type={item.type} readOnly={item.readonly} value={item.value} onChange={(e)=>{handleChange(e,item)}} />
+                    <input {...register(item.name)} type={item.type} readOnly={item.readonly} value={item.value ? item.value : ""} onChange={(e)=>{handleChange(e,item)}} />
                     )}
                     </div>
                      {errors[item.name] && (          
