@@ -1,0 +1,89 @@
+@use '../../styles/variables' as *;
+
+.empty {
+  padding: 12px;
+  color: $color-text-secondary-light;
+}
+
+.titleOverride {
+  margin: 0;
+}
+
+.groupHeader {
+  font-weight: $font-weight-bold;
+  text-align: left;
+  width: 100%;
+  display: block;
+}
+
+.groupHeaderLabel {
+  margin-right: 6px;
+  color: $color-text-secondary-light;
+  font-weight: $font-weight-medium;
+}
+
+.scopeName {
+  color: $color-text-primary-light;
+}
+
+.landingWrap {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-md;
+  border-radius: $border-radius-md;
+}
+
+.headerRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.title {
+  font-size: 1.25rem;
+  margin: 0;
+}
+
+.headerActions {
+  display: flex;
+  align-items: center;
+}
+
+.tableSection {
+}
+
+.scopeActions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.btnSmall {
+  padding: 6px 8px;
+  font-size: 0.85rem;
+}
+
+.actionCell {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  justify-content: flex-end;
+}
+
+.materialCell {
+  display: flex;
+  flex-direction: column;
+}
+
+.materialCode {
+  font-weight: $font-weight-medium;
+  color: $color-text-secondary-light;
+  font-size: $font-size-sm;
+}
+
+.materialName {
+  color: $color-text-primary-light;
+  font-weight: $font-weight-bold;
+}

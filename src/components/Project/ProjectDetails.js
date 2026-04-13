@@ -7,6 +7,8 @@ import Button from '../ui/Button/Button';
 import Input from '../ui/Input/Input';
 import Breadcrumbs from '../ui/Breadcrumbs/Breadcrumbs';
 import { getProjects, updateProject } from '../../services/Project';
+import ProjectScope from './ProjectScope';
+import ProjectStaffTab from './ProjectStaffTab';
 import { useToast } from '../ui/Toast/Toast';
 import { FiBriefcase } from 'react-icons/fi';
 
@@ -89,11 +91,9 @@ export default function ProjectDetails({ id: propId }) {
             ))}
           </div>
         </div>
-
-        {/* edit buttons moved into Details tab panel */}
       </div>
 
-      <div className={`${styles.content} ${activeTab === 'Details' ? styles.singleColumn : ''}`}>
+      <div className={`${styles.content} ${styles.singleColumn}`}>
         {activeTab === 'Details' ? (
           <div className={styles.panel}>
             <div className={styles.panelHeader}>
@@ -192,11 +192,11 @@ export default function ProjectDetails({ id: propId }) {
             </div>
           </div>
         ) : (
-          <div className={styles.panel} style={{ width: '100%' }}>
-            {activeTab === 'Project Scope & Materials' && <div>Project scope and materials content</div>}
+          <div className={styles.panel}>
+              {activeTab === 'Project Scope & Materials' && <ProjectScope projectId={project.id} editable />}
             {activeTab === 'Expenses' && <div>Expenses content</div>}
             {activeTab === 'Trip Tickets' && <div>Trip tickets content</div>}
-            {activeTab === 'Staff' && <div>Staff content</div>}
+            {activeTab === 'Staff' && <ProjectStaffTab projectId={project.id} />}
             {activeTab === 'Billing & Collection' && <div>Billing & collection content</div>}
           </div>
         )}
