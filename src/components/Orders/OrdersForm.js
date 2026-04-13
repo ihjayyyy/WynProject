@@ -1,13 +1,19 @@
 'use client';
 
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useSearchParams } from 'next/navigation';
 import { FiList } from 'react-icons/fi';
+import {  POFields, PODetailsColumns, POItemsFields } from './OrderModels';
+import DetailsTable from '../ItemDetails/DetailsTable';
 import EntityForm from '../EntityForm/EntityForm';
 import Button from '../ui/Button/Button';
 import { initialOrderState, orders as sampleOrders } from './ordersData';
-import { sampleSuppliers } from '../Suppliers/suppliersData';
+import { getSuppliers } from '@/services/Supplier';
+import { getMaterials } from '@/services/Materials';
+import * as Yup from "yup";
+import { initAsyncCompiler } from 'sass';
+
 
 export default function OrdersForm() {
   const router = useRouter();
@@ -16,12 +22,83 @@ export default function OrdersForm() {
   const mode = searchParams.get('mode');
   const [isEditModeLocal, setIsEditModeLocal] = useState(false);
   const isEditMode = mode === 'edit' || isEditModeLocal;
+  const [suppliers, setSuppliers] = useState([]); 
+  const [materials, setMaterials] = useState([]); 
+  const [po, setPO] = useState([]); 
+  const [tableData, setTableData] = useState([]); 
 
-  const initialValues = useMemo(() => {
-    if (!orderId) return initialOrderState;
-    const selected = sampleOrders.find((r) => r.id === orderId || r.code === orderId);
-    return selected || initialOrderState;
-  }, [orderId]);
+  // set PO Fields
+  const poFields = POFields(suppliers); 
+  const poDetailsColumns = PODetailsColumns;
+  const poItemFields = POItemsFields(materials) 
+
+ //set PO Data 
+ useEffect(() => {
+
+  const initializePO = () =>{
+    const initPO = {
+        "name": "",
+        "code": "",
+        "children": [
+          // {
+          //   "id": 0,
+          //   "parentId": 0,
+          //   "materialId": 0,
+          //   "code": "",
+          //   "name": "",
+          //   "uom": "",
+          //   "unitCost": 0,
+          //   "quantity": 0,
+          //   "vat": 0,
+          //   "discount": 0,
+          //   "amount": 0
+          // }
+        ],
+        "deletedChildren": [
+          // {
+          //   "id": 0,
+          //   "parentId": 0,
+          //   "materialId": 0,
+          //   "code": "",
+          //   "name": "",
+          //   "uom": "",
+          //   "unitCost": 0,
+          //   "quantity": 0,
+          //   "vat": 0,
+          //   "discount": 0,
+          //   "amount": 0
+          // }
+        ],
+        "orderDate": new Date(),
+        "supplierId": 0,
+        "supplierCode": "",
+        "supplierName": "",
+        "contactNumber": "",
+        "address": "",
+        "contactPerson": "",
+        "email": "",
+        "supplierReferenceNo": "",
+        "estimatedDeliveryDate": new Date(),
+        "amount": 0,
+        "discount": 0,
+        "vat": 0,
+        "totalAmount": 0
+      }
+
+      if(!orderId){
+        setPO(initializePO());
+        setTableData({items:po.children, deletedItems:po.deletedChildren})
+      }
+      else{
+        //call api
+          // fetch(`/api/user/${userId}`)
+          //   .then(res => res.json())
+          //   .then(data => setUserData(data));
+        setPO(initializePO());
+        setTableData({items:po.children, deletedItems:po.deletedChildren})
+      }
+  };
+}, [orderId]);
 
   const { isReadOnly, canEnterEditMode } = useMemo(() => {
     const exists = Boolean(orderId && sampleOrders.some((r) => r.id === orderId || r.code === orderId));
@@ -30,33 +107,62 @@ export default function OrdersForm() {
   }, [orderId, isEditMode]);
 
   const formTitle = useMemo(() => {
-    if (!orderId) return 'Orders Form';
-    if (isEditMode) return 'Edit Order';
+    if (!orderId) return 'New Purchase Order';
+    if (isEditMode) return 'Edit Purchase Order';
     return 'View Order';
   }, [orderId, isEditMode]);
 
-  const supplierOptions = sampleSuppliers.map((s) => ({ label: s.name, value: s.id }));
 
-  const fields = [
-    { name: 'code', label: 'Code', span: 'span2' },
-    { name: 'name', label: 'Name', span: 'span2' },
-    { name: 'id', label: 'Id', span: 'span2' },
-    { name: 'requestedBy', label: 'Requested By', span: 'span2' },
-    { name: 'supplierId', label: 'Supplier', type: 'select', options: supplierOptions, searchable: true, span: 'span2', onChange: (val, values, setValues) => {
-      const found = sampleSuppliers.find((s) => s.id === val);
-      if (found) setValues({ ...values, supplier: { id: found.id, name: found.name } });
-    } },
-    { name: 'itemsRequested', label: 'Items Requested', type: 'number', span: 'span1' },
-    { name: 'itemsSummary', label: 'Items (summary)', span: 'span3', multiline: true, rows: 3 },
-  ];
+  useEffect(() => {
+     const fetchSupplier = async() => {
+     console.log('Load Suppliers');
+         const res = await getSuppliers();
+             console.log(res);
+        if(res && !res.error){
+          setSuppliers(res.data);          
+        }
+  };
 
+  const fetchMaterials = async() => {
+    const res = await getMaterials();
+     if(res && !res.error){
+          setMaterials(res.data);
+          console.log(res)
+    }
+  }
+   fetchSupplier();
+   fetchMaterials();
+  },[]);
+
+
+
+
+ 
   return (
     <EntityForm
       title={formTitle}
-      breadcrumbLabel="Order Details"
+      breadcrumbLabel="Purchase Order"
       icon={<FiList />}
-      fields={fields}
-      initialValues={initialValues}
+      fields={poFields}
+      initialValues={po}
+      extraContent={<DetailsTable itemModalHeader="Order Details"  parentId={orderId} 
+                 columns={poDetailsColumns} editable={!isReadOnly} 
+                 itemFields={poItemFields} data={tableData} onChange={(updated, deleted) => {
+
+              setChildrenState(updated || []);
+              if (deleted) setDeletedChildrenState((prev) => dedupeDeleted(deleted || []));
+              // debug: log full proposal form data when materials/scopes change
+              try {
+                const filteredChildren = (updated || []).filter((c) => !c || !c.__isScope);
+                console.log('Proposal form data (debug):', {
+                  ...initialValues,
+                  children: filteredChildren,
+                  deletedChildren: dedupeDeleted(deleted || []),
+                });
+              } catch (err) {
+                console.log('Failed to log proposal data', err);
+              }
+            }} />}
       onSubmit={async (values) => {
         const now = new Date().toISOString().slice(0, 10);
         // Create
@@ -79,6 +185,7 @@ export default function OrdersForm() {
             updatedDate: now,
           };
           sampleOrders.push(newItem);
+          console.log('create')
           return '/purchase/orders';
         }
 
@@ -96,9 +203,9 @@ export default function OrdersForm() {
       }}
       backPath="/purchase/orders"
       width="100%"
-      columns={3}
       showSubmitButton={false}
       readOnly={isReadOnly}
+
       headerActions={
         !orderId ? (
           <Button type="submit" variant="save">Create</Button>

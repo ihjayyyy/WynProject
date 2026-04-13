@@ -39,13 +39,13 @@ export default function DataTable({
     return '';
   };
 
-  if (!data || data.length === 0) {
-    return (
-      <div className={styles.emptyContainer}>
-        <p className={styles.emptyMessage}>{emptyMessage}</p>
-      </div>
-    );
-  }
+  // if (!data || data.length === 0) {
+  //   return (
+  //     <div className={styles.emptyContainer}>
+  //       <p className={styles.emptyMessage}>{emptyMessage}</p>
+  //     </div>
+  //   );
+  // }
 
   return (
     <div className={`${styles.tableContainer} ${className}`}>
@@ -67,6 +67,13 @@ export default function DataTable({
           </tr>
         </thead>
         <tbody>
+          {(!data || data.length === 0 ) && 
+            <tr>
+                <td colSpan={columns.length}>
+                   <p className={styles.emptyMessage}>{emptyMessage}</p>
+                </td>
+            </tr>
+          }
           {data.map((item, index) => {
             if (item && item.fullRow) {
               const span = columns.length + (showActions ? 1 : 0);
