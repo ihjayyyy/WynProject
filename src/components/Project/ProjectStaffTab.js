@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useMemo, useState, useEffect } from 'react';
+import React, { useMemo, useState, useEffect, useCallback } from 'react';
 import DataTable from '../ui/DataTable/DataTable';
 import SearchBar from '../ui/SearchBar/SearchBar';
 import Button from '../ui/Button/Button';
@@ -30,7 +30,7 @@ export default function ProjectStaffTab({ projectId = 0 }) {
   const [scopeOptions, setScopeOptions] = useState([]);
   const toast = useToast();
 
-  const loadData = async () => {
+  const loadData = useCallback(async () => {
     if (!projectId) return;
     const res = await getProjectStaffsByProjectId(projectId);
     if (!res.error) {
@@ -39,11 +39,11 @@ export default function ProjectStaffTab({ projectId = 0 }) {
     } else {
       setItems([]);
     }
-  };
+  }, [projectId]);
 
   useEffect(() => {
     loadData();
-  }, [projectId]);
+  }, [loadData]);
 
   // Load staff dropdown options
   useEffect(() => {
