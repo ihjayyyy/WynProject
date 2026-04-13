@@ -1,5 +1,5 @@
-import OrdersLanding from '../../../../components/Orders/OrdersLanding';
+import PurchaseOrdersLanding from '../../../../components/PurchaseOrders/PurchaseOrdersLanding';
 
 export default function Page() {
-  return <OrdersLanding />;
+  return <PurchaseOrdersLanding />;
 }

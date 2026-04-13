@@ -5,11 +5,14 @@ import modalstyle from "./itemmodal.module.scss"
 import { useForm } from "react-hook-form";
 import { yupResolver } from "@hookform/resolvers/yup";
 import * as Yup from "yup";
+import Button from '../ui/Button/Button';
+import {FiTrash2 } from 'react-icons/fi';
+import ConfirmModal from '../ui/ConfirmModal/ConfirmModal';
 
-const ItemModal = ({ headerLabel, isOpen, onClose, fields }) => {
+const ItemModal = ({ headerLabel, mode = "new", itemIndex=-1, isOpen, onClose, fields, onItemRemove }) => {
 
 const[itemFields, setFields] = useState([]);
-
+const[isConfirmOpen, setConfirmModal] = useState(false);
   useEffect(() => {
     console.log('use effect')
     console.log(fields)
@@ -47,21 +50,22 @@ const schema = buildSchema();
   const handleSave = () => {
     console.log("Save clicked")
 
-    // const returnFields = itemFields.map((item)=>({
-    //   name:item.name,
-    //   value:item.value,
-    //   type:item.type
-    // }));
-
    const itemData =  itemFields.reduce((item, data)=>{
       item[data.name] = data.value;
       return item;
     },{})
 
-    onClose(itemData);
+    onClose(itemData, itemIndex);
     reset();
   };    
 
+  const handleRemove = () => {
+    console.log("Remove confirm clicked")
+
+    onItemRemove(itemIndex);
+    onClose();
+    reset();
+  };    
 const handleChange = (e, item) => {
     console.log(e)
     const val = e.target.type === "number" ? e.target.valueAsNumber : e.target.value;
@@ -78,7 +82,6 @@ const updateField = (fieldNameToUpdate, value) => {
     i.value = value;
    setFields(fieldcopy);
 }
-
 
 
 const content = (
@@ -121,9 +124,15 @@ const content = (
         </div>
 
         <div className={modalstyle.actionContainer} >
-            <button className={modalstyle.actionButton} type="button" onClick={handleSave} disabled={!isValid}>Save</button>
+            <button className={isValid? modalstyle.saveButton : modalstyle.saveDisabledButton} type="button" onClick={handleSave} disabled={!isValid}>Save</button>
+            {mode !=="new" &&<Button size="lg" variant="danger" icon={<FiTrash2 />} title="Delete" onClick={() => {setConfirmModal(true);}} />}
         </div>
-
+        <ConfirmModal open={isConfirmOpen} title="Remove Item?" message="Are you sure you want to remove this item?" confirmText="Remove" confirmVariant="danger" onConfirm={() => {
+              onItemRemove(itemIndex);
+              setConfirmModal(false);
+        }} onCancel={() => {
+          setConfirmModal(false);
+        }} />
 
     </div>
     </div>

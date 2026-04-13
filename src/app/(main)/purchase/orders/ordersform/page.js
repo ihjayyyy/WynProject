@@ -1,5 +1,5 @@
-import OrdersForm from '../../../../../components/Orders/OrdersForm';
+import PurchaseOrdersForm from '../../../../../components/PurchaseOrders/PurchaseOrdersForm';
 
 export default function OrdersFormPage() {
-  return <OrdersForm />;
+  return <PurchaseOrdersForm />;
 }
