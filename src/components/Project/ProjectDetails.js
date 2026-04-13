@@ -8,6 +8,7 @@ import Input from '../ui/Input/Input';
 import Breadcrumbs from '../ui/Breadcrumbs/Breadcrumbs';
 import { getProjects, updateProject } from '../../services/Project';
 import ProjectScope from './ProjectScope';
+import ProjectStaffTab from './ProjectStaffTab';
 import { useToast } from '../ui/Toast/Toast';
 import { FiBriefcase } from 'react-icons/fi';
 
@@ -195,7 +196,7 @@ export default function ProjectDetails({ id: propId }) {
               {activeTab === 'Project Scope & Materials' && <ProjectScope projectId={project.id} editable />}
             {activeTab === 'Expenses' && <div>Expenses content</div>}
             {activeTab === 'Trip Tickets' && <div>Trip tickets content</div>}
-            {activeTab === 'Staff' && <div>Staff content</div>}
+            {activeTab === 'Staff' && <ProjectStaffTab projectId={project.id} />}
             {activeTab === 'Billing & Collection' && <div>Billing & collection content</div>}
           </div>
         )}
