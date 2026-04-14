@@ -20,10 +20,10 @@ export default function DataTable({
     }
   };
 
-  const handleActionClick = (e, item) => {
+  const handleActionClick = (e, item,index) => {
     e.stopPropagation(); // Prevent row click when action is clicked
     if (onActionClick) {
-      onActionClick(item);
+      onActionClick(item,index);
     }
   };
 
@@ -108,7 +108,7 @@ export default function DataTable({
                     <button
                       type="button"
                       className={styles.menuButton}
-                      onClick={(e) => handleActionClick(e, item)}
+                      onClick={(e) => handleActionClick(e, item,index)}
                     >
                       <FiMoreVertical size={16} />
                     </button>
