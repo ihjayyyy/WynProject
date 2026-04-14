@@ -17,6 +17,7 @@ const BASE_COLUMNS = [
   { header: 'Name', key: 'name' },
   { header: 'Code', key: 'code' },
   { header: 'Job', key: 'job' },
+  { header: 'Expenses', key: 'expenses', render: (it) => Number(it.expenses) || 0 },
 ];
 
 export default function ProjectStaffTab({ projectId = 0 }) {
@@ -59,6 +60,7 @@ export default function ProjectStaffTab({ projectId = 0 }) {
           name: s.name || '',
           code: s.code || '',
           job: s.job || '',
+          ratePerHour: Number(s.ratePerHour) || 0,
         }))
       );
     })();
@@ -87,7 +89,7 @@ export default function ProjectStaffTab({ projectId = 0 }) {
     const k = (searchTerm || '').trim().toLowerCase();
     if (!k) return items;
     return items.filter((it) =>
-      [it.name, it.code, it.job]
+      [it.name, it.code, it.job, it.expenses]
         .filter(Boolean)
         .some((v) => String(v).toLowerCase().includes(k))
     );
@@ -161,13 +163,22 @@ export default function ProjectStaffTab({ projectId = 0 }) {
         scopeOptions={scopeOptions}
         onCancel={() => { setIsModalOpen(false); setEditing(null); }}
         onConfirm={async (val) => {
+          const selectedStaff = staffOptions.find((s) => Number(s.value) === Number(val.staffId));
+          const payload = {
+            name: val.name || '',
+            code: val.code || '',
+            scopeId: Number(val.scopeId) || 0,
+            staffId: Number(val.staffId) || 0,
+            job: val.job || '',
+            expenses: Number(selectedStaff?.ratePerHour ?? val.expenses) || 0,
+          };
+
           if (!val.id || val.id === 0) {
-            const payload = { ...val, projectId: Number(projectId) || 0 };
             const res = await createProjectStaff(payload);
             if (res?.error) toast.error('Failed to add staff');
             else { toast.success('Staff added'); await loadData(); }
           } else {
-            const res = await updateProjectStaff(val.id, val);
+            const res = await updateProjectStaff(val.id, payload);
             if (res?.error) toast.error('Failed to update staff');
             else { toast.success('Staff updated'); await loadData(); }
           }

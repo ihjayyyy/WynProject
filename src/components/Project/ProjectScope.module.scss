@@ -49,6 +49,13 @@
 .headerActions {
   display: flex;
   align-items: center;
+  gap: 1rem;
+}
+
+.headerActions .field{
+  display: flex;
+  flex-direction: row;
+  align-items: center;
 }
 
 .tableSection {

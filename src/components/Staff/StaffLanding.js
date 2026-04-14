@@ -12,6 +12,7 @@ const baseColumns = [
   { header: 'Code', key: 'code' },
   { header: 'Name', key: 'name' },
   { header: 'Job', key: 'job' },
+  { header: 'Rate Per Hour', key: 'ratePerHour', render: (item) => Number(item.ratePerHour) || 0 },
   { header: 'UpdatedBy', key: 'updatedBy' },
   { header: 'UpdatedDate', key: 'updatedAt', render: (item) => (item.updatedAt ? new Date(item.updatedAt).toLocaleString() : '') },
 ];
@@ -63,6 +64,7 @@ export default function StaffLanding() {
       item.code,
       item.name,
       item.job,
+      item.ratePerHour,
     ]
       .filter(Boolean)
       .some((value) => String(value).toLowerCase().includes(keyword));
