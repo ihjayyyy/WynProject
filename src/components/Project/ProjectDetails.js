@@ -10,6 +10,7 @@ import { getProjects, updateProject } from '../../services/Project';
 import ProjectScope from './ProjectScope';
 import ProjectStaffTab from './ProjectStaffTab';
 import AttendanceTab from './AttendanceTab';
+import ExpensesTab from './ExpensesTab';
 import { useToast } from '../ui/Toast/Toast';
 import { FiBriefcase } from 'react-icons/fi';
 
@@ -195,7 +196,7 @@ export default function ProjectDetails({ id: propId }) {
         ) : (
           <div className={styles.panel}>
               {activeTab === 'Project Scope & Materials' && <ProjectScope projectId={project.id} editable />}
-            {activeTab === 'Expenses' && <div>Expenses content</div>}
+            {activeTab === 'Expenses' && <ExpensesTab projectId={project.id} />}
             {activeTab === 'Trip Tickets' && <div>Trip tickets content</div>}
             {activeTab === 'Staff' && <ProjectStaffTab projectId={project.id} />}
             {activeTab === 'Attendance' && <AttendanceTab projectId={project.id} />}
