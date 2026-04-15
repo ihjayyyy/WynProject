@@ -51,10 +51,22 @@ function formatTime(value) {
   if (stringValue.includes('T')) {
     const parsed = new Date(stringValue);
     if (!Number.isNaN(parsed.getTime())) {
-      return parsed.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      return parsed.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit', hour12: true });
     }
   }
-  return stringValue.slice(0, 5) || stringValue;
+
+  const timeMatch = stringValue.match(/^(\d{1,2}):(\d{2})/);
+  if (timeMatch) {
+    const hours = Number(timeMatch[1]);
+    const minutes = timeMatch[2];
+    if (!Number.isNaN(hours) && hours >= 0 && hours <= 23) {
+      const suffix = hours >= 12 ? 'PM' : 'AM';
+      const displayHour = hours % 12 || 12;
+      return `${displayHour}:${minutes} ${suffix}`;
+    }
+  }
+
+  return stringValue;
 }
 
 const BASE_COLUMNS = [
@@ -65,7 +77,6 @@ const BASE_COLUMNS = [
   { header: 'Clock Out', key: 'clockOut', render: (item) => formatTime(item.clockOut) },
   { header: 'Hours', key: 'hours', render: (item) => Number(item.hours || 0).toFixed(2) },
   { header: 'OT Hours', key: 'overtimeHours', render: (item) => Number(item.overtimeHours || 0).toFixed(2) },
-  { header: 'Total Cost', key: 'totalCost', render: (item) => Number(item.totalCost || 0).toLocaleString() },
 ];
 
 export default function AttendanceTab({ projectId = 0 }) {
@@ -128,7 +139,6 @@ export default function AttendanceTab({ projectId = 0 }) {
         item.clockOut,
         item.hours,
         item.overtimeHours,
-        item.totalCost,
       ]
         .filter(Boolean)
         .some((value) => String(value).toLowerCase().includes(keyword))

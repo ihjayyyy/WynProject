@@ -6,6 +6,7 @@ import styles from '../ui/ConfirmModal/ConfirmModal.module.scss';
 import Button from '../ui/Button/Button';
 import Input from '../ui/Input/Input';
 import Select from '../ui/Select/Select';
+import inputStyles from '../ui/Input/Input.module.scss';
 
 function buildFormState(initial = {}, projectId = 0) {
   return {
@@ -69,8 +70,8 @@ export default function ExpensesModal({
         <h3 className={styles.title}>{form.id ? 'Edit Expense' : 'Add Expense'}</h3>
         <div className={styles.message}>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-            <Input label="Name" value={form.name || ''} onChange={setField('name')} />
             <Input label="Code" value={form.code || ''} onChange={setField('code')} />
+            <Input label="Name" value={form.name || ''} onChange={setField('name')} />
             <Input
               label="Amount"
               type="number"
@@ -84,16 +85,17 @@ export default function ExpensesModal({
               value={form.referenceNumber ?? ''}
               onChange={(event) => setForm((current) => ({ ...current, referenceNumber: event.target.value }))}
             />
-            <Input
-              label="Description"
-              value={form.description || ''}
-              onChange={setField('description')}
-            />
-
+            
             <div style={{ gridColumn: '1 / -1' }}>
-              <label style={{ display: 'block', marginBottom: 4, fontSize: '0.85rem', fontWeight: 500, color: '#64748b' }}>
-                Scope
-              </label>
+              <Input
+                label="Description"
+                value={form.description || ''}
+                onChange={setField('description')}
+              />
+            </div>
+
+            <div className={inputStyles.field} style={{ gridColumn: '1 / -1' }}>
+              <label>Scope</label>
               <Select
                 value={String(form.scopeId || '')}
                 onChange={(event) => setForm((current) => ({ ...current, scopeId: Number(event.target.value) || 0 }))}

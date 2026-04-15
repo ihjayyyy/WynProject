@@ -5,6 +5,7 @@ import styles from '../ui/ConfirmModal/ConfirmModal.module.scss';
 import Button from '../ui/Button/Button';
 import Input from '../ui/Input/Input';
 import Select from '../ui/Select/Select';
+import inputStyles from '../ui/Input/Input.module.scss';
 
 export default function ProjectStaffModal({ open, initial = {}, staffOptions = [], scopeOptions = [], onCancel, onConfirm }) {
   const buildForm = (init = {}) => ({
@@ -54,10 +55,10 @@ export default function ProjectStaffModal({ open, initial = {}, staffOptions = [
     setForm((f) => ({
       ...f,
       staffId: id,
-      name: found ? found.name || found.label : f.name,
-      code: found ? found.code || f.code : f.code,
+      name: found ? found.name || found.label || '' : '',
+      code: found ? found.code || '' : '',
       job: found ? found.job || f.job : f.job,
-      expenses: found ? Number(found.ratePerHour) || 0 : f.expenses,
+      expenses: found ? Number(found.ratePerHour) || 0 : 0,
     }));
   };
 
@@ -67,8 +68,8 @@ export default function ProjectStaffModal({ open, initial = {}, staffOptions = [
         <h3 className={styles.title}>{form.id ? 'Edit Project Staff' : 'Add Project Staff'}</h3>
         <div className={styles.message}>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-            <div style={{ gridColumn: '1 / -1' }}>
-              <label style={{ display: 'block', marginBottom: 4, fontSize: '0.85rem', fontWeight: 500, color: '#64748b' }}>Staff Member</label>
+            <div className={inputStyles.field} style={{ gridColumn: '1 / -1' }}>
+              <label>Staff Member</label>
               <Select
                 value={String(form.staffId || '')}
                 onChange={handleStaffSelect}
@@ -77,13 +78,11 @@ export default function ProjectStaffModal({ open, initial = {}, staffOptions = [
                 searchable
               />
             </div>
-            <Input label="Name" value={form.name || ''} onChange={set('name')} />
-            <Input label="Code" value={form.code || ''} onChange={set('code')} />
             <Input label="Job" value={form.job || ''} onChange={set('job')} />
             <Input label="Expenses" type="number" value={form.expenses ?? ''} readOnly />
             {scopeOptions.length > 0 && (
-              <div>
-                <label style={{ display: 'block', marginBottom: 4, fontSize: '0.85rem', fontWeight: 500, color: '#64748b' }}>Scope</label>
+              <div className={inputStyles.field} style={{ gridColumn: '1 / -1' }}>
+                <label>Scope</label>
                 <Select
                   value={String(form.scopeId || '')}
                   onChange={(e) => setForm((f) => ({ ...f, scopeId: Number(e.target.value) || 0 }))}

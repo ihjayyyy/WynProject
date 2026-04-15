@@ -6,6 +6,7 @@ import styles from '../ui/ConfirmModal/ConfirmModal.module.scss';
 import Button from '../ui/Button/Button';
 import Input from '../ui/Input/Input';
 import Select from '../ui/Select/Select';
+import inputStyles from '../ui/Input/Input.module.scss';
 
 function toDateValue(value) {
   if (!value) return '';
@@ -202,8 +203,8 @@ export default function AttendanceModal({ open, initial = {}, staffOptions = [],
     setForm((currentForm) => ({
       ...currentForm,
       staffId,
-      name: selectedStaff?.name || selectedStaff?.label || currentForm.name,
-      code: selectedStaff?.code || currentForm.code,
+      name: selectedStaff?.name || selectedStaff?.label || '',
+      code: selectedStaff?.code || '',
       overtimeHours: calculateOvertimeHours(currentForm.hours),
       totalCost: calculateTotalCost(
         selectedStaff?.ratePerHour,
@@ -219,9 +220,9 @@ export default function AttendanceModal({ open, initial = {}, staffOptions = [],
       <div className={styles.panel} onClick={(event) => event.stopPropagation()} style={{ width: 'min(720px, 100%)' }}>
         <h3 className={styles.title}>{form.id ? 'Edit Attendance' : 'Add Attendance'}</h3>
         <div className={styles.message}>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-            <div style={{ gridColumn: '1 / -1' }}>
-              <label style={{ display: 'block', marginBottom: 4, fontSize: '0.85rem', fontWeight: 500, color: '#64748b' }}>Staff Member</label>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(6, minmax(0, 1fr))', gap: 12 }}>
+            <div className={inputStyles.field} style={{ gridColumn: '1 / -1' }}>
+              <label>Staff Member</label>
               <Select
                 value={String(form.staffId || '')}
                 onChange={handleStaffSelect}
@@ -230,19 +231,26 @@ export default function AttendanceModal({ open, initial = {}, staffOptions = [],
                 searchable
               />
             </div>
-            <Input label="Name" value={form.name || ''} onChange={updateField('name')} />
-            <Input label="Code" value={form.code || ''} onChange={updateField('code')} />
-            <Input label="Date" type="date" value={form.date || ''} onChange={updateField('date')} />
-            <Input label="Hours" type="number" step="0.01" value={form.hours ?? ''} readOnly />
-            <Input label="Clock In" type="time" value={form.clockIn || ''} onChange={updateField('clockIn')} />
-            <Input label="Clock Out" type="time" value={form.clockOut || ''} onChange={updateField('clockOut')} />
-            <Input label="Overtime Hours" type="number" step="0.01" value={form.overtimeHours ?? ''} readOnly />
-            <Input label="Total Cost" type="number" step="0.01" value={form.totalCost ?? ''} readOnly />
-            <label style={{ display: 'flex', alignItems: 'center', gap: 8, minHeight: 42, marginTop: 22 }}>
+            <div style={{ gridColumn: 'span 2' }}>
+              <Input label="Date" type="date" value={form.date || ''} readOnly />
+            </div>
+            <div style={{ gridColumn: 'span 2' }}>
+              <Input label="Clock In" type="time" value={form.clockIn || ''} onChange={updateField('clockIn')} />
+            </div>
+            <div style={{ gridColumn: 'span 2' }}>
+              <Input label="Clock Out" type="time" value={form.clockOut || ''} onChange={updateField('clockOut')} />
+            </div>
+            <div style={{ gridColumn: 'span 3' }}>
+              <Input label="Hours" type="number" step="0.01" value={form.hours ?? ''} readOnly />
+            </div>
+            <div style={{ gridColumn: 'span 3' }}>
+              <Input label="Overtime Hours" type="number" step="0.01" value={form.overtimeHours ?? ''} readOnly />
+            </div>
+            <label style={{ display: 'flex', alignItems: 'center', gap: 8, minHeight: 42, marginTop: 22, gridColumn: 'span 3' }}>
               <input type="checkbox" checked={Boolean(form.overtimeApproved)} onChange={updateField('overtimeApproved')} />
               <span>Overtime Approved</span>
             </label>
-            <label style={{ display: 'flex', alignItems: 'center', gap: 8, minHeight: 42, marginTop: 22 }}>
+            <label style={{ display: 'flex', alignItems: 'center', gap: 8, minHeight: 42, marginTop: 22, gridColumn: 'span 3' }}>
               <input type="checkbox" checked={Boolean(form.deductLunchBreak)} onChange={updateField('deductLunchBreak')} />
               <span>Deduct Lunch Break</span>
             </label>

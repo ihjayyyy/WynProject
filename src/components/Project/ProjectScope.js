@@ -107,13 +107,13 @@ export default function ProjectScope({ projectId = 0, editable = true }) {
       );
     } },
     { header: 'Type', key: 'materialType', width: '100px' },
-    { header: 'Unit Cost', key: 'unitCost', align: 'right', width: '120px', render: (it) => (((it && it.isTotalRow) || it.unitCost === '' || it.unitCost == null) ? '' : Number(it.unitCost).toLocaleString()) },
+    // { header: 'Unit Cost', key: 'unitCost', align: 'right', width: '120px', render: (it) => (((it && it.isTotalRow) || it.unitCost === '' || it.unitCost == null) ? '' : Number(it.unitCost).toLocaleString()) },
     { header: 'UoM', key: 'uom', width: '80px' },
     { header: 'Qty', key: 'quantity', align: 'right', width: '80px' },
-    { header: 'VAT', key: 'vat', align: 'right', width: '100px', render: (it) => Number(it.vat || 0).toLocaleString() },
-    { header: 'Material Cost', key: 'materialCost', align: 'right', width: '140px', render: (it) => Number(it.materialCost || 0).toLocaleString() },
-    { header: 'Labor Cost', key: 'laborCost', align: 'right', width: '120px', render: (it) => Number(it.laborCost || 0).toLocaleString() },
-    { header: 'Margin', key: 'margin', align: 'right', width: '100px', render: (it) => (it && (it.margin !== undefined && it.margin !== null) ? Number(it.margin).toLocaleString() : '') },
+    // { header: 'VAT', key: 'vat', align: 'right', width: '100px', render: (it) => Number(it.vat || 0).toLocaleString() },
+    // { header: 'Material Cost', key: 'materialCost', align: 'right', width: '140px', render: (it) => Number(it.materialCost || 0).toLocaleString() },
+    // { header: 'Labor Cost', key: 'laborCost', align: 'right', width: '120px', render: (it) => Number(it.laborCost || 0).toLocaleString() },
+    // { header: 'Margin', key: 'margin', align: 'right', width: '100px', render: (it) => (it && (it.margin !== undefined && it.margin !== null) ? Number(it.margin).toLocaleString() : '') },
     { header: 'Total', key: 'totalCost', align: 'right', width: '140px', render: (it) => Number(it.totalPrice || it.totalAmount || 0).toLocaleString() },
   ];
 
