@@ -12,8 +12,30 @@ import { getAttendanceByProjectId, createAttendance, updateAttendance } from '..
 import { getStaffs } from '../../services/Staff';
 import { useToast } from '../ui/Toast/Toast';
 
-function getTodayValue() {
-  return new Date().toISOString().split('T')[0];
+function toDateInputValue(date) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
+function getCurrentWorkingWeek() {
+  const today = new Date();
+  const dayOfWeek = today.getDay();
+  const mondayOffset = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
+
+  const start = new Date(today);
+  start.setDate(today.getDate() + mondayOffset);
+
+  const end = new Date(start);
+  end.setDate(start.getDate() + 4);
+
+  const cappedEnd = today < end ? today : end;
+
+  return {
+    startDate: toDateInputValue(start),
+    endDate: toDateInputValue(cappedEnd),
+  };
 }
 
 function formatDate(value) {
@@ -47,13 +69,14 @@ const BASE_COLUMNS = [
 ];
 
 export default function AttendanceTab({ projectId = 0 }) {
+  const [defaultDateRange] = useState(getCurrentWorkingWeek);
   const [items, setItems] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editing, setEditing] = useState(null);
   const [staffOptions, setStaffOptions] = useState([]);
-  const [startDate, setStartDate] = useState(getTodayValue);
-  const [endDate, setEndDate] = useState(getTodayValue);
+  const [startDate, setStartDate] = useState(defaultDateRange.startDate);
+  const [endDate, setEndDate] = useState(defaultDateRange.endDate);
   const toast = useToast();
 
   const loadData = useCallback(async () => {

@@ -12,15 +12,25 @@ import inputStyles from '../ui/Input/Input.module.scss';
 /**
  * EntityForm
  * Props:
- * - title: string
- * - icon: ReactNode
- * - fields: Array<{ name, label, type?, placeholder?, span? }>
- * - initialValues: object
- * - onSubmit: async function(values) => void (optional)
- * - backPath: string (path to navigate to after submit/default back)
- * - width: string (optional) - controls form width. Accepts '25%','50%','75%','100%' or shorthand '1/4','1/2','3/4'. Defaults to '100%'.
- * - submitPosition: 'bottom' | 'beforeExtra' (optional) - placement of submit/right actions area. Defaults to 'bottom'.
- * - showSubmitButton: boolean (optional) - controls rendering of default Create/Save button. Defaults to true.
+ * - title: string - form title/heading
+ * - icon: ReactNode - breadcrumb back icon
+ * - fields: Array<{ name, label, type?, placeholder?, span?, hidden?, readOnly?, options?, searchable?, multiline?, rows?, className?, onChange?, render?, component? }> - form fields
+ * - initialValues: object - initial form values
+ * - onSubmit: async function(values) => void | string | { redirect: string } (optional) - submit handler. Returns redirect path or object with redirect property
+ * - backPath: string (optional) - path to navigate to after submit or on back. Defaults to '/'
+ * - readOnly: boolean (optional) - make entire form read-only. Defaults to false
+ * - width: string (optional) - controls form width. Accepts '25%','50%','75%','100%' or shorthand '1/4','1/2','3/4'. Defaults to '100%'
+ * - columns: number (optional) - grid columns: 3 or 8. Defaults to '8'
+ * - extraContent: ReactNode (optional) - extra content rendered after fields
+ * - rightActions: ReactNode (optional) - custom action buttons rendered on the right side before submit button
+ * - headerActions: ReactNode (optional) - custom actions rendered in header
+ * - breadcrumbLabel: string (optional) - breadcrumb label override. Defaults to title
+ * - breadcrumbItems: Array<{ label, href? }> (optional) - breadcrumb items override
+ * - submitPosition: 'bottom' | 'beforeExtra' (optional) - placement of submit/right actions area. Defaults to 'bottom'
+ * - showSubmitButton: boolean (optional) - controls rendering of default Create/Save button. Defaults to true
+ * - collapsed: boolean (optional) - controlled collapse state. Requires allowCollapse=true
+ * - onCollapsedChange: function(collapsed: boolean) => void (optional) - callback when collapse state changes
+ * - allowCollapse: boolean (optional) - enable/disable collapse toggle button. Defaults to false
  */
 export default function EntityForm({ title, icon, fields, initialValues = {}, onSubmit, backPath = '/', readOnly = false, width = '100%', columns = 8, extraContent = null, rightActions = null, headerActions = null, breadcrumbLabel, breadcrumbItems, submitPosition = 'bottom', showSubmitButton = true, collapsed: collapsedProp, onCollapsedChange, allowCollapse = false }) {
   const router = useRouter();
