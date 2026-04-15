@@ -167,11 +167,11 @@ const GetPO =async (id)=>{
    const res =  await Create(updatedPO);
 
     if (res?.error) {
-      toast.error('Failed to save proposal');
+      toast.error('Failed to save purchase order');
       return null;
     }
     else {
-      toast.success('Proposal saved');
+      toast.success('Purchase order saved');
       return '/purchase/orders';  
     }
 
