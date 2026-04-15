@@ -7,7 +7,7 @@ import * as Yup from "yup";
 import { FiPlus, FiEdit2, FiTrash2 } from 'react-icons/fi';
 import Button from '../ui/Button/Button';
 
-export default function DetailsTable({itemModalHeader, columns = [], data  = {items:[],deletedItems:[]}, itemFields=[], onChange, editable = true, emptyMessage='No current items', parentId = 0}) {
+export default function DetailsTable({itemModalHeader, columns = [], data  = {items:[],deletedItems:[]}, itemFields=[], onChange, editable = false, emptyMessage='No current items', parentId = 0}) {
     
     const [items, setItems] = useState([]);
     const [deleteditems, setDeletedItems] = useState([]);
@@ -150,12 +150,12 @@ export default function DetailsTable({itemModalHeader, columns = [], data  = {it
       return (
         <div className={detailStyle.detailContainer}>
             <div className={detailStyle.newButtonContainer}>
-                <button type="button" onClick={(e)=>{
+                {editable && <button type="button" onClick={(e)=>{
                     e.stopPropagation();
                     openModal()
-                }}>Add</button>
+                }}>Add</button>}
             </div>
-             <DataTable columns={columns} data={items} showActions={true} emptyMessage={emptyMessage} onActionClick={openModal} />
+             <DataTable columns={columns} data={items} showActions={editable} emptyMessage={emptyMessage} onActionClick={openModal} />
              <ItemModal headerLabel={itemModalHeader} itemIndex={itemIndex} mode={modalMode} isOpen={isModalOpen} onClose = {close} fields={[...modalFields]} onItemRemove={deleteDataTableItem}> </ItemModal>
         </div>
 

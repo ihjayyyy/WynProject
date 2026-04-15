@@ -51,8 +51,8 @@ export const PODetailsColumns = [
     { header: 'VAT', key: 'vat', align: 'right', width: '140px', render: (it) => Number(it.vat || 0).toFixed(2) },
     { header: 'Amount', key: 'amount', align: 'right', width: '140px', render: (it) => Number(it.amount || 0).toFixed(2) }
 ];
-
- export  const POItemsFields = (materials,po) =>([
+//
+ export  const POItemsFields  = (materials,po) =>([
             {name:'id', label:'id', type:'number',  hidden:true, initialvalue:0},
             {name:'parentId', label:'id', type:'number',  hidden:true, initialvalue:0},
             {name:'material', label:'Material', type:'select', options:materials.map(({ id, name }) =>  ({ value:id, name:name })), readonly:false, 
@@ -64,13 +64,13 @@ export const PODetailsColumns = [
                   console.log(material)
                   const itemfields = [...fields]
 
-                  updateField("unitCost", material.unitCost);
+                  updateField("unitCost", material.purchasePrice);
                   updateField("code", material.code);
                   updateField("name", material.name);
-                  updateField("uom", material.unitOfMeasure);
+                  updateField("uom", material.purchaseUnitOfMeasure);
                   const quantity = itemfields.find(a=>a.name === 'quantity');
                   const discount = itemfields.find(a=>a.name === 'discount');
-                  const subamount = (quantity.value * material.unitCost) - discount.value;
+                  const subamount = (quantity.value * material.purchasePrice) - discount.value;
                   
                   let vat = 0;
                   let amount = subamount;

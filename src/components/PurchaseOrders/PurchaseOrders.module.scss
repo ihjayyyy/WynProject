@@ -1,3 +1,9 @@
+.buttonsContainer{
+    display: flex;
+    flex-direction: row;
+    column-gap: 10px;
+}
+
 .formTitle{
     display: flex;
     flex-direction: row;

@@ -5,12 +5,12 @@ import { useRouter } from 'next/navigation';
 import { FiEdit2, FiEye } from 'react-icons/fi';
 import DropdownAction from '../ui/DropdownAction/DropdownAction';
 import Landing from '../ui/Landing/Landing';
-import { GetAll } from '@/services/purchaseorder';
+import { GetAll } from '@/services/PurchaseOrder';
 
 
 const sampleSuppliers = [];
 const baseColumns = [
-  { header: 'Order No', key: 'id' },
+  { header: 'Order No', key: 'orderNumber' },
    { header: 'Date', key: 'orderDate' },
   { header: 'Supplier', key: 'name' },
    { header: 'Supplier PO', key: 'supplierReferenceNo' },
@@ -72,6 +72,7 @@ export default function OrdersLanding() {
   const filterFn = (item, keyword) => {
     const itemText = [
       item.id,
+      item.orderNumber,
       item.code,
       item.name,
       item.requestedBy,

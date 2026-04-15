@@ -59,7 +59,7 @@ const schema = buildSchema();
     reset();
   };    
 
-  const handleRemove = () => {
+  const handleRemove = (itemIndex) => {
     console.log("Remove confirm clicked")
 
     onItemRemove(itemIndex);
@@ -128,7 +128,7 @@ const content = (
             {mode !=="new" &&<Button size="lg" variant="danger" icon={<FiTrash2 />} title="Delete" onClick={() => {setConfirmModal(true);}} />}
         </div>
         <ConfirmModal open={isConfirmOpen} title="Remove Item?" message="Are you sure you want to remove this item?" confirmText="Remove" confirmVariant="danger" onConfirm={() => {
-              onItemRemove(itemIndex);
+              handleRemove(itemIndex);
               setConfirmModal(false);
         }} onCancel={() => {
           setConfirmModal(false);
