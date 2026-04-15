@@ -1,19 +1,23 @@
-'use client';
 
+'use client';
 import styles from './SidenavLayout.module.scss';
 import Link from 'next/link';
 import { sidenavItems } from './sidenavData';
 import Image from 'next/image';
-import { useState } from 'react';
+import  { useState,useContext, useEffect } from 'react';
+import { AccessContext } from '@/app/(main)/accessContext';
 import { usePathname } from 'next/navigation';
 import {
-  FiChevronLeft,
+  FiChevronLeft,    
   FiChevronRight,
   FiChevronDown,
   FiChevronUp,
 } from 'react-icons/fi';
 
 export default function SidenavLayout({ children }) {
+  const { user, getAccess } = useContext(AccessContext);
+  
+
   const [isCollapsed, setIsCollapsed] = useState(true);
   const [isLogoHovered, setIsLogoHovered] = useState(false);
   const [expandedParents, setExpandedParents] = useState(new Set());
@@ -207,6 +211,13 @@ export default function SidenavLayout({ children }) {
   };
 
   const renderNavItem = (item) => {
+    const pageaccess = getAccess(item.name);
+    
+    if(pageaccess.access === 'n') 
+      {
+        console.log('hide', item.name)
+        return null;
+      }
     const hasChildren = item.children && item.children.length > 0;
     const isExpanded = expandedParents.has(item.label);
     const isActive = isParentActive(item);
@@ -272,7 +283,7 @@ export default function SidenavLayout({ children }) {
           </button>
           {!isCollapsed && isExpanded && (
             <ul className={styles.childNavList}>
-              {item.children.map((child) => (
+              {item.children.map((child) => getAccess(child.name).access !== 'n' && (
                   <li key={child.label} className={styles.childNavItem}>
                   <Link
                     href={child.href}
@@ -359,8 +370,8 @@ export default function SidenavLayout({ children }) {
             />
             {!isCollapsed && (
               <div className={styles.userDetails}>
-                <span className={styles.userName}>Mia de Silva</span>
-                <span className={styles.userEmail}>mia@untitledui.com</span>
+                <span className={styles.userName}>{user?.name}</span>
+                <span className={styles.userEmail}>{user?.email}</span>
               </div>
             )}
           </div>

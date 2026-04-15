@@ -1,5 +1,7 @@
+import React from "react";
 import SidenavLayout from '../../components/SidenavLayout/SidenavLayout';
 import { Geist, Geist_Mono } from "next/font/google";
+import { AccessProvider } from './accessContext';
 import '../globals.scss';
 
 const geistSans = Geist({
@@ -19,8 +21,10 @@ export const metadata = {
 
 export default function MainLayout({ children }) {
   return (
-    <div className={`${geistSans.variable} ${geistMono.variable}`}>
-      <SidenavLayout>{children}</SidenavLayout>
-    </div>
+    <AccessProvider>
+        <div className={`${geistSans.variable} ${geistMono.variable}`}>
+          <SidenavLayout>{children}</SidenavLayout>
+        </div>
+    </AccessProvider>
   );
 }
