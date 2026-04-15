@@ -14,6 +14,7 @@ export default function ProjectStaffModal({ open, initial = {}, staffOptions = [
     scopeId: 0,
     staffId: 0,
     job: '',
+    expenses: 0,
     ...init,
   });
 
@@ -22,6 +23,14 @@ export default function ProjectStaffModal({ open, initial = {}, staffOptions = [
   useEffect(() => {
     setForm(buildForm(initial));
   }, [initial, open]);
+
+  useEffect(() => {
+    if (!open || !form.staffId) return;
+    const found = staffOptions.find((s) => Number(s.value) === Number(form.staffId));
+    const rate = Number(found?.ratePerHour) || 0;
+    if (!found || Number(form.expenses) === rate) return;
+    setForm((f) => ({ ...f, expenses: rate }));
+  }, [form.staffId, form.expenses, open, staffOptions]);
 
   useEffect(() => {
     if (!open) return;
@@ -48,6 +57,7 @@ export default function ProjectStaffModal({ open, initial = {}, staffOptions = [
       name: found ? found.name || found.label : f.name,
       code: found ? found.code || f.code : f.code,
       job: found ? found.job || f.job : f.job,
+      expenses: found ? Number(found.ratePerHour) || 0 : f.expenses,
     }));
   };
 
@@ -70,6 +80,7 @@ export default function ProjectStaffModal({ open, initial = {}, staffOptions = [
             <Input label="Name" value={form.name || ''} onChange={set('name')} />
             <Input label="Code" value={form.code || ''} onChange={set('code')} />
             <Input label="Job" value={form.job || ''} onChange={set('job')} />
+            <Input label="Expenses" type="number" value={form.expenses ?? ''} readOnly />
             {scopeOptions.length > 0 && (
               <div>
                 <label style={{ display: 'block', marginBottom: 4, fontSize: '0.85rem', fontWeight: 500, color: '#64748b' }}>Scope</label>
@@ -96,6 +107,7 @@ export default function ProjectStaffModal({ open, initial = {}, staffOptions = [
                 scopeId: Number(form.scopeId) || 0,
                 staffId: Number(form.staffId) || 0,
                 job: form.job || '',
+                expenses: Number(form.expenses) || 0,
               });
             }}
           >

@@ -53,6 +53,7 @@ export default function StaffForm() {
     { name: 'code', label: 'Code', span: 'span2' },
     { name: 'name', label: 'Name', span: 'span2' },
     { name: 'job', label: 'Job', span: 'span2' },
+    { name: 'ratePerHour', label: 'Rate Per Hour', type: 'number', span: 'span2' },
   ];
 
   return (
@@ -67,6 +68,7 @@ export default function StaffForm() {
           name: values.name || '',
           code: values.code || '',
           job: values.job || '',
+          ratePerHour: Number(values.ratePerHour) || 0,
         };
 
         if (!staffId) {

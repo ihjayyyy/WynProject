@@ -9,6 +9,7 @@ import Breadcrumbs from '../ui/Breadcrumbs/Breadcrumbs';
 import { getProjects, updateProject } from '../../services/Project';
 import ProjectScope from './ProjectScope';
 import ProjectStaffTab from './ProjectStaffTab';
+import AttendanceTab from './AttendanceTab';
 import { useToast } from '../ui/Toast/Toast';
 import { FiBriefcase } from 'react-icons/fi';
 
@@ -60,7 +61,7 @@ export default function ProjectDetails({ id: propId }) {
 
   const status = (Number(project.overallProgress) || 0) >= 100 ? 'Completed' : 'On Going';
 
-  const tabs = ['Details', 'Project Scope & Materials', 'Expenses', 'Trip Tickets', 'Staff', 'Billing & Collection'];
+  const tabs = ['Details', 'Project Scope & Materials', 'Expenses', 'Trip Tickets', 'Staff', 'Attendance', 'Billing & Collection'];
 
   return (
     <div className={styles.wrap}>
@@ -197,6 +198,7 @@ export default function ProjectDetails({ id: propId }) {
             {activeTab === 'Expenses' && <div>Expenses content</div>}
             {activeTab === 'Trip Tickets' && <div>Trip tickets content</div>}
             {activeTab === 'Staff' && <ProjectStaffTab projectId={project.id} />}
+            {activeTab === 'Attendance' && <AttendanceTab projectId={project.id} />}
             {activeTab === 'Billing & Collection' && <div>Billing & collection content</div>}
           </div>
         )}

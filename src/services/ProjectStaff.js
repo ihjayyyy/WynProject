@@ -6,6 +6,7 @@ export const INITIAL_PROJECT_STAFF = {
   scopeId: 0,
   staffId: 0,
   job: '',
+  expenses: 0,
 };
 
 async function getProjectStaffs() {
@@ -79,4 +80,6 @@ async function deleteProjectStaff(id) {
 }
 
 export { getProjectStaffs, getProjectStaffsByProjectId, createProjectStaff, updateProjectStaff, deleteProjectStaff };
-export default { getProjectStaffs, getProjectStaffsByProjectId, createProjectStaff, updateProjectStaff, deleteProjectStaff, INITIAL_PROJECT_STAFF };
+const ProjectStaffService = { getProjectStaffs, getProjectStaffsByProjectId, createProjectStaff, updateProjectStaff, deleteProjectStaff, INITIAL_PROJECT_STAFF };
+
+export default ProjectStaffService;
