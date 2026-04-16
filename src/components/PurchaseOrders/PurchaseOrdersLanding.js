@@ -7,7 +7,7 @@ import DropdownAction from '../ui/DropdownAction/DropdownAction';
 import Landing from '../ui/Landing/Landing';
 import { GetAll } from '@/services/PurchaseOrder';
 import InvalidPage from '@/components/InvalidPage/page';
-import { AccessContext } from '@/app/(main)/accessContext';
+import { AccessContext } from '@/app/contextProviders/accessContext';
 
 const baseColumns = [
   { header: 'Order No', key: 'orderNumber' },

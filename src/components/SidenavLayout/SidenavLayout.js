@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { sidenavItems } from './sidenavData';
 import Image from 'next/image';
 import  { useState,useContext, useEffect } from 'react';
-import { AccessContext } from '@/app/(main)/accessContext';
+import { AccessContext } from '@/app/contextProviders/accessContext';
 import { usePathname } from 'next/navigation';
 import {
   FiChevronLeft,    

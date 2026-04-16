@@ -60,7 +60,7 @@ useEffect(() => {
     const pageAccess = getAccess(pagename).access;
 
      const matches = access.split('').filter(char => pageAccess.includes(char));
-     console.log(pageAccess, matches)
+    // console.log(pageAccess, matches)
      return matches && matches.length > 0 && true;
  
    }

@@ -10,13 +10,11 @@ import EntityForm from '../EntityForm/EntityForm';
 import Button from '../ui/Button/Button';
 import { getSuppliers } from '@/services/Supplier';
 import { getMaterials } from '@/services/Materials';
-import * as Yup from "yup";
-import { initAsyncCompiler } from 'sass';
 import POStyles from './PurchaseOrders.module.scss'
-import { InitialData, Create, Get } from '@/services/PurchaseOrder';
+import { InitialData, Create, Get, Update, SubmitForApproval, Approve, Reject, SetStatus } from '@/services/PurchaseOrder';
 import { useToast } from '../ui/Toast/Toast';
 import InvalidPage from '@/components/InvalidPage/page';
-import { AccessContext } from '@/app/(main)/accessContext';
+import { AccessContext } from '@/app/contextProviders/accessContext';
 
 export default function PurchaseOrdersForm() {
   const PageName = 'Purchase.Orders';
@@ -29,7 +27,8 @@ export default function PurchaseOrdersForm() {
   const [mode, setMode] = useState(searchParams.get('mode') || 'view');
   const [suppliers, setSuppliers] = useState([]); 
   const [materials, setMaterials] = useState([]); 
-  const [po, setPO] = useState({}); 
+  const [po, setPO] = useState({});
+  const [validPO, setvalidPO] = useState(false); 
   const [tableData, setTableData] = useState([]); 
   const [totalExcluded, setTotalExcluded] = useState(0);
   const [totalVAT, setTotalVAT] = useState(0);
@@ -39,10 +38,10 @@ export default function PurchaseOrdersForm() {
       console.log("field changed.",fieldname,value, formData);
       const poChildren = po.children.map(d => {
                 let vat = 0;
-                console.log(d)
-                let subamount = (d.unitcost * d.quantity) - d.discount;
-                let amount = subamount;
 
+                let subamount = (d.unitCost * d.quantity) - d.discount;
+                let amount = subamount;
+                  console.log(formData.vatType)
                   switch(formData.vatType){
                      case "included":
                         vat = Math.round((subamount - (subamount / 1.12)) * 100) / 100;
@@ -99,30 +98,33 @@ export default function PurchaseOrdersForm() {
   GetPO();
 }, [orderId]);
 
-const GetPO =async (id)=>{
+const GetPO =async ()=>{
 
     let initPO = {...InitialData}
     if(orderId!==0){
       const getpo = await Get(orderId);
       console.log("get po", getpo)
-        initPO =  getpo.data;
-      }
+      initPO =  getpo.data;       
+    }
+    else{
+      setMode("new");
+    }
     setPO(initPO) ;
+    setvalidPO( Object.keys(initPO).length === 0 ? false:true);
     setTableData({items:initPO.children, deletedItems:initPO.deletedChildren})
 }
 
 //Set Form View
 const isReadOnly  = useMemo(() => {
-  if(po)
+  if(validPO)
     return mode === 'view';
-     
   else
     return true;
   }, [po, mode]);
 
 //Set Form Title
 const formTitle = useMemo(() => {
-    const title =  po.status ? po.orderNumber : 'New Purchase Order';
+    const title =  po &&  po.status ? po.orderNumber : 'New Purchase Order';
    return <div className={POStyles.formTitle}><span>{title}</span>{po.status && <span className={POStyles.status}>{po.status}</span>}</div>
 }, [po]);
 
@@ -163,7 +165,7 @@ const updatePOItemFields = ()=>{
   }
 
 //Events: Save Form
-  const submit = async(entity)=>{
+  const save = async(entity)=>{
     console.log(entity)
     entity.children = po.children;
     entity.deletedChildren = po.deletedChildren;
@@ -184,8 +186,14 @@ const updatePOItemFields = ()=>{
 
   }
 
+  const submitForApproval = async()=>{
+    setMode("edit");
+    const res = await SubmitForApproval(id);
+
+  }
+
   const tryCancelEditMode = () =>{
-      setMode('view');
+    setMode('view');
   }
   const closeForm = () =>{
       router.push(backPath);
@@ -194,13 +202,14 @@ const updatePOItemFields = ()=>{
 
   //buttons
   const CreateButton = () =>{
-    return isAllowed(PageName, 'w') && !orderId ? <Button type="submit" variant="save">Create</Button> : null;
+    return isAllowed(PageName, 'w') && !orderId ? <Button type="submit" variant="save">Save</Button> : null;
   }
 
   const ViewButton = () =>{
     return isAllowed(PageName, 'w') && orderId && mode === 'view' ?
-    <div  className={POStyles.buttonsContainer}><Button onClick={()=>setMode("edit")} variant="save">Edit</Button>
-        {po.status === 'draft' && <Button onClick={()=>setMode("edit")} variant="save">Submit</Button>}  
+    <div  className={POStyles.buttonsContainer}>
+        <Button onClick={()=>setMode("edit")} variant="save">Edit</Button>
+        {po && po.status && po.status.toLowerCase() === 'draft' && <Button onClick={()=>submitForApproval()} variant="save">Submit</Button>}  
     </div> : null;
   }
 
@@ -214,7 +223,7 @@ const updatePOItemFields = ()=>{
   
 
     const ApprovalButton = () =>{
-    return isAllowed(PageName, 'a') && orderId && po.status === "submitted"  ?
+    return isAllowed(PageName, 'a') && orderId && po.status && po.status.toLowerCase() === "submitted"  ?
     <div  className={POStyles.buttonsContainer}>
       <Button  variant="outlineDanger" onClick={tryCancelEditMode}>Reject</Button>
        <Button variant="save">Approve</Button>
@@ -222,7 +231,7 @@ const updatePOItemFields = ()=>{
   }
 
   return isAllowed(PageName, 'r') ? 
-      <div>{ po ? 
+  validPO ? 
         <EntityForm
           title={formTitle}
           breadcrumbLabel="Purchase Order"
@@ -232,7 +241,7 @@ const updatePOItemFields = ()=>{
 
           extraContent={<div className={POStyles.extraContentContainer}>
                           <DetailsTable itemModalHeader="Order Details"  parentId={orderId} 
-                                  columns={poDetailsColumns} editable={!isReadOnly} 
+                                  columns={poDetailsColumns} editable={isAllowed(PageName, 'w') && !isReadOnly} 
                                   itemFields={poItemFields} data={tableData} onChange={detailsUpdated} />
                           <div className={POStyles.summaryContainer}>
                               <div className={POStyles.notesContainer}>
@@ -250,7 +259,7 @@ const updatePOItemFields = ()=>{
           </div>
                 
               }
-          onSubmit={submit}
+          onSubmit={save}
           backPath={backPath}
           width="100%"
           showSubmitButton={false}
@@ -267,10 +276,7 @@ const updatePOItemFields = ()=>{
           }
         />
         :
-        <div>Invalid Purchase Order</div>
-      }
-      </div>
+        <InvalidPage message='Purchase order not found.'/>
   :
   <InvalidPage/>
-  ;
 }

@@ -1,8 +1,9 @@
 import React from "react";
 import SidenavLayout from '../../components/SidenavLayout/SidenavLayout';
 import { Geist, Geist_Mono } from "next/font/google";
-import { AccessProvider } from './accessContext';
+import { AccessProvider } from '../contextProviders/accessContext';
 import '../globals.scss';
+import { ConfirmModalProvider } from "../contextProviders/confirmModalContext";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -22,9 +23,11 @@ export const metadata = {
 export default function MainLayout({ children }) {
   return (
     <AccessProvider>
+      <ConfirmModalProvider>
         <div className={`${geistSans.variable} ${geistMono.variable}`}>
           <SidenavLayout>{children}</SidenavLayout>
         </div>
+      </ConfirmModalProvider>
     </AccessProvider>
   );
 }

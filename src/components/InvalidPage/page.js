@@ -1,10 +1,10 @@
 import style from './InvalidPage.module.scss'
-export default function InvalidPage() {
+export default function InvalidPage({message="You don't have permission to access this page."}) {
 
 
   return (
     <div className={style.pageContainer}>
-        <span>You don't have permission to access this page.</span>
+        <span>{message}</span>
     </div>
   )
 }

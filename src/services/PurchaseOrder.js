@@ -41,7 +41,7 @@ async function GetAll() {
             headers: { Accept: '*/*' },
         });
         const json = await res.json();
-        return { data: json && json.value ? json.value : json, error: null };
+        return { data: json && json.value, error: null };
     } catch (error) {
         return { data: null, error: error?.message || error };
     }
@@ -57,7 +57,7 @@ async function Get(id) {
         });
         const json = await res.json();
         console.log(json)
-        return { data: json && json.value ? json.value : json, error: null };
+        return { data: json && json.value ? json.value : {} , error: null };
     } catch (error) {
         return { data: null, error: error?.message || error };
     }
@@ -100,7 +100,16 @@ async function Update(id, payload) {
         return { data: null, error: error?.message || error };
     }
 }
+async function SubmitForApproval(id) {
+    return SetStatus('Submit',id)
+}
 
+async function Approve(id) {
+    return SetStatus('Approve',id)
+}
+async function Reject(id) {
+    return SetStatus('Reject',id)
+}
 async function SetStatus(status, id) {
     try {
         const url = `${API_BASE_URL}/${status}/${id}`;
@@ -120,12 +129,19 @@ export {
     Get,
     Create,
     Update,
-    SetStatus
+    SetStatus,
+    SubmitForApproval,
+    Approve,
+    Reject,
 }
+
 export default{
     GetAll,
     Get,
     Create,
     Update,
-    SetStatus
+    SetStatus,
+    SubmitForApproval,
+    Approve,
+    Reject
 }

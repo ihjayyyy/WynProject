@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useContext } from "react";
 import { createPortal } from 'react-dom';
 import { FiX } from "react-icons/fi";
 import modalstyle from "./itemmodal.module.scss"
@@ -7,12 +7,14 @@ import { yupResolver } from "@hookform/resolvers/yup";
 import * as Yup from "yup";
 import Button from '../ui/Button/Button';
 import {FiTrash2 } from 'react-icons/fi';
-import ConfirmModal from '../ui/ConfirmModal/ConfirmModal';
+// import ConfirmModal from '../ui/ConfirmModal/ConfirmModal';
+import { ConfirmModalContext } from '@/app/contextProviders/confirmModalContext';
 
 const ItemModal = ({ headerLabel, mode = "new", itemIndex=-1, isOpen, onClose, fields, onItemRemove }) => {
+const { showConfirmModal } = useContext(ConfirmModalContext);
 
 const[itemFields, setFields] = useState([]);
-const[isConfirmOpen, setConfirmModal] = useState(false);
+// const[isConfirmOpen, setConfirmModal] = useState(false);
   useEffect(() => {
     console.log('use effect')
     console.log(fields)
@@ -46,6 +48,14 @@ const schema = buildSchema();
     reset(); // reset form values and errors
     onClose(null);
   };  
+
+  const handleShowConfirm =(itemindex)=>{
+    const title = "Remove item";
+    const message = "Are you sure you want to remove this item?";
+    const confirmText = "Remove";
+    const variant="danger";
+    showConfirmModal(title,message,confirmText,variant, ()=>()=>handleRemove(itemindex));
+  }
 
   const handleSave = () => {
     console.log("Save clicked")
@@ -125,14 +135,14 @@ const content = (
 
         <div className={modalstyle.actionContainer} >
             <button className={isValid? modalstyle.saveButton : modalstyle.saveDisabledButton} type="button" onClick={handleSave} disabled={!isValid}>Save</button>
-            {mode !=="new" &&<Button size="lg" variant="danger" icon={<FiTrash2 />} title="Delete" onClick={() => {setConfirmModal(true);}} />}
+            {mode !=="new" &&<Button size="lg" variant="danger" icon={<FiTrash2 />} title="Delete" onClick={() => {handleShowConfirm(itemIndex);}} />}
         </div>
-        <ConfirmModal open={isConfirmOpen} title="Remove Item?" message="Are you sure you want to remove this item?" confirmText="Remove" confirmVariant="danger" onConfirm={() => {
+        {/* <ConfirmModal open={isConfirmOpen} title="Remove Item?" message="Are you sure you want to remove this item?" confirmText="Remove" confirmVariant="danger" onConfirm={() => {
               handleRemove(itemIndex);
               setConfirmModal(false);
         }} onCancel={() => {
           setConfirmModal(false);
-        }} />
+        }} /> */}
 
     </div>
     </div>

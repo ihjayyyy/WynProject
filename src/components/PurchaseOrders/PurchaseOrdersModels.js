@@ -74,8 +74,8 @@ export const PODetailsColumns = [
                   
                   let vat = 0;
                   let amount = subamount;
-
-                  switch(po.vatType){
+                  const vatType = po && po.vatType ? po.vatType : "";
+                  switch(vatType){
                      case "included":
                         vat = Math.round((subamount - (subamount / 1.12)) * 100) / 100;
                         break;
@@ -116,7 +116,8 @@ export const PODetailsColumns = [
                   const amount = subamount;
                    let vat = 0;
 
-                 switch(po.vatType){
+                  const vatType = po && po.vatType ? po.vatType : "";
+                  switch(vatType){
                      case "included":
                         vat = Math.round((subamount - (subamount / 1.12)) * 100) / 100;
                         break;
@@ -147,7 +148,8 @@ export const PODetailsColumns = [
                  const subamount = (item.value * quantity.value) - discount.value;
                   const amount = subamount;
                    let vat = 0;
-                 switch(po.vatType){
+                  const vatType = po && po.vatType ? po.vatType : "";
+                  switch(vatType){
                      case "included":
                         vat = Math.round((subamount - (subamount / 1.12)) * 100) / 100;
                         break;
@@ -178,7 +180,8 @@ export const PODetailsColumns = [
                   const subamount = (quantity.value * unitcost.value) - item.value;
                   const amount = subamount;
                    let vat = 0;
-                 switch(po.vatType){
+                  const vatType = po && po.vatType ? po.vatType : "";
+                  switch(vatType){
                      case "included":
                         vat = Math.round((subamount - (subamount / 1.12)) * 100) / 100;
                         break;
@@ -197,6 +200,6 @@ export const PODetailsColumns = [
                   updateField("amount", amount)
                }, 
             },
-            {name:'vat', label:'VAT (' + po.vatType +")", type:'currency',  readonly:true, initialvalue:0, validator : Yup.number().required(`Amount is required`)},
+            {name:'vat', label:'VAT (' + po.vatType   + ")", type:'currency',  readonly:true, initialvalue:0, validator : Yup.number().required(`Amount is required`)},
             {name:'amount', label:'Amount', type:'currency',  readonly:true, initialvalue:0, validator : Yup.number().required(`Amount is required`)},
     ]);
