@@ -1,14 +1,14 @@
 'use client';
 
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState, useContext } from 'react';
 import { useRouter } from 'next/navigation';
 import { FiEdit2, FiEye } from 'react-icons/fi';
 import DropdownAction from '../ui/DropdownAction/DropdownAction';
 import Landing from '../ui/Landing/Landing';
 import { GetAll } from '@/services/PurchaseOrder';
+import InvalidPage from '@/components/InvalidPage/page';
+import { AccessContext } from '@/app/(main)/accessContext';
 
-
-const sampleSuppliers = [];
 const baseColumns = [
   { header: 'Order No', key: 'orderNumber' },
    { header: 'Date', key: 'orderDate' },
@@ -21,8 +21,10 @@ const baseColumns = [
 ];
 
 export default function OrdersLanding() {
- 
-  const router = useRouter();
+const PageName = 'Purchase.Orders';
+const { isAllowed } = useContext(AccessContext);
+
+const router = useRouter();
   const[orders, setOrders] = useState([]);
 
   const getPO = async()=> {
@@ -35,10 +37,11 @@ export default function OrdersLanding() {
   },[]);
 
 
+
   const actionItems = useMemo(
     () => [
-      { key: 'view', label: 'View', icon: <FiEye size={14} />, onClick: (item) => router.push(`/purchase/orders/ordersform?id=${item.id}`) },
-      { key: 'edit', label: 'Edit', icon: <FiEdit2 size={14} />, onClick: (item) => router.push(`/purchase/orders/ordersform?id=${item.id}&mode=edit`) },
+      isAllowed(PageName,'r') && { key: 'view', label: 'View', icon: <FiEye size={14} />, onClick: (item) => router.push(`/purchase/orders/ordersform?id=${item.id}`) },
+      isAllowed(PageName,'w') && { key: 'edit', label: 'Edit', icon: <FiEdit2 size={14} />, onClick: (item) => router.push(`/purchase/orders/ordersform?id=${item.id}&mode=edit`) },
     ],
     [router]
   );
@@ -90,17 +93,18 @@ export default function OrdersLanding() {
   };
 
   return (
-    <Landing
+    isAllowed(PageName,'r') ?  
+      <Landing
       title="Orders"
       data={orders}
       columns={columns}
       stats={orderStats}
       searchPlaceholder="Search orders"
-      newButtonLabel="New Order"
+      newButtonLabel= {isAllowed(PageName,'w') ? "New Order" : ""}
       onNew={() => router.push('/purchase/orders/ordersform')}
       emptyMessage="No orders found"
       width="320px"
       filterFn={filterFn}
     />
-  );
+  : <InvalidPage/>) 
 }

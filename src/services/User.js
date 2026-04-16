@@ -62,7 +62,7 @@ export async function getUserAccess() {
       },
           {
             name: 'Purchase.Orders',
-            access:'n'
+            access:'r'
           },
           {
             name: 'Purchase.Deliveries',
