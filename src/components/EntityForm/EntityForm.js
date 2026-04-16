@@ -172,12 +172,13 @@ export default function EntityForm({ title, icon, fields, initialValues = {}, on
         } else if (result && typeof result === 'object' && result.redirect) {
           redirectTo = result.redirect;
         }
+        
       } else {
         // default behavior: log
         console.log('Form submitted', values);
       }
 
-      router.push(redirectTo || backPath);
+     // router.push(redirectTo || backPath);
     } catch (err) {
       console.error('EntityForm submit error', err);
       alert('Failed to submit: ' + (err.message || err));

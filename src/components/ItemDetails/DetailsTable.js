@@ -32,7 +32,7 @@ export default function DetailsTable({itemModalHeader, columns = [], data  = {it
     
 
       const initializeItem = (data) => {
-        console.log(modalFields)
+      //  console.log(modalFields)
        const initializedFields = modalFields.map((item)=>{
            const keyValue = data ? data.find(k => k.key === item.name) : null; 
            const value = keyValue ? keyValue.value : item.initialvalue && item.initialvalue !== "undefined" ? item.initialvalue : "";
@@ -71,8 +71,8 @@ export default function DetailsTable({itemModalHeader, columns = [], data  = {it
 
       const openModal = (data, index=-1) =>{
        
-        console.log('Open Item Modal');
-        console.log(modalFields)
+     //   console.log('Open Item Modal');
+     //   console.log(modalFields)
         setItemIndex(index);
         initializeItem();
         if(data) 
@@ -94,8 +94,8 @@ export default function DetailsTable({itemModalHeader, columns = [], data  = {it
     }
 
     const close = (data, index) =>{
-        console.log('Close Item Modal');
-        console.log(modalFields)
+    //    console.log('Close Item Modal');
+    //    console.log(modalFields)
         console.log(data);
         console.log(index)
         if(data){

@@ -7,14 +7,14 @@ import { yupResolver } from "@hookform/resolvers/yup";
 import * as Yup from "yup";
 import Button from '../ui/Button/Button';
 import {FiTrash2 } from 'react-icons/fi';
-import { ConfirmModalContext } from '@/app/contextProviders/confirmModalContext';
+
 import Input from '../ui/Input/Input';
 import Select from '../ui/Select/Select';
 import inputStyles from '../ui/Input/Input.module.scss';
-
+import { useConfirmModal } from "@/app/contextProviders/confirmModalContext";
 const ItemModal = ({ headerLabel, mode = "new", itemIndex=-1, isOpen, onClose, fields, onItemRemove }) => {
 
-const { showConfirmModal } = useContext(ConfirmModalContext);
+const confirmModal = useConfirmModal();
 
   const handleShowConfirm =(itemindex)=>{
     const title = "Remove item";
@@ -22,14 +22,14 @@ const { showConfirmModal } = useContext(ConfirmModalContext);
     const confirmText = "Remove";
     const variant="danger";
     const action = ()=>()=>handleRemove(itemindex);
-    showConfirmModal(title,message,confirmText,variant, action);
+    confirmModal.show(title,message,confirmText,variant, action);
   }
 
 const[itemFields, setFields] = useState([]);
 
   useEffect(() => {
-    console.log('use effect')
-    console.log(fields)
+ //   console.log('use effect')
+ //   console.log(fields)
     const tempFields = [...fields]
     setFields(tempFields)
    
@@ -109,7 +109,7 @@ const handleChange = (e, item) => {
     ));
     setFields(nextFields);
 
-  item.onChange && item.onChange(item, updateField, nextFields, val);
+  item.onChange && item.onChange(e.target, updateField, nextFields, val);
 
 };
 
@@ -126,7 +126,7 @@ const updateField = (fieldNameToUpdate, value) => {
 
 
 const content = (
-    <div className={modalstyle.itemModal} onClick={handleClose}>
+    <div className={modalstyle.itemModal} >
     <div className={modalstyle.modalcontainer}  onClick={(e) => e.stopPropagation()}>
         <div className={modalstyle.modalHeader}>
             <h3 className={modalstyle.title}>{headerLabel}</h3>

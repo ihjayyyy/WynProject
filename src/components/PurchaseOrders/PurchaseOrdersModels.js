@@ -78,7 +78,7 @@ export const PODetailsColumns = [
                validator : Yup.string().required(`Material is required`),
                onChange : (item, updateField, fields) => {
 
-                           const material = materials.find(a => a.id == item.value)
+                  const material = materials.find(a => a.id == item.value)
                   console.log(material)
                   const itemfields = [...fields]
 

@@ -15,10 +15,12 @@ import { InitialData, Create, Get, Update, SubmitForApproval, Approve, Reject, S
 import { useToast } from '../ui/Toast/Toast';
 import InvalidPage from '@/components/InvalidPage/page';
 import { AccessContext } from '@/app/contextProviders/accessContext';
+import { useConfirmModal } from '@/app/contextProviders/confirmModalContext';
 
 export default function PurchaseOrdersForm() {
   const PageName = 'Purchase.Orders';
   const { isAllowed } = useContext(AccessContext);
+  const confirmModal = useConfirmModal();
   const router = useRouter();
   const toast = useToast();
   const searchParams = useSearchParams();
@@ -178,44 +180,83 @@ const updatePOItemFields = ()=>{
     setPOItemFields(poitems);
   }
 
+const handleSaveConfirm =(entity)=>{
+  console.log(entity)
+      const title = "Save PO";
+      const message = "Are you sure you want to save this PO?";
+      const confirmText = "Save";
+      const variant="primary";
+      const action =()=>async ()=>await save(entity);
+      confirmModal.show(title,message,confirmText,variant, action);
+}
 //Events: Save Form
   const save = async(entity)=>{
-    console.log(entity)
-    entity.children = (po.children || []).map((child) => ({
-      ...child,
-      quantity: Number(child.quantity || 0),
-      unitCost: Number(child.unitCost || 0),
-      discount: Number(child.discount || 0),
-      vat: Number(child.vat || 0),
-      amount: Number(child.amount || 0),
-    }));
-    entity.deletedChildren = po.deletedChildren;
-    const updatedPO = {...po, ...entity}
+    console.log(po)
+
+    //final validate entity
+
+    // entity.children = (po.children || []).map((child) => ({
+    //   ...child,
+    //   quantity: Number(child.quantity || 0),
+    //   unitCost: Number(child.unitCost || 0),
+    //   discount: Number(child.discount || 0),
+    //   vat: Number(child.vat || 0),
+    //   amount: Number(child.amount || 0),
+    // }));
+    //entity.deletedChildren = po.deletedChildren;
+    //const updatedPO = {...po, ...entity, vat:po.vat, amount:po.amount}
+    const updatedPO = {...entity, ...po}
     console.log("submit")
     console.log(updatedPO)
-   const res =  await Create(updatedPO);
+    
+    let res = {};
 
+    updatedPO.id && updatedPO.id <=0 ? res =  await Create(updatedPO) : res = await Update(updatedPO.id,updatedPO);
+    console.log(res);
     if (res?.error) {
-      toast.error('Failed to save purchase order');
+      toast.error('Failed to save purchase order.');
       return null;
     }
     else {
-      toast.success('Purchase order saved');
-      return '/purchase/orders';  
+      toast.success('Purchase Order has been saved.');
+      router.push(backPath);  
     }
 
 
   }
 
+  const CancelPO = async()=>{
+    setMode("cancel PO");
+    const res = await SubmitForApproval(id);
+
+  }
   const submitForApproval = async()=>{
     setMode("edit");
     const res = await SubmitForApproval(id);
 
   }
+  const handleCanceEditConfirm =()=>{
+      const title = "Cancel Edit";
+      const message = "Are you sure you want to cancel editing of this PO?";
+      const confirmText = "Cancel Edit";
+      const variant="dangaer";
+      const action = ()=> ()=>CancelEdit();
+      confirmModal.show(title,message,confirmText,variant, action);
+}
 
-  const tryCancelEditMode = () =>{
+  const CancelEdit = () =>{
     setMode('view');
   }
+
+  const handleCloseConfirm  =()=>{
+      const title = "Close window";
+      const message = "Are you sure you want to close this window?";
+      const confirmText = "Close";
+      const variant="primary";
+      const action = ()=> ()=>closeForm();
+      confirmModal.show(title,message,confirmText,variant, action);
+}
+
   const closeForm = () =>{
       router.push(backPath);
       return;
@@ -229,15 +270,16 @@ const updatePOItemFields = ()=>{
   const ViewButton = () =>{
     return isAllowed(PageName, 'w') && orderId && mode === 'view' ?
     <div  className={POStyles.buttonsContainer}>
+        {po && po.status && po.status.toLowerCase() === 'draft' && <Button onClick={()=>CancelPO()} variant="danger">Cancel PO</Button>}
         <Button onClick={()=>setMode("edit")} variant="save">Edit</Button>
-        {po && po.status && po.status.toLowerCase() === 'draft' && <Button onClick={()=>submitForApproval()} variant="save">Submit</Button>}  
+        {po && po.status && po.status.toLowerCase() === 'draft' && <Button onClick={()=>submitForApproval()} variant="save">Submit For Approval</Button>}  
     </div> : null;
   }
 
   const CRUDButton = () =>{
     return isAllowed(PageName, 'w') && orderId && mode === 'edit' ?
     <div  className={POStyles.buttonsContainer}>
-      <Button  variant="outlineDanger" onClick={tryCancelEditMode}>Cancel</Button>
+      <Button  variant="outlineDanger" onClick={handleCanceEditConfirm}>Cancel</Button>
        <Button type="submit" variant="save">Save</Button>
     </div>   : null
   }
@@ -280,7 +322,7 @@ const updatePOItemFields = ()=>{
           </div>
                 
               }
-          onSubmit={save}
+          onSubmit={handleSaveConfirm}
           backPath={backPath}
           width="100%"
           showSubmitButton={false}
@@ -288,7 +330,7 @@ const updatePOItemFields = ()=>{
 
           headerActions={
             <div className={POStyles.buttonsContainer}>
-              <Button variant="warning" onClick={closeForm}>Close</Button>
+              <Button variant="warning" onClick={handleCloseConfirm}>Close</Button>
               <CreateButton/>
               <ViewButton/>
               <CRUDButton/>
