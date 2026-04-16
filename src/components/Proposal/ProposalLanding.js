@@ -103,6 +103,8 @@ export default function ProposalLanding() {
           setConfirmTarget(it);
           setConfirmTitle('Approve proposal?');
           setConfirmMessage(`Approve proposal \"${it.name || it.code || ''}\"?`);
+          setConfirmIncludeCreateProject(false);
+          setCreateProjectChecked(false);
           setConfirmAction(() => async (target) => {
             setLoading(true);
             const res = await approveProposal(target.id);
@@ -116,6 +118,8 @@ export default function ProposalLanding() {
           setConfirmTarget(it);
           setConfirmTitle('Reject proposal?');
           setConfirmMessage(`Reject proposal \"${it.name || it.code || ''}\"?`);
+          setConfirmIncludeCreateProject(false);
+          setCreateProjectChecked(false);
           setConfirmAction(() => async (target) => {
             setLoading(true);
             const res = await rejectProposal(target.id);
@@ -168,6 +172,8 @@ export default function ProposalLanding() {
           setConfirmTarget(it);
           setConfirmTitle('Mark proposal as Lost?');
           setConfirmMessage(`Mark proposal "${it.name || it.code || ''}" as Lost?`);
+          setConfirmIncludeCreateProject(false);
+          setCreateProjectChecked(false);
           setConfirmAction(() => async (target) => {
             setLoading(true);
             const res = await loseProposal(target.id);
@@ -233,7 +239,11 @@ return (
         setConfirmIncludeCreateProject(false);
         setCreateProjectChecked(false);
       }}
-      onCancel={() => setIsConfirmOpen(false)}
+      onCancel={() => {
+        setIsConfirmOpen(false);
+        setConfirmIncludeCreateProject(false);
+        setCreateProjectChecked(false);
+      }}
     >
       {confirmIncludeCreateProject && (
         <div style={{ marginTop: 12, marginBottom: 12 }}>
