@@ -5,12 +5,13 @@ import DataTable from '../ui/DataTable/DataTable';
 import SearchBar from '../ui/SearchBar/SearchBar';
 import Button from '../ui/Button/Button';
 import Input from '../ui/Input/Input';
-import AttendanceModal from './AttendanceModal';
+import ItemModal from '../ItemDetails/itemModal';
 import styles from './ProjectScope.module.scss';
 import { FiEdit2 } from 'react-icons/fi';
 import { getAttendanceByProjectId, createAttendance, updateAttendance } from '../../services/Attendance';
 import { getStaffs } from '../../services/Staff';
 import { useToast } from '../ui/Toast/Toast';
+import * as Yup from 'yup';
 
 function toDateInputValue(date) {
   const year = date.getFullYear();
@@ -69,6 +70,69 @@ function formatTime(value) {
   return stringValue;
 }
 
+function toDateValue(value) {
+  if (!value) return '';
+  const stringValue = String(value);
+  return stringValue.includes('T') ? stringValue.split('T')[0] : stringValue.slice(0, 10);
+}
+
+function getTodayValue() {
+  return new Date().toISOString().split('T')[0];
+}
+
+function toTimeValue(value) {
+  if (!value) return '';
+  const stringValue = String(value);
+  if (stringValue.includes('T')) {
+    const parsed = new Date(stringValue);
+    if (!Number.isNaN(parsed.getTime())) return parsed.toTimeString().slice(0, 5);
+  }
+  return stringValue.slice(0, 5);
+}
+
+function parseTime(value) {
+  if (!value) return null;
+  const [hours, minutes] = String(value).split(':').map(Number);
+  if (Number.isNaN(hours) || Number.isNaN(minutes)) return null;
+  return hours * 60 + minutes;
+}
+
+function calculateWorkedHours(clockIn, clockOut) {
+  const clockInMinutes = parseTime(clockIn);
+  const clockOutMinutes = parseTime(clockOut);
+
+  if (clockInMinutes === null || clockOutMinutes === null) return 0;
+
+  let diffMinutes = clockOutMinutes - clockInMinutes;
+  if (diffMinutes < 0) diffMinutes += 24 * 60;
+
+  return Math.max(0, Number((diffMinutes / 60).toFixed(2)));
+}
+
+function calculateOvertimeHours(hours) {
+  const totalHours = Number(hours) || 0;
+  return Math.max(0, Number((totalHours - 9).toFixed(2)));
+}
+
+function calculateTotalCost(ratePerHour, hours, overtimeApproved, deductLunchBreak) {
+  const totalHours = Number(hours) || 0;
+  const overtimeHours = calculateOvertimeHours(totalHours);
+  const regularHours = Math.max(0, Number((totalHours - overtimeHours).toFixed(2)));
+  const lunchDeduction = deductLunchBreak ? Math.min(1, regularHours) : 0;
+  const payableRegularHours = Math.max(0, Number((regularHours - lunchDeduction).toFixed(2)));
+  const payableHours = payableRegularHours + (overtimeApproved ? overtimeHours : 0);
+  return Number((payableHours * (Number(ratePerHour) || 0)).toFixed(2));
+}
+
+function getFieldValue(itemFields, fieldName, fallback = '') {
+  const field = itemFields.find((entry) => entry.name === fieldName);
+  return field ? field.value : fallback;
+}
+
+function findStaff(staffOptions, staffId) {
+  return staffOptions.find((staff) => Number(staff.value) === Number(staffId));
+}
+
 const BASE_COLUMNS = [
   { header: 'Date', key: 'date', render: (item) => formatDate(item.date) },
   { header: 'Name', key: 'name' },
@@ -89,6 +153,181 @@ export default function AttendanceTab({ projectId = 0 }) {
   const [startDate, setStartDate] = useState(defaultDateRange.startDate);
   const [endDate, setEndDate] = useState(defaultDateRange.endDate);
   const toast = useToast();
+
+  const attendanceModalFields = useMemo(() => {
+    const record = editing || {};
+    const initialStaffId = Number(record.staffId) || 0;
+    const selectedStaff = findStaff(staffOptions, initialStaffId);
+    const initialClockIn = toTimeValue(record.clockIn);
+    const initialClockOut = toTimeValue(record.clockOut);
+    const initialHours = initialClockIn && initialClockOut
+      ? calculateWorkedHours(initialClockIn, initialClockOut)
+      : Number(record.hours) || 0;
+    const initialOvertimeApproved = Boolean(record.overtimeApproved);
+    const initialDeductLunchBreak = Boolean(record.deductLunchBreak);
+    const initialOvertimeHours = calculateOvertimeHours(initialHours);
+    const initialTotalCost = calculateTotalCost(
+      selectedStaff?.ratePerHour,
+      initialHours,
+      initialOvertimeApproved,
+      initialDeductLunchBreak
+    );
+
+    const selectableStaff = staffOptions.map((staff) => ({
+      value: String(staff.value),
+      name: staff.label,
+    }));
+
+    return [
+      {
+        name: 'id',
+        label: 'Id',
+        type: 'number',
+        value: Number(record.id) || 0,
+        hidden: true,
+        validator: Yup.number().notRequired(),
+      },
+      {
+        name: 'projectId',
+        label: 'Project Id',
+        type: 'number',
+        value: Number(projectId) || 0,
+        hidden: true,
+        validator: Yup.number().notRequired(),
+      },
+      {
+        name: 'name',
+        label: 'Name',
+        type: 'text',
+        value: record.name || selectedStaff?.name || '',
+        hidden: true,
+        validator: Yup.string().notRequired(),
+      },
+      {
+        name: 'code',
+        label: 'Code',
+        type: 'text',
+        value: record.code || selectedStaff?.code || '',
+        hidden: true,
+        validator: Yup.string().notRequired(),
+      },
+      {
+        name: 'staffId',
+        label: 'Staff Member',
+        type: 'select',
+        value: initialStaffId ? String(initialStaffId) : '',
+        options: selectableStaff,
+        validator: Yup.string().required('Staff member is required'),
+        onChange: (item, updateField, itemFields, nextValue) => {
+          const selected = findStaff(staffOptions, nextValue);
+          const hours = Number(getFieldValue(itemFields, 'hours', 0)) || 0;
+          const overtimeApproved = Boolean(getFieldValue(itemFields, 'overtimeApproved', false));
+          const deductLunchBreak = Boolean(getFieldValue(itemFields, 'deductLunchBreak', false));
+          updateField('name', selected?.name || selected?.label || '');
+          updateField('code', selected?.code || '');
+          updateField('overtimeHours', calculateOvertimeHours(hours));
+          updateField('totalCost', calculateTotalCost(selected?.ratePerHour, hours, overtimeApproved, deductLunchBreak));
+        },
+      },
+      {
+        name: 'date',
+        label: 'Date',
+        type: 'date',
+        value: toDateValue(record.date) || getTodayValue(),
+        readonly: true,
+        validator: Yup.string().required('Date is required'),
+      },
+      {
+        name: 'clockIn',
+        label: 'Clock In',
+        type: 'time',
+        value: initialClockIn,
+        validator: Yup.string().required('Clock in is required'),
+        onChange: (item, updateField, itemFields, nextValue) => {
+          const clockOut = getFieldValue(itemFields, 'clockOut', '');
+          const hours = calculateWorkedHours(nextValue, clockOut);
+          const overtimeApproved = Boolean(getFieldValue(itemFields, 'overtimeApproved', false));
+          const deductLunchBreak = Boolean(getFieldValue(itemFields, 'deductLunchBreak', false));
+          const staffId = getFieldValue(itemFields, 'staffId', 0);
+          const selected = findStaff(staffOptions, staffId);
+          updateField('hours', hours);
+          updateField('overtimeHours', calculateOvertimeHours(hours));
+          updateField('totalCost', calculateTotalCost(selected?.ratePerHour, hours, overtimeApproved, deductLunchBreak));
+        },
+      },
+      {
+        name: 'clockOut',
+        label: 'Clock Out',
+        type: 'time',
+        value: initialClockOut,
+        validator: Yup.string().required('Clock out is required'),
+        onChange: (item, updateField, itemFields, nextValue) => {
+          const clockIn = getFieldValue(itemFields, 'clockIn', '');
+          const hours = calculateWorkedHours(clockIn, nextValue);
+          const overtimeApproved = Boolean(getFieldValue(itemFields, 'overtimeApproved', false));
+          const deductLunchBreak = Boolean(getFieldValue(itemFields, 'deductLunchBreak', false));
+          const staffId = getFieldValue(itemFields, 'staffId', 0);
+          const selected = findStaff(staffOptions, staffId);
+          updateField('hours', hours);
+          updateField('overtimeHours', calculateOvertimeHours(hours));
+          updateField('totalCost', calculateTotalCost(selected?.ratePerHour, hours, overtimeApproved, deductLunchBreak));
+        },
+      },
+      {
+        name: 'hours',
+        label: 'Hours',
+        type: 'number',
+        value: initialHours,
+        readonly: true,
+        validator: Yup.number().min(0).notRequired(),
+      },
+      {
+        name: 'overtimeHours',
+        label: 'Overtime Hours',
+        type: 'number',
+        value: initialOvertimeHours,
+        readonly: true,
+        validator: Yup.number().min(0).notRequired(),
+      },
+      {
+        name: 'overtimeApproved',
+        label: 'Overtime Approved',
+        type: 'checkbox',
+        value: initialOvertimeApproved,
+        validator: Yup.boolean().notRequired(),
+        onChange: (item, updateField, itemFields, nextValue) => {
+          const hours = Number(getFieldValue(itemFields, 'hours', 0)) || 0;
+          const deductLunchBreak = Boolean(getFieldValue(itemFields, 'deductLunchBreak', false));
+          const staffId = getFieldValue(itemFields, 'staffId', 0);
+          const selected = findStaff(staffOptions, staffId);
+          updateField('totalCost', calculateTotalCost(selected?.ratePerHour, hours, Boolean(nextValue), deductLunchBreak));
+        },
+      },
+      {
+        name: 'deductLunchBreak',
+        label: 'Deduct Lunch Break',
+        type: 'checkbox',
+        value: initialDeductLunchBreak,
+        validator: Yup.boolean().notRequired(),
+        onChange: (item, updateField, itemFields, nextValue) => {
+          const hours = Number(getFieldValue(itemFields, 'hours', 0)) || 0;
+          const overtimeApproved = Boolean(getFieldValue(itemFields, 'overtimeApproved', false));
+          const staffId = getFieldValue(itemFields, 'staffId', 0);
+          const selected = findStaff(staffOptions, staffId);
+          updateField('totalCost', calculateTotalCost(selected?.ratePerHour, hours, overtimeApproved, Boolean(nextValue)));
+        },
+      },
+      {
+        name: 'totalCost',
+        label: 'Total Cost',
+        type: 'number',
+        value: initialTotalCost,
+        readonly: true,
+        hidden: true,
+        validator: Yup.number().min(0).notRequired(),
+      },
+    ];
+  }, [editing, projectId, staffOptions]);
 
   const loadData = useCallback(async () => {
     if (!projectId) return;
@@ -211,13 +450,20 @@ export default function AttendanceTab({ projectId = 0 }) {
         )}
       </div>
 
-      <AttendanceModal
-        open={isModalOpen}
-        initial={editing || {}}
-        staffOptions={staffOptions}
-        projectId={projectId}
-        onCancel={() => { setIsModalOpen(false); setEditing(null); }}
-        onConfirm={async (value) => {
+      <ItemModal
+        headerLabel={editing?.id ? 'Edit Attendance' : 'Add Attendance'}
+        mode={editing?.id ? 'edit' : 'new'}
+        itemIndex={editing?.id ? 0 : -1}
+        isOpen={isModalOpen}
+        fields={attendanceModalFields}
+        onItemRemove={() => {}}
+        onClose={async (value) => {
+          if (!value) {
+            setIsModalOpen(false);
+            setEditing(null);
+            return;
+          }
+
           const selectedStaff = staffOptions.find((staff) => Number(staff.value) === Number(value.staffId));
           const payload = {
             name: value.name || selectedStaff?.name || '',

@@ -61,10 +61,12 @@ export default function AssemblyForm() {
   }, [materialId, isEditMode]);
 
   const fields = [
-    { name: 'materialType', label: 'Type', type: 'select', options: [ { label: 'Material', value: 'Material' }, { label: 'Tools', value: 'Tools' } ], span: 'span2' },
+    { name: 'materialType', label: 'Type', type: 'select', options: [ { label: 'Material', value: 'Material' }, { label: 'Tool', value: 'Tool' } ], span: 'span2' },
     { name: 'code', label: 'Code', span: 'span2' },
     { name: 'name', label: 'Name', span: 'span2' },
-    { name: 'unitCost', label: 'Unit Cost', type: 'number', span: 'span2' },
+    { name: 'purchasePrice', label: 'Purchase Price', type: 'number', span: 'span2' },
+    { name: 'sellingPrice', label: 'Selling Price', type: 'number', span: 'span2' },
+    { name: 'referenceNumber', label: 'Reference Number', span: 'span2' },
     { name: 'unitOfMeasure', label: 'UOM', span: 'span2' },
     { name: 'purchaseUnitOfMeasure', label: 'Default Purchase UOM', span: 'span2' },
   ];
@@ -76,7 +78,6 @@ export default function AssemblyForm() {
       fields={fields}
       initialValues={initialValues}
       onSubmit={async (values) => {
-        const now = new Date().toISOString().slice(0, 10);
           if (!materialId) {
               const payload = {
                 name: values.name,
@@ -84,7 +85,9 @@ export default function AssemblyForm() {
                 materialType: values.materialType || '',
                 unitOfMeasure: values.uom || values.unitOfMeasure || '',
                 purchaseUnitOfMeasure: values.defaultPurchaseUOM || values.purchaseUnitOfMeasure || '',
-                unitCost: Number(values.unitCost) || 0,
+                purchasePrice: Number(values.purchasePrice ?? values.unitCost) || 0,
+                sellingPrice: Number(values.sellingPrice) || 0,
+                referenceNumber: values.referenceNumber || '0',
                 isAssembly: true,
               };
             try {
@@ -109,7 +112,9 @@ export default function AssemblyForm() {
               materialType: values.materialType || '',
               unitOfMeasure: values.uom || values.unitOfMeasure || '',
               purchaseUnitOfMeasure: values.defaultPurchaseUOM || values.purchaseUnitOfMeasure || '',
-              unitCost: Number(values.unitCost) || 0,
+              purchasePrice: Number(values.purchasePrice ?? values.unitCost) || 0,
+              sellingPrice: Number(values.sellingPrice) || 0,
+              referenceNumber: values.referenceNumber || '0',
               isAssembly: true,
             };
             const res = await updateMaterial(materialId, payload);

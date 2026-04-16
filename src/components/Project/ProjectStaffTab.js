@@ -5,13 +5,14 @@ import DataTable from '../ui/DataTable/DataTable';
 import SearchBar from '../ui/SearchBar/SearchBar';
 import Button from '../ui/Button/Button';
 import ConfirmModal from '../ui/ConfirmModal/ConfirmModal';
-import ProjectStaffModal from './ProjectStaffModal';
+import ItemModal from '../ItemDetails/itemModal';
 import styles from './ProjectScope.module.scss';
 import { FiEdit2, FiTrash2 } from 'react-icons/fi';
 import { getProjectStaffsByProjectId, createProjectStaff, updateProjectStaff, deleteProjectStaff } from '../../services/ProjectStaff';
 import { getStaffs } from '../../services/Staff';
 import { getByProjectId } from '../../services/ProjectScope';
 import { useToast } from '../ui/Toast/Toast';
+import * as Yup from 'yup';
 
 const BASE_COLUMNS = [
   { header: 'Name', key: 'name' },
@@ -19,6 +20,15 @@ const BASE_COLUMNS = [
   { header: 'Job', key: 'job' },
   { header: 'Expenses', key: 'expenses', render: (it) => Number(it.expenses) || 0 },
 ];
+
+function getFieldValue(itemFields, fieldName, fallback = '') {
+  const field = itemFields.find((entry) => entry.name === fieldName);
+  return field ? field.value : fallback;
+}
+
+function findStaff(staffOptions, staffId) {
+  return staffOptions.find((staff) => Number(staff.value) === Number(staffId));
+}
 
 export default function ProjectStaffTab({ projectId = 0 }) {
   const [items, setItems] = useState([]);
@@ -30,6 +40,84 @@ export default function ProjectStaffTab({ projectId = 0 }) {
   const [staffOptions, setStaffOptions] = useState([]);
   const [scopeOptions, setScopeOptions] = useState([]);
   const toast = useToast();
+
+  const projectStaffModalFields = useMemo(() => {
+    const record = editing || {};
+    const initialStaffId = Number(record.staffId) || 0;
+    const selectedStaff = findStaff(staffOptions, initialStaffId);
+    const selectableStaff = staffOptions.map((staff) => ({
+      value: String(staff.value),
+      name: staff.label,
+    }));
+    const selectableScopes = scopeOptions.map((scope) => ({
+      value: scope.value,
+      name: scope.label,
+    }));
+
+    return [
+      {
+        name: 'id',
+        label: 'Id',
+        type: 'number',
+        value: Number(record.id) || 0,
+        hidden: true,
+        validator: Yup.number().notRequired(),
+      },
+      {
+        name: 'name',
+        label: 'Name',
+        type: 'text',
+        value: record.name || selectedStaff?.name || '',
+        hidden: true,
+        validator: Yup.string().notRequired(),
+      },
+      {
+        name: 'code',
+        label: 'Code',
+        type: 'text',
+        value: record.code || selectedStaff?.code || '',
+        hidden: true,
+        validator: Yup.string().notRequired(),
+      },
+      {
+        name: 'staffId',
+        label: 'Staff Member',
+        type: 'select',
+        value: initialStaffId ? String(initialStaffId) : '',
+        options: selectableStaff,
+        validator: Yup.string().required('Staff member is required'),
+        onChange: (item, updateField, itemFields, nextValue) => {
+          const selected = findStaff(staffOptions, nextValue);
+          updateField('name', selected?.name || selected?.label || '');
+          updateField('code', selected?.code || '');
+          updateField('expenses', Number(selected?.ratePerHour) || 0);
+        },
+      },
+      {
+        name: 'job',
+        label: 'Job',
+        type: 'text',
+        value: record.job || '',
+        validator: Yup.string().notRequired(),
+      },
+      {
+        name: 'expenses',
+        label: 'Expenses',
+        type: 'number',
+        value: Number(record.expenses) || 0,
+        readonly: true,
+        validator: Yup.number().notRequired(),
+      },
+      {
+        name: 'scopeId',
+        label: 'Scope',
+        type: 'select',
+        value: record.scopeId ? String(record.scopeId) : '',
+        options: selectableScopes,
+        validator: Yup.number().notRequired(),
+      },
+    ];
+  }, [editing, staffOptions, scopeOptions]);
 
   const loadData = useCallback(async () => {
     if (!projectId) return;
@@ -156,29 +244,36 @@ export default function ProjectStaffTab({ projectId = 0 }) {
         )}
       </div>
 
-      <ProjectStaffModal
-        open={isModalOpen}
-        initial={editing || {}}
-        staffOptions={staffOptions}
-        scopeOptions={scopeOptions}
-        onCancel={() => { setIsModalOpen(false); setEditing(null); }}
-        onConfirm={async (val) => {
-          const selectedStaff = staffOptions.find((s) => Number(s.value) === Number(val.staffId));
+      <ItemModal
+        headerLabel={editing?.id ? 'Edit Project Staff' : 'Add Project Staff'}
+        mode={editing?.id ? 'edit' : 'new'}
+        itemIndex={editing?.id ? 0 : -1}
+        isOpen={isModalOpen}
+        fields={projectStaffModalFields}
+        onItemRemove={() => {}}
+        onClose={async (value) => {
+          if (!value) {
+            setIsModalOpen(false);
+            setEditing(null);
+            return;
+          }
+
+          const selectedStaff = staffOptions.find((s) => Number(s.value) === Number(value.staffId));
           const payload = {
-            name: val.name || '',
-            code: val.code || '',
-            scopeId: Number(val.scopeId) || 0,
-            staffId: Number(val.staffId) || 0,
-            job: val.job || '',
-            expenses: Number(selectedStaff?.ratePerHour ?? val.expenses) || 0,
+            name: value.name || '',
+            code: value.code || '',
+            scopeId: Number(value.scopeId) || 0,
+            staffId: Number(value.staffId) || 0,
+            job: value.job || '',
+            expenses: Number(selectedStaff?.ratePerHour ?? value.expenses) || 0,
           };
 
-          if (!val.id || val.id === 0) {
+          if (!value.id || value.id === 0) {
             const res = await createProjectStaff(payload);
             if (res?.error) toast.error('Failed to add staff');
             else { toast.success('Staff added'); await loadData(); }
           } else {
-            const res = await updateProjectStaff(val.id, payload);
+            const res = await updateProjectStaff(value.id, payload);
             if (res?.error) toast.error('Failed to update staff');
             else { toast.success('Staff updated'); await loadData(); }
           }

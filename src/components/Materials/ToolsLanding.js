@@ -12,7 +12,7 @@ const baseColumns = [
   { header: 'Code', key: 'code' },
   { header: 'Name', key: 'name' },
   { header: 'UOM', key: 'uom' },
-  { header: 'UnitCost', key: 'unitCost' },
+  { header: 'Purchase Price', key: 'purchasePrice' },
   { header: 'UpdatedBy', key: 'updatedBy' },
   { header: 'UpdatedDate', key: 'updatedAt', render: (item) => (item.updatedAt ? new Date(item.updatedAt).toLocaleString() : '') },
 ];
@@ -27,7 +27,7 @@ export default function ToolsLanding() {
       try {
         const res = await byTypeMaterials({ materialType: 'Tool', isAssembly: false });
         if (!cancelled && !res?.error) {
-          const items = (res.data || []).map((m) => ({ ...m, uom: m.unitOfMeasure, unitCost: m.unitCost }));
+          const items = (res.data || []).map((m) => ({ ...m, uom: m.unitOfMeasure, purchasePrice: m.purchasePrice ?? m.unitCost ?? 0 }));
           setInventory(items);
         }
       } catch (e) {}
@@ -58,7 +58,7 @@ export default function ToolsLanding() {
     return [
       item.materialType,
       item.uom,
-      item.unitCost && String(item.unitCost),
+      item.purchasePrice && String(item.purchasePrice),
       item.id,
       item.createdBy,
       item.createdDate,

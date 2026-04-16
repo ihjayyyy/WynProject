@@ -41,8 +41,15 @@
     color: $color-text-primary-light;
     border: 1px solid $color-secondary-light;
 
-    &:hover {
+    &:hover:not(:disabled) {
       background: $color-background-alt-light;
+    }
+
+    &:disabled {
+      background: $color-secondary-light;
+      color: $color-text-secondary-light;
+      border-color: $color-secondary-light;
+      cursor: not-allowed;
     }
   }
 
@@ -78,8 +85,14 @@
     background: $color-error-light;
     color: $color-text-primary-dark;
 
-    &:hover {
+    &:hover:not(:disabled) {
       background: color.scale($color-error-light, $lightness: -10%);
+    }
+
+    &:disabled {
+      background: $color-secondary-light;
+      color: $color-text-secondary-light;
+      cursor: not-allowed;
     }
   }
 

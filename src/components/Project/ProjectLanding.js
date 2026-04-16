@@ -65,7 +65,7 @@ export default function ProjectLanding() {
     const totalValue = items.reduce((s, it) => s + (Number(it.contractPrice) || 0), 0);
     const inProgress = items.filter((it) => (Number(it.overallProgress) || 0) < 100).length;
     return [
-      { key: 'total', label: 'Total Projects', number: total, change: `${total} records`, isPositive: true },
+      { key: 'Total', label: 'Total Projects', number: total, change: `${total} records`, isPositive: true },
       { key: 'value', label: 'Total Contract', number: totalValue, change: `PHP ${totalValue.toFixed(2)}`, isPositive: true },
       { key: 'progress', label: 'In Progress', number: inProgress, change: `${inProgress} ongoing`, isPositive: false },
     ];

@@ -101,7 +101,7 @@ const router = useRouter();
       stats={orderStats}
       searchPlaceholder="Search orders"
       newButtonLabel= {isAllowed(PageName,'w') ? "New Order" : ""}
-      onNew={() => router.push('/purchase/orders/ordersform')}
+      onNew={() => router.push('/purchase/orders/ordersform?mode=edit')}
       emptyMessage="No orders found"
       width="320px"
       filterFn={filterFn}

@@ -5,6 +5,24 @@ import * as Yup from "yup";
     { name: 'supplierId', label: 'Supplier', type: 'select', options: suppliers.map((s) => ({ label: s.name, value: s.id })), searchable: true, span: 'span3', 
         onChange: (val, values, setValues) => {
           const found = suppliers.find((s) => s.id === val);
+               if (!found) {
+                  const clearedValues = {
+                     ...values,
+                     supplierCode: '',
+                     address: '',
+                     contactPerson: '',
+                     email: '',
+                     terms: '',
+                     contactNumber: '',
+                     vatType: 'included',
+                     supplierName: '',
+                     code: '',
+                     name: ''
+                  };
+                  setValues(clearedValues);
+                  onFieldhanged("supplierId", val, clearedValues);
+                  return;
+               }
           const valuesCopy = { ...values, 
             supplierCode:found.code, 
             address:found.address,
@@ -60,9 +78,19 @@ export const PODetailsColumns = [
                validator : Yup.string().required(`Material is required`),
                onChange : (item, updateField, fields) => {
 
-                  const material = materials.find(a=>a.id == item.value)
+                           const material = materials.find(a => a.id == item.value)
                   console.log(material)
                   const itemfields = [...fields]
+
+                           if (!material) {
+                              updateField("unitCost", 0);
+                              updateField("code", "");
+                              updateField("name", "");
+                              updateField("uom", "");
+                              updateField("vat", 0);
+                              updateField("amount", 0);
+                              return;
+                           }
 
                   updateField("unitCost", material.purchasePrice);
                   updateField("code", material.code);
@@ -70,7 +98,9 @@ export const PODetailsColumns = [
                   updateField("uom", material.purchaseUnitOfMeasure);
                   const quantity = itemfields.find(a=>a.name === 'quantity');
                   const discount = itemfields.find(a=>a.name === 'discount');
-                  const subamount = (quantity.value * material.purchasePrice) - discount.value;
+                           const quantityValue = Number(quantity?.value || 0);
+                           const discountValue = Number(discount?.value || 0);
+                           const subamount = (quantityValue * Number(material.purchasePrice || 0)) - discountValue;
                   
                   let vat = 0;
                   let amount = subamount;
@@ -113,7 +143,7 @@ export const PODetailsColumns = [
                   const discount = itemfields.find(a=>a.name === 'discount');
 
                   const subamount = (item.value * unitcost.value) - discount.value;
-                  const amount = subamount;
+                  let amount = subamount;
                    let vat = 0;
 
                  switch(po.vatType){
@@ -145,7 +175,7 @@ export const PODetailsColumns = [
                   const discount = itemfields.find(a=>a.name === 'discount');
 
                  const subamount = (item.value * quantity.value) - discount.value;
-                  const amount = subamount;
+                  let amount = subamount;
                    let vat = 0;
                  switch(po.vatType){
                      case "included":
@@ -176,7 +206,7 @@ export const PODetailsColumns = [
                   const unitcost = itemfields.find(a=>a.name === 'unitCost');
 
                   const subamount = (quantity.value * unitcost.value) - item.value;
-                  const amount = subamount;
+                  let amount = subamount;
                    let vat = 0;
                  switch(po.vatType){
                      case "included":

@@ -5,7 +5,7 @@
     left: 0;
     width: 100%;
     height: 100%;
-    background: rgba(0,0,0,0.5);
+  background: rgba(15, 23, 42, 0.45);
     display: flex;
     align-items: center; 
     justify-content: right;
@@ -20,23 +20,47 @@
         transition: all 0.9s ease-in-out;
 
         .modalHeader{
-            padding:20px 20px 0px 20px;
-            height: 60px;
+                        padding: 16px 20px;
+                        border-bottom: 1px solid #E5E7EB;
+                        display: flex;
+                        align-items: center;
+                        justify-content: space-between;
+
+                        .title {
+                            margin: 0;
+                            font-size: 1.125rem;
+                            line-height: 1.3;
+                            font-weight: 700;
+                            color: #111827;
+                        }
 
             .buttonCloseContainer{
-            font-size: 30px;
-            cursor:pointer;
+                            width: 32px;
+                            height: 32px;
+                            border: none;
+                            border-radius: 8px;
+                            background: transparent;
+                            display: inline-flex;
+                            align-items: center;
+                            justify-content: center;
+                            font-size: 22px;
+                            color: #111827;
+                            cursor:pointer;
+                        }
+
+                        .buttonCloseContainer:hover {
+                            background: #F3F4F6;
+                        }
+
+                        .buttonCloseContainer:focus-visible {
+                            outline: 2px solid #1D4ED8;
+                            outline-offset: 2px;
             }
         }
 
         .modalBody{
-            padding:0px 20px 20px 20px;
+                        padding:16px 20px 20px 20px;
 
-             .title {
-               margin: 1px 1px 15px 1px;
-               font-size: 20px;
-                color:#374151;
-            }
             .fieldContainer{
                 display: flex;
                 flex-direction: column;
@@ -109,7 +133,8 @@
             width: 480px;
             bottom: 0;
             display: flex;
-            background-color: rgb(247, 247, 247);
+                                    border-top: 1px solid #E5E7EB;
+
                     flex-direction: row;
                     justify-content: space-between;
                     padding-right: 100px;
@@ -134,9 +159,6 @@
                     border: none;
             }
 
-            .deleteButton{
-
-            }
         }
     }
 }

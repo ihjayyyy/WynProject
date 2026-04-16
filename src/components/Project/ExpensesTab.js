@@ -4,12 +4,13 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import DataTable from '../ui/DataTable/DataTable';
 import SearchBar from '../ui/SearchBar/SearchBar';
 import Button from '../ui/Button/Button';
-import ExpensesModal from './ExpensesModal';
+import ItemModal from '../ItemDetails/itemModal';
 import styles from './ProjectScope.module.scss';
 import { FiEdit2 } from 'react-icons/fi';
 import { getExpensesByProjectId, createExpense, updateExpense } from '../../services/Expense';
 import { getByProjectId } from '../../services/ProjectScope';
 import { useToast } from '../ui/Toast/Toast';
+import * as Yup from 'yup';
 
 const BASE_COLUMNS = [
   { header: 'Name', key: 'name' },
@@ -19,6 +20,11 @@ const BASE_COLUMNS = [
   { header: 'Reference #', key: 'referenceNumber', render: (item) => item.referenceNumber || '—' },
 ];
 
+function getFieldValue(itemFields, fieldName, fallback = '') {
+  const field = itemFields.find((entry) => entry.name === fieldName);
+  return field ? field.value : fallback;
+}
+
 export default function ExpensesTab({ projectId = 0 }) {
   const [items, setItems] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
@@ -26,6 +32,76 @@ export default function ExpensesTab({ projectId = 0 }) {
   const [editing, setEditing] = useState(null);
   const [scopeOptions, setScopeOptions] = useState([]);
   const toast = useToast();
+
+  const expensesModalFields = useMemo(() => {
+    const record = editing || {};
+    const selectableScopes = scopeOptions.map((scope) => ({
+      value: scope.value,
+      name: scope.label,
+    }));
+
+    return [
+      {
+        name: 'id',
+        label: 'Id',
+        type: 'number',
+        value: Number(record.id) || 0,
+        hidden: true,
+        validator: Yup.number().notRequired(),
+      },
+      {
+        name: 'projectId',
+        label: 'Project Id',
+        type: 'number',
+        value: Number(projectId) || 0,
+        hidden: true,
+        validator: Yup.number().notRequired(),
+      },
+      {
+        name: 'code',
+        label: 'Code',
+        type: 'text',
+        value: record.code || '',
+        validator: Yup.string().notRequired(),
+      },
+      {
+        name: 'name',
+        label: 'Name',
+        type: 'text',
+        value: record.name || '',
+        validator: Yup.string().required('Name is required'),
+      },
+      {
+        name: 'amount',
+        label: 'Amount',
+        type: 'number',
+        value: Number(record.amount) || 0,
+        validator: Yup.number().min(0).notRequired(),
+      },
+      {
+        name: 'referenceNumber',
+        label: 'Reference Number',
+        type: 'number',
+        value: Number(record.referenceNumber) || 0,
+        validator: Yup.number().notRequired(),
+      },
+      {
+        name: 'description',
+        label: 'Description',
+        type: 'text',
+        value: record.description || record.desciption || '',
+        validator: Yup.string().notRequired(),
+      },
+      {
+        name: 'scopeId',
+        label: 'Scope',
+        type: 'select',
+        value: record.scopeId ? String(record.scopeId) : '',
+        options: selectableScopes,
+        validator: Yup.number().notRequired(),
+      },
+    ];
+  }, [editing, projectId, scopeOptions]);
 
   const loadData = useCallback(async () => {
     if (!projectId) return;
@@ -129,13 +205,20 @@ export default function ExpensesTab({ projectId = 0 }) {
         )}
       </div>
 
-      <ExpensesModal
-        open={isModalOpen}
-        initial={editing || {}}
-        projectId={projectId}
-        scopeOptions={scopeOptions}
-        onCancel={() => { setIsModalOpen(false); setEditing(null); }}
-        onConfirm={async (value) => {
+      <ItemModal
+        headerLabel={editing?.id ? 'Edit Expense' : 'Add Expense'}
+        mode={editing?.id ? 'edit' : 'new'}
+        itemIndex={editing?.id ? 0 : -1}
+        isOpen={isModalOpen}
+        fields={expensesModalFields}
+        onItemRemove={() => {}}
+        onClose={async (value) => {
+          if (!value) {
+            setIsModalOpen(false);
+            setEditing(null);
+            return;
+          }
+
           const payload = {
             name: value.name || '',
             code: value.code || '',

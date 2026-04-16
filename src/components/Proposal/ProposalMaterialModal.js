@@ -124,7 +124,7 @@ export default function ProposalMaterialModal({ open, initial = {}, onCancel, on
         materialId: Number(mat.id) || 0,
         materialType: mat.materialType || mat.materialTypeName || f.materialType,
         uom: mat.unitOfMeasure || mat.uom || f.uom,
-        unitCost: Number(mat.unitCost || mat.unitPrice || f.unitCost) || 0,
+        unitCost: Number(mat.sellingPrice ?? mat.unitCost ?? mat.unitPrice ?? f.unitCost) || 0,
         code: mat.code || f.code || '',
         name: mat.name || f.name || '',
       }));
@@ -156,7 +156,7 @@ export default function ProposalMaterialModal({ open, initial = {}, onCancel, on
               <Input id="material-type" label="Type" placeholder="Type" value={form.materialType} readOnly={true} />
             <div className={styles.inlineRow}>
                 <Input id="material-uom" label="UoM" placeholder="UoM" value={form.uom} readOnly={true} />
-                <Input id="material-unitCost" label="Unit Cost" type="number" placeholder="Unit Cost" value={form.unitCost} readOnly={true} />
+                <Input id="material-unitCost" label="Price" type="number" placeholder="Price" value={form.unitCost} readOnly={true} />
                 <Input id="material-quantity" label="Quantity" type="number" placeholder="Quantity" value={form.quantity} onChange={handleChange('quantity')} />
                 <Input id="material-discount" label="Discount" type="number" placeholder="Discount" value={form.discount} onChange={handleChange('discount')} />
                 <Input id="material-vat" label="VAT" type="number" placeholder="VAT" value={form.vat} readOnly={true} />
