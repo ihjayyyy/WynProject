@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useMemo, useState, useEffect } from 'react';
+import React, { useMemo, useState, useEffect,useContext } from 'react';
 import { useRouter } from 'next/navigation';
 import { useSearchParams } from 'next/navigation';
 import { FiList } from 'react-icons/fi';
@@ -15,15 +15,18 @@ import { initAsyncCompiler } from 'sass';
 import POStyles from './PurchaseOrders.module.scss'
 import { InitialData, Create, Get } from '@/services/PurchaseOrder';
 import { useToast } from '../ui/Toast/Toast';
+import InvalidPage from '@/components/InvalidPage/page';
+import { AccessContext } from '@/app/(main)/accessContext';
 
 export default function PurchaseOrdersForm() {
+  const PageName = 'Purchase.Orders';
+  const { isAllowed } = useContext(AccessContext);
   const router = useRouter();
   const toast = useToast();
   const searchParams = useSearchParams();
   const [backPath, setBackPath] = useState('/purchase/orders');
   const [orderId, setOrderId] = useState(searchParams.get('id') || 0);
   const [mode, setMode] = useState(searchParams.get('mode') || 'view');
-  const [access, setAccess] = useState('r'); // r:read, w:write, a:approve , n: noaccess
   const [suppliers, setSuppliers] = useState([]); 
   const [materials, setMaterials] = useState([]); 
   const [po, setPO] = useState({}); 
@@ -191,34 +194,34 @@ const updatePOItemFields = ()=>{
 
   //buttons
   const CreateButton = () =>{
-    return access.includes('w') && !orderId && <Button type="submit" variant="save">Create</Button>;
+    return isAllowed(PageName, 'w') && !orderId ? <Button type="submit" variant="save">Create</Button> : null;
   }
 
   const ViewButton = () =>{
-    return access.includes('w') && orderId && mode === 'view' && 
+    return isAllowed(PageName, 'w') && orderId && mode === 'view' ?
     <div  className={POStyles.buttonsContainer}><Button onClick={()=>setMode("edit")} variant="save">Edit</Button>
         {po.status === 'draft' && <Button onClick={()=>setMode("edit")} variant="save">Submit</Button>}  
-    </div>;
+    </div> : null;
   }
 
   const CRUDButton = () =>{
-    return access.includes('w') && orderId && mode === 'edit' && 
+    return isAllowed(PageName, 'w') && orderId && mode === 'edit' ?
     <div  className={POStyles.buttonsContainer}>
       <Button  variant="outlineDanger" onClick={tryCancelEditMode}>Cancel</Button>
        <Button type="submit" variant="save">Save</Button>
-    </div>   
+    </div>   : null
   }
   
 
     const ApprovalButton = () =>{
-    return access.includes('a') && orderId && po.status === "submitted" &&
+    return isAllowed(PageName, 'a') && orderId && po.status === "submitted"  ?
     <div  className={POStyles.buttonsContainer}>
       <Button  variant="outlineDanger" onClick={tryCancelEditMode}>Reject</Button>
        <Button variant="save">Approve</Button>
-    </div>   
+    </div> : null
   }
 
-  return access !== 'n' ? 
+  return isAllowed(PageName, 'r') ? 
       <div>{ po ? 
         <EntityForm
           title={formTitle}
@@ -268,8 +271,6 @@ const updatePOItemFields = ()=>{
       }
       </div>
   :
-  <div>
-    You don't have the access to access this page.
-  </div>
+  <InvalidPage/>
   ;
 }
