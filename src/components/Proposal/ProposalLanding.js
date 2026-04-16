@@ -2,14 +2,13 @@
 
 import React, { useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { FiEdit2, FiEye, FiSend } from 'react-icons/fi';
+import { FiCheck, FiCheckCircle, FiEdit2, FiEye, FiSend, FiX, FiXCircle } from 'react-icons/fi';
 import DropdownAction from '../ui/DropdownAction/DropdownAction';
 import Landing from '../ui/Landing/Landing';
 import StatusBadge from '../ui/StatusBadge/StatusBadge';
 import { getProposals, submitProposal, approveProposal, rejectProposal, winProposal, loseProposal } from '../../services/Proposal';
 import { convertProposal } from '../../services/Project';
 import { useToast } from '../ui/Toast/Toast';
-import { FiCheck, FiX } from 'react-icons/fi';
 import ConfirmModal from '../ui/ConfirmModal/ConfirmModal';
 
 const baseColumns = [
@@ -20,6 +19,18 @@ const baseColumns = [
   { header: 'Contact', key: 'contactNumber' },
   { header: 'Total', key: 'proposalTotal' },
   { header: 'Status', key: 'proposalStatus', render: (item) => <StatusBadge status={item.proposalStatus} /> },
+  {
+    header: 'Project Created',
+    key: 'isProjectCreated',
+    align: 'center',
+    render: (item) => (
+      <div style={{ display: 'flex', justifyContent: 'center' }}>
+        {item?.isProjectCreated
+          ? <FiCheckCircle size={16} color="#16a34a" title="Project created" aria-label="Project created" />
+          : <FiXCircle size={16} color="#dc2626" title="Project not created" aria-label="Project not created" />}
+      </div>
+    ),
+  },
   { header: 'UpdatedBy', key: 'updatedBy' },
   { header: 'UpdatedAt', key: 'updatedAt', render: (item) => (item.updatedAt ? new Date(item.updatedAt).toLocaleString() : '') },
 ];
@@ -67,6 +78,7 @@ export default function ProposalLanding() {
   }, [loadProposals]);
 
   const columns = useMemo(() => [...baseColumns, { header: 'Action', key: 'actions', align: 'right', render: (item) => {
+      const proposalStatus = String(item?.proposalStatus || '').toLowerCase();
       const isDraft = item && String((item.proposalStatus || '').toLowerCase()) === 'draft';
       const itemsFor = (actionItems || []).map((it) => ({
         ...it,
@@ -85,7 +97,7 @@ export default function ProposalLanding() {
           setLoading(false);
         }});
       }
-      const isSubmitted = item && String((item.proposalStatus || '').toLowerCase()) === 'submitted';
+      const isSubmitted = proposalStatus === 'submitted';
       if (isSubmitted) {
         itemsFor.push({ key: 'approve', label: 'Approve', icon: <FiCheck size={14} />, onClick: (it) => {
           setConfirmTarget(it);
@@ -114,8 +126,10 @@ export default function ProposalLanding() {
           setIsConfirmOpen(true);
         }});
       }
-      const isApproved = item && String((item.proposalStatus || '').toLowerCase()) === 'approved';
-      const isRejected = item && String((item.proposalStatus || '').toLowerCase()) === 'rejected';
+      const isApproved = proposalStatus === 'approved';
+      const isRejected = proposalStatus === 'rejected';
+      const isWon = proposalStatus === 'won' || proposalStatus === 'win';
+      const shouldShowGenerateProject = isWon && item?.isProjectCreated === false;
 
       if (isApproved) {
         itemsFor.push({ key: 'win', label: 'Win', icon: <FiCheck size={14} />, onClick: (it) => {
@@ -132,6 +146,20 @@ export default function ProposalLanding() {
             setLoading(false);
           });
           setIsConfirmOpen(true);
+        }});
+      }
+
+      if (shouldShowGenerateProject) {
+        itemsFor.push({ key: 'generate-project', label: 'Generate Project', icon: <FiCheck size={14} />, onClick: async (it) => {
+          setLoading(true);
+          const res = await convertProposal(it.id);
+          if (res?.error) {
+            toast.error('Failed to create project from proposal');
+          } else {
+            toast.success('Project created from proposal');
+            await loadProposals();
+          }
+          setLoading(false);
         }});
       }
 
