@@ -38,7 +38,7 @@ export default function ToolsInventoryLanding() {
         if (!cancelled && !res2?.error) setWarehouses(res2.data || []);
         const matRes = await fetchByTypeMaterials({ materialType: 'Tool' });
         if (!cancelled && !matRes?.error) {
-          setMaterials((matRes.data || []).map((m) => ({ ...m, uom: m.unitOfMeasure, unitCost: m.unitCost })));
+          setMaterials((matRes.data || []).map((m) => ({ ...m, uom: m.unitOfMeasure, unitCost: m.sellingPrice ?? m.unitCost ?? 0 })));
           const invRes = await getMaterialInventories({ materialType: 'Tool' });
           if (!cancelled && !invRes?.error) {
             const invData = invRes.data || [];

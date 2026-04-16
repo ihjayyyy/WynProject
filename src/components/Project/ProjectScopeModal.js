@@ -1,9 +1,7 @@
 "use client";
-import React, { useEffect, useState } from 'react';
-import { createPortal } from 'react-dom';
-import styles from '../ui/ConfirmModal/ConfirmModal.module.scss';
-import Button from '../ui/Button/Button';
-import Input from '../ui/Input/Input';
+import React, { useMemo } from 'react';
+import * as Yup from 'yup';
+import ItemModal from '../ItemDetails/itemModal';
 
 export default function ProjectScopeModal({ open, initial = {}, onCancel, onConfirm }) {
   const formatISODate = (date) => {
@@ -48,72 +46,109 @@ export default function ProjectScopeModal({ open, initial = {}, onCancel, onConf
     };
   };
 
-  const [form, setForm] = useState(() => buildForm(initial));
+  const form = buildForm(initial);
 
-  useEffect(() => {
-    setForm(buildForm(initial));
-  }, [initial]);
+  const fields = useMemo(() => [
+    {
+      name: 'id',
+      label: 'Id',
+      type: 'number',
+      value: Number(form.id) || 0,
+      hidden: true,
+      validator: Yup.number().notRequired(),
+    },
+    {
+      name: 'name',
+      label: 'Name',
+      type: 'text',
+      value: form.name || '',
+      validator: Yup.string().required('Name is required'),
+    },
+    {
+      name: 'code',
+      label: 'Code',
+      type: 'text',
+      value: form.code || '',
+      validator: Yup.string().notRequired(),
+    },
+    {
+      name: 'percentage',
+      label: 'Percentage',
+      type: 'number',
+      value: Number(form.percentage) || 0,
+      validator: Yup.number().min(0).notRequired(),
+    },
+    {
+      name: 'milestoneDate',
+      label: 'Milestone Date',
+      type: 'date',
+      value: form.milestoneDate ? String(form.milestoneDate).split('T')[0] : '',
+      validator: Yup.string().notRequired(),
+    },
+    {
+      name: 'forecastedStartDate',
+      label: 'Forecasted Start',
+      type: 'date',
+      value: form.forecastedStartDate ? String(form.forecastedStartDate).split('T')[0] : '',
+      validator: Yup.string().notRequired(),
+    },
+    {
+      name: 'forecastedEndDate',
+      label: 'Forecasted End',
+      type: 'date',
+      value: form.forecastedEndDate ? String(form.forecastedEndDate).split('T')[0] : '',
+      validator: Yup.string().notRequired(),
+    },
+    {
+      name: 'actualStartDate',
+      label: 'Actual Start',
+      type: 'date',
+      value: form.actualStartDate ? String(form.actualStartDate).split('T')[0] : '',
+      validator: Yup.string().notRequired(),
+    },
+    {
+      name: 'actualEndDate',
+      label: 'Actual End',
+      type: 'date',
+      value: form.actualEndDate ? String(form.actualEndDate).split('T')[0] : '',
+      validator: Yup.string().notRequired(),
+    },
+    {
+      name: 'description',
+      label: 'Description',
+      type: 'text',
+      value: form.description || '',
+      validator: Yup.string().notRequired(),
+    },
+  ], [form]);
 
-  useEffect(() => {
-    if (!open) return;
-    const onKey = (e) => {
-      if (e.key === 'Escape') onCancel && onCancel();
-    };
-    document.addEventListener('keydown', onKey);
-    const prevOverflow = document.body.style.overflow;
-    document.body.style.overflow = 'hidden';
-    return () => {
-      document.removeEventListener('keydown', onKey);
-      document.body.style.overflow = prevOverflow;
-    };
-  }, [open, onCancel]);
-
-  if (!open) return null;
-
-  const handleChange = (k) => (e) => setForm((f) => ({ ...f, [k]: e.target.value }));
-
-  const content = (
-    <div className={styles.overlay} role="dialog" aria-modal="true" onClick={onCancel}>
-      <div className={styles.panel} onClick={(e) => e.stopPropagation()}>
-        <h3 className={styles.title}>{form && form.id ? 'Edit Scope' : 'Add Scope'}</h3>
-        <div className={styles.message}>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-            <Input label="Name" value={form.name || ''} onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))} />
-            <Input label="Code" value={form.code || ''} onChange={(e) => setForm((f) => ({ ...f, code: e.target.value }))} />
-            <Input label="Percentage" type="number" value={form.percentage ?? 0} onChange={(e) => setForm((f) => ({ ...f, percentage: e.target.value === '' ? '' : Number(e.target.value) }))} />
-            <Input label="Milestone Date" type="date" value={form.milestoneDate ? String(form.milestoneDate).split('T')[0] : ''} onChange={(e) => setForm((f) => ({ ...f, milestoneDate: e.target.value }))} />
-            <Input label="Forecasted Start" type="date" value={form.forecastedStartDate ? String(form.forecastedStartDate).split('T')[0] : ''} onChange={(e) => setForm((f) => ({ ...f, forecastedStartDate: e.target.value }))} />
-            <Input label="Forecasted End" type="date" value={form.forecastedEndDate ? String(form.forecastedEndDate).split('T')[0] : ''} onChange={(e) => setForm((f) => ({ ...f, forecastedEndDate: e.target.value }))} />
-            <Input label="Actual Start" type="date" value={form.actualStartDate ? String(form.actualStartDate).split('T')[0] : ''} onChange={(e) => setForm((f) => ({ ...f, actualStartDate: e.target.value }))} />
-            <Input label="Actual End" type="date" value={form.actualEndDate ? String(form.actualEndDate).split('T')[0] : ''} onChange={(e) => setForm((f) => ({ ...f, actualEndDate: e.target.value }))} />
-            <div style={{ gridColumn: '1 / -1' }}>
-              <Input label="Description" value={form.description || ''} onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))} />
-            </div>
-          </div>
-        </div>
-        <div className={styles.actions}>
-          <Button variant="secondary" className={styles.button} onClick={onCancel}>Cancel</Button>
-          <Button variant="primary" className={styles.button} onClick={() => {
-            if (!onConfirm) return;
-            const payload = {
-              id: Number(form.id) || 0,
-              name: form.name || '',
-              code: form.code || '',
-              percentage: Number(form.percentage) || 0,
-              description: form.description || '',
-              forecastedStartDate: form.forecastedStartDate || null,
-              forecastedEndDate: form.forecastedEndDate || null,
-              actualStartDate: form.actualStartDate || null,
-              actualEndDate: form.actualEndDate || null,
-              milestoneDate: form.milestoneDate || null,
-            };
-            onConfirm(payload);
-          }}>Save</Button>
-        </div>
-      </div>
-    </div>
+  return (
+    <ItemModal
+      headerLabel={form && form.id ? 'Edit Scope' : 'Add Scope'}
+      mode="new"
+      itemIndex={-1}
+      isOpen={open}
+      fields={fields}
+      onItemRemove={() => {}}
+      onClose={(val) => {
+        if (!val) {
+          onCancel && onCancel();
+          return;
+        }
+        const payload = {
+          id: Number(val.id) || 0,
+          name: val.name || '',
+          code: val.code || '',
+          percentage: Number(val.percentage) || 0,
+          description: val.description || '',
+          forecastedStartDate: val.forecastedStartDate || null,
+          forecastedEndDate: val.forecastedEndDate || null,
+          actualStartDate: val.actualStartDate || null,
+          actualEndDate: val.actualEndDate || null,
+          milestoneDate: val.milestoneDate || null,
+        };
+        onConfirm && onConfirm(payload);
+      }}
+    />
   );
-
-  if (typeof document !== 'undefined') return createPortal(content, document.body);
-  return null;
 }

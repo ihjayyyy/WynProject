@@ -6,9 +6,42 @@ export const INITIAL_MATERIAL = {
   materialType: '',
   unitOfMeasure: '',
   purchaseUnitOfMeasure: '',
+  purchasePrice: 0,
+  sellingPrice: 0,
   unitCost: 0,
   isAssembly: false,
+  referenceNumber: '0',
 };
+
+function unwrapResponse(json) {
+  return json && json.value !== undefined ? json.value : json;
+}
+
+function normalizeMaterial(item) {
+  if (!item || typeof item !== 'object') return item;
+  const purchasePrice = Number(item.purchasePrice ?? item.unitCost ?? 0) || 0;
+  return {
+    ...item,
+    purchasePrice,
+    sellingPrice: Number(item.sellingPrice ?? 0) || 0,
+    unitCost: Number(item.unitCost ?? purchasePrice) || 0,
+    referenceNumber: item.referenceNumber ?? '0',
+  };
+}
+
+function toApiPayload(payload = {}) {
+  return {
+    name: payload.name || '',
+    code: payload.code || '',
+    materialType: payload.materialType || '',
+    unitOfMeasure: payload.unitOfMeasure || payload.uom || '',
+    purchaseUnitOfMeasure: payload.purchaseUnitOfMeasure || payload.defaultPurchaseUOM || '',
+    purchasePrice: Number(payload.purchasePrice ?? payload.unitCost ?? 0) || 0,
+    sellingPrice: Number(payload.sellingPrice ?? 0) || 0,
+    isAssembly: Boolean(payload.isAssembly),
+    referenceNumber: payload.referenceNumber ?? '0',
+  };
+}
 
 async function getMaterials() {
   try {
@@ -17,7 +50,9 @@ async function getMaterials() {
       headers: { Accept: '*/*' },
     });
     const json = await res.json();
-    return { data: json && json.value ? json.value : json, error: null };
+    const data = unwrapResponse(json);
+    const list = Array.isArray(data) ? data.map(normalizeMaterial) : [];
+    return { data: list, error: null };
   } catch (error) {
     return { data: null, error: error?.message || error };
   }
@@ -31,7 +66,8 @@ async function getMaterial(id) {
       headers: { Accept: '*/*' },
     });
     const json = await res.json();
-    return { data: json && json.value ? json.value : json, error: null };
+    const data = unwrapResponse(json);
+    return { data: normalizeMaterial(data), error: null };
   } catch (error) {
     return { data: null, error: error?.message || error };
   }
@@ -52,7 +88,9 @@ async function byTypeMaterials(filters) {
       headers: { Accept: '*/*' },
     });
     const json = await res.json();
-    return { data: json && json.value ? json.value : json, error: null };
+    const data = unwrapResponse(json);
+    const list = Array.isArray(data) ? data.map(normalizeMaterial) : [];
+    return { data: list, error: null };
   } catch (error) {
     return { data: null, error: error?.message || error };
   }
@@ -63,10 +101,10 @@ async function createMaterial(payload) {
     const res = await fetch(API_BASE_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload),
+      body: JSON.stringify(toApiPayload(payload)),
     });
     const json = await res.json();
-    return { data: json, error: null };
+    return { data: unwrapResponse(json), error: null };
   } catch (error) {
     return { data: null, error: error?.message || error };
   }
@@ -78,14 +116,13 @@ async function updateMaterial(id, payload) {
     const res = await fetch(url, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload),
+      body: JSON.stringify(toApiPayload(payload)),
     });
     const json = await res.json();
-    return { data: json, error: null };
+    return { data: unwrapResponse(json), error: null };
   } catch (error) {
     return { data: null, error: error?.message || error };
   }
 }
 
 export { getMaterials, getMaterial, byTypeMaterials, createMaterial, updateMaterial };
-export default { getMaterials, getMaterial, byTypeMaterials, createMaterial, updateMaterial };

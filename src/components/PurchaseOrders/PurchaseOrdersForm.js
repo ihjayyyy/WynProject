@@ -22,9 +22,11 @@ export default function PurchaseOrdersForm() {
   const router = useRouter();
   const toast = useToast();
   const searchParams = useSearchParams();
+  const initialOrderId = Number(searchParams.get('id') || 0);
+  const initialMode = searchParams.get('mode') || (initialOrderId ? 'view' : 'edit');
   const [backPath, setBackPath] = useState('/purchase/orders');
-  const [orderId, setOrderId] = useState(searchParams.get('id') || 0);
-  const [mode, setMode] = useState(searchParams.get('mode') || 'view');
+  const [orderId, setOrderId] = useState(initialOrderId);
+  const [mode, setMode] = useState(initialMode);
   const [suppliers, setSuppliers] = useState([]); 
   const [materials, setMaterials] = useState([]); 
   const [po, setPO] = useState({});
@@ -33,14 +35,26 @@ export default function PurchaseOrdersForm() {
   const [totalExcluded, setTotalExcluded] = useState(0);
   const [totalVAT, setTotalVAT] = useState(0);
   const [totalIncluded, setTotalIncludedd] = useState(0);
+
+  useEffect(() => {
+    const nextOrderId = Number(searchParams.get('id') || 0);
+    const nextMode = searchParams.get('mode') || (nextOrderId ? 'view' : 'edit');
+    setOrderId(nextOrderId);
+    setMode(nextMode);
+  }, [searchParams]);
+
   // set PO Fields
   const onPOChange = (fieldname,value, formData)=>{
       console.log("field changed.",fieldname,value, formData);
       const poChildren = po.children.map(d => {
-                let vat = 0;
+          let vat = 0;
+          console.log(d)
+          const unitCost = Number(d.unitCost || 0);
+          const quantity = Number(d.quantity || 0);
+          const discount = Number(d.discount || 0);
+          let subamount = (unitCost * quantity) - discount;
+          let amount = subamount;
 
-                let subamount = (d.unitCost * d.quantity) - d.discount;
-                let amount = subamount;
                   console.log(formData.vatType)
                   switch(formData.vatType){
                      case "included":
@@ -133,8 +147,8 @@ const formTitle = useMemo(() => {
 const detailsUpdated = (items, deletedItems) =>{
       console.log("Table has changed")
       console.log(po)
-      const totalVAT = items.reduce((total, item) => total + item.vat, 0);
-      const totalIncluded = items.reduce((total, item) => total + item.amount, 0);
+      const totalVAT = items.reduce((total, item) => total + Number(item.vat || 0), 0);
+      const totalIncluded = items.reduce((total, item) => total + Number(item.amount || 0), 0);
       const totalexcluded = totalIncluded - totalVAT;
       //calculate VAT
       setTotalExcluded(totalexcluded);
@@ -167,7 +181,14 @@ const updatePOItemFields = ()=>{
 //Events: Save Form
   const save = async(entity)=>{
     console.log(entity)
-    entity.children = po.children;
+    entity.children = (po.children || []).map((child) => ({
+      ...child,
+      quantity: Number(child.quantity || 0),
+      unitCost: Number(child.unitCost || 0),
+      discount: Number(child.discount || 0),
+      vat: Number(child.vat || 0),
+      amount: Number(child.amount || 0),
+    }));
     entity.deletedChildren = po.deletedChildren;
     const updatedPO = {...po, ...entity}
     console.log("submit")

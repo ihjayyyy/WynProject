@@ -1,4 +1,4 @@
-import React, { useMemo, useState, useEffect } from 'react';
+import React, { useMemo, useState, useEffect, useCallback } from 'react';
 import DataTable from '../ui/DataTable/DataTable';
 import SearchBar from '../ui/SearchBar/SearchBar';
 import styles from './ProjectScope.module.scss';
@@ -20,6 +20,88 @@ function formatDate(v) {
   }
 }
 
+function toNumber(value, fallback = 0) {
+  const n = Number(value);
+  return Number.isFinite(n) ? n : fallback;
+}
+
+function toIsoOrNull(value) {
+  if (!value) return null;
+  const d = new Date(value);
+  if (Number.isNaN(d.getTime())) return null;
+  return d.toISOString();
+}
+
+function normalizeScopeChild(child = {}, scopeId = 0) {
+  return {
+    name: child.name || '',
+    code: child.code || '',
+    id: toNumber(child.id),
+    parentId: toNumber(child.parentId ?? scopeId),
+    materialId: toNumber(child.materialId),
+    materialType: child.materialType || '',
+    uom: child.uom || '',
+    unitCost: toNumber(child.unitCost),
+    quantity: toNumber(child.quantity),
+    vat: toNumber(child.vat),
+    totalCost: toNumber(child.totalCost ?? child.materialCost ?? child.totalAmount ?? child.totalPrice),
+    margin: toNumber(child.margin),
+    isAssembly: Boolean(child.isAssembly),
+    scopeOfWork: child.scopeOfWork || '',
+    discount: toNumber(child.discount),
+    laborCost: toNumber(child.laborCost),
+    extendedCost: toNumber(child.extendedCost),
+    totalAmount: toNumber(child.totalAmount ?? child.totalPrice),
+    scopeId: toNumber(child.scopeId ?? scopeId),
+    initialQuantity: toNumber(child.initialQuantity ?? child.quantity),
+    remarks: child.remarks || '',
+    proposalQuantity: toNumber(child.proposalQuantity),
+    completedQuantity: toNumber(child.completedQuantity),
+  };
+}
+
+function dedupeChildren(items = []) {
+  const seen = new Set();
+  return (items || []).filter((item) => {
+    const key = toNumber(item.id)
+      ? `id:${toNumber(item.id)}`
+      : `tmp:${item.code || ''}|${item.name || ''}|${toNumber(item.parentId)}|${toNumber(item.materialId)}`;
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+}
+
+function buildScopePayload({
+  projectId,
+  base = {},
+  overrides = {},
+  children = [],
+  deletedChildren = [],
+}) {
+  const scopeId = toNumber(base.id || overrides.id);
+  const description = overrides.description ?? base.description ?? base.name ?? '';
+  const name = (overrides.name ?? base.name ?? description) || 'New Scope';
+
+  return {
+    name,
+    code: overrides.code ?? base.code ?? '',
+    children: dedupeChildren(children).map((child) => normalizeScopeChild(child, scopeId)),
+    deletedChildren: dedupeChildren(deletedChildren).map((child) => normalizeScopeChild(child, scopeId)),
+    projectId: toNumber(projectId),
+    percentage: toNumber(overrides.percentage ?? base.percentage),
+    description,
+    margin: toNumber(overrides.margin ?? base.margin),
+    forecastedStartDate: toIsoOrNull(overrides.forecastedStartDate ?? base.forecastedStartDate),
+    forecastedEndDate: toIsoOrNull(overrides.forecastedEndDate ?? base.forecastedEndDate),
+    actualStartDate: toIsoOrNull(overrides.actualStartDate ?? base.actualStartDate),
+    actualEndDate: toIsoOrNull(overrides.actualEndDate ?? base.actualEndDate),
+    milestoneDate: toIsoOrNull(overrides.milestoneDate ?? base.milestoneDate),
+    scopeOfWork: overrides.scopeOfWork ?? base.scopeOfWork ?? description,
+    scopeAmount: toNumber(overrides.scopeAmount ?? base.scopeAmount),
+  };
+}
+
 export default function ProjectScope({ projectId = 0, editable = true }) {
   const [searchTerm, setSearchTerm] = useState('');
   const [localItems, setLocalItems] = useState([]);
@@ -34,7 +116,7 @@ export default function ProjectScope({ projectId = 0, editable = true }) {
 
   const [scopesList, setScopesList] = useState([]);
 
-  const loadData = async () => {
+  const loadData = useCallback(async () => {
     if (!projectId) return;
     try {
       const res = await getByProjectId(projectId);
@@ -70,9 +152,11 @@ export default function ProjectScope({ projectId = 0, editable = true }) {
       setLocalItems([]);
       setScopesList([]);
     }
-  };
+  }, [projectId]);
 
-  useEffect(() => { loadData(); }, [projectId]);
+  useEffect(() => {
+    loadData();
+  }, [loadData]);
 
   const filtered = useMemo(() => {
     const k = (searchTerm || '').trim().toLowerCase();
@@ -204,39 +288,19 @@ export default function ProjectScope({ projectId = 0, editable = true }) {
         onConfirm={async (val) => {
           try {
             if (!scopeEditing) {
-              const payload = {
-                name: val.name || val.description || 'New Scope',
-                code: val.code || '',
-                children: [],
-                deletedChildren: [],
-                projectId: Number(projectId) || 0,
-                percentage: Number(val.percentage) || 0,
-                description: val.description || val.name || '',
-                forecastedStartDate: val.forecastedStartDate || null,
-                forecastedEndDate: val.forecastedEndDate || null,
-                actualStartDate: val.actualStartDate || null,
-                actualEndDate: val.actualEndDate || null,
-                milestoneDate: val.milestoneDate || null,
-              };
+              const payload = buildScopePayload({ projectId, overrides: val, children: [], deletedChildren: [] });
               const res = await createProjectScope(payload);
               if (res && !res.error) await loadData();
             } else {
               const existing = typeof scopeEditing === 'object' ? scopeEditing : (scopesList || []).find(s => (s.description && s.description === scopeEditing) || (s.name && s.name === scopeEditing) || (s.code && s.code === scopeEditing));
               if (existing && existing.id) {
-                const payload = {
-                  name: val.name || existing.name || '',
-                  code: val.code || existing.code || '',
+                const payload = buildScopePayload({
+                  projectId,
+                  base: existing,
+                  overrides: val,
                   children: existing.children || [],
                   deletedChildren: existing.deletedChildren || [],
-                  projectId: Number(projectId) || 0,
-                  percentage: Number(val.percentage) || Number(existing.percentage) || 0,
-                  description: val.description || existing.description || '',
-                  forecastedStartDate: val.forecastedStartDate || existing.forecastedStartDate || null,
-                  forecastedEndDate: val.forecastedEndDate || existing.forecastedEndDate || null,
-                  actualStartDate: val.actualStartDate || existing.actualStartDate || null,
-                  actualEndDate: val.actualEndDate || existing.actualEndDate || null,
-                  milestoneDate: val.milestoneDate || existing.milestoneDate || null,
-                };
+                });
                 const res = await updateProjectScope(existing.id, payload);
                 if (res && !res.error) await loadData();
               }
@@ -274,20 +338,22 @@ export default function ProjectScope({ projectId = 0, editable = true }) {
               existingChildren.push({ ...m, id: 0, parentId: scopeObj.id });
             }
 
-            const payload = {
-              name: scopeObj.name || scopeObj.description || scopeName,
-              code: scopeObj.code || '',
+            const scopeNameFromObj = scopeObj.description || scopeObj.name || scopeObj.code || '';
+            const pendingDeletedChildren = (deletedChildren || []).filter((c) => (
+              Number(c.parentId) === Number(scopeObj.id)
+              || ((c.scopeOfWork || '') && (c.scopeOfWork || '') === scopeNameFromObj)
+            ));
+
+            const payload = buildScopePayload({
+              projectId,
+              base: scopeObj,
+              overrides: {
+                name: scopeObj.name || scopeObj.description || scopeName,
+                description: scopeObj.description || scopeObj.name || scopeName,
+              },
               children: existingChildren,
-              deletedChildren: scopeObj.deletedChildren || [],
-              projectId: Number(projectId) || 0,
-              percentage: Number(scopeObj.percentage) || 0,
-              description: scopeObj.description || scopeObj.name || '',
-              forecastedStartDate: scopeObj.forecastedStartDate || null,
-              forecastedEndDate: scopeObj.forecastedEndDate || null,
-              actualStartDate: scopeObj.actualStartDate || null,
-              actualEndDate: scopeObj.actualEndDate || null,
-              milestoneDate: scopeObj.milestoneDate || null,
-            };
+              deletedChildren: [...(scopeObj.deletedChildren || []), ...pendingDeletedChildren],
+            });
 
             const res = await updateProjectScope(scopeObj.id, payload);
             if (!res || res.error) {
@@ -299,24 +365,17 @@ export default function ProjectScope({ projectId = 0, editable = true }) {
                 setLocalItems(prev => [item, ...(prev || [])]);
               }
             } else {
+              setDeletedChildren((prev) => (prev || []).filter((c) => !pendingDeletedChildren.includes(c)));
               await loadData();
             }
           } else {
             // no scope found - create scope with this child
-            const scopePayload = {
-              name: scopeName,
-              code: '',
+            const scopePayload = buildScopePayload({
+              projectId,
+              overrides: { name: scopeName, description: scopeName },
               children: [{ ...m, id: 0, parentId: 0 }],
               deletedChildren: [],
-              projectId: Number(projectId) || 0,
-              percentage: 0,
-              description: scopeName,
-              forecastedStartDate: null,
-              forecastedEndDate: null,
-              actualStartDate: null,
-              actualEndDate: null,
-              milestoneDate: null,
-            };
+            });
             const res = await createProjectScope(scopePayload);
             if (!res || res.error) {
               const item = { id: 0, _localId: `M-${Date.now()}`, ...m, scopeOfWork: scopeName, parentId: projectId };
