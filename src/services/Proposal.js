@@ -40,7 +40,7 @@ async function getProposals() {
 async function getProposalById(id) {
     if (!id) return { data: null, error: 'Missing id' };
     try {
-        const url = `${API_BASE_URL}/${id}`;
+        const url = `${API_BASE_URL}/ByProposalId/${id}`;
         const res = await fetch(url, {
             method: 'GET',
             headers: { Accept: '*/*' },
