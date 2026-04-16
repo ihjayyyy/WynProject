@@ -195,17 +195,16 @@ const handleSaveConfirm =(entity)=>{
 
     //final validate entity
 
-    // entity.children = (po.children || []).map((child) => ({
-    //   ...child,
-    //   quantity: Number(child.quantity || 0),
-    //   unitCost: Number(child.unitCost || 0),
-    //   discount: Number(child.discount || 0),
-    //   vat: Number(child.vat || 0),
-    //   amount: Number(child.amount || 0),
-    // }));
-    //entity.deletedChildren = po.deletedChildren;
-    //const updatedPO = {...po, ...entity, vat:po.vat, amount:po.amount}
-    const updatedPO = {...entity, ...po}
+    entity.children = (po.children || []).map((child) => ({
+      ...child,
+      quantity: Number(child.quantity || 0),
+      unitCost: Number(child.unitCost || 0),
+      discount: Number(child.discount || 0),
+      vat: Number(child.vat || 0),
+      amount: Number(child.amount || 0),
+    }));
+    entity.deletedChildren = po.deletedChildren;
+    const updatedPO = {...po, ...entity, vat:po.vat, amount:po.amount}
     console.log("submit")
     console.log(updatedPO)
     
