@@ -13,10 +13,20 @@ import Select from '../ui/Select/Select';
 import inputStyles from '../ui/Input/Input.module.scss';
 
 const ItemModal = ({ headerLabel, mode = "new", itemIndex=-1, isOpen, onClose, fields, onItemRemove }) => {
+
 const { showConfirmModal } = useContext(ConfirmModalContext);
 
+  const handleShowConfirm =(itemindex)=>{
+    const title = "Remove item";
+    const message = "Are you sure you want to remove this item?";
+    const confirmText = "Remove";
+    const variant="danger";
+    const action = ()=>()=>handleRemove(itemindex);
+    showConfirmModal(title,message,confirmText,variant, action);
+  }
+
 const[itemFields, setFields] = useState([]);
-// const[isConfirmOpen, setConfirmModal] = useState(false);
+
   useEffect(() => {
     console.log('use effect')
     console.log(fields)
@@ -67,14 +77,6 @@ useEffect(() => {
     reset(); // reset form values and errors
     onClose(null);
   };  
-
-  const handleShowConfirm =(itemindex)=>{
-    const title = "Remove item";
-    const message = "Are you sure you want to remove this item?";
-    const confirmText = "Remove";
-    const variant="danger";
-    showConfirmModal(title,message,confirmText,variant, ()=>()=>handleRemove(itemindex));
-  }
 
   const handleSave = () => {
     console.log("Save clicked")
