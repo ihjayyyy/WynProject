@@ -5,6 +5,14 @@ import {getCurrentUser,getUserAccess} from '../../services/User';
 
 export const AccessContext = createContext({});
 
+export const useCurrentUser = () => {
+  const context = useContext(AccessContext);
+  if (!context) {
+    throw new Error('useCurrentUser must be used within a AccessProvider');
+  }
+  return context;
+};
+
 export const AccessProvider = ({ children }) => {
  const [userAccess, setAccess] = useState([]);
  const [user, setUser] = useState({});
