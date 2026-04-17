@@ -37,11 +37,10 @@ const router = useRouter();
   },[]);
 
 
-
   const actionItems = useMemo(
     () => [
       ...(isAllowed(PageName,'r') ? [{ key: 'view', label: 'View', icon: <FiEye size={14} />, onClick: (item) => router.push(`/purchase/orders/ordersform?id=${item.id}`) }]: []),
-      ...(isAllowed(PageName,'w') ? [{ key: 'edit', label: 'Edit', icon: <FiEdit2 size={14} />, onClick: (item) => router.push(`/purchase/orders/ordersform?id=${item.id}&mode=edit`) }]: []),
+      // ...(isAllowed(PageName,'w')  ? [{ key: 'edit', label: 'Edit', icon: <FiEdit2 size={14} />, onClick: (item) => router.push(`/purchase/orders/ordersform?id=${item.id}&mode=edit`) }]: []),
     ],
     [router]
   );

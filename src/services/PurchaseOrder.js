@@ -116,7 +116,6 @@ async function SetStatus(status, id) {
         const res = await fetch(url, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(payload),
         });
         const json = await res.json();
         return { data: json, error: null };

@@ -224,16 +224,54 @@ const handleSaveConfirm =(entity)=>{
 
   }
 
+    const handleCancelPOConfirm =()=>{
+      const title = "Cancel PO";
+      const message = "Are you sure you want to cancel this PO?";
+      const confirmText = "Cancel PO";
+      const variant="primary";
+      const action = ()=> async ()=>await CancelPO();
+      confirmModal.show(title,message,confirmText,variant, action);
+}
+
   const CancelPO = async()=>{
     setMode("cancel PO");
-    const res = await SubmitForApproval(id);
+    const res = await SetStatus('Cancel', po.id);
+
+    if (res?.error) {
+      toast.error('Failed to submit purchase order.');
+      return null;
+    }
+    else {
+      toast.success('Purchase Order has been submitted for approval.');
+      router.push(backPath);  
+    }
 
   }
-  const submitForApproval = async()=>{
-    setMode("edit");
-    const res = await SubmitForApproval(id);
 
-  }
+  const handleSubmitConfirm =()=>{
+      const title = "Submit for approval";
+      const message = "Are you sure you want to this PO for approval?";
+      const confirmText = "Submit";
+      const variant="primary";
+      const action = ()=> async ()=>await submitForApproval();
+      confirmModal.show(title,message,confirmText,variant, action);
+}
+
+const submitForApproval = async()=>{
+    //setMode("edit");
+    const res = await SubmitForApproval(po.id);
+    console.log(res)
+   if (res?.error) {
+      toast.error('Failed to submit purchase order.');
+      return null;
+    }
+    else {
+      toast.success('Purchase Order has been submitted for approval.');
+      router.push(backPath);  
+    }
+
+
+}
   const handleCanceEditConfirm =()=>{
       const title = "Cancel Edit";
       const message = "Are you sure you want to cancel editing of this PO?";
@@ -247,6 +285,47 @@ const handleSaveConfirm =(entity)=>{
     setMode('view');
   }
 
+    const handleApproveConfirm =()=>{
+      const title = "Approve";
+      const message = "Are you sure you want to approve this PO?";
+      const confirmText = "Approve PO";
+      const variant="primary";
+      const action = ()=> async ()=>await approvePO();
+      confirmModal.show(title,message,confirmText,variant, action);
+}
+
+  const approvePO = async () =>{
+    setMode('view');
+    const res = await Approve(po.id)
+  }
+
+  const handleRejectConfirm =()=>{
+      const title = "Reject";
+      const message = "Are you sure you want to reject this PO?";
+      const confirmText = "Reject PO";
+      const variant="primary";
+      const action = ()=> async ()=>await rejectPO();
+      confirmModal.show(title,message,confirmText,variant, action);
+}
+
+  const rejectPO = async () =>{
+    setMode('view');
+    const res = await Reject(po.id)
+  }
+
+    const handleArchiveConfirm =()=>{
+      const title = "Archive";
+      const message = "Are you sure you want to archive this PO?";
+      const confirmText = "Archive";
+      const variant="primary";
+      const action = ()=> async ()=>await archivePO();
+      confirmModal.show(title,message,confirmText,variant, action);
+}
+
+  const archivePO = async () =>{
+    setMode('view');
+    const res = await Reject(po.id)
+  }
   const handleCloseConfirm  =()=>{
       const title = "Close window";
       const message = "Are you sure you want to close this window?";
@@ -269,9 +348,15 @@ const handleSaveConfirm =(entity)=>{
   const ViewButton = () =>{
     return isAllowed(PageName, 'w') && orderId && mode === 'view' ?
     <div  className={POStyles.buttonsContainer}>
-        {po && po.status && po.status.toLowerCase() === 'draft' && <Button onClick={()=>CancelPO()} variant="danger">Cancel PO</Button>}
-        <Button onClick={()=>setMode("edit")} variant="save">Edit</Button>
-        {po && po.status && po.status.toLowerCase() === 'draft' && <Button onClick={()=>submitForApproval()} variant="save">Submit For Approval</Button>}  
+        {po && po.status && (po.status.toLowerCase() === 'draft' || po.status.toLowerCase() === 'rejected') && <Button onClick={()=>setMode("edit")} variant="save">Edit</Button>}
+        {po && po.status && po.status.toLowerCase() === 'draft' && <Button onClick={handleSubmitConfirm} variant="save">Submit For Approval</Button>}  
+    </div> : null;
+  }
+
+    const CancePOButton = () =>{
+    return isAllowed(PageName, 'w') && orderId && mode === 'view' ?
+    <div  className={POStyles.buttonsContainer}>
+        {po && po.status && (po.status.toLowerCase() !== 'ordered' || po.status.toLowerCase() === 'archived')  && <Button onClick={handleCancelPOConfirm} variant="danger">Cancel PO</Button>}
     </div> : null;
   }
 
@@ -284,11 +369,26 @@ const handleSaveConfirm =(entity)=>{
   }
   
 
-    const ApprovalButton = () =>{
+  const ApprovalButton = () =>{
     return isAllowed(PageName, 'a') && orderId && po.status && po.status.toLowerCase() === "submitted"  ?
     <div  className={POStyles.buttonsContainer}>
-      <Button  variant="outlineDanger" onClick={tryCancelEditMode}>Reject</Button>
-       <Button variant="save">Approve</Button>
+      {po && po.status && (po.status.toLowerCase() === 'submitted') && <Button onClick={()=>setMode("edit")} variant="save">Edit</Button>}
+       <Button  variant="outlineDanger" onClick={handleRejectConfirm}>Reject</Button>
+       <Button variant="save" onClick={handleApproveConfirm}>Approve</Button>
+    </div> : null
+  }
+
+    const OrderButton = () =>{
+    return isAllowed(PageName, 'ww') && orderId && po.status && po.status.toLowerCase() === "approved"  ?
+    <div  className={POStyles.buttonsContainer}>
+       <Button variant="save" onClick={handleApproveConfirm}>Order</Button>
+    </div> : null
+  }
+
+    const ArchiveButton = () =>{
+    return isAllowed(PageName, 'w') && mode === 'view'  && orderId && po.status && (po.status.toLowerCase() === "ordered" || po.status.toLowerCase() === "approved" || po.status.toLowerCase() === "rejected" || po.status.toLowerCase() === "cancelled") ?
+    <div  className={POStyles.buttonsContainer}>
+       <Button variant="primary" onClick={handleArchiveConfirm}>Archive</Button>
     </div> : null
   }
 
@@ -331,9 +431,12 @@ const handleSaveConfirm =(entity)=>{
             <div className={POStyles.buttonsContainer}>
               <Button variant="warning" onClick={handleCloseConfirm}>Close</Button>
               <CreateButton/>
+              <CancePOButton/>
               <ViewButton/>
               <CRUDButton/>
               <ApprovalButton/>
+              <OrderButton/>
+              <ArchiveButton/>
             </div>  
           }
         />
