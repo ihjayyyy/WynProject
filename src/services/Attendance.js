@@ -82,12 +82,30 @@ async function updateAttendance(id, payload) {
   }
 }
 
-export { getAttendanceByProjectId, createAttendance, updateAttendance };
+async function deleteAttendance(id) {
+  if (!id) return { data: null, error: 'Missing id' };
+
+  try {
+    const data = await parseResponse(
+      await fetch(`${API_BASE_URL}/${id}`, {
+        method: 'DELETE',
+        headers: { Accept: '*/*' },
+      })
+    );
+
+    return { data, error: null };
+  } catch (error) {
+    return { data: null, error: error?.message || error };
+  }
+}
+
+export { getAttendanceByProjectId, createAttendance, updateAttendance, deleteAttendance };
 
 const AttendanceService = {
   getAttendanceByProjectId,
   createAttendance,
   updateAttendance,
+  deleteAttendance,
   INITIAL_ATTENDANCE,
 };
 

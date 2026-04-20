@@ -1,14 +1,16 @@
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL + "/Expenses";
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL + "/TripTicket";
 
-export const INITIAL_EXPENSE = {
+export const INITIAL_TRIP_TICKET = {
   name: '',
   code: '',
   projectId: 0,
-  scopeId: 0,
-  amount: 0,
-  referenceNumber: 0,
-  description: '',
-  desciption: '',
+  materialId: 0,
+  tripMeter: 0,
+  hoursUsed: 0,
+  date: '',
+  vehiclePlateNumber: '',
+  gasSlipNumber: '',
+  tripCost: 0,
 };
 
 async function parseResponse(res) {
@@ -20,12 +22,13 @@ async function parseResponse(res) {
   }
 }
 
-async function getExpensesByProjectId(projectId) {
+async function getTripTicketByProjectId(projectId) {
   if (!projectId) return { data: null, error: 'Missing projectId' };
 
   try {
+    const url = `${API_BASE_URL}/ByProjectId/${projectId}`;
     const data = await parseResponse(
-      await fetch(`${API_BASE_URL}/ByProjectId/${projectId}`, {
+      await fetch(url, {
         method: 'GET',
         headers: { Accept: '*/*' },
       })
@@ -37,7 +40,7 @@ async function getExpensesByProjectId(projectId) {
   }
 }
 
-async function createExpense(payload) {
+async function createTripTicket(payload) {
   try {
     const data = await parseResponse(
       await fetch(API_BASE_URL, {
@@ -53,7 +56,7 @@ async function createExpense(payload) {
   }
 }
 
-async function updateExpense(id, payload) {
+async function updateTripTicket(id, payload) {
   if (!id) return { data: null, error: 'Missing id' };
 
   try {
@@ -71,7 +74,7 @@ async function updateExpense(id, payload) {
   }
 }
 
-async function deleteExpense(id) {
+async function deleteTripTicket(id) {
   if (!id) return { data: null, error: 'Missing id' };
 
   try {
@@ -88,14 +91,14 @@ async function deleteExpense(id) {
   }
 }
 
-export { getExpensesByProjectId, createExpense, updateExpense, deleteExpense };
+export { getTripTicketByProjectId, createTripTicket, updateTripTicket, deleteTripTicket };
 
-const ExpenseService = {
-  getExpensesByProjectId,
-  createExpense,
-  updateExpense,
-  deleteExpense,
-  INITIAL_EXPENSE,
+const TripTicketService = {
+  getTripTicketByProjectId,
+  createTripTicket,
+  updateTripTicket,
+  deleteTripTicket,
+  INITIAL_TRIP_TICKET,
 };
 
-export default ExpenseService;
+export default TripTicketService;

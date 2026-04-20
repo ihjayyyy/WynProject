@@ -21,7 +21,7 @@ const confirmModal = useConfirmModal();
     const message = "Are you sure you want to remove this item?";
     const confirmText = "Remove";
     const variant="danger";
-    const action = ()=>()=>handleRemove(itemindex);
+    const action = () => handleRemove(itemindex);
     confirmModal.show(title,message,confirmText,variant, action);
   }
 
@@ -126,7 +126,7 @@ const updateField = (fieldNameToUpdate, value) => {
 
 
 const content = (
-    <div className={modalstyle.itemModal} >
+  <div className={modalstyle.itemModal} onClick={handleClose}>
     <div className={modalstyle.modalcontainer}  onClick={(e) => e.stopPropagation()}>
         <div className={modalstyle.modalHeader}>
             <h3 className={modalstyle.title}>{headerLabel}</h3>

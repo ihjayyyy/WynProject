@@ -7,10 +7,11 @@ import Button from '../ui/Button/Button';
 import Input from '../ui/Input/Input';
 import ItemModal from '../ItemDetails/itemModal';
 import styles from './ProjectScope.module.scss';
-import { FiEdit2 } from 'react-icons/fi';
-import { getAttendanceByProjectId, createAttendance, updateAttendance } from '../../services/Attendance';
+import { FiEdit2, FiTrash2 } from 'react-icons/fi';
+import { getAttendanceByProjectId, createAttendance, updateAttendance, deleteAttendance } from '../../services/Attendance';
 import { getStaffs } from '../../services/Staff';
 import { useToast } from '../ui/Toast/Toast';
+import { useConfirmModal } from '@/app/contextProviders/confirmModalContext';
 import * as Yup from 'yup';
 
 function toDateInputValue(date) {
@@ -153,6 +154,7 @@ export default function AttendanceTab({ projectId = 0 }) {
   const [startDate, setStartDate] = useState(defaultDateRange.startDate);
   const [endDate, setEndDate] = useState(defaultDateRange.endDate);
   const toast = useToast();
+  const confirmModal = useConfirmModal();
 
   const attendanceModalFields = useMemo(() => {
     const record = editing || {};
@@ -345,6 +347,21 @@ export default function AttendanceTab({ projectId = 0 }) {
     loadData();
   }, [loadData]);
 
+  const handleDelete = useCallback(async (itemId) => {
+    const idToDelete = Number(itemId) || Number(editing?.id) || 0;
+    if (!idToDelete) {
+      toast.error('Failed to delete attendance');
+      return;
+    }
+
+    const response = await deleteAttendance(idToDelete);
+    if (response?.error) toast.error('Failed to delete attendance');
+    else {
+      toast.success('Attendance deleted');
+      await loadData();
+    }
+  }, [editing?.id, loadData, toast]);
+
   useEffect(() => {
     let mounted = true;
     (async () => {
@@ -409,10 +426,28 @@ export default function AttendanceTab({ projectId = 0 }) {
             title="Edit"
             onClick={() => { setEditing(item); setIsModalOpen(true); }}
           />
+          <Button
+            size="sm"
+            variant="danger"
+            icon={<FiTrash2 />}
+            title="Delete"
+            onClick={() => {
+              const title = 'Remove attendance?';
+              const message = item?.name
+                ? `Remove attendance for "${item.name}" on ${formatDate(item.date)}?`
+                : 'Remove this attendance record?';
+              const confirmText = 'Remove';
+              const variant = 'danger';
+              const action = async () => {
+                await handleDelete(item?.id);
+              };
+              confirmModal.show(title, message, confirmText, variant, action);
+            }}
+          />
         </div>
       ),
     },
-  ], []);
+  ], [confirmModal, handleDelete]);
 
   return (
     <div className={styles.landingWrap}>
@@ -453,10 +488,10 @@ export default function AttendanceTab({ projectId = 0 }) {
       <ItemModal
         headerLabel={editing?.id ? 'Edit Attendance' : 'Add Attendance'}
         mode={editing?.id ? 'edit' : 'new'}
-        itemIndex={editing?.id ? 0 : -1}
+        itemIndex={editing?.id ? Number(editing.id) : -1}
         isOpen={isModalOpen}
         fields={attendanceModalFields}
-        onItemRemove={() => {}}
+        onItemRemove={handleDelete}
         onClose={async (value) => {
           if (!value) {
             setIsModalOpen(false);

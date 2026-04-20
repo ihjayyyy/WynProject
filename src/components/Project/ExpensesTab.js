@@ -6,10 +6,11 @@ import SearchBar from '../ui/SearchBar/SearchBar';
 import Button from '../ui/Button/Button';
 import ItemModal from '../ItemDetails/itemModal';
 import styles from './ProjectScope.module.scss';
-import { FiEdit2 } from 'react-icons/fi';
-import { getExpensesByProjectId, createExpense, updateExpense } from '../../services/Expense';
+import { FiEdit2, FiTrash2 } from 'react-icons/fi';
+import { getExpensesByProjectId, createExpense, updateExpense, deleteExpense } from '../../services/Expense';
 import { getByProjectId } from '../../services/ProjectScope';
 import { useToast } from '../ui/Toast/Toast';
+import { useConfirmModal } from '@/app/contextProviders/confirmModalContext';
 import * as Yup from 'yup';
 
 const BASE_COLUMNS = [
@@ -32,6 +33,7 @@ export default function ExpensesTab({ projectId = 0 }) {
   const [editing, setEditing] = useState(null);
   const [scopeOptions, setScopeOptions] = useState([]);
   const toast = useToast();
+  const confirmModal = useConfirmModal();
 
   const expensesModalFields = useMemo(() => {
     const record = editing || {};
@@ -120,6 +122,21 @@ export default function ExpensesTab({ projectId = 0 }) {
     loadData();
   }, [loadData]);
 
+  const handleDelete = useCallback(async (itemId) => {
+    const idToDelete = Number(itemId) || Number(editing?.id) || 0;
+    if (!idToDelete) {
+      toast.error('Failed to delete expense');
+      return;
+    }
+
+    const response = await deleteExpense(idToDelete);
+    if (response?.error) toast.error('Failed to delete expense');
+    else {
+      toast.success('Expense deleted');
+      await loadData();
+    }
+  }, [editing?.id, loadData, toast]);
+
   useEffect(() => {
     if (!projectId) return;
     let mounted = true;
@@ -174,10 +191,28 @@ export default function ExpensesTab({ projectId = 0 }) {
             title="Edit"
             onClick={() => { setEditing(item); setIsModalOpen(true); }}
           />
+          <Button
+            size="sm"
+            variant="danger"
+            icon={<FiTrash2 />}
+            title="Delete"
+            onClick={() => {
+              const title = 'Remove expense?';
+              const message = item?.name
+                ? `Remove expense "${item.name}"?`
+                : 'Remove this expense?';
+              const confirmText = 'Remove';
+              const variant = 'danger';
+              const action = async () => {
+                await handleDelete(item?.id);
+              };
+              confirmModal.show(title, message, confirmText, variant, action);
+            }}
+          />
         </div>
       ),
     },
-  ], [scopeOptions]);
+  ], [confirmModal, handleDelete, scopeOptions]);
 
   return (
     <div className={styles.landingWrap}>
@@ -208,10 +243,10 @@ export default function ExpensesTab({ projectId = 0 }) {
       <ItemModal
         headerLabel={editing?.id ? 'Edit Expense' : 'Add Expense'}
         mode={editing?.id ? 'edit' : 'new'}
-        itemIndex={editing?.id ? 0 : -1}
+        itemIndex={editing?.id ? Number(editing.id) : -1}
         isOpen={isModalOpen}
         fields={expensesModalFields}
-        onItemRemove={() => {}}
+        onItemRemove={handleDelete}
         onClose={async (value) => {
           if (!value) {
             setIsModalOpen(false);
