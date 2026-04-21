@@ -29,7 +29,7 @@ const DEFAULT_FORM = {
   remarks: '',
 };
 
-export default function ProposalMaterialModal({ open, initial = {}, onCancel, onConfirm }) {
+export default function ProposalMaterialModal({ open, initial = {}, onCancel, onConfirm, keepOpenOnSave = false }) {
   const [form, setForm] = useState({
     ...DEFAULT_FORM,
     ...initial,
@@ -214,9 +214,11 @@ export default function ProposalMaterialModal({ open, initial = {}, onCancel, on
     { name: 'remarks', label: 'Remarks', type: 'text', value: calculatedForm.remarks || '', hidden: true, validator: Yup.string().notRequired() },
   ], [calculatedForm, materials, applyMaterialSelect]);
 
+  const isEditMode = Boolean(initial && initial.id);
+
   return (
     <ItemModal
-      headerLabel={initial && initial.id ? 'Edit Material' : 'Add Material'}
+      headerLabel={isEditMode ? 'Edit Material' : 'Add Material'}
       mode="new"
       itemIndex={-1}
       isOpen={open}
@@ -252,7 +254,16 @@ export default function ProposalMaterialModal({ open, initial = {}, onCancel, on
           scopeOfWork: val.scopeOfWork || '',
           remarks: '',
         };
-        onConfirm && onConfirm(payload);
+        const shouldKeepOpen = keepOpenOnSave && !isEditMode;
+        onConfirm && onConfirm(payload, { closeModal: !shouldKeepOpen });
+
+        if (shouldKeepOpen) {
+          setForm({
+            ...DEFAULT_FORM,
+            parentId: Number(payload.parentId) || 0,
+            scopeOfWork: payload.scopeOfWork || '',
+          });
+        }
       }}
     />
   );

@@ -193,7 +193,7 @@ export default function ProposalMaterialsTable({ items = [], onChange, editable 
         setScopeEditing(null);
       }} />
 
-      <ProposalMaterialModal open={isMaterialModalOpen} initial={materialEditing || { parentId: Number(proposalId) || 0, scopeOfWork: materialScopeTarget || 'General' }} onCancel={() => { setIsMaterialModalOpen(false); setMaterialScopeTarget(null); setMaterialEditing(null); }} onConfirm={(m) => {
+      <ProposalMaterialModal open={isMaterialModalOpen} initial={materialEditing || { parentId: Number(proposalId) || 0, scopeOfWork: materialScopeTarget || 'General' }} keepOpenOnSave={!materialEditing} onCancel={() => { setIsMaterialModalOpen(false); setMaterialScopeTarget(null); setMaterialEditing(null); }} onConfirm={(m, options = {}) => {
         if (materialEditing) {
           // update existing
           setLocalItems((prev) => {
@@ -228,9 +228,11 @@ export default function ProposalMaterialsTable({ items = [], onChange, editable 
             return updated;
           });
         }
-        setIsMaterialModalOpen(false);
-        setMaterialScopeTarget(null);
-        setMaterialEditing(null);
+        if (options.closeModal !== false) {
+          setIsMaterialModalOpen(false);
+          setMaterialScopeTarget(null);
+          setMaterialEditing(null);
+        }
       }} />
       
         <ConfirmModal open={isConfirmOpen} title="Remove material?" message={confirmTarget ? `Remove material "${confirmTarget.name || confirmTarget.code || ''}"?` : 'Remove this material?'} confirmText="Remove" confirmVariant="danger" onConfirm={() => {

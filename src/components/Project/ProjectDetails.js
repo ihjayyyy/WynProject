@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useContext, useEffect, useState } from 'react';
 import styles from './ProjectDetails.module.scss';
 import { useRouter } from 'next/navigation';
 import Button from '../ui/Button/Button';
@@ -14,8 +14,12 @@ import ExpensesTab from './ExpensesTab';
 import TripTicketTab from './TripTicketTab';
 import { useToast } from '../ui/Toast/Toast';
 import { FiBriefcase } from 'react-icons/fi';
+import { AccessContext } from '@/app/contextProviders/accessContext';
+import InvalidPage from '@/components/InvalidPage/page';
 
 export default function ProjectDetails({ id: propId }) {
+  const PageName = 'Projects.Projects';
+  const { isAllowed } = useContext(AccessContext);
   const [project, setProject] = useState(null);
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState(false);
@@ -58,6 +62,7 @@ export default function ProjectDetails({ id: propId }) {
     setLoading(false);
   };
 
+  if (!isAllowed(PageName, 'r')) return <InvalidPage />;
   if (loading) return <div>Loading...</div>;
   if (!project) return <div>No project found</div>;
 
@@ -102,11 +107,11 @@ export default function ProjectDetails({ id: propId }) {
             <div className={styles.panelHeader}>
               <h3>Details</h3>
               <div className={styles.panelActions}>
-                {!editing && <Button className="md" onClick={() => setEditing(true)}>Edit</Button>}
+                {!editing && isAllowed(PageName, 'w') && <Button className="md" onClick={() => setEditing(true)}>Edit</Button>}
                 {editing && (
                   <>
                     <Button className="secondary md" onClick={() => { setForm({ ...project }); setEditing(false); }}>Cancel</Button>
-                    <Button className="save md" onClick={save}>Save</Button>
+                    {isAllowed(PageName, 'w') && <Button className="save md" onClick={save}>Save</Button>}
                   </>
                 )}
               </div>
@@ -196,7 +201,7 @@ export default function ProjectDetails({ id: propId }) {
           </div>
         ) : (
           <div className={styles.panel}>
-              {activeTab === 'Project Scope & Materials' && <ProjectScope projectId={project.id} editable />}
+              {activeTab === 'Project Scope & Materials' && <ProjectScope projectId={project.id} editable={isAllowed(PageName, 'w')} />}
             {activeTab === 'Expenses' && <ExpensesTab projectId={project.id} />}
             {activeTab === 'Trip Tickets' && <TripTicketTab projectId={project.id} />}
             {activeTab === 'Staff' && <ProjectStaffTab projectId={project.id} />}

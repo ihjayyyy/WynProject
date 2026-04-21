@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, useContext } from 'react';
 import { useRouter } from 'next/navigation';
 import { FiCheck, FiCheckCircle, FiEdit2, FiEye, FiSend, FiX, FiXCircle } from 'react-icons/fi';
 import DropdownAction from '../ui/DropdownAction/DropdownAction';
@@ -10,6 +10,8 @@ import { getProposals, submitProposal, approveProposal, rejectProposal, winPropo
 import { convertProposal } from '../../services/Project';
 import { useToast } from '../ui/Toast/Toast';
 import ConfirmModal from '../ui/ConfirmModal/ConfirmModal';
+import { AccessContext } from '@/app/contextProviders/accessContext';
+import InvalidPage from '@/components/InvalidPage/page';
 
 const baseColumns = [
   { header: 'Id', key: 'id' },
@@ -36,6 +38,8 @@ const baseColumns = [
 ];
 
 export default function ProposalLanding() {
+  const PageName = 'Projects.Proposal';
+  const { isAllowed } = useContext(AccessContext);
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const router = useRouter();
@@ -50,10 +54,10 @@ export default function ProposalLanding() {
 
   const actionItems = useMemo(
     () => [
-      { key: 'view', label: 'View', icon: <FiEye size={14} />, onClick: (item) => router.push(`/projects/proposal/proposalform?id=${item.id}`) },
-      { key: 'edit', label: 'Edit', icon: <FiEdit2 size={14} />, onClick: (item) => router.push(`/projects/proposal/proposalform?id=${item.id}&mode=edit`) },
+      ...(isAllowed(PageName, 'r') ? [{ key: 'view', label: 'View', icon: <FiEye size={14} />, onClick: (item) => router.push(`/projects/proposal/proposalform?id=${item.id}`) }] : []),
+      ...(isAllowed(PageName, 'w') ? [{ key: 'edit', label: 'Edit', icon: <FiEdit2 size={14} />, onClick: (item) => router.push(`/projects/proposal/proposalform?id=${item.id}&mode=edit`) }] : []),
     ],
-    [router]
+    [isAllowed, router]
   );
 
   
@@ -84,7 +88,7 @@ export default function ProposalLanding() {
         ...it,
         hidden: it.key === 'edit' ? !isDraft : it.hidden,
       }));
-      if (isDraft) {
+      if (isDraft && isAllowed(PageName, 'w')) {
         itemsFor.push({ key: 'submit', label: 'Submit', icon: <FiSend size={14} />, onClick: async (it) => {
           setLoading(true);
           const res = await submitProposal(it.id);
@@ -98,7 +102,7 @@ export default function ProposalLanding() {
         }});
       }
       const isSubmitted = proposalStatus === 'submitted';
-      if (isSubmitted) {
+      if (isSubmitted && isAllowed(PageName, 'a')) {
         itemsFor.push({ key: 'approve', label: 'Approve', icon: <FiCheck size={14} />, onClick: (it) => {
           setConfirmTarget(it);
           setConfirmTitle('Approve proposal?');
@@ -135,7 +139,7 @@ export default function ProposalLanding() {
       const isWon = proposalStatus === 'won' || proposalStatus === 'win';
       const shouldShowGenerateProject = isWon && item?.isProjectCreated === false;
 
-      if (isApproved) {
+      if (isApproved && isAllowed(PageName, 'w')) {
         itemsFor.push({ key: 'win', label: 'Win', icon: <FiCheck size={14} />, onClick: (it) => {
           setConfirmTarget(it);
           setConfirmTitle('Mark proposal as Won?');
@@ -153,7 +157,7 @@ export default function ProposalLanding() {
         }});
       }
 
-      if (shouldShowGenerateProject) {
+      if (shouldShowGenerateProject && isAllowed(PageName, 'w')) {
         itemsFor.push({ key: 'generate-project', label: 'Generate Project', icon: <FiCheck size={14} />, onClick: async (it) => {
           setLoading(true);
           const res = await convertProposal(it.id);
@@ -167,7 +171,7 @@ export default function ProposalLanding() {
         }});
       }
 
-      if (isApproved || isRejected) {
+      if ((isApproved || isRejected) && isAllowed(PageName, 'w')) {
         itemsFor.push({ key: 'lose', label: 'Lose', icon: <FiX size={14} />, onClick: (it) => {
           setConfirmTarget(it);
           setConfirmTitle('Mark proposal as Lost?');
@@ -185,7 +189,7 @@ export default function ProposalLanding() {
         }});
       }
       return <DropdownAction item={item} items={itemsFor} />;
-    } }], [actionItems, loadProposals, toast]);
+    } }], [actionItems, isAllowed, loadProposals, toast]);
 
   const stats = useMemo(() => {
     const total = items.length;
@@ -204,7 +208,7 @@ export default function ProposalLanding() {
       .some((v) => String(v).toLowerCase().includes(keyword));
   };
 
-return (
+return isAllowed(PageName, 'r') ? (
   <>
     <Landing
       title="Proposals"
@@ -212,8 +216,8 @@ return (
       columns={columns}
       stats={stats}
       searchPlaceholder="Search proposals"
-      newButtonLabel="New Proposal"
-      onNew={() => router.push('/projects/proposal/proposalform')}
+      newButtonLabel={isAllowed(PageName, 'w') ? 'New Proposal' : ''}
+      onNew={() => isAllowed(PageName, 'w') && router.push('/projects/proposal/proposalform')}
       emptyMessage="No proposals found"
       width="320px"
       filterFn={filterFn}
@@ -255,6 +259,6 @@ return (
       )}
     </ConfirmModal>
   </>
-);
+) : <InvalidPage />;
 }
  

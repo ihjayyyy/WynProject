@@ -11,6 +11,7 @@ import { getTripTicketByProjectId, createTripTicket, updateTripTicket, deleteTri
 import { getMaterials } from '../../services/Materials';
 import { useToast } from '../ui/Toast/Toast';
 import { useConfirmModal } from '@/app/contextProviders/confirmModalContext';
+import { AccessContext } from '@/app/contextProviders/accessContext';
 import * as Yup from 'yup';
 
 function formatDate(value) {
@@ -44,6 +45,8 @@ export default function TripTicketTab({ projectId = 0 }) {
   const [materials, setMaterials] = useState([]);
   const toast = useToast();
   const confirmModal = useConfirmModal();
+  const PageName = 'Projects.Projects';
+  const { isAllowed } = useContext(AccessContext);
 
   useEffect(() => {
     let mounted = true;
@@ -259,9 +262,9 @@ export default function TripTicketTab({ projectId = 0 }) {
             value={searchTerm}
             onChange={setSearchTerm}
             showFilter={false}
-            showButton
-            buttonLabel="Add Trip Ticket"
-            handleOnClick={() => { setEditing(null); setIsModalOpen(true); }}
+            showButton={isAllowed(PageName, 'w')}
+            buttonLabel={isAllowed(PageName, 'w') ? "Add Trip Ticket" : undefined}
+            handleOnClick={isAllowed(PageName, 'w') ? () => { setEditing(null); setIsModalOpen(true); } : undefined}
             width="260px"
           />
         </div>
@@ -282,7 +285,7 @@ export default function TripTicketTab({ projectId = 0 }) {
         isOpen={isModalOpen}
         fields={tripTicketModalFields}
         onItemRemove={handleDelete}
-        onClose={async (value) => {
+        onClose={isAllowed(PageName, 'w') ? async (value) => {
           if (!value) {
             setIsModalOpen(false);
             setEditing(null);
@@ -319,7 +322,8 @@ export default function TripTicketTab({ projectId = 0 }) {
 
           setIsModalOpen(false);
           setEditing(null);
-        }}
+        } : undefined}
+        readOnly={!isAllowed(PageName, 'w')}
       />
     </div>
   );

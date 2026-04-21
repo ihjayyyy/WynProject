@@ -13,6 +13,7 @@ import { getStaffs } from '../../services/Staff';
 import { getByProjectId } from '../../services/ProjectScope';
 import { useToast } from '../ui/Toast/Toast';
 import * as Yup from 'yup';
+import { AccessContext } from '@/app/contextProviders/accessContext';
 
 const BASE_COLUMNS = [
   { header: 'Name', key: 'name' },
@@ -40,6 +41,8 @@ export default function ProjectStaffTab({ projectId = 0 }) {
   const [staffOptions, setStaffOptions] = useState([]);
   const [scopeOptions, setScopeOptions] = useState([]);
   const toast = useToast();
+  const PageName = 'Projects.Projects';
+  const { isAllowed } = useContext(AccessContext);
 
   const projectStaffModalFields = useMemo(() => {
     const record = editing || {};
@@ -228,9 +231,9 @@ export default function ProjectStaffTab({ projectId = 0 }) {
             value={searchTerm}
             onChange={setSearchTerm}
             showFilter={false}
-            showButton
-            buttonLabel="Add Staff"
-            handleOnClick={() => { setEditing(null); setIsModalOpen(true); }}
+            showButton={isAllowed(PageName, 'w')}
+            buttonLabel={isAllowed(PageName, 'w') ? "Add Staff" : undefined}
+            handleOnClick={isAllowed(PageName, 'w') ? () => { setEditing(null); setIsModalOpen(true); } : undefined}
             width="280px"
           />
         </div>
@@ -251,7 +254,7 @@ export default function ProjectStaffTab({ projectId = 0 }) {
         isOpen={isModalOpen}
         fields={projectStaffModalFields}
         onItemRemove={() => {}}
-        onClose={async (value) => {
+        onClose={isAllowed(PageName, 'w') ? async (value) => {
           if (!value) {
             setIsModalOpen(false);
             setEditing(null);
@@ -279,7 +282,8 @@ export default function ProjectStaffTab({ projectId = 0 }) {
           }
           setIsModalOpen(false);
           setEditing(null);
-        }}
+        } : undefined}
+        readOnly={!isAllowed(PageName, 'w')}
       />
 
       <ConfirmModal

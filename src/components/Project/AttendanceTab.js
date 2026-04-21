@@ -12,6 +12,7 @@ import { getAttendanceByProjectId, createAttendance, updateAttendance, deleteAtt
 import { getStaffs } from '../../services/Staff';
 import { useToast } from '../ui/Toast/Toast';
 import { useConfirmModal } from '@/app/contextProviders/confirmModalContext';
+import { AccessContext } from '@/app/contextProviders/accessContext';
 import * as Yup from 'yup';
 
 function toDateInputValue(date) {
@@ -145,6 +146,8 @@ const BASE_COLUMNS = [
 ];
 
 export default function AttendanceTab({ projectId = 0 }) {
+  const PageName = 'Projects.Projects';
+  const { isAllowed } = useContext(AccessContext);
   const [defaultDateRange] = useState(getCurrentWorkingWeek);
   const [items, setItems] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
@@ -454,25 +457,15 @@ export default function AttendanceTab({ projectId = 0 }) {
       <div className={styles.headerRow}>
         <h2 className={styles.title}>Attendance</h2>
         <div className={styles.headerActions}>
-          <div style={{ display: 'flex', gap: 12, alignItems: 'flex-end', flexWrap: 'wrap' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <label htmlFor="attendance-start-date">Start Date</label>
-              <Input id="attendance-start-date" type="date" value={startDate} aria-label="Start Date" onChange={(event) => setStartDate(event.target.value)} />
-            </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <label htmlFor="attendance-end-date">End Date</label>
-              <Input id="attendance-end-date" type="date" value={endDate} aria-label="End Date" onChange={(event) => setEndDate(event.target.value)} />
-            </div>
-          </div>
           <SearchBar
             placeholder="Search attendance"
             value={searchTerm}
             onChange={setSearchTerm}
             showFilter={false}
-            showButton
-            buttonLabel="Add Attendance"
-            handleOnClick={() => { setEditing(null); setIsModalOpen(true); }}
-            width="240px"
+            showButton={isAllowed(PageName, 'w')}
+            buttonLabel={isAllowed(PageName, 'w') ? "Add Attendance" : undefined}
+            handleOnClick={isAllowed(PageName, 'w') ? () => { setEditing(null); setIsModalOpen(true); } : undefined}
+            width="280px"
           />
         </div>
       </div>
@@ -488,11 +481,11 @@ export default function AttendanceTab({ projectId = 0 }) {
       <ItemModal
         headerLabel={editing?.id ? 'Edit Attendance' : 'Add Attendance'}
         mode={editing?.id ? 'edit' : 'new'}
-        itemIndex={editing?.id ? Number(editing.id) : -1}
+        itemIndex={editing?.id ? 0 : -1}
         isOpen={isModalOpen}
         fields={attendanceModalFields}
-        onItemRemove={handleDelete}
-        onClose={async (value) => {
+        onItemRemove={() => {}}
+        onClose={isAllowed(PageName, 'w') ? async (value) => {
           if (!value) {
             setIsModalOpen(false);
             setEditing(null);
@@ -527,7 +520,8 @@ export default function AttendanceTab({ projectId = 0 }) {
 
           setIsModalOpen(false);
           setEditing(null);
-        }}
+        } : undefined}
+        readOnly={!isAllowed(PageName, 'w')}
       />
     </div>
   );

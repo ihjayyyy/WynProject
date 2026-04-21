@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useMemo, useState } from 'react';
+import React, { useContext, useMemo, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { FiFileText } from 'react-icons/fi';
 import EntityForm from '../EntityForm/EntityForm';
@@ -13,8 +13,12 @@ import { INITIAL_PROPOSAL, getProposalById, createProposal, updateProposal, subm
 import ConfirmModal from '../ui/ConfirmModal/ConfirmModal';
 import { getCustomers } from '../../services/Customer';
 import { getInquiries } from '../../services/Inquiry';
+import { AccessContext } from '@/app/contextProviders/accessContext';
+import InvalidPage from '@/components/InvalidPage/page';
 
 export default function ProposalForm() {
+  const PageName = 'Projects.Proposal';
+  const { isAllowed } = useContext(AccessContext);
   const router = useRouter();
   const searchParams = useSearchParams();
   const proposalId = searchParams.get('id');
@@ -298,7 +302,7 @@ export default function ProposalForm() {
     remarks: c.remarks || '',
   });
 
-  return (
+  return isAllowed(PageName, 'r') ? (
     <EntityForm
       title={formTitle}
       icon={<FiFileText />}
@@ -376,19 +380,19 @@ export default function ProposalForm() {
       width="100%"
       columns={3}
       showSubmitButton={false}
-      readOnly={isReadOnly}
+      readOnly={isReadOnly || !isAllowed(PageName, 'w')}
       headerActions={
         !proposalId ? (
-          <Button type="submit" variant="save">Create</Button>
+          isAllowed(PageName, 'w') ? <Button type="submit" variant="save">Create</Button> : null
         ) : (
           <>
             {isReadOnly ? (
               (
                 <>
-                  {canEnterEditMode ? (
+                  {canEnterEditMode && isAllowed(PageName, 'w') ? (
                     <Button variant="outlinedPrimary" onClick={() => setIsEditModeLocal(true)}>Edit</Button>
                   ) : null}
-                  {isDraft ? (
+                  {isDraft && isAllowed(PageName, 'w') ? (
                     <Button variant="primary" onClick={() => {
                       setConfirmTitle('Submit proposal?');
                       setConfirmMessage(`Submit proposal \"${initialValues.name || initialValues.code || ''}\"?`);
@@ -420,12 +424,12 @@ export default function ProposalForm() {
                   }}>
                   Cancel
                 </Button>
-                <Button type="submit" variant="save">Save</Button>
+                {isAllowed(PageName, 'w') ? <Button type="submit" variant="save">Save</Button> : null}
               </>
             )}
           </>
         )
       }
     />
-  );
+  ) : <InvalidPage />;
 }

@@ -12,7 +12,7 @@ import Input from '../ui/Input/Input';
 import Select from '../ui/Select/Select';
 import inputStyles from '../ui/Input/Input.module.scss';
 import { useConfirmModal } from "@/app/contextProviders/confirmModalContext";
-const ItemModal = ({ headerLabel, mode = "new", itemIndex=-1, isOpen, onClose, fields, onItemRemove }) => {
+const ItemModal = ({ headerLabel, mode = "new", itemIndex=-1, isOpen, onClose, fields, onItemRemove, closeOnOutsideClick = true }) => {
 
 const confirmModal = useConfirmModal();
 
@@ -78,6 +78,12 @@ useEffect(() => {
     onClose(null);
   };  
 
+  const handleBackdropClick = () => {
+    if (closeOnOutsideClick) {
+      handleClose();
+    }
+  };
+
   const handleSave = () => {
     console.log("Save clicked")
 
@@ -126,7 +132,7 @@ const updateField = (fieldNameToUpdate, value) => {
 
 
 const content = (
-  <div className={modalstyle.itemModal} onClick={handleClose}>
+  <div className={modalstyle.itemModal} onClick={handleBackdropClick}>
     <div className={modalstyle.modalcontainer}  onClick={(e) => e.stopPropagation()}>
         <div className={modalstyle.modalHeader}>
             <h3 className={modalstyle.title}>{headerLabel}</h3>

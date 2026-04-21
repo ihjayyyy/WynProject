@@ -313,7 +313,7 @@ export default function ProjectScope({ projectId = 0, editable = true }) {
         }}
       />
 
-      <ProjectMaterialModal open={isMaterialModalOpen} initial={materialEditing || { parentId: Number(projectId) || 0, scopeOfWork: materialScopeTarget || 'General' }} onCancel={() => { setIsMaterialModalOpen(false); setMaterialScopeTarget(null); setMaterialEditing(null); }} onConfirm={async (m) => {
+      <ProjectMaterialModal open={isMaterialModalOpen} initial={materialEditing || { parentId: Number(projectId) || 0, scopeOfWork: materialScopeTarget || 'General' }} keepOpenOnSave={!materialEditing} onCancel={() => { setIsMaterialModalOpen(false); setMaterialScopeTarget(null); setMaterialEditing(null); }} onConfirm={async (m, options = {}) => {
         try {
           // find scope object by parentId or scopeOfWork
           const scopeName = m.scopeOfWork || materialScopeTarget || 'General';
@@ -394,9 +394,11 @@ export default function ProjectScope({ projectId = 0, editable = true }) {
           }
         }
 
-        setIsMaterialModalOpen(false);
-        setMaterialScopeTarget(null);
-        setMaterialEditing(null);
+        if (options.closeModal !== false) {
+          setIsMaterialModalOpen(false);
+          setMaterialScopeTarget(null);
+          setMaterialEditing(null);
+        }
       }} />
 
       <ConfirmModal open={isConfirmOpen} title="Remove material?" message={confirmTarget ? `Remove material "${confirmTarget.name || confirmTarget.code || ''}"?` : 'Remove this material?'} confirmText="Remove" confirmVariant="danger" onConfirm={() => {

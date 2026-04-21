@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, useContext } from 'react';
 import { useRouter } from 'next/navigation';
 import { FiEdit2, FiEye } from 'react-icons/fi';
 import DropdownAction from '../ui/DropdownAction/DropdownAction';
@@ -8,6 +8,8 @@ import Landing from '../ui/Landing/Landing';
 import StatusBadge from '../ui/StatusBadge/StatusBadge';
 import { getProjects } from '../../services/Project';
 import { useToast } from '../ui/Toast/Toast';
+import { AccessContext } from '@/app/contextProviders/accessContext';
+import InvalidPage from '@/components/InvalidPage/page';
 
 const baseColumns = [
   { header: 'Id', key: 'id' },
@@ -23,15 +25,17 @@ const baseColumns = [
 ];
 
 export default function ProjectLanding() {
+  const PageName = 'Projects.Projects';
+  const { isAllowed } = useContext(AccessContext);
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const router = useRouter();
   const toast = useToast();
 
   const actionItems = useMemo(() => [
-    { key: 'view', label: 'View', icon: <FiEye size={14} />, onClick: (item) => router.push(`/projects/project/projectdetails?id=${item.id}`) },
-    { key: 'edit', label: 'Edit', icon: <FiEdit2 size={14} />, onClick: (item) => router.push(`/projects/project/projectdetails?id=${item.id}&mode=edit`) },
-  ], [router]);
+    ...(isAllowed(PageName, 'r') ? [{ key: 'view', label: 'View', icon: <FiEye size={14} />, onClick: (item) => router.push(`/projects/project/projectdetails?id=${item.id}`) }] : []),
+    ...(isAllowed(PageName, 'w') ? [{ key: 'edit', label: 'Edit', icon: <FiEdit2 size={14} />, onClick: (item) => router.push(`/projects/project/projectdetails?id=${item.id}&mode=edit`) }] : []),
+  ], [isAllowed, router]);
 
   const loadProjects = React.useCallback(async () => {
     setLoading(true);
@@ -77,7 +81,7 @@ export default function ProjectLanding() {
       .some((v) => String(v).toLowerCase().includes(keyword));
   };
 
-  return (
+  return isAllowed(PageName, 'r') ? (
     <Landing
       title="Projects"
       data={items}
@@ -89,5 +93,5 @@ export default function ProjectLanding() {
       filterFn={filterFn}
       loading={loading}
     />
-  );
+  ) : <InvalidPage />;
 }

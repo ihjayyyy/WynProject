@@ -11,6 +11,7 @@ import { getExpensesByProjectId, createExpense, updateExpense, deleteExpense } f
 import { getByProjectId } from '../../services/ProjectScope';
 import { useToast } from '../ui/Toast/Toast';
 import { useConfirmModal } from '@/app/contextProviders/confirmModalContext';
+import { AccessContext } from '@/app/contextProviders/accessContext';
 import * as Yup from 'yup';
 
 const BASE_COLUMNS = [
@@ -34,6 +35,7 @@ export default function ExpensesTab({ projectId = 0 }) {
   const [scopeOptions, setScopeOptions] = useState([]);
   const toast = useToast();
   const confirmModal = useConfirmModal();
+  const { isAllowed } = useContext(AccessContext);
 
   const expensesModalFields = useMemo(() => {
     const record = editing || {};
@@ -182,7 +184,7 @@ export default function ExpensesTab({ projectId = 0 }) {
       header: 'Actions',
       key: '__actions',
       align: 'right',
-      render: (item) => (
+      render: (item) => isAllowed('Projects.Projects', 'w') ? (
         <div className={styles.actionCell}>
           <Button
             size="sm"
@@ -210,9 +212,9 @@ export default function ExpensesTab({ projectId = 0 }) {
             }}
           />
         </div>
-      ),
+      ) : null,
     },
-  ], [confirmModal, handleDelete, scopeOptions]);
+  ], [confirmModal, handleDelete, scopeOptions, isAllowed]);
 
   return (
     <div className={styles.landingWrap}>
@@ -224,9 +226,9 @@ export default function ExpensesTab({ projectId = 0 }) {
             value={searchTerm}
             onChange={setSearchTerm}
             showFilter={false}
-            showButton
-            buttonLabel="Add Expense"
-            handleOnClick={() => { setEditing(null); setIsModalOpen(true); }}
+            showButton={isAllowed('Projects.Projects', 'w')}
+            buttonLabel={isAllowed('Projects.Projects', 'w') ? "Add Expense" : undefined}
+            handleOnClick={isAllowed('Projects.Projects', 'w') ? () => { setEditing(null); setIsModalOpen(true); } : undefined}
             width="260px"
           />
         </div>
@@ -247,7 +249,7 @@ export default function ExpensesTab({ projectId = 0 }) {
         isOpen={isModalOpen}
         fields={expensesModalFields}
         onItemRemove={handleDelete}
-        onClose={async (value) => {
+        onClose={isAllowed('Projects.Projects', 'w') ? async (value) => {
           if (!value) {
             setIsModalOpen(false);
             setEditing(null);
@@ -277,7 +279,8 @@ export default function ExpensesTab({ projectId = 0 }) {
 
           setIsModalOpen(false);
           setEditing(null);
-        }}
+        } : undefined}
+        readOnly={!isAllowed('Projects.Projects', 'w')}
       />
     </div>
   );
