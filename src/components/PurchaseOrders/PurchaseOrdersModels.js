@@ -63,7 +63,7 @@ import * as Yup from "yup";
 export const PODetailsColumns = [
     { header: 'Material', key: 'material', width: '200px', render: (it) =>{return(it.code + ' - ' + it.name)}},
     { header: 'Unit Cost', key: 'unitCost', align: 'right', width: '120px', render: (it) => (Number(it.unitCost).toFixed(2)) },
-    { header: 'Qty', key: 'quantity', align: 'right', width: '80px', render: (it) => (it.unitCost).toFixed(0) + ' ' + it.uom},
+    { header: 'Qty', key: 'quantity', align: 'right', width: '80px', render: (it) => (it.quantity).toFixed(0) + ' ' + it.uom},
     { header: 'Discount', key: 'discount', align: 'right', width: '80px', render: (it) => (Number(it.discount).toFixed(2))},
     { header: 'VAT', key: 'vat', align: 'right', width: '140px', render: (it) => Number(it.vat || 0).toFixed(2) },
     { header: 'Amount', key: 'amount', align: 'right', width: '140px', render: (it) => Number(it.amount || 0).toFixed(2) }

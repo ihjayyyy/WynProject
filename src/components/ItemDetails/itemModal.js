@@ -21,7 +21,7 @@ const confirmModal = useConfirmModal();
     const message = "Are you sure you want to remove this item?";
     const confirmText = "Remove";
     const variant="danger";
-    const action = () => handleRemove(itemindex);
+    const action = ()=>() => handleRemove(itemindex);
     confirmModal.show(title,message,confirmText,variant, action);
   }
 

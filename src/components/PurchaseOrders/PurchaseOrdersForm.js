@@ -209,8 +209,9 @@ const handleSaveConfirm =(entity)=>{
     console.log(updatedPO)
     
     let res = {};
+    updatedPO.id = updatedPO.id === null ?? 0;
 
-    updatedPO.id && updatedPO.id <=0 ? res =  await Create(updatedPO) : res = await Update(updatedPO.id,updatedPO);
+    updatedPO.id == 0 ? res =  await Create(updatedPO) : res = await Update(updatedPO.id,updatedPO);
     console.log(res);
     if (res?.error) {
       toast.error('Failed to save purchase order.');
@@ -234,15 +235,15 @@ const handleSaveConfirm =(entity)=>{
 }
 
   const CancelPO = async()=>{
-    setMode("cancel PO");
+    setMode("view");
     const res = await SetStatus('Cancel', po.id);
 
     if (res?.error) {
-      toast.error('Failed to submit purchase order.');
+      toast.error('Failed to submit purchase order.' );
       return null;
     }
     else {
-      toast.success('Purchase Order has been submitted for approval.');
+      toast.success('Purchase Order has been cancelled.');
       router.push(backPath);  
     }
 
@@ -297,6 +298,16 @@ const submitForApproval = async()=>{
   const approvePO = async () =>{
     setMode('view');
     const res = await Approve(po.id)
+
+    if (res?.error) {
+      toast.error('Failed to approve purchase order.');
+      return null;
+    }
+    else {
+      toast.success('Purchase Order has been approved.');
+      router.push(backPath);  
+    }
+
   }
 
   const handleRejectConfirm =()=>{
@@ -311,6 +322,16 @@ const submitForApproval = async()=>{
   const rejectPO = async () =>{
     setMode('view');
     const res = await Reject(po.id)
+
+    if (res?.error) {
+      toast.error('Failed to reject purchase order.');
+      return null;
+    }
+    else {
+      toast.success('Purchase Order has been rejected.');
+      router.push(backPath);  
+    }
+
   }
 
     const handleArchiveConfirm =()=>{
@@ -324,7 +345,17 @@ const submitForApproval = async()=>{
 
   const archivePO = async () =>{
     setMode('view');
-    const res = await Reject(po.id)
+    const res = await SetStatus('Archive', po.id);
+
+        if (res?.error) {
+      toast.error('Failed to archive purchase order.');
+      return null;
+    }
+    else {
+      toast.success('Purchase Order has been archived.');
+      router.push(backPath);  
+    }
+
   }
   const handleCloseConfirm  =()=>{
       const title = "Close window";
@@ -348,15 +379,17 @@ const submitForApproval = async()=>{
   const ViewButton = () =>{
     return isAllowed(PageName, 'w') && orderId && mode === 'view' ?
     <div  className={POStyles.buttonsContainer}>
-        {po && po.status && (po.status.toLowerCase() === 'draft' || po.status.toLowerCase() === 'rejected') && <Button onClick={()=>setMode("edit")} variant="save">Edit</Button>}
-        {po && po.status && po.status.toLowerCase() === 'draft' && <Button onClick={handleSubmitConfirm} variant="save">Submit For Approval</Button>}  
+        {po && po.status && (po.status.toLowerCase() === 'draft' || po.status.toLowerCase() === 'rejected') 
+              && <Button onClick={()=>setMode("edit")} variant="save">Edit</Button>}
+        {po && po.status && po.status.toLowerCase() === 'draft'  && <Button onClick={handleSubmitConfirm} variant="save">Submit For Approval</Button>}  
     </div> : null;
   }
 
     const CancePOButton = () =>{
     return isAllowed(PageName, 'w') && orderId && mode === 'view' ?
     <div  className={POStyles.buttonsContainer}>
-        {po && po.status && (po.status.toLowerCase() !== 'ordered' || po.status.toLowerCase() === 'archived')  && <Button onClick={handleCancelPOConfirm} variant="danger">Cancel PO</Button>}
+        {po && po.status && (po.status.toLowerCase() !== 'ordered' && po.status.toLowerCase() !== 'cancelled' && po.status.toLowerCase() !== 'archived')  
+        && <Button onClick={handleCancelPOConfirm} variant="danger">Cancel PO</Button>}
     </div> : null;
   }
 
@@ -372,9 +405,9 @@ const submitForApproval = async()=>{
   const ApprovalButton = () =>{
     return isAllowed(PageName, 'a') && orderId && po.status && po.status.toLowerCase() === "submitted"  ?
     <div  className={POStyles.buttonsContainer}>
-      {po && po.status && (po.status.toLowerCase() === 'submitted') && <Button onClick={()=>setMode("edit")} variant="save">Edit</Button>}
-       <Button  variant="outlineDanger" onClick={handleRejectConfirm}>Reject</Button>
-       <Button variant="save" onClick={handleApproveConfirm}>Approve</Button>
+      {po && po.status && (po.status.toLowerCase() === 'submitted') && mode==='view' && <Button onClick={()=>setMode("edit")} variant="save">Edit</Button>}
+       {mode==='view' && <Button  variant="outlineDanger" onClick={handleRejectConfirm}>Reject</Button>}
+        {mode==='view' && <Button variant="save" onClick={handleApproveConfirm}>Approve</Button>}
     </div> : null
   }
 
