@@ -68,6 +68,13 @@ export const sidenavItems = [
     name: 'Purchase',
     children: [
       {
+        label: 'Request',
+        icon: FiList,
+        href: '/purchase/requests',
+        name: 'Purchase.Requests',
+
+      },
+      {
         label: 'Orders',
         icon: FiList,
         href: '/purchase/orders',

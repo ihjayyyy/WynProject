@@ -60,6 +60,10 @@ export async function getUserAccess() {
         name: 'Purchase',
          access:'rwa'
       },
+        {
+            name: 'Purchase.Requests',
+            access:'rwa'
+          },
           {
             name: 'Purchase.Orders',
             access:'rwa'
