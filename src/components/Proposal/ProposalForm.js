@@ -40,7 +40,7 @@ export default function ProposalForm() {
     (async () => {
       const res = await getProposalById(proposalId);
       if (!mounted) return;
-      if (!res.error) setItems(res.data ? [res.data] : []);
+      if (!res.error) setItems(res.data || []);
     })();
     return () => (mounted = false);
   }, [proposalId]);
