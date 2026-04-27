@@ -141,18 +141,35 @@ export async function getUserAccess() {
             name: 'Inventory.ToolsInventory',
             access:'rwa'
           },
+          {
+            name: 'Inventory.MaterialRequests',
+            access:'rwa'
+          },
       {
         name: 'Employees',
         access:'rwa'
       },
       {
-        name: 'Employees.Staff',
+        name: 'Employees.Employees',
         access:'rwa'
       },
       {
-        name: 'Employees.Maintenance',
+        name: 'Staff',
         access:'rwa'
-      }];
+      },
+      {
+        name: 'Maintenance',
+        access:'rwa'
+      },
+      {
+        name: 'Maintenance.UOM',
+        access: 'rwa'
+      },
+            {
+        name: 'Maintenance.UOMConversion',
+        access: 'rwa'
+      },
+];
 
   try {
     // const res = await fetch(API_BASE_URL, {

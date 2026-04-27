@@ -193,6 +193,12 @@ export const sidenavItems = [
         href: '/inventory/tools-inventory',
         name: 'Inventory.ToolsInventory',
       },
+      {
+        label: 'Material Requests',
+        icon: FiList,
+        href: '/inventory/material-request',
+        name: 'Inventory.MaterialRequests',
+      },
     ],
   },
   {
@@ -210,8 +216,22 @@ export const sidenavItems = [
   {
     label: 'Maintenance',
     icon: FiTool,
-    href: '/maintenance',
     name: 'Maintenance',
+    children: [
+      {
+        label: 'Unit of Measure',
+        icon: FiList,
+        href: '/maintainance/UOM',
+        name: 'Maintenance.UOM',
+      },
+      {
+        label: 'UOM Conversion',
+        icon: FiList,
+        href: '/maintainance/UOMConvertion',
+        name: 'Maintenance.UOMConversion',
+      },
+      // ...add more maintenance items here if needed
+    ],
   },
 ];
 

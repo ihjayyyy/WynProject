@@ -72,13 +72,14 @@ export default function ProjectDetails({ id: propId }) {
 
   return (
     <div className={styles.wrap}>
-        <div className={styles.breadcrumbs}>
-          <Breadcrumbs
-            showBack
-            backIcon={<FiBriefcase size={18} />}
-            items={[{ label: project.projectName || project.name }]}
-            backHref="/projects/project"
-          />        </div>
+      <div className={styles.breadcrumbs}>
+        <Breadcrumbs
+          showBack
+          backIcon={<FiBriefcase size={18} />}
+          items={[{ label: project.projectName || project.name }]}
+          backHref="/projects/project"
+        />
+      </div>
       <div className={styles.header}>
         <div className={styles.titleBlock}>
           <div className={styles.title}>{project.projectName || project.name}</div>
@@ -98,6 +99,10 @@ export default function ProjectDetails({ id: propId }) {
               </button>
             ))}
           </div>
+        </div>
+        <div className={styles.overallProgressBlock}>
+          <div className={styles.overallProgressLabel}>Overall Progress</div>
+          <div className={styles.overallProgressValue}>{Number(project.overallProgress || 0).toFixed(2)}%</div>
         </div>
       </div>
 
