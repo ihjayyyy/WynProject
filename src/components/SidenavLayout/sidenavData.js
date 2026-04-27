@@ -101,6 +101,37 @@ export const sidenavItems = [
       },
     ],
   },
+  {label: 'Finance',
+   icon: FiCreditCard,
+   name: 'Finance',
+   children: [
+      {
+        label: 'Project Billings',
+        icon: FiDatabase,
+        href: '/finance/billings',
+        name: 'Finance.Billings',
+      },
+      {
+        label: 'Purchase Billing',
+        icon: FiFile,
+        href: '/finance/invoice',
+        name: 'Finance.Invoices',
+      },
+      {
+        label: 'Collections',
+        icon: FiFolder,
+        href: '/finance/collections',
+        name: 'Finance.Collections',
+      },
+      {
+        label: 'Payment',
+        icon: FiCreditCard,
+        href: '/finance/payment',
+        name: 'Finance.Payments',
+      },
+
+    ]
+  },
   {
     label: 'Storage',
     icon: FiSettings,

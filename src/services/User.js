@@ -80,6 +80,26 @@ export async function getUserAccess() {
             name: 'Purchase.Payments',
             access:'rwa'
           },
+    {
+        name: 'Finance',
+         access:'rwa'
+      },
+     {
+        name: 'Finance.Billings',
+         access:'rwa'
+      },
+     {
+        name: 'Finance.Invoices',
+         access:'rwa'
+      },
+     {
+        name: 'Finance.Collections',
+         access:'rwa'
+      },
+     {
+        name: 'Finance.Payments',
+         access:'rwa'
+      },
       {
         name: 'Storage',
         access:'n'
