@@ -3,11 +3,13 @@ import DataTable from '../ui/DataTable/DataTable';
 import SearchBar from '../ui/SearchBar/SearchBar';
 import styles from './ProjectScope.module.scss';
 import Button from '../ui/Button/Button';
-import { FiPlus, FiEdit2, FiTrash2 } from 'react-icons/fi';
+import { FiPlus, FiEdit2, FiTrash2, FiCheckCircle } from 'react-icons/fi';
+import Input from '../ui/Input/Input';
 import ProjectScopeModal from './ProjectScopeModal';
 import ProjectMaterialModal from './ProjectMaterialModal';
 import ConfirmModal from '../ui/ConfirmModal/ConfirmModal';
 import { getByProjectId, createProjectScope, updateProjectScope } from '../../services/ProjectScope';
+import { updateCompletedQuantity } from '../../services/ProjectMaterial';
 
 function formatDate(v) {
   if (!v) return '';
@@ -103,6 +105,9 @@ function buildScopePayload({
 }
 
 export default function ProjectScope({ projectId = 0, editable = true }) {
+  const [isCompletedQtyModalOpen, setIsCompletedQtyModalOpen] = useState(false);
+  const [completedQtyTarget, setCompletedQtyTarget] = useState(null);
+  const [completedQtyValue, setCompletedQtyValue] = useState(0);
   const [searchTerm, setSearchTerm] = useState('');
   const [localItems, setLocalItems] = useState([]);
   const [deletedChildren, setDeletedChildren] = useState([]);
@@ -144,6 +149,14 @@ export default function ProjectScope({ projectId = 0, editable = true }) {
               parentId: c.parentId ?? scope.id ?? projectId,
               _localId: c._localId || `srv-${scope.id || ''}-${c.id || Math.floor(Math.random()*10000)}`,
             });
+          });
+        } else {
+          // No children: just ensure the group header will be created by adding a dummy entry to a set
+          flattened.push({
+            __isScopeHeaderOnly: true,
+            scopeOfWork: scopeName || 'General',
+            parentId: scope.id ?? projectId,
+            id: scope.id,
           });
         }
       });
@@ -198,22 +211,40 @@ export default function ProjectScope({ projectId = 0, editable = true }) {
     // { header: 'Material Cost', key: 'materialCost', align: 'right', width: '140px', render: (it) => Number(it.materialCost || 0).toLocaleString() },
     // { header: 'Labor Cost', key: 'laborCost', align: 'right', width: '120px', render: (it) => Number(it.laborCost || 0).toLocaleString() },
     // { header: 'Margin', key: 'margin', align: 'right', width: '100px', render: (it) => (it && (it.margin !== undefined && it.margin !== null) ? Number(it.margin).toLocaleString() : '') },
+    { header: 'Completed Qty', key: 'completedQuantity', align: 'right', width: '120px', render: (it) => (it && it.completedQuantity != null ? Number(it.completedQuantity).toLocaleString() : '') },
     { header: 'Total', key: 'totalCost', align: 'right', width: '140px', render: (it) => Number(it.totalPrice || it.totalAmount || 0).toLocaleString() },
   ];
 
   if (editable) {
-    columns.push({ header: 'Actions', key: '__actions', align: 'right', width: '120px', render: (it) => {
-      if (!it || it.isTotalRow || it.fullRow) return null;
-      return (
-        <div className={styles.actionCell}>
-          <Button size="sm" variant="outlinedPrimary" icon={<FiEdit2 />} title="Edit" onClick={() => { setMaterialEditing(it); setMaterialScopeTarget(it.scopeOfWork || 'General'); setIsMaterialModalOpen(true); }} />
-          <Button size="sm" variant="danger" icon={<FiTrash2 />} title="Delete" onClick={() => {
-            setConfirmTarget(it);
-            setIsConfirmOpen(true);
-          }} />
-        </div>
-      );
-    } });
+    columns.push({
+      header: 'Actions',
+      key: '__actions',
+      align: 'right',
+      width: '140px',
+      render: (it) => {
+        if (!it || it.isTotalRow || it.fullRow) return null;
+        return (
+          <div className={styles.actionCell}>
+            <Button size="sm" variant="outlinedPrimary" icon={<FiEdit2 />} title="Edit" onClick={() => { setMaterialEditing(it); setMaterialScopeTarget(it.scopeOfWork || 'General'); setIsMaterialModalOpen(true); }} />
+            <Button size="sm" variant="danger" icon={<FiTrash2 />} title="Delete" onClick={() => {
+              setConfirmTarget(it);
+              setIsConfirmOpen(true);
+            }} />
+            <Button
+              size="sm"
+              variant="success"
+              icon={<FiCheckCircle size={20} color="#22c55e" />} // Tailwind green-500
+              title="Update Completed Quantity"
+              onClick={() => {
+                setCompletedQtyTarget(it);
+                setCompletedQtyValue(it.completedQuantity ?? 0);
+                setIsCompletedQtyModalOpen(true);
+              }}
+            />
+          </div>
+        );
+      }
+    });
   }
 
   const data = [];
@@ -251,6 +282,10 @@ export default function ProjectScope({ projectId = 0, editable = true }) {
 
     rows.forEach((r) => {
       if (r && r.__isScope) return;
+      // If this is a header-only placeholder, do not render a material row
+      if (r && r.__isScopeHeaderOnly) {
+        return;
+      }
       const hasSavedId = r && r.id !== undefined && Number(r.id) !== 0;
       const rowKey = hasSavedId ? r.id : (r._localId || `row-${scope}-${Math.random()}`);
       data.push({
@@ -280,6 +315,35 @@ export default function ProjectScope({ projectId = 0, editable = true }) {
           <DataTable columns={columns} data={data} showActions={false} emptyMessage="No materials" />
         )}
       </div>
+
+<ConfirmModal
+                open={isCompletedQtyModalOpen}
+                title="Update Completed Quantity"
+                message={completedQtyTarget ? `Set completed quantity for \"${completedQtyTarget.name || completedQtyTarget.code || ''}\"` : ''}
+                confirmText="Save"
+                confirmVariant="success"
+                onCancel={() => { setIsCompletedQtyModalOpen(false); setCompletedQtyTarget(null); }}
+                onConfirm={async () => {
+                  if (completedQtyTarget) {
+                    const res = await updateCompletedQuantity(completedQtyTarget.id, Number(completedQtyValue));
+                    setIsCompletedQtyModalOpen(false);
+                    setCompletedQtyTarget(null);
+                    if (!res.error) await loadData();
+                    else window.alert('Failed to update: ' + res.error);
+                  }
+                }}
+              >
+                <div style={{ margin: '16px 0' }}>
+                  <Input
+                    type="number"
+                    min={0}
+                    value={completedQtyValue}
+                    onChange={e => setCompletedQtyValue(e.target.value)}
+                    autoFocus
+                    id="completed-qty-input"
+                  />
+                </div>
+              </ConfirmModal>
 
       <ProjectScopeModal
         open={isScopeModalOpen}

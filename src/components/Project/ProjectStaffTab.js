@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useMemo, useState, useEffect, useCallback } from 'react';
+import React, { useMemo, useState, useEffect, useCallback, useContext } from 'react';
 import DataTable from '../ui/DataTable/DataTable';
 import SearchBar from '../ui/SearchBar/SearchBar';
 import Button from '../ui/Button/Button';
@@ -126,8 +126,23 @@ export default function ProjectStaffTab({ projectId = 0 }) {
     if (!projectId) return;
     const res = await getProjectStaffsByProjectId(projectId);
     if (!res.error) {
-      const raw = Array.isArray(res.data) ? res.data : (res.data ? [res.data] : []);
-      setItems(raw);
+      // Handle both { value: [...] } and direct array responses
+      const raw = Array.isArray(res.data?.value)
+        ? res.data.value
+        : Array.isArray(res.data)
+          ? res.data
+          : [];
+
+      const mapped = raw.map((item) => ({
+        name: item.name || '',
+        code: item.code || '',
+        job: item.job || '',
+        expenses: item.expenses ?? item.ratePerHour ?? 0,
+        scopeId: item.scopeId || '',
+        id: item.id,
+        staffId: item.staffId || item.id || '',
+      }));
+      setItems(mapped);
     } else {
       setItems([]);
     }
@@ -143,9 +158,13 @@ export default function ProjectStaffTab({ projectId = 0 }) {
     (async () => {
       const res = await getStaffs();
       if (!mounted || res.error) return;
-      const list = Array.isArray(res.data) ? res.data : (res.data?.value || []);
+      const list = Array.isArray(res.data?.value)
+        ? res.data.value
+        : Array.isArray(res.data)
+          ? res.data
+          : [];
       setStaffOptions(
-        (list || []).map((s) => ({
+        list.map((s) => ({
           value: String(s.id),
           label: s.name || s.code || String(s.id),
           name: s.name || '',
@@ -165,9 +184,13 @@ export default function ProjectStaffTab({ projectId = 0 }) {
     (async () => {
       const res = await getByProjectId(projectId);
       if (!mounted || res.error) return;
-      const raw = Array.isArray(res.data) ? res.data : (res.data?.value || []);
+      const raw = Array.isArray(res.data?.value)
+        ? res.data.value
+        : Array.isArray(res.data)
+          ? res.data
+          : [];
       setScopeOptions(
-        (raw || []).map((s) => ({
+        raw.map((s) => ({
           value: String(s.id),
           label: s.description || s.name || s.code || String(s.id),
         }))

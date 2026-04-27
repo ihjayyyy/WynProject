@@ -114,20 +114,32 @@ export default function PurchaseOrdersForm() {
   GetPO();
 }, [orderId]);
 
-const GetPO =async ()=>{
+const GetPO = async () => {
+  let initPO = { ...InitialData };
+  if (orderId !== 0) {
+    const getpo = await Get(orderId);
+    console.log("get po", getpo);
+    initPO = getpo.data;
 
-    let initPO = {...InitialData}
-    if(orderId!==0){
-      const getpo = await Get(orderId);
-      console.log("get po", getpo)
-      initPO =  getpo.data;       
+    // Normalize date fields for form input
+    if (initPO.orderDate) {
+      const d = new Date(initPO.orderDate);
+      if (!isNaN(d)) {
+        initPO.orderDate = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+      }
     }
-    else{
-      setMode("new");
+    if (initPO.estimatedDeliveryDate) {
+      const d = new Date(initPO.estimatedDeliveryDate);
+      if (!isNaN(d)) {
+        initPO.estimatedDeliveryDate = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+      }
     }
-    setPO(initPO) ;
-    setvalidPO( Object.keys(initPO).length === 0 ? false:true);
-    setTableData({items:initPO.children, deletedItems:initPO.deletedChildren})
+  } else {
+    setMode("new");
+  }
+  setPO(initPO);
+  setvalidPO(Object.keys(initPO).length === 0 ? false : true);
+  setTableData({ items: initPO.children, deletedItems: initPO.deletedChildren });
 }
 
 //Set Form View

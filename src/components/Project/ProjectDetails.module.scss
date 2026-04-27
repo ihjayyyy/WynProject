@@ -1,5 +1,23 @@
 @use 'sass:color';
 @use '../../styles/variables' as *;
+.overallProgressBlock {
+  margin-left: auto;
+  text-align: right;
+  min-width: 120px;
+  flex-direction: column;
+  align-items: flex-end;
+  justify-content: center;
+}
+
+.overallProgressLabel {
+  font-weight: 600;
+  font-size: 16px;
+}
+
+.overallProgressValue {
+  font-size: 22px;
+  font-weight: 700;
+}
 
 .wrap {
   background: $color-background-light;
@@ -18,7 +36,6 @@
   padding: 18px;
   border-radius: 8px;
   display: flex;
-  align-items: center;
   justify-content: space-between;
   gap: 12px;
 }

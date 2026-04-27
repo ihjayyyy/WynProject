@@ -80,20 +80,27 @@ export default function PRForm() {
             fetchMaterials();
     },[]);
 
-const GetFormData =async ()=>{
+const GetFormData = async () => {
+  let initData = { ...InitialData };
+  if (formId !== 0) {
+    const getData = await Get(formId);
+    console.log("get pr", getData);
+    initData = getData.data;
 
-    let initData = {...InitialData}
-    if(formId!==0){
-      const getData = await Get(formId);
-      console.log("get pr", getData)
-      initData =  getData.data;       
+    // Normalize date fields for form input
+    if (initData.requestDate) {
+      const d = new Date(initData.requestDate);
+      if (!isNaN(d)) {
+        initData.requestDate = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+      }
     }
-    else{
-      setMode("new");
-    }
-    setFormData(initData) ;
-    setformValid( Object.keys(initData).length === 0 ? false:true);
-    setTableData({items:initData.children, deletedItems:initData.deletedChildren})
+    // Add more date fields here if needed
+  } else {
+    setMode("new");
+  }
+  setFormData(initData);
+  setformValid(Object.keys(initData).length === 0 ? false : true);
+  setTableData({ items: initData.children, deletedItems: initData.deletedChildren });
 }
 
  useEffect(() => {

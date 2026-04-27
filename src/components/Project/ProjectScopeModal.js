@@ -39,9 +39,9 @@ export default function ProjectScopeModal({ open, initial = {}, onCancel, onConf
       description: '',
       forecastedStartDate: defaultStart,
       forecastedEndDate: defaultEnd,
-      actualStartDate: null,
-      actualEndDate: null,
-      milestoneDate: defaultEnd,
+      actualStartDate: defaultStart,
+      actualEndDate: defaultStart,
+      milestoneDate: defaultStart,
       ...init,
     };
   };
