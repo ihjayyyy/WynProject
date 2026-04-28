@@ -309,11 +309,7 @@ export default function ProjectScope({ projectId = 0, editable = true }) {
       </div>
 
       <div className={styles.tableSection}>
-        {groupKeys.length === 0 ? (
-          <div className={styles.empty}>No materials match your search</div>
-        ) : (
           <DataTable columns={columns} data={data} showActions={false} emptyMessage="No materials" />
-        )}
       </div>
 
 <ConfirmModal

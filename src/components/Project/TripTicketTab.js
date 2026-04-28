@@ -271,11 +271,7 @@ export default function TripTicketTab({ projectId = 0 }) {
       </div>
 
       <div className={styles.tableSection}>
-        {filtered.length === 0 ? (
-          <div className={styles.empty}>No trip tickets for this project</div>
-        ) : (
           <DataTable columns={tableColumns} data={filtered} showActions={false} emptyMessage="No trip tickets found" />
-        )}
       </div>
 
       <ItemModal

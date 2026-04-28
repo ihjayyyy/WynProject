@@ -1,12 +1,13 @@
 'use client';
 
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { FiList } from 'react-icons/fi';
 import EntityForm from '../EntityForm/EntityForm';
 import Button from '../ui/Button/Button';
 import { useToast } from '../ui/Toast/Toast';
 import { INITIAL_UOM_CONVERSION, getUOMConversions, createUOMConversion, updateUOMConversion } from '../../services/UOMConversion';
+import { getUnitsOfMeasure } from '../../services/UnitOfMeasure';
 
 export default function UOMConversionForm() {
   const router = useRouter();
@@ -17,6 +18,19 @@ export default function UOMConversionForm() {
   const isEditMode = mode === 'edit' || isEditModeLocal;
 
   const [conversions, setConversions] = useState(null);
+  const [unitOptions, setUnitOptions] = useState([]);
+    // Fetch unit of measure options
+    useEffect(() => {
+      let mounted = true;
+      (async () => {
+        const res = await getUnitsOfMeasure();
+        if (!mounted) return;
+        if (!res.error && Array.isArray(res.data)) {
+          setUnitOptions(res.data.map(u => ({ label: u.name, value: u.code, code: u.code })));
+        }
+      })();
+      return () => { mounted = false; };
+    }, []);
   const toast = useToast();
 
   React.useEffect(() => {
@@ -49,9 +63,18 @@ export default function UOMConversionForm() {
   }, [conversionId, isEditMode]);
 
   const fields = [
-    { name: 'code', label: 'Code', span: 'span2' },
-    { name: 'name', label: 'Name', span: 'span2' },
-    { name: 'unitOfMeasurement', label: 'Unit of Measurement', span: 'span2' },
+    { name: 'code', label: 'Code', span: 'span2', readOnly: true },
+    {
+      name: 'unitOfMeasurement',
+      label: 'Unit of Measurement',
+      span: 'span2',
+      type: 'select',
+      options: unitOptions,
+      onChange: (selectedValue, values, setValues) => {
+        // Set code to the selected unit's code
+        setValues({ ...values, unitOfMeasurement: selectedValue, code: selectedValue });
+      },
+    },
     { name: 'convertFrom', label: 'Convert From', span: 'span2' },
     { name: 'convertTo', label: 'Convert To', span: 'span2' },
     { name: 'conversionFactor', label: 'Conversion Factor', span: 'span2', type: 'number' },
@@ -65,8 +88,10 @@ export default function UOMConversionForm() {
       fields={fields}
       initialValues={initialValues}
       onSubmit={async (values) => {
-        const { code, name, unitOfMeasurement, convertFrom, convertTo, conversionFactor } = values || {};
-        const payload = { code, name, unitOfMeasurement, convertFrom, convertTo, conversionFactor };
+        const { code, unitOfMeasurement, convertFrom, convertTo, conversionFactor } = values || {};
+        // Auto-generate the name from convertFrom and convertTo
+        const name = `${convertFrom} to ${convertTo} (${convertTo} to ${convertFrom})`;
+        const payload = { code, unitOfMeasurement, convertFrom, convertTo, conversionFactor, name };
 
         if (!conversionId) {
           const res = await createUOMConversion(payload);

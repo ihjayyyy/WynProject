@@ -471,11 +471,7 @@ export default function AttendanceTab({ projectId = 0 }) {
       </div>
 
       <div className={styles.tableSection}>
-        {filtered.length === 0 ? (
-          <div className={styles.empty}>No attendance records for this project</div>
-        ) : (
           <DataTable columns={tableColumns} data={filtered} showActions={false} emptyMessage="No attendance found" />
-        )}
       </div>
 
       <ItemModal

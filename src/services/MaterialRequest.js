@@ -45,6 +45,20 @@ async function createMaterialRequest(payload) {
     }
 }
 
+async function getMaterialRequestsByProjectId(projectId) {
+    try {
+        const url = `${API_BASE_URL}/GetByProjectId/${projectId}`;
+        const res = await fetch(url, {
+            method: 'GET',
+            headers: { Accept: '*/*' },
+        });
+        const json = await res.json();
+        return { data: json && json.value ? json.value : json, error: null };
+    } catch (error) {
+        return { data: null, error: error?.message || error };
+    }
+}
+
 async function updateMaterialRequest(id, payload) {
     try {
         const url = `${API_BASE_URL}/${id}`;
@@ -60,5 +74,5 @@ async function updateMaterialRequest(id, payload) {
     }
 }
 
-export { getMaterialRequests, createMaterialRequest, updateMaterialRequest };
-export default { getMaterialRequests, createMaterialRequest, updateMaterialRequest };
+export { getMaterialRequests, createMaterialRequest, updateMaterialRequest, getMaterialRequestsByProjectId };
+export default { getMaterialRequests, createMaterialRequest, updateMaterialRequest, getMaterialRequestsByProjectId };

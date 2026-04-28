@@ -43,12 +43,6 @@ export const sidenavItems = [
         name: 'Projects.Projects',
       },
       {
-        label: 'Material Requests',
-        icon: FiClipboard,
-        href: '/projects/material-requests',
-        name: 'Projects.MaterialRequests',
-      },
-      {
         label: 'Billings',
         icon: FiDollarSign,
         href: '/projects/billings',

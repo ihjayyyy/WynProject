@@ -12,6 +12,7 @@ import ProjectStaffTab from './ProjectStaffTab';
 import AttendanceTab from './AttendanceTab';
 import ExpensesTab from './ExpensesTab';
 import TripTicketTab from './TripTicketTab';
+import MaterialRequestsTab from './MaterialRequestsTab';
 import { useToast } from '../ui/Toast/Toast';
 import { FiBriefcase } from 'react-icons/fi';
 import { AccessContext } from '@/app/contextProviders/accessContext';
@@ -68,7 +69,7 @@ export default function ProjectDetails({ id: propId }) {
 
   const status = (Number(project.overallProgress) || 0) >= 100 ? 'Completed' : 'On Going';
 
-  const tabs = ['Details', 'Project Scope & Materials', 'Expenses', 'Trip Tickets', 'Staff', 'Attendance', 'Billing & Collection'];
+  const tabs = ['Details', 'Project Scope & Materials', 'Expenses', 'Trip Tickets', 'Staff', 'Attendance', 'Material Requests', 'Billing & Collection'];
 
   return (
     <div className={styles.wrap}>
@@ -207,11 +208,12 @@ export default function ProjectDetails({ id: propId }) {
         ) : (
           <div className={styles.panel}>
               {activeTab === 'Project Scope & Materials' && <ProjectScope projectId={project.id} editable={isAllowed(PageName, 'w')} />}
-            {activeTab === 'Expenses' && <ExpensesTab projectId={project.id} />}
-            {activeTab === 'Trip Tickets' && <TripTicketTab projectId={project.id} />}
-            {activeTab === 'Staff' && <ProjectStaffTab projectId={project.id} />}
-            {activeTab === 'Attendance' && <AttendanceTab projectId={project.id} />}
-            {activeTab === 'Billing & Collection' && <div>Billing & collection content</div>}
+              {activeTab === 'Expenses' && <ExpensesTab projectId={project.id} />}
+              {activeTab === 'Trip Tickets' && <TripTicketTab projectId={project.id} />}
+              {activeTab === 'Staff' && <ProjectStaffTab projectId={project.id} />}
+              {activeTab === 'Attendance' && <AttendanceTab projectId={project.id} />}
+              {activeTab === 'Material Requests' && <MaterialRequestsTab projectId={project.id} />}
+              {activeTab === 'Billing & Collection' && <div>Billing & collection content</div>}
           </div>
         )}
       </div>
