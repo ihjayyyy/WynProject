@@ -1,17 +1,19 @@
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL + "/Customer";
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL + "/ProjectFinance";
 
-export const INITIAL_CUSTOMER = {
+export const INITIAL_PROJECT_FINANCE = {
     name: '',
     code: '',
-    customerName: '',
-    contactNumber: '',
-    address: '',
-    companyName: '',
-    email: '',
-    vatType: '',
+    projectId: 0,
+    downPayment: 0,
+    retentionFee: 0,
+    recoupmentPercentage: 0,
+    recoupmentBalance: 0,
+    totalBilledAmount: 0,
+    lastBillingDate: '',
+    // projectCompletion removed as per backend update
 };
 
-async function getCustomers() {
+async function getProjectFinances() {
     try {
         const res = await fetch(API_BASE_URL, {
             method: 'GET',
@@ -24,7 +26,21 @@ async function getCustomers() {
     }
 }
 
-async function createCustomer(payload) {
+async function getProjectFinanceByProjectId(id) {
+    try {
+        const url = `${API_BASE_URL}/ByProjectId/${id}`;
+        const res = await fetch(url, {
+            method: 'GET',
+            headers: { Accept: '*/*' },
+        });
+        const json = await res.json();
+        return { data: json, error: null };
+    } catch (error) {
+        return { data: null, error: error?.message || error };
+    }
+}
+
+async function createProjectFinance(payload) {
     try {
         const res = await fetch(API_BASE_URL, {
             method: 'POST',
@@ -38,7 +54,7 @@ async function createCustomer(payload) {
     }
 }
 
-async function updateCustomer(id, payload) {
+async function updateProjectFinance(id, payload) {
     try {
         const url = `${API_BASE_URL}/${id}`;
         const res = await fetch(url, {
@@ -53,5 +69,6 @@ async function updateCustomer(id, payload) {
     }
 }
 
-export { getCustomers, createCustomer, updateCustomer };
-export default { getCustomers, createCustomer, updateCustomer };
+export { getProjectFinances, getProjectFinanceByProjectId, createProjectFinance, updateProjectFinance };
+const ProjectFinanceService = { getProjectFinances, getProjectFinanceByProjectId, createProjectFinance, updateProjectFinance };
+export default ProjectFinanceService;

@@ -111,7 +111,7 @@ export default function ProposalForm() {
     return 'View Proposal';
   }, [proposalId, isEditMode]);
 
-  const customerOptions = customers.map((c) => ({ value: c.customerName || c.name || c.code, label: c.customerName || c.name || c.code }));
+  const customerOptions = customers.map((c) => ({ value: c.id, label: c.customerName || c.name || c.code }));
   const inquiryOptions = inquiries.map((q) => ({ value: q.id, label: q.reference || q.code || q.name || String(q.id) }));
 
   const totals = React.useMemo(() => {
@@ -130,7 +130,10 @@ export default function ProposalForm() {
         setValues({
           ...values,
           inquiryId: sel.id,
+          // FIX: use null instead of '' when customerId is missing
+          customerId: sel.customerId != null ? Number(sel.customerId) : null,
           customerName: sel.customerName || sel.name || '',
+          customerCode: sel.customerCode || sel.code || '',
           contactNumber: sel.contactNumber || values.contactNumber || '',
           address: sel.address || values.address || '',
           contactPerson: sel.contactPerson || values.contactPerson || '',
@@ -148,7 +151,7 @@ export default function ProposalForm() {
     { name: 'customerReferenceNumber', label: 'Customer Reference No.', span: 'span1' },
 
     {
-      name: 'customerName',
+      name: 'customerId',
       label: 'Customer',
       type: 'select',
       options: customerOptions,
@@ -156,10 +159,12 @@ export default function ProposalForm() {
       placeholder: 'Select customer',
       span: 'span1',
       onChange: (val, values, setValues) => {
-        const sel = customers.find((c) => (c.customerName || c.name || c.code) === val);
+        const numVal = val !== undefined && val !== null && val !== '' ? Number(val) : null;
+        const sel = numVal != null ? customers.find((c) => c.id === numVal) : null;
         if (sel) {
           setValues({
             ...values,
+            customerId: sel.id,
             customerCode: sel.code || String(sel.id || ''),
             customerName: sel.customerName || sel.name || '',
             contactNumber: sel.contactNumber || '',
@@ -167,9 +172,10 @@ export default function ProposalForm() {
             email: sel.email || '',
           });
         } else {
-          // clear customer-related fields if no selection
+          // FIX: use null instead of '' when clearing customer fields
           setValues({
             ...values,
+            customerId: null,
             customerCode: '',
             customerName: '',
             contactNumber: '',
@@ -325,9 +331,19 @@ export default function ProposalForm() {
       }} />}
       onSubmit={async (values) => {
         const now = new Date().toISOString();
+
+        // FIX: coerce customerId to a number or null — never an empty string
+        const rawCustomerId = values.customerId;
+        const resolvedCustomerId =
+          rawCustomerId !== undefined && rawCustomerId !== null && rawCustomerId !== ''
+            ? Number(rawCustomerId)
+            : null;
+
         const modelPayload = ({
           code: values.code || '',
           name: values.name || '',
+          // FIX: always send number or null, never ''
+          customerId: resolvedCustomerId,
           customerCode: values.customerCode || '',
           customerName: values.customerName || '',
           contactNumber: values.contactNumber || '',

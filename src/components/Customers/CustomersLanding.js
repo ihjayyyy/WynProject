@@ -16,6 +16,7 @@ const baseColumns = [
   { header: 'Address', key: 'address' },
   { header: 'Company Name', key: 'companyName' },
   { header: 'Email', key: 'email' },
+  { header: 'VAT Type', key: 'vatType' },
   { header: 'UpdatedBy', key: 'updatedBy' },
   { header: 'UpdatedDate', key: 'updatedAt', render: (item) => (item.updatedAt ? new Date(item.updatedAt).toLocaleString() : '') },
 ];

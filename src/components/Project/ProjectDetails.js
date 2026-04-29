@@ -9,6 +9,7 @@ import Breadcrumbs from '../ui/Breadcrumbs/Breadcrumbs';
 import { getProjects, updateProject } from '../../services/Project';
 import ProjectScope from './ProjectScope';
 import ProjectStaffTab from './ProjectStaffTab';
+import ProjectFinanceTab from './ProjectFinanceTab';
 import AttendanceTab from './AttendanceTab';
 import ExpensesTab from './ExpensesTab';
 import TripTicketTab from './TripTicketTab';
@@ -69,7 +70,7 @@ export default function ProjectDetails({ id: propId }) {
 
   const status = (Number(project.overallProgress) || 0) >= 100 ? 'Completed' : 'On Going';
 
-  const tabs = ['Details', 'Project Scope & Materials', 'Expenses', 'Trip Tickets', 'Staff', 'Attendance', 'Material Requests', 'Billing & Collection'];
+  const tabs = ['Details', 'Finance', 'Project Scope & Materials', 'Expenses', 'Trip Tickets', 'Staff', 'Attendance', 'Material Requests', 'Billing & Collection'];
 
   return (
     <div className={styles.wrap}>
@@ -163,29 +164,17 @@ export default function ProjectDetails({ id: propId }) {
 
               <div className={styles.field}>
                 <label>Contract Price</label>
-                {editing ? (
-                  <Input type="number" value={form.contractPrice ?? ''} onChange={(e) => setForm({ ...form, contractPrice: e.target.value === '' ? '' : Number(e.target.value) })} />
-                ) : (
-                  <div className="value">{project.contractPrice ? Number(project.contractPrice).toLocaleString() : ''}</div>
-                )}
+                <div className="value">{project.contractPrice ? Number(project.contractPrice).toLocaleString() : ''}</div>
               </div>
 
               <div className={styles.field}>
                 <label>Overall Progress %</label>
-                {editing ? (
-                  <Input type="number" value={form.overallProgress ?? ''} onChange={(e) => setForm({ ...form, overallProgress: e.target.value === '' ? '' : Number(e.target.value) })} />
-                ) : (
-                  <div className="value">{project.overallProgress ?? 0}%</div>
-                )}
+                <div className="value">{project.overallProgress ?? 0}%</div>
               </div>
 
               <div className={styles.field}>
                 <label>Total Expense</label>
-                {editing ? (
-                  <Input type="number" value={form.totalExpenses ?? ''} onChange={(e) => setForm({ ...form, totalExpenses: e.target.value === '' ? '' : Number(e.target.value) })} />
-                ) : (
-                  <div className="value">{project.totalExpenses ? Number(project.totalExpenses).toLocaleString() : ''}</div>
-                )}
+                <div className="value">{project.totalExpenses ? Number(project.totalExpenses).toLocaleString() : ''}</div>
               </div>
 
               <div className={styles.field}>
@@ -207,6 +196,7 @@ export default function ProjectDetails({ id: propId }) {
           </div>
         ) : (
           <div className={styles.panel}>
+              {activeTab === 'Finance' && <ProjectFinanceTab projectId={project.id} project={project} editable={isAllowed(PageName, 'w')} />}
               {activeTab === 'Project Scope & Materials' && <ProjectScope projectId={project.id} editable={isAllowed(PageName, 'w')} />}
               {activeTab === 'Expenses' && <ExpensesTab projectId={project.id} />}
               {activeTab === 'Trip Tickets' && <TripTicketTab projectId={project.id} />}

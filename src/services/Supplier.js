@@ -3,11 +3,13 @@ const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL + "/Supplier";
 export const INITIAL_SUPPLIER = {
   name: '',
   code: '',
-  customerName: '',
+  supplierName: '',
   contactNumber: '',
   address: '',
-  companyName: '',
+  contactPerson: '',
   email: '',
+  terms: 0,
+  vatType: '',
 };
 
 async function getSuppliers() {

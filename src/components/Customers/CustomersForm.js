@@ -56,6 +56,18 @@ export default function CustomersForm() {
     { name: 'contactNumber', label: 'Contact Number', type: 'tel', span: 'span2' },
     { name: 'email', label: 'Email', type: 'email', span: 'span2' },
     { name: 'companyName', label: 'Company Name', span: 'span2' },
+    // VAT Type select
+    {
+      name: 'vatType',
+      label: 'VAT Type',
+      type: 'select',
+      span: 'span2',
+      options: [
+        { label: 'Included', value: 'Included' },
+        { label: 'Not Included', value: 'Not Included' },
+        { label: 'NON-VAT', value: 'NON-VAT' },
+      ],
+    },
     // Address on its own full row
     { name: 'address', label: 'Address', span: 'span3', multiline: true, rows: 3 },
   ];
@@ -69,8 +81,8 @@ export default function CustomersForm() {
       initialValues={initialValues}
       onSubmit={async (values) => {
         // Only send fields expected by the API
-        const { name, code, customerName, contactNumber, address, companyName, email } = values || {};
-        const payload = { name, code, customerName, contactNumber, address, companyName, email };
+        const { name, code, customerName, contactNumber, address, companyName, email, vatType } = values || {};
+        const payload = { name, code, customerName, contactNumber, address, companyName, email, vatType };
 
         if (!customerId) {
           const res = await createCustomer(payload);

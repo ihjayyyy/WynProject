@@ -261,7 +261,20 @@ export default function ProjectScope({ projectId = 0, editable = true }) {
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <div className={styles.groupHeader}>
             <span className={styles.groupHeaderLabel}>Scope of Work:</span>
-            <span className={styles.scopeName}>{scope}</span>
+            <span className={styles.scopeName}>
+              {scope}
+              {(() => {
+                const found = (scopesList || []).find(
+                  s =>
+                    (s.description && s.description === scope) ||
+                    (s.name && s.name === scope) ||
+                    (s.code && s.code === scope)
+                );
+                return found && typeof found.scopeProgress !== 'undefined'
+                  ? ` (${found.scopeProgress}%)`
+                  : '';
+              })()}
+            </span>
           </div>
           <div className={styles.scopeActions}>
             {editable && (

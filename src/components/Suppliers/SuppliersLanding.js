@@ -11,10 +11,11 @@ import { useEffect } from 'react';
 const baseColumns = [
   { header: 'Code', key: 'code' },
   { header: 'Name', key: 'name' },
-  { header: 'Customer', key: 'customerName' },
-  { header: 'Company', key: 'companyName' },
-  { header: 'Contact', key: 'contactNumber' },
+  { header: 'Contact Person', key: 'contactPerson' },
+  { header: 'Contact Number', key: 'contactNumber' },
   { header: 'Email', key: 'email' },
+  { header: 'VAT Type', key: 'vatType' },
+  { header: 'Terms', key: 'terms' },
   { header: 'UpdatedBy', key: 'updatedBy' },
   { header: 'UpdatedDate', key: 'updatedAt', render: (item) => (item.updatedAt ? new Date(item.updatedAt).toLocaleString() : '') },
 ];
@@ -70,13 +71,15 @@ export default function SuppliersLanding() {
   const filterFn = (item, keyword) => {
     return [
       item.id,
-      item.CustomerNameId,
-      item.createdBy,
-      item.createdDate,
+      item.contactPerson,
+      item.contactNumber,
+      item.vatType,
+      item.terms,
       item.updatedBy,
       item.updatedDate,
       item.code,
       item.name,
+      item.email,
     ]
       .filter(Boolean)
       .some((value) => String(value).toLowerCase().includes(keyword));

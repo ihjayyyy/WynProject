@@ -9,6 +9,7 @@ import Button from '../ui/Button/Button';
 import { useToast } from '../ui/Toast/Toast';
 // customer options will be loaded from the API in the future; remove sample data import
 import { getSuppliers, createSupplier, updateSupplier, INITIAL_SUPPLIER } from '../../services/Supplier';
+import { getCustomers } from '../../services/Customer';
 
 export default function SuppliersForm() {
   const router = useRouter();
@@ -19,11 +20,21 @@ export default function SuppliersForm() {
   const isEditMode = mode === 'edit' || isEditModeLocal;
 
   const [initialValues, setInitialValues] = useState(INITIAL_SUPPLIER);
+  const [customerOptions, setCustomerOptions] = useState([]);
   const toast = useToast();
 
   useEffect(() => {
     let mounted = true;
     async function load() {
+      // Fetch customers for contact person dropdown
+      const customerRes = await getCustomers();
+      if (mounted && !customerRes.error && customerRes.data) {
+        setCustomerOptions((customerRes.data || []).map(c => ({
+          label: c.name || c.customerName || c.companyName || c.email || 'Unknown',
+          value: c.name || c.customerName || c.companyName || c.email || 'Unknown',
+        })));
+      }
+
       if (!supplierId) {
         setInitialValues(INITIAL_SUPPLIER);
         return;
@@ -41,11 +52,13 @@ export default function SuppliersForm() {
           id: found.id,
           code: found.code || '',
           name: found.name || '',
-          customerName: found.customerName || found.customer || '',
+          contactPerson: found.contactPerson || '',
           contactNumber: found.contactNumber || found.phone || '',
           address: found.address || '',
-          companyName: found.companyName || found.company || '',
+          supplierName: found.supplierName || '',
           email: found.email || '',
+          vatType: found.vatType || '',
+          terms: found.terms || 0,
         };
         setInitialValues(mapped);
       } else {
@@ -71,11 +84,24 @@ export default function SuppliersForm() {
   const fields = [
     { name: 'code', label: 'Code', span: 'span2' },
     { name: 'name', label: 'Name', span: 'span2' },
-    { name: 'companyName', label: 'Company', span: 'span2' },
-    { name: 'customerName', label: 'Customer Name', span: 'span2' },
+    // Contact Person dropdown
+    { name: 'contactPerson', label: 'Contact Person', type: 'select', options: customerOptions, span: 'span2', searchable: true },
     { name: 'contactNumber', label: 'Contact Number', span: 'span2' },
     { name: 'email', label: 'Email', span: 'span2' },
+    // VAT Type select
+    {
+      name: 'vatType',
+      label: 'VAT Type',
+      type: 'select',
+      span: 'span2',
+      options: [
+        { label: 'Included', value: 'Included' },
+        { label: 'Not Included', value: 'Not Included' },
+        { label: 'NON-VAT', value: 'NON-VAT' },
+      ],
+    },
     { name: 'address', label: 'Address', span: 'span3' },
+    { name: 'terms', label: 'Terms', type: 'number', span: 'span2' },
   ];
   return (
     <EntityForm
@@ -88,11 +114,13 @@ export default function SuppliersForm() {
         const payload = {
           name: values.name || '',
           code: values.code || '',
-          customerName: values.customerName || values.CustomerNameId || '',
+          contactPerson: values.contactPerson || '',
           contactNumber: values.contactNumber || '',
           address: values.address || '',
-          companyName: values.companyName || '',
+          supplierName: values.supplierName || '',
           email: values.email || '',
+          vatType: values.vatType || '',
+          terms: values.terms || 0,
         };
         if (!supplierId) {
           try {
