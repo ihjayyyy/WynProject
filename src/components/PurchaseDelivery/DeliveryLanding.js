@@ -50,8 +50,8 @@ export default function DeliveryLanding() {
 
   const actionItems = useMemo(
     () => [
-      { key: 'view', label: 'View', icon: <FiEye size={14} />, onClick: (item) => router.push(`/purchase/orders/deliveryform?id=${item.id}`) },
-      { key: 'edit', label: 'Edit', icon: <FiEdit2 size={14} />, onClick: (item) => router.push(`/purchase/orders/deliveryform?id=${item.id}&mode=edit`) },
+      { key: 'view', label: 'View', icon: <FiEye size={14} />, onClick: (item) => router.push(`/purchase/deliveries/deliveryform?id=${item.id}`) },
+      { key: 'edit', label: 'Edit', icon: <FiEdit2 size={14} />, onClick: (item) => router.push(`/purchase/deliveries/deliveryform?id=${item.id}&mode=edit`) },
     ],
     [router]
   );
@@ -92,13 +92,13 @@ export default function DeliveryLanding() {
 
   return (
     <Landing
-      title="Deliveries"
+      title="Pucrhase Deliveries"
       data={deliveries}
       columns={columns}
       stats={stats}
       searchPlaceholder="Search deliveries"
       newButtonLabel="New Delivery"
-      onNew={() => router.push('/purchase/orders/deliveryform')}
+      onNew={() => router.push('/purchase/deliveries/deliveryform')}
       emptyMessage="No deliveries found"
       width="320px"
       filterFn={filterFn}
