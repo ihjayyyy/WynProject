@@ -10,7 +10,7 @@ import { useEffect } from 'react';
 
 const baseColumns = [
   { header: 'Code', key: 'code' },
-  { header: 'Name', key: 'name' },
+  { header: 'Company Name', key: 'name' },
   { header: 'Contact Person', key: 'contactPerson' },
   { header: 'Contact Number', key: 'contactNumber' },
   { header: 'Email', key: 'email' },

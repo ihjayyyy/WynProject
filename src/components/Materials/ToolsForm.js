@@ -10,6 +10,22 @@ import { createMaterial, updateMaterial, getMaterial, INITIAL_MATERIAL } from '.
 import { useToast } from '../ui/Toast/Toast';
 
 export default function ToolsForm() {
+    const [uomOptions, setUomOptions] = useState([]);
+    // Load UOM options
+    useEffect(() => {
+      let mounted = true;
+      (async () => {
+        const { getUnitsOfMeasure } = await import('../../services/UnitOfMeasure');
+        const res = await getUnitsOfMeasure();
+        if (mounted && res.data) {
+          setUomOptions((res.data || []).map(uom => ({
+            label: uom.name || uom.code,
+            value: uom.name || uom.code,
+          })));
+        }
+      })();
+      return () => { mounted = false; };
+    }, []);
   const router = useRouter();
   const searchParams = useSearchParams();
   const toolId = searchParams.get('id');
@@ -61,14 +77,69 @@ export default function ToolsForm() {
   }, [toolId, isEditMode]);
 
   const fields = [
-      { name: 'code', label: 'Code', span: 'span2' },
+    { name: 'code', label: 'Code', span: 'span2' },
     { name: 'name', label: 'Name', span: 'span2' },
     { name: 'purchasePrice', label: 'Purchase Price', type: 'number', span: 'span2' },
     { name: 'sellingPrice', label: 'Selling Price', type: 'number', span: 'span2' },
     { name: 'referenceNumber', label: 'Reference Number', span: 'span2' },
-    { name: 'unitOfMeasure', label: 'UOM', span: 'span2' },
+    { name: 'unitOfMeasure', label: 'UOM', type: 'select', options: uomOptions, span: 'span2' },
     { name: 'purchaseUnitOfMeasure', label: 'Default Purchase UOM', span: 'span2' },
   ];
+
+  // Handler for form submit
+  const handleSubmit = async (values) => {
+    if (!toolId) {
+      const payload = {
+        name: values.name,
+        code: values.code,
+        materialType: 'Tool',
+        unitOfMeasure: values.uom || values.unitOfMeasure || '',
+        purchaseUnitOfMeasure: values.defaultPurchaseUOM || values.purchaseUnitOfMeasure || '',
+        purchasePrice: Number(values.purchasePrice ?? values.unitCost) || 0,
+        sellingPrice: Number(values.sellingPrice) || 0,
+        referenceNumber: values.referenceNumber || '0',
+        isAssembly: false,
+      };
+      try {
+        const res = await createMaterial(payload);
+        if (res?.error) {
+          console.error('Create tool failed', res.error);
+          toast.error('Failed to create tool');
+        } else {
+          toast.success('Tool created');
+          router.push('/materialsSettings/tools');
+        }
+      } catch (err) {
+        console.error('Create tool exception', err);
+        toast.error('Failed to create tool');
+      }
+      return;
+    }
+    try {
+      const payload = {
+        name: values.name,
+        code: values.code,
+        materialType: 'Tool',
+        unitOfMeasure: values.uom || values.unitOfMeasure || '',
+        purchaseUnitOfMeasure: values.defaultPurchaseUOM || values.purchaseUnitOfMeasure || '',
+        purchasePrice: Number(values.purchasePrice ?? values.unitCost) || 0,
+        sellingPrice: Number(values.sellingPrice) || 0,
+        referenceNumber: values.referenceNumber || '0',
+        isAssembly: false,
+      };
+      const res = await updateMaterial(toolId, payload);
+      if (res?.error) {
+        console.error('Update tool failed', res.error);
+        toast.error('Failed to save tool');
+      } else {
+        toast.success('Tool saved');
+        router.push('/materialsSettings/tools');
+      }
+    } catch (err) {
+      console.error('Update tool exception', err);
+      toast.error('Failed to save tool');
+    }
+  };
 
   return (
     <EntityForm
@@ -76,58 +147,7 @@ export default function ToolsForm() {
       icon={<FiArchive />}
       fields={fields}
       initialValues={initialValues}
-      onSubmit={async (values) => {
-        if (!toolId) {
-          const payload = {
-            name: values.name,
-            code: values.code,
-            materialType: 'Tool',
-            unitOfMeasure: values.uom || values.unitOfMeasure || '',
-            purchaseUnitOfMeasure: values.defaultPurchaseUOM || values.purchaseUnitOfMeasure || '',
-            purchasePrice: Number(values.purchasePrice ?? values.unitCost) || 0,
-            sellingPrice: Number(values.sellingPrice) || 0,
-            referenceNumber: values.referenceNumber || '0',
-            isAssembly: false,
-          };
-          try {
-            const res = await createMaterial(payload);
-            if (res?.error) {
-              console.error('Create tool failed', res.error);
-              toast.error('Failed to create tool');
-              return `/materialsSettings/tools`;
-            }
-            toast.success('Tool created');
-            return `/materialsSettings/tools`;
-          } catch (err) {
-            console.error('Create tool exception', err);
-            toast.error('Failed to create tool');
-            return `/materialsSettings/tools`;
-          }
-        }
-        try {
-          const payload = {
-            name: values.name,
-            code: values.code,
-            materialType: 'Tool',
-            unitOfMeasure: values.uom || values.unitOfMeasure || '',
-            purchaseUnitOfMeasure: values.defaultPurchaseUOM || values.purchaseUnitOfMeasure || '',
-            purchasePrice: Number(values.purchasePrice ?? values.unitCost) || 0,
-            sellingPrice: Number(values.sellingPrice) || 0,
-            referenceNumber: values.referenceNumber || '0',
-            isAssembly: false,
-          };
-          const res = await updateMaterial(toolId, payload);
-          if (res?.error) {
-            console.error('Update tool failed', res.error);
-            toast.error('Failed to save tool');
-          } else {
-            toast.success('Tool saved');
-          }
-        } catch (err) {
-          console.error('Update tool exception', err);
-        }
-        return `/materialsSettings/tools`;
-      }}
+      onSubmit={handleSubmit}
       backPath="/materialsSettings/tools"
       width="100%"
       columns={3}

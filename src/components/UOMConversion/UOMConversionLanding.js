@@ -9,9 +9,8 @@ import { getUOMConversions } from '../../services/UOMConversion';
 
 const baseColumns = [
   { header: 'Id', key: 'id' },
-  { header: 'Code', key: 'code' },
+  // { header: 'Code', key: 'code' },
   { header: 'Name', key: 'name' },
-  { header: 'Unit', key: 'unitOfMeasurement' },
   { header: 'From', key: 'convertFrom' },
   { header: 'To', key: 'convertTo' },
   { header: 'Factor', key: 'conversionFactor' },

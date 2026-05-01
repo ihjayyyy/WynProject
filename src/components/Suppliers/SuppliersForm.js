@@ -83,9 +83,9 @@ export default function SuppliersForm() {
 
   const fields = [
     { name: 'code', label: 'Code', span: 'span2' },
-    { name: 'name', label: 'Name', span: 'span2' },
-    // Contact Person dropdown
-    { name: 'contactPerson', label: 'Contact Person', type: 'select', options: customerOptions, span: 'span2', searchable: true },
+    { name: 'name', label: 'Company Name', span: 'span2' },
+    // Contact Person as normal input
+    { name: 'contactPerson', label: 'Contact Person', span: 'span2' },
     { name: 'contactNumber', label: 'Contact Number', span: 'span2' },
     { name: 'email', label: 'Email', span: 'span2' },
     // VAT Type select
@@ -100,9 +100,51 @@ export default function SuppliersForm() {
         { label: 'NON-VAT', value: 'NON-VAT' },
       ],
     },
-    { name: 'address', label: 'Address', span: 'span3' },
     { name: 'terms', label: 'Terms', type: 'number', span: 'span2' },
+    { name: 'address', label: 'Address', span: 'span3' },
   ];
+  // Handler for form submit
+  const handleSubmit = async (values) => {
+    const payload = {
+      name: values.name || '',
+      code: values.code || '',
+      contactPerson: values.contactPerson || '',
+      contactNumber: values.contactNumber || '',
+      address: values.address || '',
+      supplierName: values.supplierName || '',
+      email: values.email || '',
+      vatType: values.vatType || '',
+      terms: values.terms || 0,
+    };
+    if (!supplierId) {
+      try {
+        const result = await createSupplier(payload);
+        if (result?.error) {
+          toast.error('Failed to create supplier');
+        } else {
+          toast.success('Supplier created');
+          router.push('/suppliers');
+        }
+      } catch (err) {
+        console.error('Create supplier failed', err);
+        toast.error('Failed to create supplier');
+      }
+      return;
+    }
+    try {
+      const result = await updateSupplier(supplierId, payload);
+      if (result?.error) {
+        toast.error('Failed to save supplier');
+      } else {
+        toast.success('Supplier saved');
+        router.push('/suppliers');
+      }
+    } catch (err) {
+      console.error('Update supplier failed', err);
+      toast.error('Failed to save supplier');
+    }
+  };
+
   return (
     <EntityForm
       title={formTitle}
@@ -110,46 +152,7 @@ export default function SuppliersForm() {
       icon={<FiPackage />}
       fields={fields}
       initialValues={initialValues}
-      onSubmit={async (values) => {
-        const payload = {
-          name: values.name || '',
-          code: values.code || '',
-          contactPerson: values.contactPerson || '',
-          contactNumber: values.contactNumber || '',
-          address: values.address || '',
-          supplierName: values.supplierName || '',
-          email: values.email || '',
-          vatType: values.vatType || '',
-          terms: values.terms || 0,
-        };
-        if (!supplierId) {
-          try {
-            const result = await createSupplier(payload);
-            if (result?.error) {
-              toast.error('Failed to create supplier');
-            } else {
-              toast.success('Supplier created');
-            }
-            // After create, redirect to landing
-            return '/suppliers';
-          } catch (err) {
-            console.error('Create supplier failed', err);
-            toast.error('Failed to create supplier');
-            return '/suppliers';
-          }
-        }
-
-        try {
-          const result = await updateSupplier(supplierId, payload);
-          if (result?.error) toast.error('Failed to save supplier');
-          else toast.success('Supplier saved');
-          return '/suppliers';
-        } catch (err) {
-          console.error('Update supplier failed', err);
-          toast.error('Failed to save supplier');
-          return '/suppliers';
-        }
-      }}
+      onSubmit={handleSubmit}
       backPath="/suppliers"
       width="100%"
       columns={3}

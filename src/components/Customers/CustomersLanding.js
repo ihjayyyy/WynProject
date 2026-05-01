@@ -10,11 +10,11 @@ import { getCustomers } from '../../services/Customer';
 const baseColumns = [
   { header: 'Id', key: 'id' },
   { header: 'Code', key: 'code' },
-  { header: 'Name', key: 'name' },
-  { header: 'CustomerName', key: 'customerName' },
-  { header: 'ContactNumber', key: 'contactNumber' },
+  { header: 'Company Name', key: 'name' },
+  { header: 'Contact Person', key: 'customerName' },
+  { header: 'Contact Number', key: 'contactNumber' },
   { header: 'Address', key: 'address' },
-  { header: 'Company Name', key: 'companyName' },
+  // Removed duplicate 'Company Name' with key 'name'
   { header: 'Email', key: 'email' },
   { header: 'VAT Type', key: 'vatType' },
   { header: 'UpdatedBy', key: 'updatedBy' },

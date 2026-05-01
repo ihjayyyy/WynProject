@@ -9,10 +9,11 @@ import { useToast } from '../ui/Toast/Toast';
 import InvalidPage from '@/components/InvalidPage/page';
 import { AccessContext } from '@/app/contextProviders/accessContext';
 import { useConfirmModal } from '@/app/contextProviders/confirmModalContext';
-import { INITIAL_SALES_BILLING as InitialData, Create, Get, Update } from '@/services/SalesBilling';
+import SalesBillingService from '@/services/SalesBilling';
 import { SalesBillingFields, SalesBillingDetailsColumns, SalesBillingItemsFields } from './SalesBillingModels';
 import ProjectService from '@/services/Project';
 import CustomerService from '@/services/Customer';
+import Button from '../ui/Button/Button';
 
 export default function SalesBillingForm() {
   const PageName = 'Finance.SalesBilling';
@@ -54,10 +55,18 @@ export default function SalesBillingForm() {
     getBilling();
   }, [billingId]);
 
+  const getToday = () => {
+    const d = new Date();
+    const yyyy = d.getFullYear();
+    const mm = String(d.getMonth() + 1).padStart(2, '0');
+    const dd = String(d.getDate()).padStart(2, '0');
+    return `${yyyy}-${mm}-${dd}`;
+  };
+
   const getBilling = async () => {
-    let initBilling = { ...InitialData };
+    let initBilling = { ...SalesBillingService.INITIAL_SALES_BILLING };
     if (billingId !== 0) {
-      const res = await Get(billingId);
+      const res = await SalesBillingService.getSalesBillingById(billingId);
       if (res?.data && Object.keys(res.data).length !== 0) {
         initBilling = res.data;
         setValidBilling(true);
@@ -67,6 +76,14 @@ export default function SalesBillingForm() {
     } else {
       setMode('new');
       setValidBilling(true);
+      const today = getToday();
+      initBilling = {
+        ...initBilling,
+        status: 'draft',
+        billingDate: today,
+        dueDate: today,
+        paymentDate: today,
+      };
     }
     setBilling(initBilling);
     setTableData({ items: initBilling.children || [], deletedItems: initBilling.deletedChildren || [] });
@@ -88,9 +105,52 @@ export default function SalesBillingForm() {
   };
 
   const save = async (entity) => {
-    const updatedBilling = { ...billing, ...entity };
-    const res = updatedBilling.id === 0 ? await Create(updatedBilling) : await Update(updatedBilling.id, updatedBilling);
-    
+    // Helper to ensure ISO date string
+    const ensureISODate = (val) => {
+      if (!val) return new Date().toISOString();
+      // If already ISO string, return as is
+      if (/\d{4}-\d{2}-\d{2}T\d{2}:\d{2}/.test(val)) return val;
+      // If yyyy-mm-dd, convert to ISO
+      if (/\d{4}-\d{2}-\d{2}/.test(val)) return new Date(val).toISOString();
+      return new Date().toISOString();
+    };
+
+    // Ensure all required fields for children and deletedChildren
+    const normalizeChild = (item) => ({
+      name: item.name ?? '',
+      code: item.code ?? '',
+      id: item.id ?? 0,
+      parentId: item.parentId ?? 0,
+      billingId: item.billingId ?? 0,
+      materialId: item.materialId ?? 0,
+      amount: item.amount ?? 0,
+      description: item.description ?? '',
+      quantity: item.quantity ?? 0,
+      vat: item.vat ?? 0,
+      discount: item.discount ?? 0,
+      totalAmount: item.totalAmount ?? 0,
+    });
+
+    const normalizedChildren = (tableData.items || []).map(normalizeChild);
+    const normalizedDeletedChildren = (tableData.deletedItems || []).map(normalizeChild);
+
+    const updatedBilling = {
+      ...billing,
+      ...entity,
+      children: normalizedChildren,
+      deletedChildren: normalizedDeletedChildren,
+      status: billing.status || 'draft',
+      billingType: billing.billingType || 'Standard',
+      billingDate: ensureISODate(billing.billingDate || entity.billingDate),
+      dueDate: ensureISODate(billing.dueDate || entity.dueDate),
+      paymentDate: ensureISODate(billing.paymentDate || entity.paymentDate),
+    };
+    let res;
+    if (!updatedBilling.id || updatedBilling.id === 0) {
+      res = await SalesBillingService.createSalesBilling(updatedBilling);
+    } else {
+      res = await SalesBillingService.editSalesBilling(updatedBilling.id, updatedBilling);
+    }
     if (res?.error) {
       toast.error('Failed to save Billing.');
     } else {
@@ -105,6 +165,11 @@ export default function SalesBillingForm() {
 
   if (!isAllowed(PageName, 'r')) return <InvalidPage message="Access Denied" />;
   if (!validBilling) return <InvalidPage message="Billing not found." />;
+
+  const SaveButton = () =>
+    isAllowed(PageName, 'w') && !isReadOnly ? (
+      <Button type="submit" variant="save">{billing.id ? 'Save' : 'Create'}</Button>
+    ) : null;
 
   return (
     <EntityForm
@@ -127,7 +192,12 @@ export default function SalesBillingForm() {
       onSubmit={handleSaveConfirm}
       backPath="/finance/billings"
       readOnly={isReadOnly}
-      showSubmitButton={!isReadOnly}
+      showSubmitButton={false}
+      headerActions={
+        <div style={{ display: 'flex', gap: 8 }}>
+          <SaveButton />
+        </div>
+      }
     />
   );
 }

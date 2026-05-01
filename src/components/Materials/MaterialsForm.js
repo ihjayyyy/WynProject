@@ -7,6 +7,7 @@ import { FiBox } from 'react-icons/fi';
 import EntityForm from '../EntityForm/EntityForm';
 import Button from '../ui/Button/Button';
 import { createMaterial, updateMaterial, getMaterial, INITIAL_MATERIAL } from '../../services/Materials';
+import { getUnitsOfMeasure } from '../../services/UnitOfMeasure';
 import { useToast } from '../ui/Toast/Toast';
 
 export default function MaterialsForm() {
@@ -20,6 +21,21 @@ export default function MaterialsForm() {
 
   const [initialValues, setInitialValues] = useState({ ...INITIAL_MATERIAL, materialType: 'Material', isAssembly: false });
   const [exists, setExists] = useState(false);
+  const [uomOptions, setUomOptions] = useState([]);
+  // Load UOM options
+  useEffect(() => {
+    let mounted = true;
+    (async () => {
+      const res = await getUnitsOfMeasure();
+      if (mounted && res.data) {
+        setUomOptions((res.data || []).map(uom => ({
+          label: uom.name || uom.code,
+          value: uom.name || uom.code,
+        })));
+      }
+    })();
+    return () => { mounted = false; };
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -65,10 +81,65 @@ export default function MaterialsForm() {
     { name: 'name', label: 'Name', span: 'span2' },
     { name: 'purchasePrice', label: 'Purchase Price', type: 'number', span: 'span2' },
     { name: 'sellingPrice', label: 'Selling Price', type: 'number', span: 'span2' },
-    { name: 'referenceNumber', label: 'Reference Number', span: 'span2' },
-    { name: 'unitOfMeasure', label: 'UOM', span: 'span2' },
+    // { name: 'referenceNumber', label: 'Reference Number', span: 'span2' },
+    { name: 'unitOfMeasure', label: 'UOM', type: 'select', options: uomOptions, span: 'span2' },
     { name: 'purchaseUnitOfMeasure', label: 'Default Purchase UOM', span: 'span2' },
   ];
+
+  // Handler for form submit
+  const handleSubmit = async (values) => {
+    if (!materialId) {
+      const payload = {
+        name: values.name,
+        code: values.code,
+        materialType: 'Material',
+        unitOfMeasure: values.uom || values.unitOfMeasure || '',
+        purchaseUnitOfMeasure: values.defaultPurchaseUOM || values.purchaseUnitOfMeasure || '',
+        purchasePrice: Number(values.purchasePrice ?? values.unitCost) || 0,
+        sellingPrice: Number(values.sellingPrice) || 0,
+        referenceNumber: values.referenceNumber || '0',
+        isAssembly: false,
+      };
+      try {
+        const res = await createMaterial(payload);
+        if (res?.error) {
+          console.error('Create material failed', res.error);
+          toast.error('Failed to create material');
+        } else {
+          toast.success('Material created');
+          router.push('/materialsSettings/materials');
+        }
+      } catch (err) {
+        console.error('Create material exception', err);
+        toast.error('Failed to create material');
+      }
+      return;
+    }
+    try {
+      const payload = {
+        name: values.name,
+        code: values.code,
+        materialType: 'Material',
+        unitOfMeasure: values.uom || values.unitOfMeasure || '',
+        purchaseUnitOfMeasure: values.defaultPurchaseUOM || values.purchaseUnitOfMeasure || '',
+        purchasePrice: Number(values.purchasePrice ?? values.unitCost) || 0,
+        sellingPrice: Number(values.sellingPrice) || 0,
+        referenceNumber: values.referenceNumber || '0',
+        isAssembly: false,
+      };
+      const res = await updateMaterial(materialId, payload);
+      if (res?.error) {
+        console.error('Update material failed', res.error);
+        toast.error('Failed to save material');
+      } else {
+        toast.success('Material saved');
+        router.push('/materialsSettings/materials');
+      }
+    } catch (err) {
+      console.error('Update material exception', err);
+      toast.error('Failed to save material');
+    }
+  };
 
   return (
     <EntityForm
@@ -76,58 +147,7 @@ export default function MaterialsForm() {
       icon={<FiBox />}
       fields={fields}
       initialValues={initialValues}
-      onSubmit={async (values) => {
-          if (!materialId) {
-              const payload = {
-                name: values.name,
-                code: values.code,
-                materialType: 'Material',
-                unitOfMeasure: values.uom || values.unitOfMeasure || '',
-                purchaseUnitOfMeasure: values.defaultPurchaseUOM || values.purchaseUnitOfMeasure || '',
-                purchasePrice: Number(values.purchasePrice ?? values.unitCost) || 0,
-                sellingPrice: Number(values.sellingPrice) || 0,
-                referenceNumber: values.referenceNumber || '0',
-                isAssembly: false,
-              };
-            try {
-              const res = await createMaterial(payload);
-              if (res?.error) {
-                console.error('Create material failed', res.error);
-                toast.error('Failed to create material');
-                return `/materialsSettings/materials`;
-              }
-              toast.success('Material created');
-              return `/materialsSettings/materials`;
-            } catch (err) {
-              console.error('Create material exception', err);
-              toast.error('Failed to create material');
-              return `/materialsSettings/materials`;
-            }
-          }
-          try {
-            const payload = {
-              name: values.name,
-              code: values.code,
-              materialType: 'Material',
-              unitOfMeasure: values.uom || values.unitOfMeasure || '',
-              purchaseUnitOfMeasure: values.defaultPurchaseUOM || values.purchaseUnitOfMeasure || '',
-              purchasePrice: Number(values.purchasePrice ?? values.unitCost) || 0,
-              sellingPrice: Number(values.sellingPrice) || 0,
-              referenceNumber: values.referenceNumber || '0',
-              isAssembly: false,
-            };
-            const res = await updateMaterial(materialId, payload);
-              if (res?.error) {
-                console.error('Update material failed', res.error);
-                toast.error('Failed to save material');
-              } else {
-                toast.success('Material saved');
-              }
-            } catch (err) {
-              console.error('Update material exception', err);
-            }
-            return `/materialsSettings/materials`;
-      }}
+      onSubmit={handleSubmit}
       backPath="/materialsSettings/materials"
       width="100%"
       columns={3}

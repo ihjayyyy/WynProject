@@ -65,18 +65,35 @@ export default function UOMConversionForm() {
   const fields = [
     { name: 'code', label: 'Code', span: 'span2', readOnly: true },
     {
-      name: 'unitOfMeasurement',
-      label: 'Unit of Measurement',
+      name: 'convertFrom',
+      label: 'Convert From',
       span: 'span2',
       type: 'select',
       options: unitOptions,
-      onChange: (selectedValue, values, setValues) => {
-        // Set code to the selected unit's code
-        setValues({ ...values, unitOfMeasurement: selectedValue, code: selectedValue });
+      onChange: (selected, values, setValues) => {
+        // If convertTo is the same as convertFrom, clear convertTo
+        if (selected === values.convertTo) {
+          setValues({ ...values, convertFrom: selected, convertTo: '' });
+        } else {
+          setValues({ ...values, convertFrom: selected });
+        }
       },
     },
-    { name: 'convertFrom', label: 'Convert From', span: 'span2' },
-    { name: 'convertTo', label: 'Convert To', span: 'span2' },
+    {
+      name: 'convertTo',
+      label: 'Convert To',
+      span: 'span2',
+      type: 'select',
+      options: (unitOptions || []).filter(opt => opt.value !== initialValues.convertFrom),
+      onChange: (selected, values, setValues) => {
+        // If convertFrom is the same as convertTo, clear convertFrom
+        if (selected === values.convertFrom) {
+          setValues({ ...values, convertTo: selected, convertFrom: '' });
+        } else {
+          setValues({ ...values, convertTo: selected });
+        }
+      },
+    },
     { name: 'conversionFactor', label: 'Conversion Factor', span: 'span2', type: 'number' },
   ];
 

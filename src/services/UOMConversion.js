@@ -6,7 +6,6 @@ const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL + "/UOMConversion";
 export const INITIAL_UOM_CONVERSION = {
   name: '',
   code: '',
-  unitOfMeasurement: '',
   convertFrom: '',
   convertTo: '',
   conversionFactor: 0,

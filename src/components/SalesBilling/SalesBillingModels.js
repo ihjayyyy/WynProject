@@ -77,20 +77,34 @@ export const SalesBillingFields = (
 
 export const SalesBillingDetailsColumns = [
   { header: 'Name', key: 'name', width: '200px' },
-  { header: 'Milestone', key: 'milestone', width: '120px' },
-  {
-    header: '% of Work',
-    key: 'percentageOfWork',
-    align: 'right',
-    width: '100px',
-    render: (it) => Number(it.percentageOfWork || 0).toFixed(2),
-  },
+  { header: 'Quantity', key: 'quantity', align: 'right', width: '80px' },
   {
     header: 'Amount',
     key: 'amount',
     align: 'right',
     width: '140px',
     render: (it) => Number(it.amount || 0).toFixed(2),
+  },
+  {
+    header: 'Discount',
+    key: 'discount',
+    align: 'right',
+    width: '100px',
+    render: (it) => Number(it.discount || 0).toFixed(2),
+  },
+  {
+    header: 'VAT',
+    key: 'vat',
+    align: 'right',
+    width: '100px',
+    render: (it) => Number(it.vat || 0).toFixed(2),
+  },
+  {
+    header: 'Total Amount',
+    key: 'totalAmount',
+    align: 'right',
+    width: '140px',
+    render: (it) => Number(it.totalAmount || 0).toFixed(2),
   },
   { header: 'Description', key: 'description', width: '200px' },
 ];
@@ -116,8 +130,6 @@ const computeVatAndAmount = (subamount, vatType) => {
 export const SalesBillingItemsFields = (billing = {}) => [
   { name: 'id', type: 'number', hidden: true, initialvalue: 0 },
   { name: 'name', label: 'Name', type: 'text', required: true, validator: Yup.string().required('Name is required') },
-  { name: 'milestone', label: 'Milestone', type: 'text' },
-  { name: 'percentageOfWork', label: '% of Work', type: 'number' },
   { name: 'quantity', label: 'Quantity', type: 'number', initialvalue: 1 },
   {
     name: 'discount',

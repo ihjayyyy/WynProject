@@ -107,10 +107,10 @@ export default function InquiryForm() {
       options: customerOptions,
       searchable: true,
       required: true,
-      onChange: handleCustomerChange,  // <-- wire up the handler here
-      hidden: () => !isEditMode, // Only show in edit or create mode
+      onChange: handleCustomerChange,
+      hidden: () => !!inquiryId && !isEditMode, // Hide only in view mode for existing inquiries
     },
-    { name: 'spacer-8', type: 'spacer', span: 'span2',hidden: () => !isEditMode, },
+    { name: 'spacer-8', type: 'spacer', span: 'span2', hidden: () => !!inquiryId && !isEditMode, },
 
     { name: 'companyName', label: 'Company Name', span: 'span1' },
     { name: 'spacer-1', type: 'spacer', span: 'span1' },
@@ -149,6 +149,19 @@ export default function InquiryForm() {
       initialValues={initialValues}
       onSubmit={async (values) => {
         const now = new Date().toISOString();
+        // Default date to now in ISO format if blank, and always use ISO string
+        let dateValue;
+        if (values.date && values.date.trim()) {
+          // If date is already in ISO format with time, use as is; if only date, add time
+          if (/T/.test(values.date)) {
+            dateValue = values.date;
+          } else {
+            // Assume format YYYY-MM-DD, convert to ISO string
+            dateValue = new Date(values.date).toISOString();
+          }
+        } else {
+          dateValue = new Date().toISOString();
+        }
         const modelPayload = {
           code:          values.code          || '',
           name:          values.name          || '',
@@ -162,7 +175,7 @@ export default function InquiryForm() {
           preparedBy:    values.preparedBy    || '',
           notedBy:       values.notedBy       || '',
           reference:     values.reference     || '',
-          date:          values.date          || '',
+          date:          dateValue,
           details:       values.details       || '',
         };
 

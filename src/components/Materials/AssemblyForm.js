@@ -10,6 +10,22 @@ import AssemblyMaterialService from '../../services/AssemblyMaterial';
 import AssemblyMaterialsTable from './AssemblyMaterialsTable';
 
 export default function AssemblyForm() {
+  const [uomOptions, setUomOptions] = useState([]);
+  // Load UOM options
+  useEffect(() => {
+    let mounted = true;
+    (async () => {
+      const { getUnitsOfMeasure } = await import('../../services/UnitOfMeasure');
+      const res = await getUnitsOfMeasure();
+      if (mounted && res.data) {
+        setUomOptions((res.data || []).map(uom => ({
+          label: uom.name || uom.code,
+          value: uom.name || uom.code,
+        })));
+      }
+    })();
+    return () => { mounted = false; };
+  }, []);
 
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -82,9 +98,18 @@ export default function AssemblyForm() {
   const fields = [
     { name: 'code', label: 'Code', span: 'span2' },
     { name: 'name', label: 'Name', span: 'span2' },
-    { name: 'referenceNumber', label: 'Reference Number', span: 'span2' },
-    { name: 'unitOfMeasure', label: 'UOM', span: 'span2' },
-    { name: 'purchaseUnitOfMeasure', label: 'Default Purchase UOM', span: 'span2' },
+    // { name: 'referenceNumber', label: 'Reference Number', span: 'span2' },
+    {
+      name: 'unitOfMeasure',
+      label: 'UOM',
+      type: 'select',
+      options: uomOptions,
+      span: 'span2',
+      onChange: (selected, values, setValues) => {
+        setValues({ ...values, unitOfMeasure: selected, purchaseUnitOfMeasure: selected });
+      },
+    },
+    // { name: 'purchaseUnitOfMeasure', label: 'Default Purchase UOM', span: 'span2' },
   ];
 
   // Handler for AssemblyMaterialsTable changes
@@ -94,6 +119,67 @@ export default function AssemblyForm() {
   };
 
 
+
+  // Handler for form submit
+  const handleSubmit = async (values) => {
+    let payload;
+    if (materialId) {
+      // Edit mode: Ensure new assembly materials have id: 0, existing keep their id
+      const processedAssemblyMaterials = assemblyMaterials.map(item => ({ ...item, id: item.id ? item.id : 0 }));
+      payload = {
+        material: {
+          ...values,
+          isAssembly: true,
+          materialType: 'Material',
+          purchasePrice: 0,
+          sellingPrice: 0,
+        },
+        assemblyMaterials: processedAssemblyMaterials,
+        deletedAssemblyMaterials,
+      };
+    } else {
+      // Create mode: do not include id
+      const processedAssemblyMaterials = assemblyMaterials.map(({ id, ...rest }) => rest);
+      payload = {
+        material: {
+          ...values,
+          isAssembly: true,
+          materialType: 'Material',
+          purchasePrice: 0,
+          sellingPrice: 0,
+        },
+        assemblyMaterials: processedAssemblyMaterials,
+        deletedAssemblyMaterials,
+      };
+    }
+    if (!materialId) {
+      try {
+        const res = await AssemblyMaterialService.createAssemblyMaterial(payload);
+        if (res?.error) {
+          toast.error('Failed to create assembly');
+        } else {
+          toast.success('Assembly created');
+        }
+        router.push('/materialsSettings/assembly');
+      } catch (err) {
+        toast.error('Failed to create assembly');
+        router.push('/materialsSettings/assembly');
+      }
+      return;
+    }
+    try {
+      const res = await AssemblyMaterialService.updateAssemblyMaterial(materialId, payload);
+      if (res?.error) {
+        toast.error('Failed to save assembly');
+      } else {
+        toast.success('Assembly saved');
+      }
+      router.push('/materialsSettings/assembly');
+    } catch (err) {
+      toast.error('Failed to save assembly');
+      router.push('/materialsSettings/assembly');
+    }
+  };
 
   return (
     <EntityForm
@@ -108,73 +194,7 @@ export default function AssemblyForm() {
           editable={!isReadOnly}
         />
       }
-      onSubmit={async (values) => {
-        let payload;
-        if (materialId) {
-          // Edit mode: Ensure new assembly materials have id: 0, existing keep their id
-          const processedAssemblyMaterials = assemblyMaterials.map(item => {
-            // Only pass id in edit mode
-            return {
-              ...item,
-              id: item.id ? item.id : 0,
-            };
-          });
-          payload = {
-            material: {
-              ...values,
-              isAssembly: true,
-              materialType: 'Material',
-              purchasePrice: 0,
-              sellingPrice: 0,
-            },
-            assemblyMaterials: processedAssemblyMaterials,
-            deletedAssemblyMaterials,
-          };
-        } else {
-          // Create mode: do not include id
-          const processedAssemblyMaterials = assemblyMaterials.map(({ id, ...rest }) => rest);
-          payload = {
-            material: {
-              ...values,
-              isAssembly: true,
-              materialType: 'Material',
-              purchasePrice: 0,
-              sellingPrice: 0,
-            },
-            assemblyMaterials: processedAssemblyMaterials,
-            deletedAssemblyMaterials,
-          };
-        }
-        if (!materialId) {
-          try {
-            const res = await AssemblyMaterialService.createAssemblyMaterial(payload);
-            if (res?.error) {
-              toast.error('Failed to create assembly');
-              router.push('/materialsSettings/assembly');
-              return;
-            }
-            toast.success('Assembly created');
-            router.push('/materialsSettings/assembly');
-            return;
-          } catch (err) {
-            toast.error('Failed to create assembly');
-            router.push('/materialsSettings/assembly');
-            return;
-          }
-        }
-        try {
-          const res = await AssemblyMaterialService.updateAssemblyMaterial(materialId, payload);
-          if (res?.error) {
-            toast.error('Failed to save assembly');
-          } else {
-            toast.success('Assembly saved');
-          }
-        } catch (err) {
-          toast.error('Failed to save assembly');
-        }
-        router.push('/materialsSettings/assembly');
-        return;
-      }}
+      onSubmit={handleSubmit}
       backPath="/materialsSettings/assembly"
       width="100%"
       columns={3}

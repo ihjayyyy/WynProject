@@ -51,6 +51,7 @@ export default function ProposalMaterialModal({ open, initial = {}, onCancel, on
       try {
         const res = await getMaterials();
         if (!mounted) return;
+        console.log('Loaded materials:', res.data); // Debug log
         if (!res.error && Array.isArray(res.data)) setMaterials(res.data || []);
         else setMaterials([]);
       } catch (err) {
@@ -124,7 +125,11 @@ export default function ProposalMaterialModal({ open, initial = {}, onCancel, on
       label: 'Material Name (Editable)',
       type: 'select',
       value: calculatedForm.materialId ? String(calculatedForm.materialId) : '',
-      options: (materials || []).map((m) => ({ value: String(m.id), name: `${m.name || m.code || ''}`.trim() })),
+      options: materials.length === 0
+        ? [{ value: '__loading__', label: 'Loading materials...' }]
+        : (materials || [])
+            .filter((m) => m && m.id != null && m.id !== '')
+            .map((m) => ({ value: String(m.id), label: `${m.name || m.code || ''}`.trim() })),
       validator: Yup.string().required('Material is required'),
       onChange: (item, updateField, itemFields, nextValue) => {
         const next = applyMaterialSelect(nextValue, itemFields);
@@ -230,6 +235,15 @@ export default function ProposalMaterialModal({ open, initial = {}, onCancel, on
           return;
         }
 
+        // Ensure forecastedStartDate and forecastedEndDate are always ISO string and not null
+        const getIsoDate = (d) => {
+          if (d && d.trim()) {
+            // If already ISO with time, use as is; if only date, add time
+            if (/T/.test(d)) return d;
+            return new Date(d).toISOString();
+          }
+          return new Date().toISOString();
+        };
         const payload = {
           id: Number(val.id) || 0,
           name: val.name || '',
@@ -249,8 +263,8 @@ export default function ProposalMaterialModal({ open, initial = {}, onCancel, on
           totalAmount: Number(val.totalAmount) || 0,
           isAssembly: Boolean(val.isAssembly),
           totalPrice: Number(val.totalPrice) || 0,
-          forecastedStartDate: val.forecastedStartDate || null,
-          forecastedEndDate: val.forecastedEndDate || null,
+          forecastedStartDate: getIsoDate(val.forecastedStartDate),
+          forecastedEndDate: getIsoDate(val.forecastedEndDate),
           scopeOfWork: val.scopeOfWork || '',
           remarks: '',
         };
@@ -258,6 +272,7 @@ export default function ProposalMaterialModal({ open, initial = {}, onCancel, on
         onConfirm && onConfirm(payload, { closeModal: !shouldKeepOpen });
 
         if (shouldKeepOpen) {
+          // Reset all fields to default except parentId and scopeOfWork
           setForm({
             ...DEFAULT_FORM,
             parentId: Number(payload.parentId) || 0,

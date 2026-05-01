@@ -1,6 +1,7 @@
 'use client';
 
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
+import SalesBillingService from '@/services/SalesBilling';
 import { useRouter } from 'next/navigation';
 import { FiEdit2, FiEye } from 'react-icons/fi';
 import DropdownAction from '../ui/DropdownAction/DropdownAction';
@@ -17,9 +18,19 @@ const baseColumns = [
 ];
 
 export default function SalesBillingLanding() {
-  // Replace with real data fetching logic
-  const [billings] = useState([]); // sampleBillings
+  const [billings, setBillings] = useState([]);
   const router = useRouter();
+
+  useEffect(() => {
+    SalesBillingService.getSalesBilling().then(({ data, error }) => {
+      if (!error && Array.isArray(data)) {
+        setBillings(data);
+      } else if (!error && data) {
+        setBillings(Array.isArray(data) ? data : [data]);
+      }
+      // Optionally handle error
+    });
+  }, []);
 
   const actionItems = useMemo(
     () => [

@@ -245,7 +245,15 @@ export default function ProposalForm() {
   // sanitize child objects before sending to API (fill defaults, coerce types)
   // normalize dates to `YYYY-MM-DDTHH:MM:SS` (use midnight for date-only values)
   const formatPayloadDate = (v, dateOnly = false) => {
-    if (v === null || v === undefined || v === '') return null;
+    // Always return ISO string, default to today if blank
+    if (v === null || v === undefined || v === '') {
+      const now = new Date();
+      if (dateOnly) {
+        // Only date part, midnight
+        return now.toISOString().slice(0, 10) + 'T00:00:00.000Z';
+      }
+      return now.toISOString();
+    }
     if (v instanceof Date) {
       const pad = (n) => String(n).padStart(2, '0');
       const Y = v.getFullYear();

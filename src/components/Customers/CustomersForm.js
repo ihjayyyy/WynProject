@@ -51,11 +51,11 @@ export default function CustomersForm() {
 
   const fields = [
     { name: 'code', label: 'Code', span: 'span2' },
-    { name: 'name', label: 'Name', span: 'span2' },
-    { name: 'customerName', label: 'Customer Name', span: 'span2' },
+    { name: 'name', label: 'Company Name', span: 'span2' },
+    { name: 'customerName', label: 'Contact Person', span: 'span2' },
     { name: 'contactNumber', label: 'Contact Number', type: 'tel', span: 'span2' },
     { name: 'email', label: 'Email', type: 'email', span: 'span2' },
-    { name: 'companyName', label: 'Company Name', span: 'span2' },
+    // { name: 'companyName', label: 'Company Name', span: 'span2', isHidden: true }, // Hidden field to store company name if needed for auto-fill or other logic
     // VAT Type select
     {
       name: 'vatType',

@@ -1,3 +1,18 @@
+// GET /api/SalesBilling/{id} - fetch a single sales billing record by ID
+async function getSalesBillingById(id) {
+  if (!id) return { data: null, error: 'Missing id' };
+  try {
+    const url = `${API_BASE_URL}/${id}`;
+    const res = await fetch(url, {
+      method: 'GET',
+      headers: { 'Content-Type': 'application/json' },
+    });
+    const json = await res.json();
+    return { data: json && json.value ? json.value : {}, error: null };
+  } catch (error) {
+    return { data: null, error: error?.message || error };
+  }
+}
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL + "/SalesBilling";
 
 export const INITIAL_SALES_BILLING = {
@@ -78,6 +93,7 @@ async function getSalesBilling() {
 const SalesBillingService = {
   createSalesBilling,
   getSalesBilling,
+  getSalesBillingById,
   editSalesBilling,
   INITIAL_SALES_BILLING,
 };
