@@ -4,34 +4,18 @@ const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL + "/PurchaseOrder";
         "name": "",
         "code": "",
         "children": [
-          // {
-          //   "id": 0,
-          //   "parentId": 0,
-          //   "materialId": 0,
-          //   "code": "",
-          //   "name": "",
-          //   "uom": "",
-          //   "unitCost": 0,
-          //   "quantity": 0,
-          //   "vat": 0,
-          //   "discount": 0,
-          //   "amount": 0
-          // }
         ],
         "deletedChildren": [
         ],
-        "orderDate": new Date(),
+        "deliveryDate": new Date(),
         "supplierId": 0,
-        "supplierCode": "",
-        "supplierName": "",
-        "contactNumber": "",
-        "address": "",
-        "contactPerson": "",
-        "email": "",
-        "supplierReferenceNo": "",
-        "estimatedDeliveryDate": new Date(),
-        "terms":0,
-        "vatType": "nonvat"
+        "code": "",
+        "name": "",
+        "receivedBy": "",
+        "supplierDRNumber": "",
+        "status": "",
+        "orderNumber": "",
+        "requestNumber":"",
     };
 
 async function GetAll() {
@@ -50,19 +34,6 @@ async function GetAll() {
 async function GetOrdersByStatus(status) {
     try {
         const res = await fetch(API_BASE_URL + "/status/" + status, {
-            method: 'GET',
-            headers: { Accept: '*/*' },
-        });
-        const json = await res.json();
-        return { data: json && json.value, error: null };
-    } catch (error) {
-        return { data: null, error: error?.message || error };
-    }
-}
-
-async function GetOrdersBySupplier(id) {
-    try {
-        const res = await fetch(API_BASE_URL + "/supplier/" + id, {
             method: 'GET',
             headers: { Accept: '*/*' },
         });
@@ -152,7 +123,6 @@ async function SetStatus(status, id) {
 export {
     GetAll,
     GetOrdersByStatus,
-    GetOrdersBySupplier,
     Get,
     Create,
     Update,
@@ -165,7 +135,6 @@ export {
 export default{
     GetAll,
     GetOrdersByStatus,
-    GetOrdersBySupplier,
     Get,
     Create,
     Update,

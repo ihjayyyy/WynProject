@@ -1,8 +1,8 @@
 import * as Yup from "yup";
 
- export const FormFields =(supliers,orders, onFieldhanged) =>([
-    { name: 'supplierId', label: 'Supplier', type: 'select', options: supliers.map((s) => ({ label: s.name, value: s.id })), 
-      searchable: true, span: 'span3', 
+ export const FormFields =(suppliers,orders, onFieldhanged) =>([
+    { name: 'supplierId', label: 'Supplier', type: 'select', options: suppliers.map((s) => ({ label: s.name, value: s.id })), 
+      searchable: true, span: 'span4', 
         onChange: (val, values, setValues) => {
           const found = suppliers.find((s) => s.id === val);
                if (!found) {
@@ -24,40 +24,39 @@ import * as Yup from "yup";
       }},
     { name: 'code', hidden:true },
     { name: 'name', hidden:true },
- { name: 'spacer-1', type: 'spacer', span: 'span2' },
+    { name: 'spacer-1', type: 'spacer', span: 'span2' },
     { name:'deliveryDate', label:'Request Date', type:'date', span:'span2'},
-    { name:'receivedBy', label:'Received By', type:'textbox', span:'span4'},
-    { name: 'spacer-4', type: 'spacer', span: 'span2' },
-    { name:'requestNumber', label:'Request Number', type:'textbox', span:'span2'},
-    { name:'orderId', label:'Order Number', type:'select', options: supliers.map((s) => ({ label: s.name, value: s.id })), searchable: true, span:'span4',
+    { name:'orderId', label:'Order Number', type:'select', options: orders.map((s) => ({ label: s.orderNumber, value: s.id })), searchable: true, span:'span2',
         onChange: (val, values, setValues) => {
-          const found = suppliers.find((s) => s.id === val);
+          const found = orders.find((s) => s.id === val);
                if (!found) {
                   const clearedValues = {
                      ...values,
-                     code: '',
-                     name: ''
+                     orderNumber: '',
                   };
                   setValues(clearedValues);
-                  onFieldhanged("supplierId", val, clearedValues);
+                  onFieldhanged("orderId", val, clearedValues);
                   return;
                }
           const valuesCopy = { ...values, 
-            code:found.code,
-            name:found.name
+            orderNumber:found.code,
          };
           if (found) setValues(valuesCopy);
-         onFieldhanged("supplierId", val, valuesCopy); 
+         onFieldhanged("orderId", val, valuesCopy); 
       }
-   },
+    },
+    { name:'requestNumber', label:'Request Number', type:'textbox', span:'span2'},
+
+    { name: 'spacer-4', type: 'spacer', span: 'span2' },
+    { name:'supplierDRNumber', label:'Supplier DR', type:'textbox', span:'span2'},
+    { name:'receivedBy', label:'Received By', type:'textbox', span:'span4'},
     { name: 'orderNumber', hidden:true },
-    { name:'supplierDRNumber', label:'Supplier DR', type:'textbox', span:'span4'},
  ]);
 
  export const TableColumns = [
     { header: 'Material', key: 'material', width: '200px', render: (it) =>{return(it.code + ' - ' + it.name)}},
     { header: 'UOM', key: 'uom', width: '200px', render: (it) =>{return(it.uom)}},
-    { header: 'OrderQty', key: 'orderQuantity', align: 'right', width: '80px', render: (it) => (it.orderQuantity).toFixed(0) },
+    { header: 'Order Qty', key: 'orderQuantity', align: 'right', width: '80px', render: (it) => (it.orderQuantity).toFixed(0) },
     { header: 'Previous Qty', key: 'previousBalance', align: 'right', width: '80px', render: (it) => (it.previousBalance).toFixed(0) },
     { header: 'Qty', key: 'quantity', align: 'right', width: '80px', render: (it) => (it.quantity).toFixed(0) + ' ' + it.uom},
     { header: 'Remaining', key: 'remainingBalance', align: 'right', width: '80px', render: (it) => (it.remainingBalance).toFixed(0)},

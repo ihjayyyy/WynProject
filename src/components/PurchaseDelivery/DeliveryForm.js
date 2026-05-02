@@ -11,6 +11,7 @@ import EntityStyle from '../EntityForm/EntityContainer.module.scss'
 import Button from '../ui/Button/Button';
 import { getSuppliers } from '@/services/Supplier';
 import { getMaterials } from '@/services/Materials';
+import {Get as GetPO, GetOrdersBySupplier} from '@/services/PurchaseOrder';
 import { InitialData, Create, Get, Update, SubmitForApproval, Approve, Reject, SetStatus } from '@/services/PurchaseOrder';
 import { useToast } from '../ui/Toast/Toast';
 import InvalidPage from '@/components/InvalidPage/page';
@@ -32,6 +33,7 @@ export default function PurchaseDeliveryForm() {
     const [mode, setMode] = useState(initialMode);
     const [suppliers, setSuppliers] = useState([]); 
     const [materials, setMaterials] = useState([]); 
+     const [orders, setOrders] = useState([]); 
 
   const [formData, setForm] = useState({});
   const [validForm, setvalidForm] = useState(false); 
@@ -44,18 +46,52 @@ export default function PurchaseDeliveryForm() {
     setMode(nextMode);
   }, [searchParams]);
 
+    const fetchOrders = async(supplierid) => {
+        console.log(supplierid)
+    const res = await GetOrdersBySupplier(supplierid);
+     if(res && !res.error){
+          setOrders(res.data);
+   }
+};
+
+const loadOrders = async(orderId) =>{
+   const res = await GetPO(orderId);
+   console.log(res);
+};
+const confirmLoadOrders = async(orderId)=>{
+
+      const title = "Load Purchase Order";
+      const message = "Do you want to load items in this order?";
+      const confirmText = "Yes";
+      const variant="primary";
+      const action =()=>async ()=>await loadOrders(orderId);
+      confirmModal.show(title,message,confirmText,variant, action);
+}
+
   // set Form Fields
   const onFormChange = (fieldname,value, updatedformData)=>{
       console.log("field changed.",fieldname,value, updatedformData);
-      const children = formData.children.map(d => {
+
+      if(fieldname === 'supplierId'){
+         fetchOrders(value);
       }
-      );
-      console.log(children)
-      setForm({...formData,...updatedformData, children:children})
-      setTableData({...tableData,items:children})
+
+      if(fieldname === 'orderId'){
+         confirmLoadOrders(value);
+      }
+
+
+    //   const children = formData.children.map(d => {
+    //   }
+    //   );
+    //   console.log(children)
+    //   setForm({...formData,...updatedformData, children:children})
+    //   setTableData({...tableData,items:children})
+
+
   }      
 
-    const formFields = FormFields(suppliers,onFormChange); 
+    const formFields = FormFields(suppliers,orders,onFormChange); 
     const childTableColumns = TableColumns;
     const [childFields,setItemFields] = useState(ItemsFields(materials,formData)) 
   
@@ -79,7 +115,11 @@ export default function PurchaseDeliveryForm() {
   }
    fetchSupplier();
    fetchMaterials();
+
+
   },[]); 
+
+
 
 const GetFormData = async () => {
   let initData = { ...InitialData };
@@ -126,10 +166,10 @@ const formTitle = useMemo(() => {
 const detailsUpdated = (items, deletedItems) =>{
       console.log("Table has changed")
 
-        const formCopy = {...formCopy};
+        const formCopy = {...formData};
         formCopy.children = items;
         formCopy.deletedChildren = deletedItems;     
-    setPO(formCopy);
+    setForm(formCopy);
   }
 
 const updateItemFields = ()=>{

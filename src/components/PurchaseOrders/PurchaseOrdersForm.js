@@ -322,6 +322,30 @@ const submitForApproval = async()=>{
 
   }
 
+      const handleOrderConfirm =()=>{
+      const title = "Order";
+      const message = "Are you sure you want to order this PO?";
+      const confirmText = "Order PO";
+      const variant="primary";
+      const action = ()=> async ()=>await orderPO();
+      confirmModal.show(title,message,confirmText,variant, action);
+}
+
+  const orderPO = async () =>{
+    setMode('view');
+    const res = await SetStatus('Order',po.id)
+
+    if (res?.error) {
+      toast.error('Failed to approve purchase order.');
+      return null;
+    }
+    else {
+      toast.success('Purchase Order has been approved.');
+      router.push(backPath);  
+    }
+
+  }
+
   const handleRejectConfirm =()=>{
       const title = "Reject";
       const message = "Are you sure you want to reject this PO?";
@@ -426,7 +450,7 @@ const submitForApproval = async()=>{
     const OrderButton = () =>{
     return isAllowed(PageName, 'ww') && orderId && po.status && po.status.toLowerCase() === "approved"  ?
     <div  className={POStyles.buttonsContainer}>
-       <Button variant="save" onClick={handleApproveConfirm}>Order</Button>
+       <Button variant="save" onClick={handleOrderConfirm}>Order</Button>
     </div> : null
   }
 
