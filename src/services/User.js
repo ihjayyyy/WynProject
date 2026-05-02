@@ -102,7 +102,7 @@ export async function getUserAccess() {
       },
       {
         name: 'Storage',
-        access:'n'
+        access:'rwa'
       },
     {
       name: 'Finance.Billings',
@@ -114,6 +114,10 @@ export async function getUserAccess() {
     },
           {
             name: 'Storage.Rack',
+            access:'rwa'
+          },
+                    {
+            name: 'Storage.Warehouse',
             access:'rwa'
           },
       {

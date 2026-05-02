@@ -102,6 +102,7 @@ export default function ProjectStaffTab({ projectId = 0 }) {
           updateField('name', selected?.name || selected?.label || '');
           updateField('code', selected?.code || '');
           updateField('expenses', Number(selected?.ratePerHour) || 0);
+          updateField('job', selected?.job || '');
         },
       },
       {

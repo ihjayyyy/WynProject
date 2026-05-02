@@ -77,7 +77,7 @@ export default function InquiryForm() {
       ...prev,
       customerId,
       contactPerson: selected.customerName || prev.contactPerson || '',
-      attention: selected.customerName || prev.attention || '',
+      // attention: selected.customerName || prev.attention || '',
       name: selected.name || prev.name || '',
       companyName: selected.name || prev.companyName || '',
       address:       selected.address       || prev.address       || '',
@@ -136,8 +136,8 @@ export default function InquiryForm() {
     { name: 'spacer-4', type: 'spacer', span: 'span1' },
     { name: 'date', label: 'Date', type: 'date', span: 'span1' },
 
-    { name: 'attention', label: 'Attention', span: 'span1',hidden:true },
-    { name: 'reference', label: 'Reference', span: 'span1' },
+    { name: 'attention', label: 'Attention', span: 'span1' },
+    { name: 'reference', label: 'Reference', span: 'span1',hidden:true },
 
     { name: 'spacer-6', type: 'spacer', span: 'span1' },
     { name: 'spacer-7', type: 'spacer', span: 'span1' },

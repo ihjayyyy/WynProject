@@ -272,14 +272,12 @@ export default function ProposalMaterialModal({ open, initial = {}, onCancel, on
         const shouldKeepOpen = keepOpenOnSave && !isEditMode;
         onConfirm && onConfirm(payload, { closeModal: !shouldKeepOpen });
 
-        if (shouldKeepOpen) {
-          // Reset all fields to default except parentId and scopeOfWork
-          setForm({
-            ...DEFAULT_FORM,
-            parentId: Number(payload.parentId) || 0,
-            scopeOfWork: payload.scopeOfWork || '',
-          });
-        }
+        // Always reset form after save
+        setForm({
+          ...DEFAULT_FORM,
+          parentId: Number(payload.parentId) || 0,
+          scopeOfWork: payload.scopeOfWork || '',
+        });
       }}
     />
   );

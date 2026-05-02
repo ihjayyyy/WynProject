@@ -18,8 +18,12 @@ export default function ProjectFinanceTab({ projectId, project, editable }) {
       const res = await getProjectFinanceByProjectId(projectId);
       let merged;
       let financeData = null;
-      if (res.data && Array.isArray(res.data.value) && res.data.value.length > 0) {
-        financeData = res.data.value[0];
+      const rawValue = res.data?.value;
+      if (rawValue && Array.isArray(rawValue) && rawValue.length > 0) {
+        financeData = rawValue[0];
+        merged = { ...INITIAL_PROJECT_FINANCE, ...financeData };
+      } else if (rawValue && !Array.isArray(rawValue) && typeof rawValue === 'object') {
+        financeData = rawValue;
         merged = { ...INITIAL_PROJECT_FINANCE, ...financeData };
       } else {
         // Default lastBillingDate to today
@@ -29,6 +33,12 @@ export default function ProjectFinanceTab({ projectId, project, editable }) {
       if (project) {
         merged.code = project.code || '';
         merged.name = project.name || '';
+        // Derive downPaymentPercent from existing downPayment and contractPrice
+        if (project.contractPrice > 0 && merged.downPayment) {
+          merged.downPaymentPercent = parseFloat(((merged.downPayment / project.contractPrice) * 100).toFixed(4));
+        } else {
+          merged.downPaymentPercent = '';
+        }
       }
       if (mounted) {
         setFinance(financeData ? merged : null);
@@ -41,7 +51,7 @@ export default function ProjectFinanceTab({ projectId, project, editable }) {
 
   const cleanPayload = (payload) => {
     const {
-      error, isFailure, isSuccess, value, projectCompletion, ...cleaned
+      error, isFailure, isSuccess, value, projectCompletion, downPaymentPercent, ...cleaned
     } = payload;
     // Remove projectCompletion from payload as per backend update
     return cleaned;
@@ -67,13 +77,18 @@ export default function ProjectFinanceTab({ projectId, project, editable }) {
       payload.lastBillingDate = isNaN(d.getTime()) ? new Date().toISOString() : d.toISOString();
     }
     payload = cleanPayload(payload);
+    payload.hasDownpayment = payload.downPayment > 0;
+    payload.totalBilledAmount = project?.contractPrice ?? 0;
     if (finance && finance.id) {
       res = await updateProjectFinance(finance.id, payload);
     } else {
       res = await createProjectFinance(payload);
     }
     if (!res?.error) {
-      setFinance(res.data);
+      const saved = res.data?.value && typeof res.data.value === 'object' && !Array.isArray(res.data.value)
+        ? res.data.value
+        : res.data;
+      setFinance(saved);
       setEditing(false);
     }
     setLoading(false);
@@ -100,9 +115,41 @@ export default function ProjectFinanceTab({ projectId, project, editable }) {
       <div className={styles.field}>
         <label>Down Payment</label>
         {editing ? (
-          <Input type="number" value={form.downPayment ?? ''} onChange={e => setForm({ ...form, downPayment: e.target.value === '' ? '' : Number(e.target.value) })} />
+          <div style={{ display: 'flex', gap: '8px', alignItems: 'flex-end' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+              <span style={{ fontSize: '0.75rem', color: '#666' }}>Amount</span>
+              <Input
+                type="number"
+                value={form.downPayment ?? ''}
+                onChange={e => {
+                  const amt = e.target.value === '' ? '' : Number(e.target.value);
+                  const contractPrice = project?.contractPrice || 0;
+                  const pct = amt !== '' && contractPrice > 0 ? parseFloat(((amt / contractPrice) * 100).toFixed(4)) : '';
+                  setForm({ ...form, downPayment: amt, downPaymentPercent: pct });
+                }}
+              />
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+              <span style={{ fontSize: '0.75rem', color: '#666' }}>Percent (%)</span>
+              <Input
+                type="number"
+                value={form.downPaymentPercent ?? ''}
+                onChange={e => {
+                  const pct = e.target.value === '' ? '' : Number(e.target.value);
+                  const contractPrice = project?.contractPrice || 0;
+                  const amt = pct !== '' ? parseFloat(((pct / 100) * contractPrice).toFixed(2)) : '';
+                  setForm({ ...form, downPaymentPercent: pct, downPayment: amt });
+                }}
+              />
+            </div>
+          </div>
         ) : (
-          <div className="value">{finance?.downPayment ?? ''}</div>
+          <div className="value">
+            {finance?.downPayment ?? ''}
+            {finance?.downPayment && project?.contractPrice
+              ? ` (${((finance.downPayment / project.contractPrice) * 100).toFixed(2)}%)`
+              : ''}
+          </div>
         )}
       </div>
       <div className={styles.field}>
@@ -131,11 +178,7 @@ export default function ProjectFinanceTab({ projectId, project, editable }) {
       </div>
       <div className={styles.field}>
         <label>Total Billed Amount</label>
-        {editing ? (
-          <Input type="number" value={form.totalBilledAmount ?? ''} onChange={e => setForm({ ...form, totalBilledAmount: e.target.value === '' ? '' : Number(e.target.value) })} />
-        ) : (
-          <div className="value">{finance?.totalBilledAmount ?? ''}</div>
-        )}
+        <div className="value">{project?.contractPrice ?? ''}</div>
       </div>
       <div className={styles.field}>
         <label>Last Billing Date</label>

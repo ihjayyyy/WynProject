@@ -46,6 +46,14 @@ export default function ExpensesTab({ projectId = 0 }) {
 
     return [
       {
+        name: 'scopeId',
+        label: 'Scope',
+        type: 'select',
+        value: record.scopeId ? String(record.scopeId) : '',
+        options: selectableScopes,
+        validator: Yup.number().notRequired(),
+      },
+      {
         name: 'id',
         label: 'Id',
         type: 'number',
@@ -76,11 +84,11 @@ export default function ExpensesTab({ projectId = 0 }) {
         validator: Yup.string().required('Name is required'),
       },
       {
-        name: 'amount',
-        label: 'Amount',
-        type: 'number',
-        value: Number(record.amount) || 0,
-        validator: Yup.number().min(0).notRequired(),
+        name: 'description',
+        label: 'Description',
+        type: 'text',
+        value: record.description || record.desciption || '',
+        validator: Yup.string().notRequired(),
       },
       {
         name: 'referenceNumber',
@@ -89,20 +97,12 @@ export default function ExpensesTab({ projectId = 0 }) {
         value: Number(record.referenceNumber) || 0,
         validator: Yup.number().notRequired(),
       },
-      {
-        name: 'description',
-        label: 'Description',
-        type: 'text',
-        value: record.description || record.desciption || '',
-        validator: Yup.string().notRequired(),
-      },
-      {
-        name: 'scopeId',
-        label: 'Scope',
-        type: 'select',
-        value: record.scopeId ? String(record.scopeId) : '',
-        options: selectableScopes,
-        validator: Yup.number().notRequired(),
+            {
+        name: 'amount',
+        label: 'Amount',
+        type: 'number',
+        value: Number(record.amount) || 0,
+        validator: Yup.number().min(0).notRequired(),
       },
     ];
   }, [editing, projectId, scopeOptions]);

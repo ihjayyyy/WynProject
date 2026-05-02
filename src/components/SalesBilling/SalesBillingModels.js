@@ -77,7 +77,9 @@ export const SalesBillingFields = (
 
 export const SalesBillingDetailsColumns = [
   { header: 'Name', key: 'name', width: '200px' },
-  { header: 'Quantity', key: 'quantity', align: 'right', width: '80px' },
+  { header: 'Description', key: 'description', width: '200px' },
+
+  // { header: 'Quantity', key: 'quantity', align: 'right', width: '80px' },
   {
     header: 'Amount',
     key: 'amount',
@@ -106,7 +108,6 @@ export const SalesBillingDetailsColumns = [
     width: '140px',
     render: (it) => Number(it.totalAmount || 0).toFixed(2),
   },
-  { header: 'Description', key: 'description', width: '200px' },
 ];
 
 const computeVatAndAmount = (subamount, vatType) => {
@@ -130,7 +131,21 @@ const computeVatAndAmount = (subamount, vatType) => {
 export const SalesBillingItemsFields = (billing = {}) => [
   { name: 'id', type: 'number', hidden: true, initialvalue: 0 },
   { name: 'name', label: 'Name', type: 'text', required: true, validator: Yup.string().required('Name is required') },
-  { name: 'quantity', label: 'Quantity', type: 'number', initialvalue: 1 },
+  { name: 'description', label: 'Description', type: 'textarea' },
+  { name: 'quantity', label: 'Quantity', type: 'number', initialvalue: 0, hidden: true },
+    {
+    name: 'amount',
+    label: 'Amount',
+    type: 'currency',
+    initialvalue: 0,
+    onChange: (item, updateField, fields) => {
+      const discountField = fields.find((f) => f.name === 'discount');
+      const subamount = Number(item.value || 0) - Number(discountField?.value || 0);
+      const { vat, totalAmount } = computeVatAndAmount(subamount, billing?.vatType || '');
+      updateField('vat', vat);
+      updateField('totalAmount', totalAmount);
+    },
+  },
   {
     name: 'discount',
     label: 'Discount',
@@ -150,19 +165,5 @@ export const SalesBillingItemsFields = (billing = {}) => [
     type: 'currency',
     readonly: true,
   },
-  {
-    name: 'amount',
-    label: 'Amount',
-    type: 'currency',
-    initialvalue: 0,
-    onChange: (item, updateField, fields) => {
-      const discountField = fields.find((f) => f.name === 'discount');
-      const subamount = Number(item.value || 0) - Number(discountField?.value || 0);
-      const { vat, totalAmount } = computeVatAndAmount(subamount, billing?.vatType || '');
-      updateField('vat', vat);
-      updateField('totalAmount', totalAmount);
-    },
-  },
   { name: 'totalAmount', label: 'Total Amount', type: 'currency', readonly: true },
-  { name: 'description', label: 'Description', type: 'textarea' },
 ];

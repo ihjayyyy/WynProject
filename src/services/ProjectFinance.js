@@ -10,6 +10,7 @@ export const INITIAL_PROJECT_FINANCE = {
     recoupmentBalance: 0,
     totalBilledAmount: 0,
     lastBillingDate: '',
+    hasDownpayment:false,
     // projectCompletion removed as per backend update
 };
 

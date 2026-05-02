@@ -144,7 +144,7 @@ export default function ProposalForm() {
       }
     } },
     { name: 'spacer-1', type: 'spacer', span: 'span1' },
-    { name: 'code', label: 'Proposal Number', span: 'span1', readOnly: true },
+    { name: 'proposalNumber', label: 'Proposal Number', span: 'span1', readOnly: true },
 
    
     { name: 'name', label: 'Proposal Name', span: 'span1' },
@@ -197,16 +197,6 @@ export default function ProposalForm() {
 
     { name: 'contactPerson', label: 'Contact Person', span: 'span1' }, 
     { name: 'spacer-5', type: 'spacer', span: 'span1' },
-    { name: 'spacer-11', type: 'spacer', span: 'span1' },
-
-    { name: 'contactNumber', label: 'Contact Number', span: 'span1' },
-    { name: 'spacer-6', type: 'spacer', span: 'span1' },
-    // Margin field: editable when not read-only, or when admin view is active
-    { name: 'spacer-10', type: 'spacer', span: 'span1' },
-    { name: 'margin', label: 'Margin (%)', type: 'number', span: 'span1', readOnly: (values) => (isReadOnly && !isAdminView), hidden:true },
-
-    { name: 'address', label: 'Address', span: 'span1' },
-    { name: 'spacer-7', type: 'spacer', span: 'span1' },
     (isReadOnly ? { name: 'proposalTotal', label: 'Proposal Total', type: 'custom', span: 'span1', render: ({ values, setValues }) => {
         const v = Number(values.proposalTotal) || 0;
         if (v !== totals.proposalTotal) setValues({ ...values, proposalTotal: totals.proposalTotal });
@@ -217,11 +207,10 @@ export default function ProposalForm() {
           </div>
         );
       } } : { name: 'spacer-proposalTotal', type: 'spacer', span: 'span1' }),
-  
-    { name: 'email', label: 'Email', type: 'email', span: 'span1' },
-    { name: 'spacer-8', type: 'spacer', span: 'span1' },
-    
-    (isReadOnly ? { name: 'laborCostTotal', label: 'Labor Cost Total', type: 'custom', span: 'span1', render: ({ values, setValues }) => {
+
+    { name: 'contactNumber', label: 'Contact Number', span: 'span1' },
+    { name: 'spacer-6', type: 'spacer', span: 'span1' },
+        (isReadOnly ? { name: 'laborCostTotal', label: 'Labor Cost Total', type: 'custom', span: 'span1', render: ({ values, setValues }) => {
         const v = Number(values.laborCostTotal) || 0;
         if (v !== totals.laborCostTotal) setValues({ ...values, laborCostTotal: totals.laborCostTotal });
         return (
@@ -231,10 +220,12 @@ export default function ProposalForm() {
           </div>
         );
       } } : { name: 'spacer-laborCostTotal', type: 'spacer', span: 'span1' }),
+    // Margin field: editable when not read-only, or when admin view is active
+    { name: 'margin', label: 'Margin (%)', type: 'number', span: 'span1', readOnly: (values) => (isReadOnly && !isAdminView), hidden:true },
 
-    { name: 'location', label: 'Location', span: 'span1' },
-    { name: 'spacer-9', type: 'spacer', span: 'span1' },
-    (isReadOnly ? { name: 'materialCostTotal', label: 'Material Cost Total', type: 'custom', span: 'span1', render: ({ values, setValues }) => {
+    { name: 'address', label: 'Address', span: 'span1' },
+    { name: 'spacer-7', type: 'spacer', span: 'span1' },
+        (isReadOnly ? { name: 'materialCostTotal', label: 'Material Cost Total', type: 'custom', span: 'span1', render: ({ values, setValues }) => {
         const v = Number(values.materialCostTotal) || 0;
         if (v !== totals.materialCostTotal) setValues({ ...values, materialCostTotal: totals.materialCostTotal });
         return (
@@ -244,6 +235,16 @@ export default function ProposalForm() {
           </div>
         );
       } } : { name: 'spacer-materialCostTotal', type: 'spacer', span: 'span1' }),
+
+  
+    { name: 'email', label: 'Email', type: 'email', span: 'span1' },
+    { name: 'spacer-8', type: 'spacer', span: 'span1' },
+    
+
+    { name: 'spacer-10', type: 'spacer', span: 'span1' },
+    { name: 'location', label: 'Location', span: 'span1' },
+    { name: 'spacer-9', type: 'spacer', span: 'span1' },
+
   ];
 
   // sanitize child objects before sending to API (fill defaults, coerce types)
@@ -380,7 +381,7 @@ export default function ProposalForm() {
             // id: 0,
             ...modelPayload,
             children: (childrenState || []).filter((c) => !c || !c.__isScope).map(({ _localId, __isScope, ...rest }) => sanitizeChild(rest, proposalId ? Number(proposalId) : 0)),
-            deletedChildren: dedupeDeleted((deletedChildrenState || []).filter((c) => !c || !c.__isScope)).map(({ _localId, __isScope, ...rest }) => sanitizeChild(rest, proposalId ? Number(proposalId) : 0)),
+            deletedChildren: dedupeDeleted((deletedChildrenState || []).filter((c) => !c || !c.__isScope).filter((c) => Number(c.id) !== 0)).map(({ _localId, __isScope, ...rest }) => sanitizeChild(rest, proposalId ? Number(proposalId) : 0)),
           };
           const res = await createProposal(payload);
           if (res?.error) {
@@ -396,7 +397,7 @@ export default function ProposalForm() {
           // id: Number(proposalId),
           ...modelPayload,
           children: (childrenState || []).filter((c) => !c || !c.__isScope).map(({ _localId, __isScope, ...rest }) => sanitizeChild(rest, proposalId ? Number(proposalId) : 0)),
-          deletedChildren: dedupeDeleted((deletedChildrenState || []).filter((c) => !c || !c.__isScope)).map(({ _localId, __isScope, ...rest }) => sanitizeChild(rest, proposalId ? Number(proposalId) : 0)),
+          deletedChildren: dedupeDeleted((deletedChildrenState || []).filter((c) => !c || !c.__isScope).filter((c) => Number(c.id) !== 0)).map(({ _localId, __isScope, ...rest }) => sanitizeChild(rest, proposalId ? Number(proposalId) : 0)),
         };
         const res = await updateProposal(proposalId, payload);
         if (res?.error) toast.error('Failed to save proposal');
