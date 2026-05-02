@@ -57,6 +57,33 @@ export default function PurchaseDeliveryForm() {
 const loadOrders = async(orderId) =>{
    const res = await GetPO(orderId);
    console.log(res);
+
+
+
+    const children = res.data.children.map(d => {
+        var orderItem = {
+            id: 0,
+            parentId: 0,
+            poChildId: d.id,
+            materialId: d.materialId,
+            code: d.code,
+            name: d.name,
+            uom: d.uom,
+            orderQuantity: d.quantity,
+            quantity: d.orderBalance,
+            previousBalance: d.orderBalance,
+            remainingBalance: 0,
+            remarks: ""
+            };
+            return orderItem;
+        }
+    );
+   console.log(children)
+   setForm({...formData, children:children})
+   setTableData({...tableData,items:children})
+
+
+
 };
 const confirmLoadOrders = async(orderId)=>{
 

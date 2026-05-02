@@ -55,11 +55,11 @@ import * as Yup from "yup";
 
  export const TableColumns = [
     { header: 'Material', key: 'material', width: '200px', render: (it) =>{return(it.code + ' - ' + it.name)}},
-    { header: 'UOM', key: 'uom', width: '200px', render: (it) =>{return(it.uom)}},
+    { header: 'UOM', key: 'uom', width: '60px', render: (it) =>{return(it.uom)}},
     { header: 'Order Qty', key: 'orderQuantity', align: 'right', width: '80px', render: (it) => (it.orderQuantity).toFixed(0) },
-    { header: 'Previous Qty', key: 'previousBalance', align: 'right', width: '80px', render: (it) => (it.previousBalance).toFixed(0) },
-    { header: 'Qty', key: 'quantity', align: 'right', width: '80px', render: (it) => (it.quantity).toFixed(0) + ' ' + it.uom},
-    { header: 'Remaining', key: 'remainingBalance', align: 'right', width: '80px', render: (it) => (it.remainingBalance).toFixed(0)},
+    { header: 'Previous Bal', key: 'previousBalance', align: 'right', width: '80px', render: (it) => (it.previousBalance).toFixed(0) },
+    { header: 'Delivered Qty', key: 'quantity', align: 'right', width: '80px', render: (it) => (it.quantity).toFixed(0) + ' ' + it.uom},
+    { header: 'Remaining Bal', key: 'remainingBalance', align: 'right', width: '80px', render: (it) => (it.remainingBalance).toFixed(0)},
     { header: 'Remarks', key: 'remarks', width: '200px', render: (it) =>{return(it.remarks)}},
  ];
 

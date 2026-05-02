@@ -72,7 +72,7 @@ export const PODetailsColumns = [
  export  const POItemsFields  = (materials,po) =>([
             {name:'id', label:'id', type:'number',  hidden:true, initialvalue:0},
             {name:'parentId', label:'id', type:'number',  hidden:true, initialvalue:0},
-            {name:'material', label:'Material', type:'select', options:materials.map(({ id, name }) =>  ({ value:id, name:name })), readonly:false, 
+            {name:'materialId', label:'Material', type:'select', options:materials.map(({ id, name }) =>  ({ value:id, name:name })), readonly:false, 
               initialvalue:"",
                validator : Yup.string().required(`Material is required`),
                onChange : (item, updateField, fields) => {
