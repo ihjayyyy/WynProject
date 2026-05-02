@@ -134,6 +134,7 @@ export default function ProposalForm() {
           customerId: sel.customerId != null ? Number(sel.customerId) : null,
           customerName: sel.customerName || sel.name || '',
           customerCode: sel.customerCode || sel.code || '',
+          code: sel.code || '',
           contactNumber: sel.contactNumber || values.contactNumber || '',
           address: sel.address || values.address || '',
           contactPerson: sel.contactPerson || values.contactPerson || '',
@@ -143,12 +144,13 @@ export default function ProposalForm() {
       }
     } },
     { name: 'spacer-1', type: 'spacer', span: 'span1' },
-    { name: 'code', label: 'Proposal Number', span: 'span1' },
+    { name: 'code', label: 'Proposal Number', span: 'span1', readOnly: true },
 
    
     { name: 'name', label: 'Proposal Name', span: 'span1' },
     { name: 'spacer-2', type: 'spacer', span: 'span1' },
-    { name: 'customerReferenceNumber', label: 'Customer Reference No.', span: 'span1' },
+    { name: 'customerReferenceNumber', label: 'Customer Reference No.', span: 'span1', hidden:true },
+    { name: 'forecastedStartDate', label: 'Forecast Start', type: 'date', span: 'span1' },
 
     {
       name: 'customerId',
@@ -166,6 +168,7 @@ export default function ProposalForm() {
             ...values,
             customerId: sel.id,
             customerCode: sel.code || String(sel.id || ''),
+            code: sel.code || '',
             customerName: sel.customerName || sel.name || '',
             contactNumber: sel.contactNumber || '',
             address: sel.address || '',
@@ -186,20 +189,21 @@ export default function ProposalForm() {
       },
     },
     { name: 'spacer-3', type: 'spacer', span: 'span1' },
-    { name: 'forecastedStartDate', label: 'Forecast Start', type: 'date', span: 'span1' },
+    { name: 'forecastedEndDate', label: 'Forecast End', type: 'date', span: 'span1' },
 
     { name: 'customerCode', label: 'Customer Code', span: 'span1' },
     { name: 'spacer-4', type: 'spacer', span: 'span1' },
-    { name: 'forecastedEndDate', label: 'Forecast End', type: 'date', span: 'span1' },
+    { name: 'expirationDate', label: 'Expiration Date', type: 'date', span: 'span1' },
 
     { name: 'contactPerson', label: 'Contact Person', span: 'span1' }, 
     { name: 'spacer-5', type: 'spacer', span: 'span1' },
-    { name: 'expirationDate', label: 'Expiration Date', type: 'date', span: 'span1' },
+    { name: 'spacer-11', type: 'spacer', span: 'span1' },
 
     { name: 'contactNumber', label: 'Contact Number', span: 'span1' },
     { name: 'spacer-6', type: 'spacer', span: 'span1' },
     // Margin field: editable when not read-only, or when admin view is active
-    { name: 'margin', label: 'Margin (%)', type: 'number', span: 'span1', readOnly: (values) => (isReadOnly && !isAdminView) },
+    { name: 'spacer-10', type: 'spacer', span: 'span1' },
+    { name: 'margin', label: 'Margin (%)', type: 'number', span: 'span1', readOnly: (values) => (isReadOnly && !isAdminView), hidden:true },
 
     { name: 'address', label: 'Address', span: 'span1' },
     { name: 'spacer-7', type: 'spacer', span: 'span1' },

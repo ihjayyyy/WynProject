@@ -41,7 +41,17 @@ export default function ToolsForm() {
     let cancelled = false;
     (async () => {
       if (!toolId) {
-        setInitialValues({ ...INITIAL_MATERIAL, materialType: 'Tool', isAssembly: false });
+        // For new tool, sync both UOM fields if one is set
+        setInitialValues(prev => {
+          const uom = prev.unitOfMeasure || prev.purchaseUnitOfMeasure || '';
+          return {
+            ...INITIAL_MATERIAL,
+            materialType: 'Tool',
+            isAssembly: false,
+            unitOfMeasure: uom,
+            purchaseUnitOfMeasure: uom,
+          };
+        });
         setExists(false);
         return;
       }
@@ -82,8 +92,34 @@ export default function ToolsForm() {
     { name: 'purchasePrice', label: 'Purchase Price', type: 'number', span: 'span2' },
     { name: 'sellingPrice', label: 'Selling Price', type: 'number', span: 'span2' },
     { name: 'referenceNumber', label: 'Reference Number', span: 'span2' },
-    { name: 'unitOfMeasure', label: 'UOM', type: 'select', options: uomOptions, span: 'span2' },
-    { name: 'purchaseUnitOfMeasure', label: 'Default Purchase UOM', span: 'span2' },
+    {
+      name: 'unitOfMeasure',
+      label: 'UOM',
+      type: 'select',
+      options: uomOptions,
+      span: 'span2',
+      onChange: (selected, values, setValues) => {
+        setValues({
+          ...values,
+          unitOfMeasure: selected,
+          purchaseUnitOfMeasure: selected,
+        });
+      },
+    },
+    {
+      name: 'purchaseUnitOfMeasure',
+      label: 'Default Purchase UOM',
+      type: 'select',
+      options: uomOptions,
+      span: 'span2',
+      onChange: (selected, values, setValues) => {
+        setValues({
+          ...values,
+          purchaseUnitOfMeasure: selected,
+          unitOfMeasure: selected,
+        });
+      },
+    },
   ];
 
   // Handler for form submit

@@ -12,17 +12,14 @@ import { getInquiries, updateInquiry } from '../../services/Inquiry';
 import { useToast } from '../ui/Toast/Toast';
 
 const baseColumns = [
-  { header: 'Id', key: 'id' },
-  { header: 'Code', key: 'code' },
-  { header: 'Name', key: 'name' },
-  { header: 'Company', key: 'companyName' },
-  { header: 'Contact Person', key: 'contactPerson' },
-  { header: 'Contact Number', key: 'contactNumber' },
-  { header: 'Email', key: 'email' },
-  { header: 'Attention', key: 'attention' },
-  { header: 'Reference', key: 'reference' },
   { header: 'Date', key: 'date', render: (item) => (item.date ? new Date(item.date).toLocaleString() : '') },
-  { header: 'Updated At', key: 'updatedAt', render: (item) => (item.updatedAt ? new Date(item.updatedAt).toLocaleString() : '') },
+  { header: 'Reference', key: 'reference' },
+  { header: 'Company', key: 'companyName' },
+  { header: 'Attention', key: 'attention' },
+  { header: 'Contact', key: 'contactPerson', render: (item) => (
+    <span>{item.contactPerson}{item.contactPerson && item.contactNumber ? <br /> : null}{item.contactNumber}</span>
+  )},
+  { header: 'Email', key: 'email' },
 ];
 
 export default function InquiryLanding() {

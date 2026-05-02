@@ -173,21 +173,17 @@ export default function ProposalMaterialsTable({ items = [], onChange, editable 
       <ProposalScopeModal open={isScopeModalOpen} initial={scopeEditing} onCancel={() => { setIsScopeModalOpen(false); setScopeEditing(null); }} onConfirm={(val) => {
         if (!scopeEditing) {
           const newItem = { id: 0, _localId: `S-${Date.now()}`, scopeOfWork: val, __isScope: true, parentId: proposalId ? Number(proposalId) : undefined };
-          setLocalItems((prev) => {
-            const updated = [newItem, ...(prev || [])];
-            if (typeof onChange === 'function') onChange(updated, deletedChildren);
-            return updated;
-          });
+          const updatedWithScope = [newItem, ...(localItems || [])];
+          setLocalItems(updatedWithScope);
+          if (typeof onChange === 'function') onChange(updatedWithScope, deletedChildren);
           // open material modal for the newly created scope
           setMaterialEditing(null);
           setMaterialScopeTarget(val);
           setIsMaterialModalOpen(true);
         } else {
-          setLocalItems((prev) => {
-            const updated = (prev || []).map((it) => (it.scopeOfWork === scopeEditing ? { ...it, scopeOfWork: val } : it));
-            if (typeof onChange === 'function') onChange(updated, deletedChildren);
-            return updated;
-          });
+          const updatedScopes = (localItems || []).map((it) => (it.scopeOfWork === scopeEditing ? { ...it, scopeOfWork: val } : it));
+          setLocalItems(updatedScopes);
+          if (typeof onChange === 'function') onChange(updatedScopes, deletedChildren);
         }
         setIsScopeModalOpen(false);
         setScopeEditing(null);
@@ -196,37 +192,32 @@ export default function ProposalMaterialsTable({ items = [], onChange, editable 
       <ProposalMaterialModal open={isMaterialModalOpen} initial={materialEditing || { parentId: Number(proposalId) || 0, scopeOfWork: materialScopeTarget || 'General' }} keepOpenOnSave={!materialEditing} onCancel={() => { setIsMaterialModalOpen(false); setMaterialScopeTarget(null); setMaterialEditing(null); }} onConfirm={(m, options = {}) => {
         if (materialEditing) {
           // update existing
-          setLocalItems((prev) => {
-              let matched = false;
-              const updated = (prev || []).map((p) => {
-                const matchById = materialEditing && materialEditing.id && Number(materialEditing.id) !== 0 && p.id === materialEditing.id;
-                const matchByLocal = materialEditing && materialEditing._localId && p._localId === materialEditing._localId;
-                if (matchById || matchByLocal) {
-                  matched = true;
-                  const parentId = p.parentId !== undefined && p.parentId !== null ? p.parentId : (proposalId ? Number(proposalId) : undefined);
-                  return { ...p, ...m, parentId };
-                }
-                return p;
-              });
-              // If somehow no existing row matched (race / stale ids), try to match by code+name+parentId and update that one
-              if (!matched) {
-                const fallbackIndex = (prev || []).findIndex((p) => p.code === (materialEditing && materialEditing.code) && p.name === (materialEditing && materialEditing.name) && p.parentId === (materialEditing && materialEditing.parentId));
-                if (fallbackIndex !== -1) {
-                  matched = true;
-                  const p = (prev || [])[fallbackIndex];
-                  updated[fallbackIndex] = { ...p, ...m, parentId: p.parentId !== undefined && p.parentId !== null ? p.parentId : (proposalId ? Number(proposalId) : undefined) };
-                }
-              }
-              if (typeof onChange === 'function') onChange(updated, deletedChildren);
-              return updated;
+          let matched = false;
+          const updatedMat = (localItems || []).map((p) => {
+            const matchById = materialEditing && materialEditing.id && Number(materialEditing.id) !== 0 && p.id === materialEditing.id;
+            const matchByLocal = materialEditing && materialEditing._localId && p._localId === materialEditing._localId;
+            if (matchById || matchByLocal) {
+              matched = true;
+              const parentId = p.parentId !== undefined && p.parentId !== null ? p.parentId : (proposalId ? Number(proposalId) : undefined);
+              return { ...p, ...m, parentId };
+            }
+            return p;
           });
+          // If somehow no existing row matched (race / stale ids), try to match by code+name+parentId and update that one
+          if (!matched) {
+            const fallbackIndex = (localItems || []).findIndex((p) => p.code === (materialEditing && materialEditing.code) && p.name === (materialEditing && materialEditing.name) && p.parentId === (materialEditing && materialEditing.parentId));
+            if (fallbackIndex !== -1) {
+              const p = (localItems || [])[fallbackIndex];
+              updatedMat[fallbackIndex] = { ...p, ...m, parentId: p.parentId !== undefined && p.parentId !== null ? p.parentId : (proposalId ? Number(proposalId) : undefined) };
+            }
+          }
+          setLocalItems(updatedMat);
+          if (typeof onChange === 'function') onChange(updatedMat, deletedChildren);
         } else {
           const item = { id: 0, _localId: `M-${Date.now()}`, ...m, scopeOfWork: materialScopeTarget || 'General', parentId: proposalId ? Number(proposalId) : undefined };
-          setLocalItems((prev) => {
-            const updated = [item, ...(prev || [])];
-            if (typeof onChange === 'function') onChange(updated, deletedChildren);
-            return updated;
-          });
+          const updatedWithItem = [item, ...(localItems || [])];
+          setLocalItems(updatedWithItem);
+          if (typeof onChange === 'function') onChange(updatedWithItem, deletedChildren);
         }
         if (options.closeModal !== false) {
           setIsMaterialModalOpen(false);
@@ -239,28 +230,24 @@ export default function ProposalMaterialsTable({ items = [], onChange, editable 
           // use canonical item from localItems to preserve original id (if present)
           const sel = (localItems || []).find((p) => (confirmTarget && p._localId && confirmTarget._localId && p._localId === confirmTarget._localId) || (confirmTarget && confirmTarget.id && Number(confirmTarget.id) !== 0 && p.id === confirmTarget.id)) || confirmTarget;
           if (sel) {
-            setLocalItems((prev) => {
-              const updated = (prev || []).filter((p) => p._localId !== (sel._localId || confirmTarget._localId));
-              setDeletedChildren((dprev) => {
-                const prevDeleted = dprev || [];
-                const exists = (() => {
-                  if (!sel) return false;
-                  if (sel.id && Number(sel.id) !== 0) {
-                    return prevDeleted.some((p) => Number(p.id) === Number(sel.id));
-                  }
-                  if (sel._localId && prevDeleted.some((p) => p._localId === sel._localId)) return true;
-                  if (sel.code && sel.name) {
-                    return prevDeleted.some((p) => p.code === sel.code && p.name === sel.name && p.parentId === sel.parentId);
-                  }
-                  return false;
-                })();
-                const dnew = exists ? prevDeleted : [...prevDeleted, sel];
-                if (typeof onChange === 'function') onChange(updated, dnew);
-                try { console.log('Proposal materials changed (debug) - delete:', { updated, deleted: dnew }); } catch (err) {}
-                return dnew;
-              });
-              return updated;
-            });
+            const updatedDel = (localItems || []).filter((p) => p._localId !== (sel._localId || confirmTarget._localId));
+            const prevDeleted = deletedChildren || [];
+            const alreadyDeleted = (() => {
+              if (!sel) return false;
+              if (sel.id && Number(sel.id) !== 0) {
+                return prevDeleted.some((p) => Number(p.id) === Number(sel.id));
+              }
+              if (sel._localId && prevDeleted.some((p) => p._localId === sel._localId)) return true;
+              if (sel.code && sel.name) {
+                return prevDeleted.some((p) => p.code === sel.code && p.name === sel.name && p.parentId === sel.parentId);
+              }
+              return false;
+            })();
+            const dnew = alreadyDeleted ? prevDeleted : [...prevDeleted, sel];
+            setLocalItems(updatedDel);
+            setDeletedChildren(dnew);
+            if (typeof onChange === 'function') onChange(updatedDel, dnew);
+            try { console.log('Proposal materials changed (debug) - delete:', { updated: updatedDel, deleted: dnew }); } catch (err) {}
           }
           setIsConfirmOpen(false);
           setConfirmTarget(null);

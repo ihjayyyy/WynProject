@@ -23,8 +23,7 @@ export default function ProjectFinanceTab({ projectId, project, editable }) {
         merged = { ...INITIAL_PROJECT_FINANCE, ...financeData };
       } else {
         // Default lastBillingDate to today
-        const today = new Date().toISOString().split('T')[0];
-        merged = { ...INITIAL_PROJECT_FINANCE, projectId, lastBillingDate: today };
+        merged = { ...INITIAL_PROJECT_FINANCE, projectId, lastBillingDate: new Date().toISOString() };
       }
       // Use project prop for code and name
       if (project) {
@@ -59,9 +58,13 @@ export default function ProjectFinanceTab({ projectId, project, editable }) {
       payload.code = project.code || '';
       payload.name = project.name || '';
     }
-    // Ensure lastBillingDate is never null or empty
+    // Ensure lastBillingDate is a full ISO datetime string
     if (!payload.lastBillingDate) {
-      payload.lastBillingDate = new Date().toISOString().split('T')[0];
+      payload.lastBillingDate = new Date().toISOString();
+    } else {
+      // If it's a date-only string (YYYY-MM-DD), append time to make it a valid ISO datetime
+      const d = new Date(payload.lastBillingDate);
+      payload.lastBillingDate = isNaN(d.getTime()) ? new Date().toISOString() : d.toISOString();
     }
     payload = cleanPayload(payload);
     if (finance && finance.id) {
