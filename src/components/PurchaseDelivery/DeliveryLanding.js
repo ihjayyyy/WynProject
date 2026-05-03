@@ -1,52 +1,43 @@
 'use client';
 
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { FiEdit2, FiEye } from 'react-icons/fi';
 import DropdownAction from '../ui/DropdownAction/DropdownAction';
 import Landing from '../ui/Landing/Landing';
+import { GetAll } from '@/services/PurchaseDelivery';
 import { deliveries as sampleDeliveries } from './deliveriesData';
 import { orders as sampleOrders } from '../PurchaseOrders/ordersData';
 // import { sampleSuppliers } from '../Suppliers/suppliersData';
 const sampleSuppliers = [];
 const baseColumns = [
-  { header: 'Id', key: 'id' },
-  { header: 'Code', key: 'code' },
-  { header: 'Name', key: 'name' },
-  {
-    header: 'Order Id',
-    key: 'orderId',
-    render: (item) => {
-      const found = sampleOrders.find((o) => o.id === item.orderId || o.code === item.orderId);
-      return found ? `${found.code}` : item.orderId;
-    },
-  },
+   { header: 'Delivery Date', key: 'deliveryDate' },
+  { header: 'Delivery No', key: 'deliveryNumber' },
+  { header: 'Supplier', key: 'name' },
+  { header: 'Order No', key: 'orderNumber' },
+  { header: 'Supplier DR No', key: 'supplierDRNumber' },
+  { header: 'Received By', key: 'receivedBy' },
   { header: 'Status', key: 'status' },
-  { header: 'Items', key: 'itemsCount', render: (item) => (item.items || []).length },
-  {
-    header: 'Qty',
-    key: 'qty',
-    render: (item) => (item.items || []).reduce((s, it) => s + (it.qty || 0), 0),
-  },
-  {
-    header: 'Supplier',
-    key: 'supplierName',
-    render: (item) => {
-      const supplierId = (item.items && item.items[0] && item.items[0].supplierId) || item.supplier?.id;
-      if (!supplierId) return '';
-      const found = sampleSuppliers.find(
-        (s) => s.id === supplierId || s.code === supplierId || s.name === supplierId
-      );
-      return found ? found.name : supplierId;
-    },
-  },
-  { header: 'UpdatedBy', key: 'updatedBy' },
-  { header: 'UpdatedDate', key: 'updatedDate' },
+  
+
 ];
 
 export default function DeliveryLanding() {
-  const [deliveries] = useState(sampleDeliveries);
+  const [deliveries, setDeliveries] = useState([]);
   const router = useRouter();
+
+  useEffect(()=>{
+    const fetchDeliveries = async() => {
+
+    const res = await GetAll();
+    console.log(res)
+     if(res && !res.error){
+          setDeliveries(res.data);
+     }
+   }
+
+   fetchDeliveries();
+  },[])
 
   const actionItems = useMemo(
     () => [
@@ -60,14 +51,8 @@ export default function DeliveryLanding() {
 
   const stats = useMemo(() => {
     const total = deliveries.length;
-    const totalItems = deliveries.reduce((s, d) => s + (d.items || []).length, 0);
-    const totalQty = deliveries.reduce((s, d) => s + (d.items || []).reduce((ss, it) => ss + (it.qty || 0), 0), 0);
-    const orders = new Set(deliveries.map((d) => d.orderId).filter(Boolean)).size;
     return [
       { key: 'total', label: 'Total Deliveries', number: total, change: `${total} records`, isPositive: true },
-      { key: 'items', label: 'Items', number: totalItems, change: `${totalItems} items`, isPositive: true },
-      { key: 'qty', label: 'Total Qty', number: totalQty, change: `${totalQty} units`, isPositive: true },
-      { key: 'orders', label: 'Related Orders', number: orders, change: `${orders} unique`, isPositive: true },
     ];
   }, [deliveries]);
 

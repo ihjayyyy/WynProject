@@ -76,8 +76,8 @@ export default function WarehouseForm() {
   }, [warehouseId, isEditMode]);
 
   const fields = [
-    { name: 'name', label: 'Name', span: 'span2' },
     { name: 'code', label: 'Code', span: 'span2' },
+    { name: 'name', label: 'Name', span: 'span2' },
     { name: 'location', label: 'Location', span: 'span2' },
   ];
 

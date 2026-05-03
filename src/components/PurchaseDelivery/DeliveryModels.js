@@ -39,7 +39,7 @@ import * as Yup from "yup";
                   return;
                }
           const valuesCopy = { ...values, 
-            orderNumber:found.code,
+            orderNumber:found.orderNumber,
          };
           if (found) setValues(valuesCopy);
          onFieldhanged("orderId", val, valuesCopy); 
@@ -58,7 +58,7 @@ import * as Yup from "yup";
     { header: 'UOM', key: 'uom', width: '60px', render: (it) =>{return(it.uom)}},
     { header: 'Order Qty', key: 'orderQuantity', align: 'right', width: '80px', render: (it) => (it.orderQuantity).toFixed(0) },
     { header: 'Previous Bal', key: 'previousBalance', align: 'right', width: '80px', render: (it) => (it.previousBalance).toFixed(0) },
-    { header: 'Delivered Qty', key: 'quantity', align: 'right', width: '80px', render: (it) => (it.quantity).toFixed(0) + ' ' + it.uom},
+    { header: 'Delivered Qty', key: 'quantity', align: 'right', width: '80px', render: (it) => (it.quantity).toFixed(0)},
     { header: 'Remaining Bal', key: 'remainingBalance', align: 'right', width: '80px', render: (it) => (it.remainingBalance).toFixed(0)},
     { header: 'Remarks', key: 'remarks', width: '200px', render: (it) =>{return(it.remarks)}},
  ];
@@ -66,7 +66,7 @@ import * as Yup from "yup";
  export  const ItemsFields  = (materials,dr) =>([
            {name:'id', label:'id', type:'number',  hidden:true, initialvalue:0},
             {name:'parentId', label:'id', type:'number',  hidden:true, initialvalue:0},
-            {name:'material', label:'Material', type:'select', options:materials.map(({ id, name }) =>  ({ value:id, name:name })), readonly:false, 
+            {name:'materialId', label:'Material', type:'select', options:materials.map(({ id, name }) =>  ({ value:id, name:name })), readonly:false, 
               initialvalue:"",
                validator : Yup.string().required(`Material is required`),
                onChange : (item, updateField, fields) => {
@@ -80,6 +80,7 @@ import * as Yup from "yup";
                   updateField("code", material.code);
                   updateField("name", material.name);
                   updateField("uom", material.purchaseUnitOfMeasure);
+                  console.log(dr)
 
                   //get
 
@@ -96,9 +97,11 @@ import * as Yup from "yup";
                                                  .positive("Quantity must be greater than 0.")
                                                  .min(1, "Quantity must be greater than 0."),
                           onChange : (item, updateField, fields) => {
-                              console.log("quantity changed:",item.quantity)
+                              console.log("quantity changed:",item.value,fields)
+
+                               const previousBalance = fields.find(a=>a.name === 'previousBalance');
                               //calculate remaining balance
-                              const bal = item.previousBalance > 0 ? item.previousBalance - item.quantity : item.quantity
+                              const bal = previousBalance.value > 0 ? previousBalance.value - item.value : item.value
                               updateField("remainingBalance", bal);
                            },                  
                         },

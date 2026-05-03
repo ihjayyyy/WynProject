@@ -91,6 +91,7 @@ export default function DetailsTable({ itemModalHeader, columns = [], data = { i
   };
 
   const loadItem = (data) => {
+    console.log(data)
     const itemKeyValue = Object.entries(data).map(([key, value]) => ({
       key: key,
       value: value

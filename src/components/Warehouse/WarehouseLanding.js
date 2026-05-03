@@ -9,6 +9,7 @@ import { getWarehouses } from '../../services/Warehouse';
 
 const baseColumns = [
   { header: 'Id', key: 'id' },
+  { header: 'Code', key: 'code' },
   { header: 'Name', key: 'name' },
   { header: 'Location', key: 'location' },
   { header: 'UpdatedBy', key: 'updatedBy' },
@@ -25,6 +26,7 @@ export default function WarehouseLanding() {
     async function fetchData() {
       setLoading(true);
       const result = await getWarehouses();
+      console.log(result)
       setLoading(false);
       if (!mounted) return;
       if (result.error) {

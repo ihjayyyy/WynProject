@@ -12,7 +12,7 @@ import Button from '../ui/Button/Button';
 import { getSuppliers } from '@/services/Supplier';
 import { getMaterials } from '@/services/Materials';
 import {Get as GetPO, GetOrdersBySupplier} from '@/services/PurchaseOrder';
-import { InitialData, Create, Get, Update, SubmitForApproval, Approve, Reject, SetStatus } from '@/services/PurchaseOrder';
+import { InitialData, Create, Get, Update, ConfirmDelivery } from '@/services/PurchaseDelivery';
 import { useToast } from '../ui/Toast/Toast';
 import InvalidPage from '@/components/InvalidPage/page';
 import { AccessContext } from '@/app/contextProviders/accessContext';
@@ -107,15 +107,6 @@ const confirmLoadOrders = async(orderId)=>{
          confirmLoadOrders(value);
       }
 
-
-    //   const children = formData.children.map(d => {
-    //   }
-    //   );
-    //   console.log(children)
-    //   setForm({...formData,...updatedformData, children:children})
-    //   setTableData({...tableData,items:children})
-
-
   }      
 
     const formFields = FormFields(suppliers,orders,onFormChange); 
@@ -185,8 +176,8 @@ const isReadOnly  = useMemo(() => {
 
 //Set Form Title
 const formTitle = useMemo(() => {
-    const title =  formData &&  formData.status ? po.delveryNumber : 'New Purchase Delivery';
-   return <div className={EntityStyle.formTitle}><span>{title}</span>{formData.status && <span className={EntityStyle.status}>{po.status}</span>}</div>
+    const title =  formData &&  formData.status ? formData.deliveryNumber : 'New Purchase Delivery';
+   return <div className={EntityStyle.formTitle}><span>{title}</span>{formData.status && <span className={EntityStyle.status}>{formData.status}</span>}</div>
 }, [formData]);
 
 //when child table changed
@@ -235,7 +226,7 @@ const handleSaveConfirm =(entity)=>{
     console.log(updatedform)
     
     let res = {};
-    updatedform.id = updatedPO.id === null ?? 0;
+    updatedform.id = updatedform.id === null ?? 0;
 
     updatedform.id == 0 ? res =  await Create(updatedform) : res = await Update(updatedform.id,updatedform);
     console.log(res);
@@ -249,6 +240,63 @@ const handleSaveConfirm =(entity)=>{
     }
 
   }
+
+  const handleSubmitConfirm =()=>{
+      const title = "Comfirm Delivery";
+      const message = "Are you sure you want to confim this delivery?";
+      const confirmText = "Submit";
+      const variant="primary";
+      const action = ()=> async ()=>await submitForDelivery();
+      confirmModal.show(title,message,confirmText,variant, action);
+}
+
+const submitForDelivery = async()=>{
+    //setMode("edit");
+    const res = await ConfirmDelivery(formData.id);
+    console.log(res)
+   if (res?.error) {
+      toast.error('Failed to submit purchase delivery.');
+      return null;
+    }
+    else {
+      toast.success('Purchase Delivery has been completed.');
+      router.push(backPath);  
+    }
+
+
+}
+      const handleCancelDeliveryConfirm =()=>{
+      const title = "Cancel Delivery";
+      const message = "Are you sure you want to cancel this Delivery?";
+      const confirmText = "Cancel Delivery";
+      const variant="primary";
+      const action = ()=> async ()=>await CancelDelivery();
+      confirmModal.show(title,message,confirmText,variant, action);
+}
+
+  const CancelDelivery = async()=>{
+    setMode("view");
+    const res = await SetStatus('Cancel', formData.id);
+
+    if (res?.error) {
+      toast.error('Failed to submit purchase delivery.' );
+      return null;
+    }
+    else {
+      toast.success('Purchase Delivery has been cancelled.');
+      router.push(backPath);  
+    }
+
+  }
+
+    const handleCanceEditConfirm =()=>{
+      const title = "Cancel Edit";
+      const message = "Are you sure you want to cancel editing of this Delivery?";
+      const confirmText = "Cancel Edit";
+      const variant="danger";
+      const action = ()=> ()=>CancelEdit();
+      confirmModal.show(title,message,confirmText,variant, action);
+}
 
   const CancelEdit = () =>{
     setMode('view');
@@ -278,15 +326,15 @@ const handleSaveConfirm =(entity)=>{
     <div  className={EntityStyle.buttonsContainer}>
         {formData && formData.status && (formData.status.toLowerCase() === 'draft' || formData.status.toLowerCase() === 'rejected') 
               && <Button onClick={()=>setMode("edit")} variant="save">Edit</Button>}
-        {formData && formData.status && formData.status.toLowerCase() === 'draft'  && <Button onClick={handleSubmitConfirm} variant="save">Submit For Approval</Button>}  
+        {formData && formData.status && formData.status.toLowerCase() === 'draft'  && <Button onClick={handleSubmitConfirm} variant="save">Deliver</Button>}  
     </div> : null;
   }
 
     const CanceButton = () =>{
     return isAllowed(PageName, 'w') && formId && mode === 'view' ?
     <div  className={EntityStyle.buttonsContainer}>
-        {formData && formData.status && (formData.status.toLowerCase() !== 'ordered' && formData.status.toLowerCase() !== 'cancelled' && formData.status.toLowerCase() !== 'archived')  
-        && <Button onClick={handleCancelConfirm} variant="danger">Cancel PR</Button>}
+        {formData && formData.status && (formData.status.toLowerCase() !== 'delivered' && formData.status.toLowerCase() !== 'cancelled' && formData.status.toLowerCase() !== 'archived')  
+        && <Button onClick={handleCancelDeliveryConfirm} variant="danger">Cancel DR</Button>}
     </div> : null;
   }
 

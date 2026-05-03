@@ -1,4 +1,4 @@
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL + "/PurchaseOrder";
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL + "/PurchaseDelivery";
 
  export  const InitialData = {
         "name": "",
@@ -14,6 +14,7 @@ const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL + "/PurchaseOrder";
         "receivedBy": "",
         "supplierDRNumber": "",
         "status": "",
+        "orderId": 0,
         "orderNumber": "",
         "requestNumber":"",
     };
@@ -31,7 +32,7 @@ async function GetAll() {
     }
 }
 
-async function GetOrdersByStatus(status) {
+async function GetDRsByStatus(status) {
     try {
         const res = await fetch(API_BASE_URL + "/status/" + status, {
             method: 'GET',
@@ -101,6 +102,10 @@ async function SubmitForApproval(id) {
     return SetStatus('Submit',id)
 }
 
+async function ConfirmDelivery(id) {
+    return SetStatus('Deliver',id)
+}
+
 async function Approve(id) {
     return SetStatus('Approve',id)
 }
@@ -122,24 +127,26 @@ async function SetStatus(status, id) {
 }
 export {
     GetAll,
-    GetOrdersByStatus,
+    GetDRsByStatus,
     Get,
     Create,
     Update,
     SetStatus,
     SubmitForApproval,
+    ConfirmDelivery,
     Approve,
     Reject,
 }
 
 export default{
     GetAll,
-    GetOrdersByStatus,
+    GetDRsByStatus,
     Get,
     Create,
     Update,
     SetStatus,
     SubmitForApproval,
+    ConfirmDelivery,
     Approve,
     Reject
 }
