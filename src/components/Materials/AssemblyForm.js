@@ -18,10 +18,16 @@ export default function AssemblyForm() {
       const { getUnitsOfMeasure } = await import('../../services/UnitOfMeasure');
       const res = await getUnitsOfMeasure();
       if (mounted && res.data) {
-        setUomOptions((res.data || []).map(uom => ({
-          label: uom.name || uom.code,
-          value: uom.name || uom.code,
-        })));
+        const seen = new Set();
+        setUomOptions(
+          (res.data || [])
+            .map(uom => ({ label: uom.name || uom.code, value: uom.name || uom.code }))
+            .filter(opt => {
+              if (seen.has(opt.value)) return false;
+              seen.add(opt.value);
+              return true;
+            })
+        );
       }
     })();
     return () => { mounted = false; };
@@ -98,7 +104,8 @@ export default function AssemblyForm() {
   const fields = [
     { name: 'code', label: 'Code', span: 'span2' },
     { name: 'name', label: 'Name', span: 'span2' },
-    // { name: 'referenceNumber', label: 'Reference Number', span: 'span2' },
+        { name: 'sellingPrice', label: 'Selling Price', type: 'number', span: 'span2' },
+
     {
       name: 'unitOfMeasure',
       label: 'UOM',

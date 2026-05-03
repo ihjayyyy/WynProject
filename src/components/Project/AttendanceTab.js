@@ -31,13 +31,11 @@ function getCurrentWorkingWeek() {
   start.setDate(today.getDate() + mondayOffset);
 
   const end = new Date(start);
-  end.setDate(start.getDate() + 4);
-
-  const cappedEnd = today < end ? today : end;
+  end.setDate(start.getDate() + 6); // Sunday
 
   return {
     startDate: toDateInputValue(start),
-    endDate: toDateInputValue(cappedEnd),
+    endDate: toDateInputValue(end),
   };
 }
 

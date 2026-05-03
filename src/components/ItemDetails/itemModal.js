@@ -31,7 +31,7 @@ const ItemModal = ({ headerLabel, mode = "new", itemIndex = -1, isOpen, onClose,
   // Sync itemFields from props only when field names/values actually change
   const prevFieldsRef = useRef(null);
   useEffect(() => {
-    const next = JSON.stringify((fields || []).map(f => ({ name: f.name, value: f.value })));
+    const next = JSON.stringify((fields || []).map(f => ({ name: f.name, value: f.value, optionsLen: (f.options || []).length })));
     if (prevFieldsRef.current === next) return;
     prevFieldsRef.current = next;
     setFields([...fields]);

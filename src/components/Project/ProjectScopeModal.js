@@ -57,6 +57,13 @@ export default function ProjectScopeModal({ open, initial = {}, onCancel, onConf
       hidden: true,
       validator: Yup.number().notRequired(),
     },
+        {
+      name: 'code',
+      label: 'Code',
+      type: 'text',
+      value: form.code || '',
+      validator: Yup.string().notRequired(),
+    },
     {
       name: 'name',
       label: 'Name',
@@ -65,10 +72,10 @@ export default function ProjectScopeModal({ open, initial = {}, onCancel, onConf
       validator: Yup.string().required('Name is required'),
     },
     {
-      name: 'code',
-      label: 'Code',
+      name: 'description',
+      label: 'Description',
       type: 'text',
-      value: form.code || '',
+      value: form.description || '',
       validator: Yup.string().notRequired(),
     },
     {
@@ -77,6 +84,7 @@ export default function ProjectScopeModal({ open, initial = {}, onCancel, onConf
       type: 'number',
       value: Number(form.percentage) || 0,
       validator: Yup.number().min(0).notRequired(),
+      hidden: true,
     },
     {
       name: 'milestoneDate',
@@ -111,13 +119,6 @@ export default function ProjectScopeModal({ open, initial = {}, onCancel, onConf
       label: 'Actual End',
       type: 'date',
       value: form.actualEndDate ? String(form.actualEndDate).split('T')[0] : '',
-      validator: Yup.string().notRequired(),
-    },
-    {
-      name: 'description',
-      label: 'Description',
-      type: 'text',
-      value: form.description || '',
       validator: Yup.string().notRequired(),
     },
   ], [form]);

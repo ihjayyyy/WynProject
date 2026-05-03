@@ -19,7 +19,7 @@ const BASE_COLUMNS = [
   { header: 'Name', key: 'name' },
   { header: 'Code', key: 'code' },
   { header: 'Job', key: 'job' },
-  { header: 'Expenses', key: 'expenses', render: (it) => Number(it.expenses) || 0 },
+  { header: 'Rate Per hour', key: 'expenses', render: (it) => Number(it.expenses) || 0 },
 ];
 
 function getFieldValue(itemFields, fieldName, fallback = '') {
@@ -82,6 +82,14 @@ export default function ProjectStaffTab({ projectId = 0 }) {
         hidden: true,
         validator: Yup.string().notRequired(),
       },
+            {
+        name: 'scopeId',
+        label: 'Scope',
+        type: 'select',
+        value: record.scopeId ? String(record.scopeId) : '',
+        options: selectableScopes,
+        validator: Yup.number().notRequired(),
+      },
       {
         name: 'staffId',
         label: 'Staff Member',
@@ -94,6 +102,7 @@ export default function ProjectStaffTab({ projectId = 0 }) {
           updateField('name', selected?.name || selected?.label || '');
           updateField('code', selected?.code || '');
           updateField('expenses', Number(selected?.ratePerHour) || 0);
+          updateField('job', selected?.job || '');
         },
       },
       {
@@ -105,18 +114,10 @@ export default function ProjectStaffTab({ projectId = 0 }) {
       },
       {
         name: 'expenses',
-        label: 'Expenses',
+        label: 'Rate Per hour',
         type: 'number',
         value: Number(record.expenses) || 0,
         readonly: true,
-        validator: Yup.number().notRequired(),
-      },
-      {
-        name: 'scopeId',
-        label: 'Scope',
-        type: 'select',
-        value: record.scopeId ? String(record.scopeId) : '',
-        options: selectableScopes,
         validator: Yup.number().notRequired(),
       },
     ];

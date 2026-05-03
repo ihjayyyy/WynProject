@@ -129,9 +129,9 @@ export default function Select({ id, value, onChange, options = [], className, s
           {filtered.length === 0 && (
             <li className={styles.noResults}>No results found</li>
           )}
-          {filtered.map(opt => (
+          {filtered.map((opt, i) => (
             <li
-              key={opt.value}
+              key={`${opt.value}_${i}`}
               role="option"
               aria-selected={opt.value === value}
               className={styles.dropdownItem + (opt.value === value ? ` ${styles.selectedItem}` : '')}
@@ -145,9 +145,9 @@ export default function Select({ id, value, onChange, options = [], className, s
             {filtered.length === 0 && (
               <li className={styles.noResults}>No results found</li>
             )}
-            {filtered.map(opt => (
+            {filtered.map((opt, i) => (
               <li
-                key={opt.value}
+                key={`${opt.value}_${i}`}
                 role="option"
                 aria-selected={opt.value === value}
                 className={styles.dropdownItem + (opt.value === value ? ` ${styles.selectedItem}` : '')}

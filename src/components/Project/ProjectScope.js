@@ -148,15 +148,17 @@ export default function ProjectScope({ projectId = 0, editable = true }) {
               scopeOfWork: c.scopeOfWork || scopeName || 'General',
               parentId: c.parentId ?? scope.id ?? projectId,
               _localId: c._localId || `srv-${scope.id || ''}-${c.id || Math.floor(Math.random()*10000)}`,
+              _scopeId: scope.id,
             });
           });
         } else {
-          // No children: just ensure the group header will be created by adding a dummy entry to a set
+          // No children: add a placeholder so the group header still renders
           flattened.push({
             __isScopeHeaderOnly: true,
             scopeOfWork: scopeName || 'General',
             parentId: scope.id ?? projectId,
             id: scope.id,
+            _scopeId: scope.id,
           });
         }
       });
@@ -184,7 +186,8 @@ export default function ProjectScope({ projectId = 0, editable = true }) {
   const groups = useMemo(() => {
     const map = {};
     (filtered || []).forEach((it) => {
-      const key = it.scopeOfWork || 'General';
+      // Key by _scopeId when available so scopes with the same name don't collapse
+      const key = it._scopeId != null ? `__scope_${it._scopeId}` : (it.scopeOfWork || 'General');
       if (!map[key]) map[key] = [];
       map[key].push(it);
     });
@@ -248,42 +251,38 @@ export default function ProjectScope({ projectId = 0, editable = true }) {
   }
 
   const data = [];
-  groupKeys.forEach((scope) => {
-    const rows = groups[scope];
+  groupKeys.forEach((scopeKey) => {
+    const rows = groups[scopeKey];
+    // Get display label and scope object from the first item in the group
+    const firstItem = rows[0];
+    const scopeLabel = firstItem ? (firstItem.scopeOfWork || 'General') : scopeKey;
+    const scopeId = firstItem ? firstItem._scopeId : null;
+    const scopeObj = scopeId != null
+      ? (scopesList || []).find(s => s.id === scopeId)
+      : (scopesList || []).find(s => (s.description && s.description === scopeLabel) || (s.name && s.name === scopeLabel) || (s.code && s.code === scopeLabel));
+
     const materialTotal = rows.reduce((s, r) => s + (Number(r.materialCost) || 0), 0);
     const laborTotal = rows.reduce((s, r) => s + (Number(r.laborCost) || 0), 0);
     const totalPrice = rows.reduce((s, r) => s + (Number(r.totalPrice || r.totalAmount) || 0), 0);
 
     data.push({
-      id: `${scope}-header`,
+      id: `${scopeKey}-header`,
       fullRow: true,
       fullRowContent: (
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <div className={styles.groupHeader}>
             <span className={styles.groupHeaderLabel}>Scope of Work:</span>
             <span className={styles.scopeName}>
-              {scope}
-              {(() => {
-                const found = (scopesList || []).find(
-                  s =>
-                    (s.description && s.description === scope) ||
-                    (s.name && s.name === scope) ||
-                    (s.code && s.code === scope)
-                );
-                return found && typeof found.scopeProgress !== 'undefined'
-                  ? ` (${found.scopeProgress}%)`
-                  : '';
-              })()}
+              {scopeLabel}
+              {scopeObj && typeof scopeObj.scopeProgress !== 'undefined' ? ` (${scopeObj.scopeProgress}%)` : ''}
             </span>
           </div>
           <div className={styles.scopeActions}>
             {editable && (
               <>
-                <Button size="sm" variant="outlinedPrimary" className={styles.btnSmall} icon={<FiPlus />} title="Add Material" onClick={() => { setMaterialEditing(null); setMaterialScopeTarget(scope); setIsMaterialModalOpen(true); }} />
+                <Button size="sm" variant="outlinedPrimary" className={styles.btnSmall} icon={<FiPlus />} title="Add Material" onClick={() => { setMaterialEditing(null); setMaterialScopeTarget(scopeLabel); setIsMaterialModalOpen(true); }} />
                 <Button size="sm" variant="outlinedPrimary" className={styles.btnSmall} icon={<FiEdit2 />} title="Edit Scope" onClick={() => {
-                  // find scope object from scopesList by matching name/code/description
-                  const found = (scopesList || []).find(s => (s.description && s.description === scope) || (s.name && s.name === scope) || (s.code && s.code === scope));
-                  setScopeEditing(found || scope);
+                  setScopeEditing(scopeObj || scopeLabel);
                   setIsScopeModalOpen(true);
                 }} />
               </>
@@ -300,7 +299,7 @@ export default function ProjectScope({ projectId = 0, editable = true }) {
         return;
       }
       const hasSavedId = r && r.id !== undefined && Number(r.id) !== 0;
-      const rowKey = hasSavedId ? r.id : (r._localId || `row-${scope}-${Math.random()}`);
+      const rowKey = hasSavedId ? r.id : (r._localId || `row-${scopeKey}-${Math.random()}`);
       data.push({
         ...r,
         id: hasSavedId ? r.id : rowKey,
@@ -309,7 +308,7 @@ export default function ProjectScope({ projectId = 0, editable = true }) {
       });
     });
 
-    data.push({ id: `${scope}-total`, isTotalRow: true, code: '', name: '', quantity: '', unitCost: '', materialCost: materialTotal, laborCost: laborTotal, totalPrice: totalPrice });
+    data.push({ id: `${scopeKey}-total`, isTotalRow: true, code: '', name: '', quantity: '', unitCost: '', materialCost: materialTotal, laborCost: laborTotal, totalPrice: totalPrice });
   });
 
   return (

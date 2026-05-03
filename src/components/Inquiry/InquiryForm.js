@@ -77,9 +77,13 @@ export default function InquiryForm() {
       ...prev,
       customerId,
       contactPerson: selected.customerName || prev.contactPerson || '',
+      // attention: selected.customerName || prev.attention || '',
+      name: selected.name || prev.name || '',
+      companyName: selected.name || prev.companyName || '',
       address:       selected.address       || prev.address       || '',
       email:         selected.email         || prev.email         || '',
       contactNumber: selected.contactNumber || prev.contactNumber || '',
+      code:          selected.code          || prev.code          || '',
     }));
 
     // Remount the form so EntityForm picks up the new initialValues
@@ -99,42 +103,45 @@ export default function InquiryForm() {
   }, [inquiryId, isEditMode]);
 
   const fields = [
-    {
-      name: 'customerId',
-      label: 'Customer',
-      type: 'select',
-      span: 'span1',
-      options: customerOptions,
-      searchable: true,
-      required: true,
-      onChange: handleCustomerChange,
-      hidden: () => !!inquiryId && !isEditMode, // Hide only in view mode for existing inquiries
-    },
-    { name: 'spacer-8', type: 'spacer', span: 'span2', hidden: () => !!inquiryId && !isEditMode, },
-
-    { name: 'companyName', label: 'Company Name', span: 'span1' },
+{
+  name: 'customerId',
+  label: 'Customer',
+  type: 'select',
+  span: 'span1',
+  options: customerOptions,
+  searchable: true,
+  required: true,
+  onChange: handleCustomerChange,
+  hidden: () => !!inquiryId && !isEditMode, // hide in view mode
+},
+{
+  name: 'companyName',
+  label: 'Company Name',
+  span: 'span1',
+  hidden: () => !inquiryId || isEditMode, // hide in create or edit mode
+},
     { name: 'spacer-1', type: 'spacer', span: 'span1' },
-    { name: 'code', label: 'Code', span: 'span1' },
+    { name: 'code', label: 'Code', span: 'span1', readOnly:true },
 
-    { name: 'name', label: 'Name', span: 'span1' },
+    { name: 'contactPerson', label: 'Contact Person', span: 'span1' },
+    { name: 'name', label: 'Name', span: 'span1',hidden:true },
     { name: 'spacer-2', type: 'spacer', span: 'span1' },
     { name: 'preparedBy', label: 'Prepared By', span: 'span1' },
 
-    { name: 'contactPerson', label: 'Contact Person', span: 'span1' },
+    { name: 'email', label: 'Email', type: 'email', span: 'span1' },
     { name: 'spacer-3', type: 'spacer', span: 'span1' },
     { name: 'notedBy', label: 'Noted By', span: 'span1' },
 
-    { name: 'email', label: 'Email', type: 'email', span: 'span1' },
-    { name: 'spacer-4', type: 'spacer', span: 'span1' },
-    { name: 'reference', label: 'Reference', span: 'span1' },
-
     { name: 'contactNumber', label: 'Contact Number', type: 'tel', span: 'span1' },
-    { name: 'spacer-5', type: 'spacer', span: 'span1' },
+    { name: 'spacer-4', type: 'spacer', span: 'span1' },
     { name: 'date', label: 'Date', type: 'date', span: 'span1' },
 
     { name: 'attention', label: 'Attention', span: 'span1' },
+    { name: 'reference', label: 'Reference', span: 'span1',hidden:true },
+
     { name: 'spacer-6', type: 'spacer', span: 'span1' },
     { name: 'spacer-7', type: 'spacer', span: 'span1' },
+
 
     { name: 'address', label: 'Address', span: 'span3', multiline: true, rows: 2 },
     { name: 'details', label: 'Details', multiline: true, rows: 4, span: 'span3' },

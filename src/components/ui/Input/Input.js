@@ -80,6 +80,16 @@ export default function Input({
             // For date inputs, prefer the provided value; fall back to today only when value is empty
             value={type === 'date' ? value || today : value}
             onChange={onChange}
+            onFocus={type === 'number' ? (e) => {
+              if (Number(e.target.value) === 0) {
+                onChange && onChange({ target: { name: e.target.name, value: '' } });
+              }
+            } : undefined}
+            onBlur={type === 'number' ? (e) => {
+              if (e.target.value === '') {
+                onChange && onChange({ target: { name: e.target.name, value: '0' } });
+              }
+            } : undefined}
             readOnly={readOnly}
             {...props}
           />

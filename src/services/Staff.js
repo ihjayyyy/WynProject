@@ -4,6 +4,7 @@ export const INITIAL_STAFF = {
   name: '',
   code: '',
   job: '',
+  department: '',
   ratePerHour: 0,
 };
 

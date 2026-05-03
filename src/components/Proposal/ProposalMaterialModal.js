@@ -192,7 +192,7 @@ export default function ProposalMaterialModal({ open, initial = {}, onCancel, on
       },
     },
     { name: 'vat', label: 'VAT', type: 'number', value: Number(calculatedForm.vat) || 0, readonly: true, validator: Yup.number().notRequired() },
-    { name: 'materialCost', label: 'Material Cost', type: 'number', value: Number(calculatedForm.materialCost) || 0, readonly: true, validator: Yup.number().notRequired() },
+    { name: 'materialCost', label: 'Material Amount', type: 'number', value: Number(calculatedForm.materialCost) || 0, readonly: true, validator: Yup.number().notRequired() },
     {
       name: 'laborCost',
       label: 'Labor Cost (Editable)',
@@ -207,8 +207,9 @@ export default function ProposalMaterialModal({ open, initial = {}, onCancel, on
         updateField('extendedCost', total);
         updateField('totalPrice', total);
       },
+      hidden: true,
     },
-    { name: 'totalAmount', label: 'Total Amount', type: 'number', value: Number(calculatedForm.totalAmount) || 0, readonly: true, validator: Yup.number().notRequired() },
+    { name: 'totalAmount', label: 'Total Amount', type: 'number', value: Number(calculatedForm.totalAmount) || 0, readonly: true, validator: Yup.number().notRequired(), hidden: true },
     { name: 'margin', label: 'Margin', type: 'number', value: Number(calculatedForm.margin) || 0, hidden: true, validator: Yup.number().notRequired() },
     { name: 'extendedCost', label: 'Extended Cost', type: 'number', value: Number(calculatedForm.extendedCost) || 0, hidden: true, validator: Yup.number().notRequired() },
     { name: 'isAssembly', label: 'Is Assembly', type: 'checkbox', value: Boolean(calculatedForm.isAssembly), hidden: true, validator: Yup.boolean().notRequired() },
@@ -271,14 +272,12 @@ export default function ProposalMaterialModal({ open, initial = {}, onCancel, on
         const shouldKeepOpen = keepOpenOnSave && !isEditMode;
         onConfirm && onConfirm(payload, { closeModal: !shouldKeepOpen });
 
-        if (shouldKeepOpen) {
-          // Reset all fields to default except parentId and scopeOfWork
-          setForm({
-            ...DEFAULT_FORM,
-            parentId: Number(payload.parentId) || 0,
-            scopeOfWork: payload.scopeOfWork || '',
-          });
-        }
+        // Always reset form after save
+        setForm({
+          ...DEFAULT_FORM,
+          parentId: Number(payload.parentId) || 0,
+          scopeOfWork: payload.scopeOfWork || '',
+        });
       }}
     />
   );
