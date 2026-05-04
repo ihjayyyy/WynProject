@@ -48,13 +48,18 @@ import * as Yup from "yup";
                   onFieldhanged("purchaseOrderId", val, clearedValues);
                   return;
                }
-          const valuesCopy = { ...values, 
+            var today = new Date();
+            var dueDate = today.setDate(today.getDate() + found.terms);   
+            console.log(dueDate)
+            const valuesCopy = { ...values, 
             orderNumber:found.orderNumber,
             contactNumber:found.contactNumber,
             contactPerson:found.contactPerson,
             email:found.email,
             address:found.address,
-            vatType:found.vatType
+            vatType:found.vatType,
+            terms:found.terms,
+            dueDate:dueDate
          };
           if (found) setValues(valuesCopy);
          onFieldhanged("purchaseOrderId", val, valuesCopy); 

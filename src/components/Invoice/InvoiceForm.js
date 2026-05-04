@@ -78,7 +78,7 @@ export default function PurchaseInvoiceForm() {
   const loadOrders = async(orderId) =>{
      const res = await GetPO(orderId);
      console.log(res);
-  
+
       const children = res.data.children.map(d => {
           var orderItem = {
               id: 0,
@@ -88,6 +88,7 @@ export default function PurchaseInvoiceForm() {
               code: d.code,
               name: d.name,
               uom: d.uom,
+
               orderQuantity: d.quantity,
               quantity: d.orderBalance,
               previousBalance: d.orderBalance,
@@ -97,7 +98,7 @@ export default function PurchaseInvoiceForm() {
               return orderItem;
           }
       );
-     console.log(children)
+
      setForm({...formData, children:children})
      setTableData({...tableData,items:children})
   
