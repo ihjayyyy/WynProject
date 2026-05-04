@@ -190,7 +190,7 @@ const updatePOItemFields = ()=>{
     var poitems = POItemsFields(materials,po);
     console.log(poitems)
     setPOItemFields(poitems);
-  }
+}
 
 const handleSaveConfirm =(entity)=>{
   console.log(entity)
@@ -261,7 +261,7 @@ const handleSaveConfirm =(entity)=>{
 
   }
 
-  const handleSubmitConfirm =()=>{
+const handleSubmitConfirm =()=>{
       const title = "Submit for approval";
       const message = "Are you sure you want to this PO for approval?";
       const confirmText = "Submit";
@@ -324,8 +324,8 @@ const submitForApproval = async()=>{
 
       const handleOrderConfirm =()=>{
       const title = "Order";
-      const message = "Are you sure you want to order this PO?";
-      const confirmText = "Order PO";
+      const message = "Are you sure you want to confirm this PO?";
+      const confirmText = "Confirm PO";
       const variant="primary";
       const action = ()=> async ()=>await orderPO();
       confirmModal.show(title,message,confirmText,variant, action);
@@ -336,11 +336,11 @@ const submitForApproval = async()=>{
     const res = await SetStatus('Order',po.id)
 
     if (res?.error) {
-      toast.error('Failed to approve purchase order.');
+      toast.error('Failed to confirm purchase order.');
       return null;
     }
     else {
-      toast.success('Purchase Order has been approved.');
+      toast.success('Purchase Order has been confirmed.');
       router.push(backPath);  
     }
 

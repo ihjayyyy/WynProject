@@ -17,7 +17,7 @@ const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL + "/PurchaseRequest";
         ],
         "deletedChildren": [
         ],
-        "requestDate": new Date(),
+        "requestDate": null,
         "jobOrder": "",
         "terms":0,
         "requestedBy":"",

@@ -6,10 +6,6 @@ import { FiEdit2, FiEye } from 'react-icons/fi';
 import DropdownAction from '../ui/DropdownAction/DropdownAction';
 import Landing from '../ui/Landing/Landing';
 import { GetAll } from '@/services/PurchaseDelivery';
-import { deliveries as sampleDeliveries } from './deliveriesData';
-import { orders as sampleOrders } from '../PurchaseOrders/ordersData';
-// import { sampleSuppliers } from '../Suppliers/suppliersData';
-const sampleSuppliers = [];
 const baseColumns = [
    { header: 'Delivery Date', key: 'deliveryDate' },
   { header: 'Delivery No', key: 'deliveryNumber' },

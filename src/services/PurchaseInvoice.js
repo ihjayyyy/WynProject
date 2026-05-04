@@ -1,37 +1,30 @@
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL + "/PurchaseOrder";
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL + "/PurchaseInvoice";
 
  export  const InitialData = {
         "name": "",
         "code": "",
         "children": [
-          // {
-          //   "id": 0,
-          //   "parentId": 0,
-          //   "materialId": 0,
-          //   "code": "",
-          //   "name": "",
-          //   "uom": "",
-          //   "unitCost": 0,
-          //   "quantity": 0,
-          //   "vat": 0,
-          //   "discount": 0,
-          //   "amount": 0
-          // }
         ],
         "deletedChildren": [
         ],
-        "orderDate": null,
+        "invoiceDate": null,
+        "dueDate": null,
+        "terms": 0,
         "supplierId": 0,
-        "supplierCode": "",
         "supplierName": "",
         "contactNumber": "",
         "address": "",
         "contactPerson": "",
         "email": "",
-        "supplierReferenceNo": "",
-        "estimatedDeliveryDate": null,
-        "terms":0,
-        "vatType": "nonvat"
+        "amount": 0,
+        "vatType": "",
+        "vat": 0,
+        "invoiceNumber": "",
+        "supplierInvoiceNumber": "",
+        "purchaseOrderNumber": "",
+        "deliveryNumber": "",
+        "status": "Draft",
+        "paymentStatus": "Unpaid"
     };
 
 async function GetAll() {
@@ -47,22 +40,9 @@ async function GetAll() {
     }
 }
 
-async function GetOrdersByStatus(status) {
+async function GetInvoiceByStatus(status) {
     try {
         const res = await fetch(API_BASE_URL + "/status/" + status, {
-            method: 'GET',
-            headers: { Accept: '*/*' },
-        });
-        const json = await res.json();
-        return { data: json && json.value, error: null };
-    } catch (error) {
-        return { data: null, error: error?.message || error };
-    }
-}
-
-async function GetOrdersBySupplier(id) {
-    try {
-        const res = await fetch(API_BASE_URL + "/supplier/" + id, {
             method: 'GET',
             headers: { Accept: '*/*' },
         });
@@ -130,6 +110,10 @@ async function SubmitForApproval(id) {
     return SetStatus('Submit',id)
 }
 
+async function ConfirmInvoice(id) {
+    return SetStatus('Invoice',id)
+}
+
 async function Approve(id) {
     return SetStatus('Approve',id)
 }
@@ -151,26 +135,26 @@ async function SetStatus(status, id) {
 }
 export {
     GetAll,
-    GetOrdersByStatus,
-    GetOrdersBySupplier,
+    GetInvoiceByStatus,
     Get,
     Create,
     Update,
     SetStatus,
     SubmitForApproval,
+    ConfirmInvoice,
     Approve,
     Reject,
 }
 
 export default{
     GetAll,
-    GetOrdersByStatus,
-    GetOrdersBySupplier,
+    GetInvoiceByStatus,
     Get,
     Create,
     Update,
     SetStatus,
     SubmitForApproval,
+    ConfirmInvoice,
     Approve,
     Reject
 }

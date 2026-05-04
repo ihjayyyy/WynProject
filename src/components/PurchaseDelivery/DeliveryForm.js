@@ -46,7 +46,7 @@ export default function PurchaseDeliveryForm() {
     setMode(nextMode);
   }, [searchParams]);
 
-    const fetchOrders = async(supplierid) => {
+const fetchOrders = async(supplierid) => {
         console.log(supplierid)
     const res = await GetOrdersBySupplier(supplierid);
      if(res && !res.error){
@@ -88,7 +88,7 @@ const loadOrders = async(orderId) =>{
 const confirmLoadOrders = async(orderId)=>{
 
       const title = "Load Purchase Order";
-      const message = "Do you want to load items in this order?";
+      const message = "Do you want to load items from this Purchase Order?";
       const confirmText = "Yes";
       const variant="primary";
       const action =()=>async ()=>await loadOrders(orderId);

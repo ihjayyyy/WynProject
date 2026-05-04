@@ -1,62 +1,60 @@
 'use client';
 
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState ,useEffect} from 'react';
 import { useRouter } from 'next/navigation';
 import { FiEdit2, FiEye } from 'react-icons/fi';
 import DropdownAction from '../ui/DropdownAction/DropdownAction';
 import Landing from '../ui/Landing/Landing';
-import { invoices as sampleInvoices } from './invoicesData';
-import { orders as sampleOrders } from '../PurchaseOrders/ordersData';
-import { sampleSuppliers } from '../Suppliers/suppliersData';
+import { GetAll } from '@/services/PurchaseInvoice';
 
 const baseColumns = [
   { header: 'Id', key: 'id' },
+  { header: 'Invoice Date', key: 'invoiceDate' },
   { header: 'Code', key: 'code' },
   { header: 'Name', key: 'name' },
   {
-    header: 'Order Id',
-    key: 'orderId',
-    render: (item) => {
-      const found = sampleOrders.find((o) => o.id === item.orderId || o.code === item.orderId);
-      return found ? `${found.code}` : item.orderId;
-    },
-  },
-  { header: 'Status', key: 'status' },
-  { header: 'Items', key: 'itemsCount', render: (item) => (item.items || []).length },
-  {
-    header: 'Qty',
-    key: 'qty',
-    render: (item) => (item.items || []).reduce((s, it) => s + (it.qty || 0), 0),
+    header: 'Due Date',
+    key: 'dueDate',
   },
   {
-    header: 'Amount',
+    header: 'Invoice Amount',
     key: 'amount',
-    render: (item) => (item.items || []).reduce((s, it) => s + ((it.qty || 0) * (it.price || 0)), 0),
   },
   {
-    header: 'Supplier',
-    key: 'supplierName',
-    render: (item) => {
-      const supplierId = (item.items && item.items[0] && item.items[0].supplierId) || item.supplier?.id;
-      if (!supplierId) return '';
-      const found = sampleSuppliers.find(
-        (s) => s.id === supplierId || s.code === supplierId || s.name === supplierId
-      );
-      return found ? found.name : supplierId;
-    },
+    header: 'Invoice Balance',
+    key: 'balance',
   },
-  { header: 'UpdatedBy', key: 'updatedBy' },
-  { header: 'UpdatedDate', key: 'updatedDate' },
+  {
+    header: 'Status',
+    key: 'status',
+  },
+    {
+    header: 'Payment Status',
+    key: 'paymentStatus',
+  },
 ];
 
 export default function InvoicesLanding() {
-  const [invoices] = useState(sampleInvoices);
+  const [invoices, setInvoices] = useState([]);
   const router = useRouter();
+
+    useEffect(()=>{
+      const fetchInvoices = async() => {
+  
+      const res = await GetAll();
+      console.log(res)
+       if(res && !res.error){
+            setInvoices(res.data);
+       }
+     }
+  
+     fetchInvoices();
+    },[])
 
   const actionItems = useMemo(
     () => [
-      { key: 'view', label: 'View', icon: <FiEye size={14} />, onClick: (item) => router.push(`/purchase/orders/invoiceform?id=${item.id}`) },
-      { key: 'edit', label: 'Edit', icon: <FiEdit2 size={14} />, onClick: (item) => router.push(`/purchase/orders/invoiceform?id=${item.id}&mode=edit`) },
+      { key: 'view', label: 'View', icon: <FiEye size={14} />, onClick: (item) => router.push(`/purchase/invoices/invoiceform?id=${item.id}`) },
+      { key: 'edit', label: 'Edit', icon: <FiEdit2 size={14} />, onClick: (item) => router.push(`/purchase/invoices/invoiceform?id=${item.id}&mode=edit`) },
     ],
     [router]
   );
@@ -104,7 +102,7 @@ export default function InvoicesLanding() {
       stats={stats}
       searchPlaceholder="Search invoices"
       newButtonLabel="New Invoice"
-      onNew={() => router.push('/purchase/orders/invoiceform')}
+      onNew={() => router.push('/purchase/invoices/invoiceform')}
       emptyMessage="No invoices found"
       width="320px"
       filterFn={filterFn}

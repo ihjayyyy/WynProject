@@ -4,7 +4,7 @@ import * as Yup from "yup";
     { name:'projectCode', label:'Project Code', span:'span1', readOnly:true },
     { name: 'projectId', label: 'Project', type: 'select', options: projects.map((s) => ({ label: s.name, value: s.id })), searchable: true, span: 'span3', 
         onChange: (val, values, setValues) => {
-          const found = suppliers.find((s) => s.id === val);
+          const found = projects.find((s) => s.id === val);
                if (!found) {
                   const clearedValues = {
                      ...values,
