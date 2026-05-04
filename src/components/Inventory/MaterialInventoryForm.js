@@ -85,7 +85,7 @@ export default function MaterialInventoryForm() {
   }, []);
 
   const rackOptions = useMemo(() => {
-    return (racks || []).map((r) => ({ label: `${r.code ? r.code + ' - ' : ''}${r.name}`, value: r.id }));
+    return (racks || []).map((r) => ({ label: `${r.warehouseName ? r.warehouseName + ' - ' : ''}${r.name}`, value: r.id }));
   }, [racks]);
 
   const fields = [

@@ -47,17 +47,14 @@ export default function PurchaseOrdersForm() {
 
   // set PO Fields
   const onPOChange = (fieldname,value, formData)=>{
-      console.log("field changed.",fieldname,value, formData);
       const poChildren = po.children.map(d => {
           let vat = 0;
-          console.log(d)
           const unitCost = Number(d.unitCost || 0);
           const quantity = Number(d.quantity || 0);
           const discount = Number(d.discount || 0);
           let subamount = (unitCost * quantity) - discount;
           let amount = subamount;
 
-                  console.log(formData.vatType)
                   switch(formData.vatType){
                      case "included":
                         vat = Math.round((subamount - (subamount / 1.12)) * 100) / 100;
@@ -74,11 +71,9 @@ export default function PurchaseOrdersForm() {
                         vat = 0;
                         break;
                   }
-              console.log(vat,amount)
             return {...d, vat:vat,amount:amount}
       }
       );
-      console.log(poChildren)
       setPO({...po,...formData, children:poChildren})
       setTableData({...tableData,items:poChildren})
   }
@@ -90,7 +85,6 @@ export default function PurchaseOrdersForm() {
  //load Supplier and Materials 
   useEffect(() => {
      const fetchSupplier = async() => {
-     console.log('Load Suppliers');
 
          const res = await getSuppliers();
         if(res && !res.error){
@@ -118,7 +112,6 @@ const GetPO = async () => {
   let initPO = { ...InitialData };
   if (orderId !== 0) {
     const getpo = await Get(orderId);
-    console.log("get po", getpo);
     initPO = getpo.data;
 
     // Normalize date fields for form input
@@ -159,8 +152,6 @@ const formTitle = useMemo(() => {
 
 //Events : When Details Changed
 const detailsUpdated = (items, deletedItems) =>{
-      console.log("Table has changed")
-      console.log(po)
       const totalVAT = items.reduce((total, item) => total + Number(item.vat || 0), 0);
       const totalIncluded = items.reduce((total, item) => total + Number(item.amount || 0), 0);
       const totalexcluded = totalIncluded - totalVAT;
@@ -181,14 +172,11 @@ const detailsUpdated = (items, deletedItems) =>{
 
 //Set Item Details data
 useEffect(() => {
-     console.log("initialize PO items")
       updatePOItemFields();
 }, [materials,po]);
 
 const updatePOItemFields = ()=>{
-    console.log(po)
     var poitems = POItemsFields(materials,po);
-    console.log(poitems)
     setPOItemFields(poitems);
 }
 
@@ -203,7 +191,6 @@ const handleSaveConfirm =(entity)=>{
 }
 //Events: Save Form
   const save = async(entity)=>{
-    console.log(po)
 
     //final validate entity
 
@@ -217,14 +204,11 @@ const handleSaveConfirm =(entity)=>{
     }));
     entity.deletedChildren = po.deletedChildren;
     const updatedPO = {...po, ...entity, vat:po.vat, amount:po.amount}
-    console.log("submit")
-    console.log(updatedPO)
     
     let res = {};
     updatedPO.id = updatedPO.id === null ?? 0;
 
     updatedPO.id == 0 ? res =  await Create(updatedPO) : res = await Update(updatedPO.id,updatedPO);
-    console.log(res);
     if (res?.error) {
       toast.error('Failed to save purchase order.');
       return null;
@@ -273,7 +257,6 @@ const handleSubmitConfirm =()=>{
 const submitForApproval = async()=>{
     //setMode("edit");
     const res = await SubmitForApproval(po.id);
-    console.log(res)
    if (res?.error) {
       toast.error('Failed to submit purchase order.');
       return null;

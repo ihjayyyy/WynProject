@@ -14,6 +14,7 @@ import AttendanceTab from './AttendanceTab';
 import ExpensesTab from './ExpensesTab';
 import TripTicketTab from './TripTicketTab';
 import MaterialRequestsTab from './MaterialRequestsTab';
+import ProjectBillingCollectionTab from './ProjectBillingCollectionTab';
 import { useToast } from '../ui/Toast/Toast';
 import { FiBriefcase } from 'react-icons/fi';
 import { AccessContext } from '@/app/contextProviders/accessContext';
@@ -214,7 +215,7 @@ export default function ProjectDetails({ id: propId }) {
               {activeTab === 'Staff' && <ProjectStaffTab projectId={project.id} />}
               {activeTab === 'Attendance' && <AttendanceTab projectId={project.id} />}
               {activeTab === 'Material Requests' && <MaterialRequestsTab projectId={project.id} />}
-              {activeTab === 'Billing & Collection' && <div>Billing & collection content</div>}
+              {activeTab === 'Billing & Collection' && <ProjectBillingCollectionTab projectId={project.id} />}
           </div>
         )}
       </div>

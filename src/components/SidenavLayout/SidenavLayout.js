@@ -215,7 +215,6 @@ export default function SidenavLayout({ children }) {
     
     if(pageaccess.access === 'n') 
       {
-        console.log('hide', item.name)
         return null;
       }
     const hasChildren = item.children && item.children.length > 0;

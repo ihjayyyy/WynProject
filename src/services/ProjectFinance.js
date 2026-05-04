@@ -78,7 +78,6 @@ async function generateProgressBilling(projectId) {
             headers: { Accept: '*/*' },
         });
         const json = await res.json();
-        console.log(json)
         return { data: json, error: null };
     } catch (error) {
         return { data: null, error: error?.message || error };
@@ -87,14 +86,12 @@ async function generateProgressBilling(projectId) {
 
 async function generateDownpaymentBilling(projectId) {
     try {
-        console.log('Generating downpayment billing for projectId:', projectId);
         const url = `${API_BASE_URL}/GenerateDownpaymentBilling/${projectId}`;
         const res = await fetch(url, {
             method: 'POST',
             headers: { Accept: '*/*' },
         });
         const json = await res.json();
-        console.log(json)
         return { data: json, error: null };
     } catch (error) {
         return { data: null, error: error?.message || error };

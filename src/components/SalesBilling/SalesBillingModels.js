@@ -66,13 +66,14 @@ export const SalesBillingFields = (
     }
   },
   { name: 'spacer-3', type: 'spacer', span: 'span1' },
-  { name: 'paymentDate', label: 'Payment Date', type: 'date', span: 'span2' },
-  { name: 'description', label: 'Description', type: 'textarea', span: 'span4' },
-  { name: 'spacer-4', type: 'spacer', span: 'span2' },
   { name: 'dueDate', label: 'Due Date', type: 'date', span: 'span2' },
-  { name: 'balance', label: 'Balance', type: 'number', span: 'span1' },
+
+  // { name: 'paymentDate', label: 'Payment Date', type: 'date', span: 'span2' },
+  { name: 'description', label: 'Description', type: 'textarea', span: 'span5' },
+  { name: 'spacer-4', type: 'spacer', span: 'span1' },
+  { name: 'projectContractAmount', label: 'Project Contract Amount', type: 'number', span: 'span2' },
+  // { name: 'balance', label: 'Balance', type: 'number', span: 'span1' },
   { name: 'amount', label: 'Amount', type: 'number', span: 'span1' },
-  { name: 'projectContractAmount', label: 'Project Contract Amount', type: 'number', span: 'span1' },
 ];
 
 export const SalesBillingDetailsColumns = [

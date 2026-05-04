@@ -29,8 +29,8 @@ function normalizeMaterial(item) {
   };
 }
 
-function toApiPayload(payload = {}) {
-  return {
+function toApiPayload(payload = {}, { includeCreateOnlyFields = false } = {}) {
+  const basePayload = {
     name: payload.name || '',
     code: payload.code || '',
     materialType: payload.materialType || '',
@@ -40,6 +40,14 @@ function toApiPayload(payload = {}) {
     sellingPrice: Number(payload.sellingPrice ?? 0) || 0,
     isAssembly: Boolean(payload.isAssembly),
     referenceNumber: payload.referenceNumber ?? '0',
+  };
+
+  if (!includeCreateOnlyFields) return basePayload;
+
+  return {
+    ...basePayload,
+    rackId: Number(payload.rackId) || 0,
+    initialQuantity: Number(payload.initialQuantity) || 0,
   };
 }
 
@@ -101,7 +109,7 @@ async function createMaterial(payload) {
     const res = await fetch(API_BASE_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(toApiPayload(payload)),
+      body: JSON.stringify(toApiPayload(payload, { includeCreateOnlyFields: true })),
     });
     const json = await res.json();
     return { data: unwrapResponse(json), error: null };

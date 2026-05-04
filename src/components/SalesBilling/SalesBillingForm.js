@@ -2,7 +2,7 @@
 
 import React, { useMemo, useState, useEffect, useContext } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { FiList } from 'react-icons/fi';
+import { FiList, FiEdit2, FiCheckCircle } from 'react-icons/fi';
 import DetailsTable from '../ItemDetails/DetailsTable';
 import EntityForm from '../EntityForm/EntityForm';
 import { useToast } from '../ui/Toast/Toast';
@@ -14,6 +14,7 @@ import { SalesBillingFields, SalesBillingDetailsColumns, SalesBillingItemsFields
 import ProjectService from '@/services/Project';
 import CustomerService from '@/services/Customer';
 import Button from '../ui/Button/Button';
+import StatusBadge from '../ui/StatusBadge/StatusBadge';
 
 export default function SalesBillingForm() {
   const PageName = 'Finance.SalesBilling';
@@ -88,7 +89,12 @@ export default function SalesBillingForm() {
     if (billingId !== 0) {
       const res = await SalesBillingService.getSalesBillingById(billingId);
       if (res?.data && Object.keys(res.data).length !== 0) {
-        initBilling = res.data;
+        initBilling = {
+          ...res.data,
+          billingDate: toDateString(res.data.billingDate),
+          dueDate: toDateString(res.data.dueDate),
+          paymentDate: toDateString(res.data.paymentDate),
+        };
         setValidBilling(true);
       } else {
         setValidBilling(false);
@@ -129,7 +135,7 @@ export default function SalesBillingForm() {
       } else {
         initBilling = {
           ...initBilling,
-          status: 'Pending',
+          status: 'Draft',
           billingDate: today,
           dueDate: today,
           paymentDate: today,
@@ -140,14 +146,14 @@ export default function SalesBillingForm() {
     setTableData({ items: initBilling.children || [], deletedItems: initBilling.deletedChildren || [] });
   };
 
-  const isReadOnly = useMemo(() => (validBilling ? mode === 'view' : true), [validBilling, mode]);
+  const isReadOnly = useMemo(() => (validBilling ? mode === 'view' || billing?.status?.toLowerCase() === 'billed' : true), [validBilling, mode, billing?.status]);
 
   const formTitle = useMemo(() => (
-    <div>
-      <span>{billing?.code || 'New Billing'}</span>
-      {billing?.status && <span style={{ marginLeft: 8, fontSize: '0.8em', opacity: 0.7 }}>({billing.status})</span>}
+    <div style={{ display: 'flex', gap: 8 , alignItems: 'center' }}>
+      <span>{billing?.id ? billing.salesBillingNo : 'New Billing'}</span>
+      {billing?.status && <StatusBadge status={billing.status} style={{ marginLeft: 8 }} />}
     </div>
-  ), [billing?.code, billing?.status]);
+  ), [billing?.id, billing?.salesBillingNo, billing?.status]);
 
   const detailsUpdated = (items, deletedItems) => {
     const totalVat = (items || []).reduce((sum, item) => sum + (Number(item.vat) || 0), 0);
@@ -185,16 +191,26 @@ export default function SalesBillingForm() {
     const normalizedChildren = (tableData.items || []).map(normalizeChild);
     const normalizedDeletedChildren = (tableData.deletedItems || []).map(normalizeChild);
 
+    const mergedBilling = { ...billing, ...entity };
+    // Backend endpoint no longer accepts these fields in save payload.
+    delete mergedBilling.status;
+    delete mergedBilling.paymentDate;
+
+    const selectedCustomerName = mergedBilling.customerName || '';
+    const resolvedCustomerId = Number(
+      mergedBilling.customerId ||
+      customers.find((customer) => customer.name === selectedCustomerName)?.id ||
+      0
+    );
+
     const updatedBilling = {
-      ...billing,
-      ...entity,
+      ...mergedBilling,
       children: normalizedChildren,
       deletedChildren: normalizedDeletedChildren,
-      status: billing.status || 'Pending',
+      customerId: resolvedCustomerId,
       billingType: billing.billingType || 'Standard',
       billingDate: ensureISODate(billing.billingDate || entity.billingDate),
       dueDate: ensureISODate(billing.dueDate || entity.dueDate),
-      paymentDate: ensureISODate(billing.paymentDate || entity.paymentDate),
     };
     let res;
     if (!updatedBilling.id || updatedBilling.id === 0) {
@@ -212,6 +228,24 @@ export default function SalesBillingForm() {
 
   const handleSaveConfirm = (entity) => {
     confirmModal.show('Save Billing', 'Are you sure?', 'Save', 'primary', () => () => save(entity));
+  };
+
+  const handleMarkAsBilled = () => {
+    confirmModal.show(
+      'Mark as Billed',
+      `Are you sure you want to mark billing "${billing?.salesBillingNo || billing?.id}" as billed?`,
+      'Mark as Billed',
+      'primary',
+      () => async () => {
+        const { error } = await SalesBillingService.markAsBilled(billingId);
+        if (error) {
+          toast.error('Failed to mark as billed.');
+        } else {
+          toast.success('Billing marked as billed.');
+          setBilling((prev) => ({ ...prev, status: 'Billed' }));
+        }
+      }
+    );
   };
 
   if (!isAllowed(PageName, 'r')) return <InvalidPage message="Access Denied" />;
@@ -247,6 +281,15 @@ export default function SalesBillingForm() {
       showSubmitButton={false}
       headerActions={
         <div style={{ display: 'flex', gap: 8 }}>
+          {isReadOnly && billing?.status?.toLowerCase() === 'draft' && isAllowed(PageName, 'w') && (
+            <Button variant="primary" onClick={() => setMode('edit')}>Edit</Button>
+          )}
+          {isReadOnly && billingId !== 0 && billing?.status?.toLowerCase() === 'draft' && isAllowed(PageName, 'w') && (
+            <Button variant="primary" icon={<FiCheckCircle />} onClick={handleMarkAsBilled}>Mark as Billed</Button>
+          )}
+          {!isReadOnly && billingId !== 0 && (
+            <Button variant="outlineDanger" onClick={() => setMode('view')}>Cancel</Button>
+          )}
           <SaveButton />
         </div>
       }

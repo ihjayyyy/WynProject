@@ -59,6 +59,24 @@ async function editSalesBilling(id, payload) {
   }
 }
 
+// PUT /api/SalesBilling/MarkAsBilled/{salesBillingId} - mark a sales billing as billed
+async function markAsBilled(salesBillingId) {
+  if (!salesBillingId) return { data: null, error: 'Missing salesBillingId' };
+  try {
+    const url = `${API_BASE_URL}/MarkAsBilled/${salesBillingId}`;
+    const res = await fetch(url, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+    });
+    if (!res.ok) {
+      return { data: null, error: `Failed to mark as billed: ${res.status}` };
+    }
+    return { data: true, error: null };
+  } catch (error) {
+    return { data: null, error: error?.message || error };
+  }
+}
+
 async function createSalesBilling(payload) {
   try {
     const data = await parseResponse(
@@ -89,12 +107,30 @@ async function getSalesBilling() {
   }
 }
 
+// GET /api/SalesBilling/ByProjectId/{projectId} - fetch sales billings by project ID
+async function getSalesBillingByProjectId(projectId) {
+  if (!projectId) return { data: null, error: 'Missing projectId' };
+  try {
+    const data = await parseResponse(
+      await fetch(`${API_BASE_URL}/ByProjectId/${projectId}`, {
+        method: 'GET',
+        headers: { 'Content-Type': 'application/json' },
+      })
+    );
+    return { data, error: null };
+  } catch (error) {
+    return { data: null, error: error?.message || error };
+  }
+}
+
 
 const SalesBillingService = {
   createSalesBilling,
   getSalesBilling,
   getSalesBillingById,
+  getSalesBillingByProjectId,
   editSalesBilling,
+  markAsBilled,
   INITIAL_SALES_BILLING,
 };
 

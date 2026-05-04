@@ -8,6 +8,7 @@ import EntityForm from '../EntityForm/EntityForm';
 import Button from '../ui/Button/Button';
 import { createMaterial, updateMaterial, getMaterial, INITIAL_MATERIAL } from '../../services/Materials';
 import { getUnitsOfMeasure } from '../../services/UnitOfMeasure';
+import { getRacks } from '../../services/Rack';
 import { useToast } from '../ui/Toast/Toast';
 
 export default function MaterialsForm() {
@@ -22,6 +23,23 @@ export default function MaterialsForm() {
   const [initialValues, setInitialValues] = useState({ ...INITIAL_MATERIAL, materialType: 'Material', isAssembly: false });
   const [exists, setExists] = useState(false);
   const [uomOptions, setUomOptions] = useState([]);
+  const [racks, setRacks] = useState([]);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await getRacks();
+        if (!cancelled && !res?.error) setRacks(res.data || []);
+      } catch (e) {}
+    })();
+    return () => { cancelled = true; };
+  }, []);
+
+  const rackOptions = useMemo(() => {
+    return (racks || []).map((r) => ({ label: `${r.warehouseName ? r.warehouseName + ' - ' : ''}${r.name}`, value: r.id }));
+  }, [racks]);
+
   // Load UOM options
   useEffect(() => {
     let mounted = true;
@@ -91,6 +109,12 @@ export default function MaterialsForm() {
     { name: 'name', label: 'Name', span: 'span2' },
     { name: 'purchasePrice', label: 'Purchase Price', type: 'number', span: 'span2' },
     { name: 'sellingPrice', label: 'Selling Price', type: 'number', span: 'span2' },
+    ...(!materialId
+      ? [
+          { name: 'rackId', label: 'Rack', span: 'span2', type: 'select', options: rackOptions, searchable: true },
+          { name: 'initialQuantity', label: 'Initial Quantity', type: 'number', span: 'span2' },
+        ]
+      : []),
     // { name: 'referenceNumber', label: 'Reference Number', span: 'span2' },
     {
       name: 'unitOfMeasure',
@@ -134,6 +158,8 @@ export default function MaterialsForm() {
         purchasePrice: Number(values.purchasePrice ?? values.unitCost) || 0,
         sellingPrice: Number(values.sellingPrice) || 0,
         referenceNumber: values.referenceNumber || '0',
+        rackId: Number(values.rackId) || 0,
+        initialQuantity: Number(values.initialQuantity) || 0,
         isAssembly: false,
       };
       try {

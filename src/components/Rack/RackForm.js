@@ -75,18 +75,15 @@ export default function RackForm() {
       onSubmit={async (values) => {
         if (!rackId) {
           const res = await createRack(values);
-          if (res?.error) toast.error('Failed to create rack');
-          else toast.success('Rack created');
-          const data = res?.data;
-          let newId = null;
-          if (data && data.value && Array.isArray(data.value) && data.value.length > 0) newId = data.value[0].id;
-          else if (data && data.id) newId = data.id;
-          return `/storagesettings/rack/rackform?id=${newId || ''}`;
+          if (res?.error) { toast.error('Failed to create rack'); return; }
+          toast.success('Rack created');
+          router.push('/storagesettings/rack');
+          return;
         }
         const res = await updateRack(rackId, values);
-        if (res?.error) toast.error('Failed to save rack');
-        else toast.success('Rack saved');
-        return `/storagesettings/rack/rackform?id=${rackId}`;
+        if (res?.error) { toast.error('Failed to save rack'); return; }
+        toast.success('Rack saved');
+        router.push('/storagesettings/rack');
       }}
       backPath="/storagesettings/rack"
       width="100%"

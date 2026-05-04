@@ -63,8 +63,8 @@ export default function ToolsInventoryLanding() {
 
   const actionItems = useMemo(
     () => [
-      { key: 'view', label: 'View', icon: <FiEye size={14} />, onClick: (item) => router.push(`/inventory/material-inventory/materialInventoryForm?id=${item.id}`) },
-      { key: 'edit', label: 'Edit', icon: <FiEdit2 size={14} />, onClick: (item) => router.push(`/inventory/material-inventory/materialInventoryForm?id=${item.id}&mode=edit`) },
+      { key: 'view', label: 'View', icon: <FiEye size={14} />, onClick: (item) => router.push(`/inventory/tools-inventory/toolsInventoryForm?id=${item.id}`) },
+      { key: 'edit', label: 'Edit', icon: <FiEdit2 size={14} />, onClick: (item) => router.push(`/inventory/tools-inventory/toolsInventoryForm?id=${item.id}&mode=edit`) },
     ],
     [router]
   );

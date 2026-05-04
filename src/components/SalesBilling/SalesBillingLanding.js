@@ -1,25 +1,32 @@
 'use client';
 
-import React, { useMemo, useState, useEffect } from 'react';
+import React, { useMemo, useState, useEffect, useCallback } from 'react';
 import SalesBillingService from '@/services/SalesBilling';
 import { useRouter } from 'next/navigation';
-import { FiEdit2, FiEye } from 'react-icons/fi';
+import { FiEdit2, FiEye, FiCheckCircle } from 'react-icons/fi';
 import DropdownAction from '../ui/DropdownAction/DropdownAction';
 import Landing from '../ui/Landing/Landing';
+import { useConfirmModal } from '@/app/contextProviders/confirmModalContext';
+import StatusBadge from '../ui/StatusBadge/StatusBadge';
 
 const baseColumns = [
   // { header: 'Id', key: 'id' },
   { header: 'Billing No.', key: 'salesBillingNo' },
   { header: 'Customer', key: 'customerName' },
-  { header: 'Status', key: 'status' },
+  { header: 'Description', key: 'description' },
+  { header: 'Billing Type', key: 'billingType' },
+  { header: 'Status', key: 'status', render: (item) => <StatusBadge status={item.status} /> },
   { header: 'Amount', key: 'amount' },
-  { header: 'UpdatedBy', key: 'updatedBy' },
-  { header: 'UpdatedDate', key: 'updatedDate' },
+  { header: 'Balance', key: 'balance' },
+  { header: 'Payment Status', key: 'paymentStatus' },
+  // { header: 'UpdatedBy', key: 'updatedBy' },
+  // { header: 'UpdatedDate', key: 'updatedDate' },
 ];
 
 export default function SalesBillingLanding() {
   const [billings, setBillings] = useState([]);
   const router = useRouter();
+  const confirmModal = useConfirmModal();
 
   useEffect(() => {
     SalesBillingService.getSalesBilling().then(({ data, error }) => {
@@ -32,12 +39,30 @@ export default function SalesBillingLanding() {
     });
   }, []);
 
+  const handleMarkAsBilled = useCallback((item) => {
+    confirmModal.show(
+      'Mark as Billed',
+      `Are you sure you want to mark billing "${item.salesBillingNo || item.id}" as billed?`,
+      'Mark as Billed',
+      'primary',
+      () => async () => {
+        const { error } = await SalesBillingService.markAsBilled(item.id);
+        if (!error) {
+          setBillings((prev) =>
+            prev.map((b) => (b.id === item.id ? { ...b, status: 'Billed' } : b))
+          );
+        }
+      }
+    );
+  }, [confirmModal]);
+
   const actionItems = useMemo(
     () => [
       { key: 'view', label: 'View', icon: <FiEye size={14} />, onClick: (item) => router.push(`/finance/billings/form?id=${item.id}`) },
-      { key: 'edit', label: 'Edit', icon: <FiEdit2 size={14} />, onClick: (item) => router.push(`/finance/billings/form?id=${item.id}&mode=edit`) },
+      { key: 'edit', label: 'Edit', icon: <FiEdit2 size={14} />, onClick: (item) => router.push(`/finance/billings/form?id=${item.id}&mode=edit`), hidden: (item) => item.status?.toLowerCase() === 'billed' },
+      { key: 'markAsBilled', label: 'Mark as Billed', icon: <FiCheckCircle size={14} />, onClick: handleMarkAsBilled, hidden: (item) => item.status?.toLowerCase() !== 'draft' },
     ],
-    [router]
+    [router, handleMarkAsBilled]
   );
 
   const columns = useMemo(() => [...baseColumns, { header: 'Action', key: 'actions', align: 'right', render: (item) => <DropdownAction item={item} items={actionItems} /> }], [actionItems]);

@@ -12,7 +12,7 @@ const baseColumns = [
   // { header: 'Id', key: 'id' },
   { header: 'Code', key: 'code' },
   { header: 'Name', key: 'name' },
-  { header: 'Warehouse', key: 'warehouseId' },
+  { header: 'Warehouse', key: 'warehouseName' },
   { header: 'UpdatedBy', key: 'updatedBy' },
   { header: 'UpdatedDate', key: 'updatedAt', render: (item) => (item.updatedAt ? new Date(item.updatedAt).toLocaleString() : '') },
 ];

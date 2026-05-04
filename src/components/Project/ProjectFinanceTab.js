@@ -54,9 +54,9 @@ export default function ProjectFinanceTab({ projectId, project, editable }) {
 
   const cleanPayload = (payload) => {
     const {
-      error, isFailure, isSuccess, value, projectCompletion, downPaymentPercent, ...cleaned
+      error, isFailure, isSuccess, value, projectCompletion, downPaymentPercent,
+      totalBilledAmount, lastBillingDate, ...cleaned
     } = payload;
-    // Remove projectCompletion from payload as per backend update
     return cleaned;
   };
 
@@ -71,18 +71,9 @@ export default function ProjectFinanceTab({ projectId, project, editable }) {
       payload.code = project.code || '';
       payload.name = project.name || '';
     }
-    // Ensure lastBillingDate is a full ISO datetime string
-    if (!payload.lastBillingDate) {
-      payload.lastBillingDate = new Date().toISOString();
-    } else {
-      // If it's a date-only string (YYYY-MM-DD), append time to make it a valid ISO datetime
-      const d = new Date(payload.lastBillingDate);
-      payload.lastBillingDate = isNaN(d.getTime()) ? new Date().toISOString() : d.toISOString();
-    }
     payload = cleanPayload(payload);
     payload.hasDownpayment = payload.downPayment > 0;
     payload.recoupmentBalance = Number(payload.downPayment) || 0;
-    payload.totalBilledAmount = (project?.contractPrice ?? 0) - (Number(payload.downPayment) || 0);
     if (finance && finance.id) {
       res = await updateProjectFinance(finance.id, payload);
     } else {
@@ -142,7 +133,7 @@ export default function ProjectFinanceTab({ projectId, project, editable }) {
         <h3>Finance</h3>
                       <div className={styles.panelActions}>
         {!editing && finance && <Button className="md" onClick={handleGenerateProgressBilling}>Generate Progress Billing</Button>}
-        {!editing && finance && !finance.hasDownpayment && <Button className="md" onClick={handleGenerateDownpaymentBilling}>Generate Downpayment Billing</Button>}
+        {!editing && finance && !finance.hasDownpayment && Number(finance.downPayment) > 0 && <Button className="md" onClick={handleGenerateDownpaymentBilling}>Generate Downpayment Billing</Button>}
         {editing && (
           <>
             <Button className="secondary md" onClick={() => { setForm({ ...finance }); setEditing(false); }}>Cancel</Button>
@@ -158,8 +149,8 @@ export default function ProjectFinanceTab({ projectId, project, editable }) {
       <div className={styles.field}>
         <label>Down Payment</label>
         {editing ? (
-          <div style={{ display: 'flex', gap: '8px', alignItems: 'flex-end' }}>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+          <div style={{ display: 'flex', gap: '8px', alignItems: 'flex-end', width: '100%' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', flex: 1 }}>
               <span style={{ fontSize: '0.75rem', color: '#666' }}>Percent (%)</span>
               <Input
                 type="number"
@@ -172,7 +163,7 @@ export default function ProjectFinanceTab({ projectId, project, editable }) {
                 }}
               />
             </div>
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', flex: 1 }}>
               <span style={{ fontSize: '0.75rem', color: '#666' }}>Amount</span>
               <Input
                 type="number"
@@ -218,16 +209,12 @@ export default function ProjectFinanceTab({ projectId, project, editable }) {
       <div className={styles.field}>
         <label>Total Billed Amount</label>
         <div className="value">
-          {((project?.contractPrice ?? 0) - (Number(editing ? form.downPayment : finance?.downPayment) || 0)).toLocaleString()}
+          {(finance?.totalBilledAmount ?? 0).toLocaleString()}
         </div>
       </div>
       <div className={styles.field}>
         <label>Last Billing Date</label>
-        {editing ? (
-          <Input type="date" value={form.lastBillingDate ? String(form.lastBillingDate).split('T')[0] : ''} onChange={e => setForm({ ...form, lastBillingDate: e.target.value })} />
-        ) : (
-          <div className="value">{finance?.lastBillingDate ? new Date(finance.lastBillingDate).toLocaleDateString() : ''}</div>
-        )}
+        <div className="value">{finance?.lastBillingDate ? new Date(finance.lastBillingDate).toLocaleDateString() : ''}</div>
       </div>
       {/* Project Completion input removed as per backend update */}
     </div>

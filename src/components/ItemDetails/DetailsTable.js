@@ -91,7 +91,6 @@ export default function DetailsTable({ itemModalHeader, columns = [], data = { i
   };
 
   const loadItem = (data) => {
-    console.log(data)
     const itemKeyValue = Object.entries(data).map(([key, value]) => ({
       key: key,
       value: value
@@ -100,8 +99,6 @@ export default function DetailsTable({ itemModalHeader, columns = [], data = { i
   };
 
   const close = (data, index) => {
-    console.log(data);
-    console.log(index);
     if (data) {
       index === "undefined" || index === -1 ? addDataTableItem(data) : updateDataTableItem(data, index);
       // Note: onChange is handled by the items useEffect above for add/update
@@ -110,7 +107,6 @@ export default function DetailsTable({ itemModalHeader, columns = [], data = { i
   };
 
   const addDataTableItem = (item) => {
-    console.log('add item');
     isInternalChangeRef.current = true; // user action — notify parent
     const itemCopy = items.map((item) => ({ ...item }));
     itemCopy.push(item);
@@ -118,7 +114,6 @@ export default function DetailsTable({ itemModalHeader, columns = [], data = { i
   };
 
   const updateDataTableItem = (item, index) => {
-    console.log('update item');
     isInternalChangeRef.current = true; // user action — notify parent
     const itemsCopy = [...items];
     itemsCopy[index] = item;
@@ -126,7 +121,6 @@ export default function DetailsTable({ itemModalHeader, columns = [], data = { i
   };
 
   const deleteDataTableItem = (index) => {
-    console.log('delete item', index);
     setModalOpen(false);
 
     const itemsCopy = [...items];

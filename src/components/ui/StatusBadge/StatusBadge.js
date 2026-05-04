@@ -34,6 +34,8 @@ export default function StatusBadge({ status, className = '' }) {
         return styles.forApproval;
       case 'DRAFT':
         return styles.draft;
+      case 'BILLED':
+        return styles.billed;
       case 'ORDERED':
         return styles.ordered;
       case 'CANCELLED':
