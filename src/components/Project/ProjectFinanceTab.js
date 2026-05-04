@@ -1,11 +1,14 @@
 import React, { useEffect, useState } from 'react';
-import { getProjectFinanceById, getProjectFinanceByProjectId, updateProjectFinance, createProjectFinance, INITIAL_PROJECT_FINANCE } from '../../services/ProjectFinance';
-import { useEffect as useEffectReact, useState as useStateReact } from 'react';
+import { getProjectFinanceByProjectId, updateProjectFinance, createProjectFinance, INITIAL_PROJECT_FINANCE, generateProgressBilling, generateDownpaymentBilling } from '../../services/ProjectFinance';
+import { useRouter } from 'next/navigation';
+import { useConfirmModal } from '@/app/contextProviders/confirmModalContext';
 import styles from './ProjectDetails.module.scss';
 import Button from '../ui/Button/Button';
 import Input from '../ui/Input/Input';
 
 export default function ProjectFinanceTab({ projectId, project, editable }) {
+  const router = useRouter();
+  const confirmModal = useConfirmModal();
   const [finance, setFinance] = useState(null);
   const [editing, setEditing] = useState(false);
   const [form, setForm] = useState({});
@@ -78,7 +81,8 @@ export default function ProjectFinanceTab({ projectId, project, editable }) {
     }
     payload = cleanPayload(payload);
     payload.hasDownpayment = payload.downPayment > 0;
-    payload.totalBilledAmount = project?.contractPrice ?? 0;
+    payload.recoupmentBalance = Number(payload.downPayment) || 0;
+    payload.totalBilledAmount = (project?.contractPrice ?? 0) - (Number(payload.downPayment) || 0);
     if (finance && finance.id) {
       res = await updateProjectFinance(finance.id, payload);
     } else {
@@ -94,6 +98,42 @@ export default function ProjectFinanceTab({ projectId, project, editable }) {
     setLoading(false);
   };
 
+  const handleGenerateProgressBilling = () => {
+    confirmModal.show(
+      'Generate Progress Billing',
+      'Are you sure you want to generate a progress billing? You will be redirected to the Sales Billing form.',
+      'Generate',
+      'primary',
+      () => async () => {
+        setLoading(true);
+        const res = await generateProgressBilling(projectId);
+        setLoading(false);
+        if (res?.data) {
+          sessionStorage.setItem('generatedBilling', JSON.stringify(res.data));
+          router.push('/finance/billings/form');
+        }
+      }
+    );
+  };
+
+  const handleGenerateDownpaymentBilling = () => {
+    confirmModal.show(
+      'Generate Downpayment Billing',
+      'Are you sure you want to generate a downpayment billing? You will be redirected to the Sales Billing form.',
+      'Generate',
+      'primary',
+      () => async () => {
+        setLoading(true);
+        const res = await generateDownpaymentBilling(projectId);
+        setLoading(false);
+        if (res?.data) {
+          sessionStorage.setItem('generatedBilling', JSON.stringify(res.data));
+          router.push('/finance/billings/form');
+        }
+      }
+    );
+  };
+
   if (loading) return <div>Loading...</div>;
 
   return (
@@ -101,13 +141,16 @@ export default function ProjectFinanceTab({ projectId, project, editable }) {
     <div className={styles.panelHeader}>
         <h3>Finance</h3>
                       <div className={styles.panelActions}>
-        {!editing && editable && <Button className="md" onClick={() => setEditing(true)}>Edit</Button>}
+        {!editing && finance && <Button className="md" onClick={handleGenerateProgressBilling}>Generate Progress Billing</Button>}
+        {!editing && finance && !finance.hasDownpayment && <Button className="md" onClick={handleGenerateDownpaymentBilling}>Generate Downpayment Billing</Button>}
         {editing && (
           <>
             <Button className="secondary md" onClick={() => { setForm({ ...finance }); setEditing(false); }}>Cancel</Button>
             <Button className="save md" onClick={save}>Save</Button>
           </>
         )}
+        {!editing && editable && <Button className="md" onClick={() => setEditing(true)}>Edit</Button>}
+
       </div>
     </div>
     <div className={styles.detailsFields}>
@@ -117,19 +160,6 @@ export default function ProjectFinanceTab({ projectId, project, editable }) {
         {editing ? (
           <div style={{ display: 'flex', gap: '8px', alignItems: 'flex-end' }}>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-              <span style={{ fontSize: '0.75rem', color: '#666' }}>Amount</span>
-              <Input
-                type="number"
-                value={form.downPayment ?? ''}
-                onChange={e => {
-                  const amt = e.target.value === '' ? '' : Number(e.target.value);
-                  const contractPrice = project?.contractPrice || 0;
-                  const pct = amt !== '' && contractPrice > 0 ? parseFloat(((amt / contractPrice) * 100).toFixed(4)) : '';
-                  setForm({ ...form, downPayment: amt, downPaymentPercent: pct });
-                }}
-              />
-            </div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
               <span style={{ fontSize: '0.75rem', color: '#666' }}>Percent (%)</span>
               <Input
                 type="number"
@@ -138,7 +168,20 @@ export default function ProjectFinanceTab({ projectId, project, editable }) {
                   const pct = e.target.value === '' ? '' : Number(e.target.value);
                   const contractPrice = project?.contractPrice || 0;
                   const amt = pct !== '' ? parseFloat(((pct / 100) * contractPrice).toFixed(2)) : '';
-                  setForm({ ...form, downPaymentPercent: pct, downPayment: amt });
+                  setForm({ ...form, downPaymentPercent: pct, downPayment: amt, recoupmentBalance: amt });
+                }}
+              />
+            </div>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+              <span style={{ fontSize: '0.75rem', color: '#666' }}>Amount</span>
+              <Input
+                type="number"
+                value={form.downPayment ?? ''}
+                onChange={e => {
+                  const amt = e.target.value === '' ? '' : Number(e.target.value);
+                  const contractPrice = project?.contractPrice || 0;
+                  const pct = amt !== '' && contractPrice > 0 ? parseFloat(((amt / contractPrice) * 100).toFixed(4)) : '';
+                  setForm({ ...form, downPayment: amt, downPaymentPercent: pct, recoupmentBalance: amt });
                 }}
               />
             </div>
@@ -170,15 +213,13 @@ export default function ProjectFinanceTab({ projectId, project, editable }) {
       </div>
       <div className={styles.field}>
         <label>Recoupment Balance</label>
-        {editing ? (
-          <Input type="number" value={form.recoupmentBalance ?? ''} onChange={e => setForm({ ...form, recoupmentBalance: e.target.value === '' ? '' : Number(e.target.value) })} />
-        ) : (
-          <div className="value">{finance?.recoupmentBalance ?? ''}</div>
-        )}
+        <div className="value">{editing ? (form.downPayment ?? '') : (finance?.recoupmentBalance ?? '')}</div>
       </div>
       <div className={styles.field}>
         <label>Total Billed Amount</label>
-        <div className="value">{project?.contractPrice ?? ''}</div>
+        <div className="value">
+          {((project?.contractPrice ?? 0) - (Number(editing ? form.downPayment : finance?.downPayment) || 0)).toLocaleString()}
+        </div>
       </div>
       <div className={styles.field}>
         <label>Last Billing Date</label>

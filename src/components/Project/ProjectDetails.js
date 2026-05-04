@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation';
 import Button from '../ui/Button/Button';
 import Input from '../ui/Input/Input';
 import Breadcrumbs from '../ui/Breadcrumbs/Breadcrumbs';
-import { getProjects, updateProject } from '../../services/Project';
+import { getProjectById, getProjects, updateProject } from '../../services/Project';
 import ProjectScope from './ProjectScope';
 import ProjectStaffTab from './ProjectStaffTab';
 import ProjectFinanceTab from './ProjectFinanceTab';
@@ -197,7 +197,18 @@ export default function ProjectDetails({ id: propId }) {
         ) : (
           <div className={styles.panel}>
               {activeTab === 'Finance' && <ProjectFinanceTab projectId={project.id} project={project} editable={isAllowed(PageName, 'w')} />}
-              {activeTab === 'Project Scope & Materials' && <ProjectScope projectId={project.id} editable={isAllowed(PageName, 'w')} />}
+              {activeTab === 'Project Scope & Materials' && <ProjectScope projectId={project.id} editable={isAllowed(PageName, 'w')} onCompletedQtyUpdated={async () => {
+                try {
+                  const res = await getProjectById(project.id);
+                  if (!res.error && res.data) {
+                    const updated = res.data?.value && typeof res.data.value === 'object' && !Array.isArray(res.data.value)
+                      ? res.data.value
+                      : res.data;
+                    setProject(updated);
+                    setForm({ ...updated });
+                  }
+                } catch (e) {}
+              }} />}
               {activeTab === 'Expenses' && <ExpensesTab projectId={project.id} />}
               {activeTab === 'Trip Tickets' && <TripTicketTab projectId={project.id} />}
               {activeTab === 'Staff' && <ProjectStaffTab projectId={project.id} />}

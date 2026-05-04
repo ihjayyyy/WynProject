@@ -286,6 +286,7 @@ export default function ProjectStaffTab({ projectId = 0 }) {
           const payload = {
             name: value.name || '',
             code: value.code || '',
+            projectId: Number(projectId) || 0,
             scopeId: Number(value.scopeId) || 0,
             staffId: Number(value.staffId) || 0,
             job: value.job || '',

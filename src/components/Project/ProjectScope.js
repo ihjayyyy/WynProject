@@ -104,7 +104,7 @@ function buildScopePayload({
   };
 }
 
-export default function ProjectScope({ projectId = 0, editable = true }) {
+export default function ProjectScope({ projectId = 0, editable = true, onCompletedQtyUpdated }) {
   const [isCompletedQtyModalOpen, setIsCompletedQtyModalOpen] = useState(false);
   const [completedQtyTarget, setCompletedQtyTarget] = useState(null);
   const [completedQtyValue, setCompletedQtyValue] = useState(0);
@@ -336,8 +336,10 @@ export default function ProjectScope({ projectId = 0, editable = true }) {
                     const res = await updateCompletedQuantity(completedQtyTarget.id, Number(completedQtyValue));
                     setIsCompletedQtyModalOpen(false);
                     setCompletedQtyTarget(null);
-                    if (!res.error) await loadData();
-                    else window.alert('Failed to update: ' + res.error);
+                    if (!res.error) {
+                      await loadData();
+                      onCompletedQtyUpdated && onCompletedQtyUpdated();
+                    } else window.alert('Failed to update: ' + res.error);
                   }
                 }}
               >

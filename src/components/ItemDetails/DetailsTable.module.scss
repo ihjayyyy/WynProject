@@ -1,20 +1,31 @@
+@use '../../styles/variables' as *;
+
 .detailContainer{
+
+      display: flex;
+  flex-direction: column;
+  gap: $spacing-md;
+  border: 1px solid $color-secondary-light;
+  border-radius: $border-radius-md;
+  padding: $spacing-md;
+  margin-top: $spacing-sm;
+  background: $color-background-light;
     .newButtonContainer{
         padding: 10px 0px 10px 10px;
     display: flex;
     justify-content: flex-end;
 
-    button{
-        padding:10px 20px;
-        border:none;
+    // button{
+    //     padding:10px 20px;
+    //     border:none;
         
-        color: #22C55E;
-        border-radius: 8px;
-    }
-    button:hover{
-      background-color: #22C55E;
-      color:white;
-      cursor: pointer;
-    }
+    //     color: #22C55E;
+    //     border-radius: 8px;
+    // }
+    // button:hover{
+    //   background-color: #22C55E;
+    //   color:white;
+    //   cursor: pointer;
+    // }
     }
 }

@@ -148,10 +148,7 @@ export default function DetailsTable({ itemModalHeader, columns = [], data = { i
     <div className={detailStyle.detailContainer}>
       <div className={detailStyle.newButtonContainer}>
         {editable && (
-          <button type="button" onClick={(e) => {
-            e.stopPropagation();
-            openModal();
-          }}>Add</button>
+          <Button icon={<FiPlus />} onClick={(e) => { e.stopPropagation(); openModal(); }}>Add</Button>
         )}
       </div>
       <DataTable columns={columns} data={items} showActions={editable} emptyMessage={emptyMessage} onActionClick={openModal} />

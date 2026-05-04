@@ -196,12 +196,6 @@ export const sidenavItems = [
     ],
   },
   {
-    label: 'Employees',
-    icon: FiUserCheck,
-    href: '/employees',
-    name: 'Employees.Employees',
-  },
-  {
     label: 'Staff',
     icon: FiUsers,
     href: '/staff',

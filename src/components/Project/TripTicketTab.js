@@ -109,6 +109,7 @@ export default function TripTicketTab({ projectId = 0 }) {
         type: 'text',
         value: selectedMaterial?.code || record.code || '',
         validator: Yup.string().notRequired(),
+        hidden:true,
       },
       {
         name: 'name',

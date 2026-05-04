@@ -3,6 +3,7 @@ const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL + "/ProjectStaff";
 export const INITIAL_PROJECT_STAFF = {
   name: '',
   code: '',
+  projectId: 0,
   scopeId: 0,
   staffId: 0,
   job: '',
@@ -24,7 +25,7 @@ async function getProjectStaffs() {
 
 async function getProjectStaffsByProjectId(projectId) {
   try {
-    const url = `${API_BASE_URL}/${projectId}`;
+    const url = `${API_BASE_URL}/ByProjectId/${projectId}`;
     const res = await fetch(url, {
       method: 'GET',
       headers: { Accept: '*/*' },

@@ -9,7 +9,7 @@ import ItemModal from '../ItemDetails/itemModal';
 import styles from './ProjectScope.module.scss';
 import { FiEdit2, FiTrash2 } from 'react-icons/fi';
 import { getAttendanceByProjectId, createAttendance, updateAttendance, deleteAttendance } from '../../services/Attendance';
-import { getStaffs } from '../../services/Staff';
+import { getProjectStaffsByProjectId } from '../../services/ProjectStaff';
 import { useToast } from '../ui/Toast/Toast';
 import { useConfirmModal } from '@/app/contextProviders/confirmModalContext';
 import { AccessContext } from '@/app/contextProviders/accessContext';
@@ -366,22 +366,26 @@ export default function AttendanceTab({ projectId = 0 }) {
   useEffect(() => {
     let mounted = true;
     (async () => {
-      const response = await getStaffs();
+      const response = await getProjectStaffsByProjectId(projectId);
       if (!mounted || response?.error) return;
 
-      const list = Array.isArray(response.data) ? response.data : (response.data?.value || []);
+      const list = Array.isArray(response.data?.value)
+        ? response.data.value
+        : Array.isArray(response.data)
+          ? response.data
+          : [];
       setStaffOptions(
         (list || []).map((staff) => ({
-          value: String(staff.id),
-          label: staff.name || staff.code || String(staff.id),
+          value: String(staff.staffId || staff.id),
+          label: staff.name || staff.code || String(staff.staffId || staff.id),
           name: staff.name || '',
           code: staff.code || '',
-          ratePerHour: Number(staff.ratePerHour) || 0,
+          ratePerHour: Number(staff.expenses || staff.ratePerHour) || 0,
         }))
       );
     })();
     return () => { mounted = false; };
-  }, []);
+  }, [projectId]);
 
   const filtered = useMemo(() => {
     const keyword = (searchTerm || '').trim().toLowerCase();
