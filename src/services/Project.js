@@ -22,6 +22,20 @@ async function convertProposal(proposalId) {
     }
 }
 
+async function getProjectById(id) {
+    try {
+        const url = `${API_BASE_URL}/${id}`;
+        const res = await fetch(url, {
+            method: 'GET',
+            headers: { Accept: '*/*' },
+        });
+        const json = await res.json();
+        return { data: json, error: null };
+    } catch (error) {
+        return { data: null, error: error?.message || error };
+    }
+}
+
 async function getProjects() {
     try {
         const res = await fetch(API_BASE_URL, {
@@ -50,5 +64,5 @@ async function updateProject(id, payload) {
     }
 }
 
-export { convertProposal, getProjects, updateProject };
-export default { convertProposal, getProjects, updateProject };
+export { convertProposal, getProjectById, getProjects, updateProject };
+export default { convertProposal, getProjectById, getProjects, updateProject };

@@ -89,16 +89,20 @@ export default function ProposalLanding() {
         hidden: it.key === 'edit' ? !isDraft : it.hidden,
       }));
       if (isDraft && isAllowed(PageName, 'w')) {
-        itemsFor.push({ key: 'submit', label: 'Submit', icon: <FiSend size={14} />, onClick: async (it) => {
-          setLoading(true);
-          const res = await submitProposal(it.id);
-          if (res?.error) {
-            toast.error('Failed to submit proposal');
-          } else {
-            toast.success('Proposal submitted');
-            await loadProposals();
-          }
-          setLoading(false);
+        itemsFor.push({ key: 'submit', label: 'Submit', icon: <FiSend size={14} />, onClick: (it) => {
+          setConfirmTarget(it);
+          setConfirmTitle('Submit proposal?');
+          setConfirmMessage(`Submit proposal "${it.name || it.code || ''}"?`);
+          setConfirmIncludeCreateProject(false);
+          setCreateProjectChecked(false);
+          setConfirmAction(() => async (target) => {
+            setLoading(true);
+            const res = await submitProposal(target.id);
+            if (res?.error) toast.error('Failed to submit proposal');
+            else { toast.success('Proposal submitted'); await loadProposals(); }
+            setLoading(false);
+          });
+          setIsConfirmOpen(true);
         }});
       }
       const isSubmitted = proposalStatus === 'submitted';
@@ -158,16 +162,20 @@ export default function ProposalLanding() {
       }
 
       if (shouldShowGenerateProject && isAllowed(PageName, 'w')) {
-        itemsFor.push({ key: 'generate-project', label: 'Generate Project', icon: <FiCheck size={14} />, onClick: async (it) => {
-          setLoading(true);
-          const res = await convertProposal(it.id);
-          if (res?.error) {
-            toast.error('Failed to create project from proposal');
-          } else {
-            toast.success('Project created from proposal');
-            await loadProposals();
-          }
-          setLoading(false);
+        itemsFor.push({ key: 'generate-project', label: 'Generate Project', icon: <FiCheck size={14} />, onClick: (it) => {
+          setConfirmTarget(it);
+          setConfirmTitle('Generate Project?');
+          setConfirmMessage(`Create a project from proposal "${it.name || it.code || ''}"?`);
+          setConfirmIncludeCreateProject(false);
+          setCreateProjectChecked(false);
+          setConfirmAction(() => async (target) => {
+            setLoading(true);
+            const res = await convertProposal(target.id);
+            if (res?.error) toast.error('Failed to create project from proposal');
+            else { toast.success('Project created from proposal'); await loadProposals(); }
+            setLoading(false);
+          });
+          setIsConfirmOpen(true);
         }});
       }
 

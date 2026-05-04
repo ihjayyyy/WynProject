@@ -25,7 +25,8 @@ export default function SalesBillingForm() {
 
   const [billingId, setBillingId] = useState(Number(searchParams.get('id') || 0));
   const [mode, setMode] = useState(searchParams.get('mode') || (billingId ? 'view' : 'edit'));
-  const [billing, setBilling] = useState({});
+  // null = not yet loaded; {} = loaded but empty/new; object = loaded with data
+  const [billing, setBilling] = useState(null);
   const [validBilling, setValidBilling] = useState(false);
   const [tableData, setTableData] = useState({ items: [], deletedItems: [] });
   const [projects, setProjects] = useState([]);
@@ -49,10 +50,12 @@ export default function SalesBillingForm() {
   // DYNAMIC FIX: useMemo ensures the fields (and labels) refresh whenever billing.vatType updates
   const billingItemFields = useMemo(() => {
     return SalesBillingItemsFields(billing);
-  }, [billing.id, billing.status, billing.vatType]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [billing?.id, billing?.status, billing?.vatType]);
 
   useEffect(() => {
     getBilling();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [billingId]);
 
   const getToday = () => {
@@ -62,6 +65,23 @@ export default function SalesBillingForm() {
     const dd = String(d.getDate()).padStart(2, '0');
     return `${yyyy}-${mm}-${dd}`;
   };
+
+  const toDateString = (val) => {
+    if (!val) return getToday();
+    try {
+      const d = new Date(val);
+      if (isNaN(d.getTime())) return getToday();
+      const yyyy = d.getFullYear();
+      const mm = String(d.getMonth() + 1).padStart(2, '0');
+      const dd = String(d.getDate()).padStart(2, '0');
+      return `${yyyy}-${mm}-${dd}`;
+    } catch {
+      return getToday();
+    }
+  };
+
+  // null = not yet read, false = read but no data, object = parsed generated billing
+  const generatedBillingRef = React.useRef(null);
 
   const getBilling = async () => {
     let initBilling = { ...SalesBillingService.INITIAL_SALES_BILLING };
@@ -77,13 +97,44 @@ export default function SalesBillingForm() {
       setMode('new');
       setValidBilling(true);
       const today = getToday();
-      initBilling = {
-        ...initBilling,
-        status: 'draft',
-        billingDate: today,
-        dueDate: today,
-        paymentDate: today,
-      };
+
+      // Read sessionStorage only on first call. Cache in a ref so React Strict Mode's
+      // second effect invocation (which empties sessionStorage) still gets the data.
+      if (generatedBillingRef.current === null) {
+        const raw = sessionStorage.getItem('generatedBilling');
+        if (raw) {
+          sessionStorage.removeItem('generatedBilling');
+          try {
+            generatedBillingRef.current = JSON.parse(raw);
+          } catch {
+            generatedBillingRef.current = false;
+          }
+        } else {
+          generatedBillingRef.current = false;
+        }
+      }
+
+      const generated = generatedBillingRef.current;
+      if (generated) {
+        initBilling = {
+          ...initBilling,
+          ...generated,
+          billingDate: toDateString(generated.billingDate),
+          dueDate: toDateString(generated.dueDate),
+          paymentDate: toDateString(generated.paymentDate),
+          children: generated.children || [],
+          deletedChildren: generated.deletedChildren || [],
+        };
+        console.log('Initialized billing from generated data:', initBilling);
+      } else {
+        initBilling = {
+          ...initBilling,
+          status: 'Pending',
+          billingDate: today,
+          dueDate: today,
+          paymentDate: today,
+        };
+      }
     }
     setBilling(initBilling);
     setTableData({ items: initBilling.children || [], deletedItems: initBilling.deletedChildren || [] });
@@ -93,10 +144,10 @@ export default function SalesBillingForm() {
 
   const formTitle = useMemo(() => (
     <div>
-      <span>{billing.code || 'New Billing'}</span>
-      {billing.status && <span style={{ marginLeft: 8, fontSize: '0.8em', opacity: 0.7 }}>({billing.status})</span>}
+      <span>{billing?.code || 'New Billing'}</span>
+      {billing?.status && <span style={{ marginLeft: 8, fontSize: '0.8em', opacity: 0.7 }}>({billing.status})</span>}
     </div>
-  ), [billing.code, billing.status]);
+  ), [billing?.code, billing?.status]);
 
   const detailsUpdated = (items, deletedItems) => {
     const totalVat = (items || []).reduce((sum, item) => sum + (Number(item.vat) || 0), 0);
@@ -139,7 +190,7 @@ export default function SalesBillingForm() {
       ...entity,
       children: normalizedChildren,
       deletedChildren: normalizedDeletedChildren,
-      status: billing.status || 'draft',
+      status: billing.status || 'Pending',
       billingType: billing.billingType || 'Standard',
       billingDate: ensureISODate(billing.billingDate || entity.billingDate),
       dueDate: ensureISODate(billing.dueDate || entity.dueDate),
@@ -165,6 +216,7 @@ export default function SalesBillingForm() {
 
   if (!isAllowed(PageName, 'r')) return <InvalidPage message="Access Denied" />;
   if (!validBilling) return <InvalidPage message="Billing not found." />;
+  if (billing === null) return null; // wait for getBilling to populate
 
   const SaveButton = () =>
     isAllowed(PageName, 'w') && !isReadOnly ? (

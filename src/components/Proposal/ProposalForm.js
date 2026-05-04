@@ -2,14 +2,15 @@
 
 import React, { useContext, useMemo, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { FiFileText } from 'react-icons/fi';
+import { FiCheck, FiFileText, FiSend, FiX } from 'react-icons/fi';
 import EntityForm from '../EntityForm/EntityForm';
 import Input from '../ui/Input/Input';
 import inputStyles from '../ui/Input/Input.module.scss';
 import ProposalMaterialsTable from './ProposalMaterialsTable';
 import Button from '../ui/Button/Button';
 import { useToast } from '../ui/Toast/Toast';
-import { INITIAL_PROPOSAL, getProposalById, createProposal, updateProposal, submitProposal } from '../../services/Proposal';
+import { INITIAL_PROPOSAL, getProposalById, createProposal, updateProposal, submitProposal, approveProposal, rejectProposal, winProposal, loseProposal } from '../../services/Proposal';
+import { convertProposal } from '../../services/Project';
 import ConfirmModal from '../ui/ConfirmModal/ConfirmModal';
 import { getCustomers } from '../../services/Customer';
 import { getInquiries } from '../../services/Inquiry';
@@ -32,6 +33,7 @@ export default function ProposalForm() {
   const [childrenState, setChildrenState] = useState([]);
   const [deletedChildrenState, setDeletedChildrenState] = useState([]);
   const [isAdminView, setIsAdminView] = useState(false); // toggle for testing admin view
+  const [actionLoading, setActionLoading] = useState(false);
   const toast = useToast();
 
   React.useEffect(() => {
@@ -322,6 +324,7 @@ export default function ProposalForm() {
   });
 
   return isAllowed(PageName, 'r') ? (
+    <>
     <EntityForm
       title={formTitle}
       icon={<FiFileText />}
@@ -410,55 +413,151 @@ export default function ProposalForm() {
       columns={3}
       showSubmitButton={false}
       readOnly={isReadOnly || !isAllowed(PageName, 'w')}
-      headerActions={
-        !proposalId ? (
-          isAllowed(PageName, 'w') ? <Button type="submit" variant="save">Create</Button> : null
-        ) : (
+      headerActions={(() => {
+        const proposalStatus = String(initialValues?.proposalStatus || '').toLowerCase();
+        const isDraftStatus = proposalStatus === 'draft';
+        const isSubmitted = proposalStatus === 'submitted';
+        const isApproved = proposalStatus === 'approved';
+        const isRejected = proposalStatus === 'rejected';
+        const isWon = proposalStatus === 'won' || proposalStatus === 'win';
+        const shouldShowGenerateProject = isWon && initialValues?.isProjectCreated === false;
+
+        if (!proposalId) {
+          return isAllowed(PageName, 'w') ? <Button type="submit" variant="save">Create</Button> : null;
+        }
+
+        return (
           <>
             {isReadOnly ? (
-              (
-                <>
-                  {canEnterEditMode && isAllowed(PageName, 'w') ? (
-                    <Button variant="outlinedPrimary" onClick={() => setIsEditModeLocal(true)}>Edit</Button>
-                  ) : null}
-                  {isDraft && isAllowed(PageName, 'w') ? (
-                    <Button variant="primary" onClick={() => {
-                      setConfirmTitle('Submit proposal?');
-                      setConfirmMessage(`Submit proposal \"${initialValues.name || initialValues.code || ''}\"?`);
+              <>
+                {canEnterEditMode && isAllowed(PageName, 'w') ? (
+                  <Button variant="outlinedPrimary" onClick={() => setIsEditModeLocal(true)}>Edit</Button>
+                ) : null}
+                {isDraftStatus && isAllowed(PageName, 'w') ? (
+                  <Button variant="primary" disabled={actionLoading} onClick={() => {
+                    setConfirmTitle('Submit proposal?');
+                    setConfirmMessage(`Submit proposal "${initialValues.name || initialValues.code || ''}"?`);
+                    setConfirmCallback(() => async () => {
+                      setActionLoading(true);
+                      const res = await submitProposal(proposalId);
+                      if (res?.error) toast.error('Failed to submit proposal');
+                      else { toast.success('Proposal submitted'); try { router.push('/projects/proposal'); } catch (err) {} }
+                      setActionLoading(false);
+                    });
+                    setIsConfirmOpen(true);
+                  }}><FiSend size={14} style={{ marginRight: 4 }} />Submit</Button>
+                ) : null}
+                {isSubmitted && isAllowed(PageName, 'a') ? (
+                  <>
+                    <Button variant="save" disabled={actionLoading} onClick={() => {
+                      setConfirmTitle('Approve proposal?');
+                      setConfirmMessage(`Approve proposal "${initialValues.name || initialValues.code || ''}"?`);
                       setConfirmCallback(() => async () => {
-                        try {
-                          const res = await submitProposal(proposalId);
-                          if (res?.error) toast.error('Failed to submit proposal');
-                          else toast.success('Proposal submitted');
-                          try { router.push('/projects/proposal'); } catch (err) {}
-                        } catch (err) {
-                          toast.error('Failed to submit proposal');
-                        }
+                        setActionLoading(true);
+                        const res = await approveProposal(proposalId);
+                        if (res?.error) toast.error('Failed to approve proposal');
+                        else { toast.success('Proposal approved'); try { router.push('/projects/proposal'); } catch (err) {} }
+                        setActionLoading(false);
                       });
                       setIsConfirmOpen(true);
-                    }}>Submit</Button>
-                  ) : null}
-                </>
-              )
+                    }}><FiCheck size={14} style={{ marginRight: 4 }} />Approve</Button>
+                    <Button variant="outlineDanger" disabled={actionLoading} onClick={() => {
+                      setConfirmTitle('Reject proposal?');
+                      setConfirmMessage(`Reject proposal "${initialValues.name || initialValues.code || ''}"?`);
+                      setConfirmCallback(() => async () => {
+                        setActionLoading(true);
+                        const res = await rejectProposal(proposalId);
+                        if (res?.error) toast.error('Failed to reject proposal');
+                        else { toast.success('Proposal rejected'); try { router.push('/projects/proposal'); } catch (err) {} }
+                        setActionLoading(false);
+                      });
+                      setIsConfirmOpen(true);
+                    }}><FiX size={14} style={{ marginRight: 4 }} />Reject</Button>
+                  </>
+                ) : null}
+                {isApproved && isAllowed(PageName, 'w') ? (
+                  <>
+                    <Button variant="save" disabled={actionLoading} onClick={() => {
+                      setConfirmTitle('Mark proposal as Won?');
+                      setConfirmMessage(`Mark proposal "${initialValues.name || initialValues.code || ''}" as Won?`);
+                      setConfirmCallback(() => async () => {
+                        setActionLoading(true);
+                        const res = await winProposal(proposalId);
+                        if (res?.error) toast.error('Failed to mark proposal as won');
+                        else { toast.success('Proposal marked as won'); try { router.push('/projects/proposal'); } catch (err) {} }
+                        setActionLoading(false);
+                      });
+                      setIsConfirmOpen(true);
+                    }}><FiCheck size={14} style={{ marginRight: 4 }} />Win</Button>
+                    <Button variant="outlineDanger" disabled={actionLoading} onClick={() => {
+                      setConfirmTitle('Mark proposal as Lost?');
+                      setConfirmMessage(`Mark proposal "${initialValues.name || initialValues.code || ''}" as Lost?`);
+                      setConfirmCallback(() => async () => {
+                        setActionLoading(true);
+                        const res = await loseProposal(proposalId);
+                        if (res?.error) toast.error('Failed to mark proposal as lost');
+                        else { toast.success('Proposal marked as lost'); try { router.push('/projects/proposal'); } catch (err) {} }
+                        setActionLoading(false);
+                      });
+                      setIsConfirmOpen(true);
+                    }}><FiX size={14} style={{ marginRight: 4 }} />Lose</Button>
+                  </>
+                ) : null}
+                {isRejected && isAllowed(PageName, 'w') ? (
+                  <Button variant="outlineDanger" disabled={actionLoading} onClick={() => {
+                    setConfirmTitle('Mark proposal as Lost?');
+                    setConfirmMessage(`Mark proposal "${initialValues.name || initialValues.code || ''}" as Lost?`);
+                    setConfirmCallback(() => async () => {
+                      setActionLoading(true);
+                      const res = await loseProposal(proposalId);
+                      if (res?.error) toast.error('Failed to mark proposal as lost');
+                      else { toast.success('Proposal marked as lost'); try { router.push('/projects/proposal'); } catch (err) {} }
+                      setActionLoading(false);
+                    });
+                    setIsConfirmOpen(true);
+                  }}><FiX size={14} style={{ marginRight: 4 }} />Lose</Button>
+                ) : null}
+                {shouldShowGenerateProject && isAllowed(PageName, 'w') ? (
+                  <Button variant="primary" disabled={actionLoading} onClick={() => {
+                    setConfirmTitle('Generate Project?');
+                    setConfirmMessage(`Create a project from proposal "${initialValues.name || initialValues.code || ''}"?`);
+                    setConfirmCallback(() => async () => {
+                      setActionLoading(true);
+                      const res = await convertProposal(proposalId);
+                      if (res?.error) toast.error('Failed to create project from proposal');
+                      else { toast.success('Project created from proposal'); try { router.push('/projects/proposal'); } catch (err) {} }
+                      setActionLoading(false);
+                    });
+                    setIsConfirmOpen(true);
+                  }}><FiCheck size={14} style={{ marginRight: 4 }} />Generate Project</Button>
+                ) : null}
+              </>
             ) : (
               <>
-                <Button
-                  variant="outlineDanger"
-                      onClick={() => {
-                    if (mode === 'edit') {
-                      router.push(`/projects/proposal/proposalform?id=${proposalId}`);
-                      return;
-                    }
-                    setIsEditModeLocal(false);
-                  }}>
-                  Cancel
-                </Button>
+                <Button variant="outlineDanger" onClick={() => {
+                  if (mode === 'edit') {
+                    router.push(`/projects/proposal/proposalform?id=${proposalId}`);
+                    return;
+                  }
+                  setIsEditModeLocal(false);
+                }}>Cancel</Button>
                 {isAllowed(PageName, 'w') ? <Button type="submit" variant="save">Save</Button> : null}
               </>
             )}
           </>
-        )
-      }
+        );
+      })()}
     />
-  ) : <InvalidPage />;
+    <ConfirmModal
+      open={isConfirmOpen}
+      title={confirmTitle}
+      message={confirmMessage}
+      confirmText="Confirm"
+      onConfirm={async () => {
+        setIsConfirmOpen(false);
+        if (confirmCallback) await confirmCallback();
+      }}
+      onCancel={() => setIsConfirmOpen(false)}
+    />
+  </>) : <InvalidPage />;
 }

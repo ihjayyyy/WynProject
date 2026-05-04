@@ -8,8 +8,8 @@ import DropdownAction from '../ui/DropdownAction/DropdownAction';
 import Landing from '../ui/Landing/Landing';
 
 const baseColumns = [
-  { header: 'Id', key: 'id' },
-  { header: 'Code', key: 'code' },
+  // { header: 'Id', key: 'id' },
+  { header: 'Billing No.', key: 'salesBillingNo' },
   { header: 'Customer', key: 'customerName' },
   { header: 'Status', key: 'status' },
   { header: 'Amount', key: 'amount' },
