@@ -185,9 +185,14 @@ export default function EntityForm({ title, icon, fields, initialValues = {}, on
     }
   };
 
-  const formatDisplayValue = (value, field) => {
+  const formatDisplayValue = (value, field, allValues) => {
     if (value === null || value === undefined || value === '') {
       return '—';
+    }
+
+    // Field-level readOnlyDisplay: callback (values) => string takes priority
+    if (typeof field?.readOnlyDisplay === 'function') {
+      return field.readOnlyDisplay(allValues || {});
     }
 
     // Format date/datetime values for read-only display when field type is provided
@@ -200,6 +205,10 @@ export default function EntityForm({ title, icon, fields, initialValues = {}, on
       if (fieldType === 'datetime-local' || fieldType === 'datetime') {
         const d = new Date(value);
         if (!isNaN(d)) return d.toLocaleString();
+      }
+      if (fieldType === 'select' && Array.isArray(field.options)) {
+        const match = field.options.find((o) => String(o.value) === String(value));
+        if (match) return match.label;
       }
     } catch (err) {
       // fallthrough to default
@@ -293,7 +302,7 @@ export default function EntityForm({ title, icon, fields, initialValues = {}, on
                 <div className={styles.readOnlyField}>
                   {f.label && <label className={styles.readOnlyLabel}>{f.label}</label>}
                   <div className={`${styles.readOnlyValue} ${f.multiline ? styles.multilineValue : ''}`}>
-                    {formatDisplayValue(values[f.name], f)}
+                    {formatDisplayValue(values[f.name], f, values)}
                   </div>
                 </div>
               </div>
