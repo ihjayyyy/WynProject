@@ -1,5 +1,13 @@
-import AssemblyLanding from "@/components/Materials/AssemblyLanding";
+'use client';
+import { Suspense } from 'react';
+import dynamic from 'next/dynamic';
 
-export default function AssemblyPage() {
-  return <AssemblyLanding />;
+const AssemblyLanding = dynamic(() => import("@/components/Materials/AssemblyLanding"), { ssr: false });
+
+export default function Page() {
+  return (
+    <Suspense fallback={"Loading..."}>
+      <AssemblyLanding/>
+    </Suspense>
+  );
 }

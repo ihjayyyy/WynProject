@@ -1,5 +1,13 @@
-import WarehouseLanding from '../../../../components/Warehouse/WarehouseLanding';
+'use client';
+import { Suspense } from 'react';
+import dynamic from 'next/dynamic';
 
-export default function WarehousePage() {
-  return <WarehouseLanding />;
+const WarehouseLanding = dynamic(() => import("@/components/Warehouse/WarehouseLanding"), { ssr: false });
+
+export default function Page() {
+  return (
+    <Suspense fallback={"Loading..."}>
+      <WarehouseLanding/>
+    </Suspense>
+  );
 }

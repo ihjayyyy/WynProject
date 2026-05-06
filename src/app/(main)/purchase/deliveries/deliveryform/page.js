@@ -1,8 +1,13 @@
-'use client'
+'use client';
+import { Suspense } from 'react';
+import dynamic from 'next/dynamic';
 
-import PurchaseDeliveryForm from '../../../../../components/PurchaseDelivery/DeliveryForm';
-export default function PurchaseDeliveryFormPage() {
+const PurchaseDeliveryForm = dynamic(() => import("@/components/PurchaseDelivery/DeliveryForm"), { ssr: false });
 
+export default function Page() {
   return (
-   <PurchaseDeliveryForm /> ) 
+    <Suspense fallback={"Loading..."}>
+      <PurchaseDeliveryForm/>
+    </Suspense>
+  );
 }

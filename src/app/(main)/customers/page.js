@@ -1,5 +1,13 @@
-import CustomersLanding from '../../../components/Customers/CustomersLanding';
+'use client';
+import { Suspense } from 'react';
+import dynamic from 'next/dynamic';
 
-export default function CustomersPage() {
-  return <CustomersLanding />;
+const CustomersLanding = dynamic(() => import("@/components/Customers/CustomersLanding"), { ssr: false });
+
+export default function Page() {
+  return (
+    <Suspense fallback={"Loading..."}>
+      <CustomersLanding/>
+    </Suspense>
+  );
 }

@@ -1,5 +1,13 @@
-import MaterialInventoryLanding from '../../../../components/Inventory/MaterialInventoryLanding';
+'use client';
+import { Suspense } from 'react';
+import dynamic from 'next/dynamic';
 
-export default function MaterialInventoryPage() {
-  return <MaterialInventoryLanding />;
+const MaterialInventoryLanding = dynamic(() => import("@/components/Inventory/MaterialInventoryLanding"), { ssr: false });
+
+export default function Page() {
+  return (
+    <Suspense fallback={"Loading..."}>
+      <MaterialInventoryLanding/>
+    </Suspense>
+  );
 }

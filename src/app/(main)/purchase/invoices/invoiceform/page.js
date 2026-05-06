@@ -1,7 +1,13 @@
-import PurchaseInvoiceForm from "@/components/Invoice/InvoiceForm"
+'use client';
+import { Suspense } from 'react';
+import dynamic from 'next/dynamic';
 
-export default function InvoiceFormPage() {
+const PurchaseInvoiceForm = dynamic(() => import("@/components/Invoice/InvoiceForm"), { ssr: false });
 
-return (
-   <PurchaseInvoiceForm /> ) 
+export default function Page() {
+  return (
+    <Suspense fallback={"Loading..."}>
+      <PurchaseInvoiceForm/>
+    </Suspense>
+  );
 }

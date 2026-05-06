@@ -1,8 +1,7 @@
 'use client';
 
 import React, { useMemo, useState, useEffect,useContext } from 'react';
-import { useRouter } from 'next/navigation';
-import { useSearchParams } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { FiList } from 'react-icons/fi';
 import {  POFields, PODetailsColumns, POItemsFields } from './PurchaseOrdersModels';
 import DetailsTable from '../ItemDetails/DetailsTable';
@@ -16,6 +15,7 @@ import { useToast } from '../ui/Toast/Toast';
 import InvalidPage from '@/components/InvalidPage/page';
 import { AccessContext } from '@/app/contextProviders/accessContext';
 import { useConfirmModal } from '@/app/contextProviders/confirmModalContext';
+
 
 export default function PurchaseOrdersForm() {
   const PageName = 'Purchase.Orders';
@@ -87,6 +87,7 @@ export default function PurchaseOrdersForm() {
      const fetchSupplier = async() => {
 
          const res = await getSuppliers();
+         console.log(res)
         if(res && !res.error){
           setSuppliers(res.data);          
         }
@@ -113,7 +114,7 @@ const GetPO = async () => {
   if (orderId !== 0) {
     const getpo = await Get(orderId);
     initPO = getpo.data;
-
+    console.log(initPO)
     // Normalize date fields for form input
     if (initPO.orderDate) {
       const d = new Date(initPO.orderDate);
@@ -193,7 +194,8 @@ const handleSaveConfirm =(entity)=>{
   const save = async(entity)=>{
 
     //final validate entity
-
+    // call entity form validator
+    
     entity.children = (po.children || []).map((child) => ({
       ...child,
       quantity: Number(child.quantity || 0),

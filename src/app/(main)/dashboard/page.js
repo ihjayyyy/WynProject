@@ -1,5 +1,13 @@
-import Dashboard from "../../../components/Dashboard/Dashboard";
+'use client';
+import { Suspense } from 'react';
+import dynamic from 'next/dynamic';
 
-export default function DashboardPage() {
-  return <Dashboard />;
+const Dashboard = dynamic(() => import("@/components/Dashboard/Dashboard"), { ssr: false });
+
+export default function Page() {
+  return (
+    <Suspense fallback={"Loading..."}>
+      <Dashboard/>
+    </Suspense>
+  );
 }

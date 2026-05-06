@@ -1,5 +1,13 @@
-import ToolsInventoryLanding from '../../../../components/Inventory/ToolsInventoryLanding';
+'use client';
+import { Suspense } from 'react';
+import dynamic from 'next/dynamic';
 
-export default function ToolsInventoryPage() {
-  return <ToolsInventoryLanding />;
+const ToolsInventoryLanding = dynamic(() => import("@/components/Inventory/ToolsInventoryLanding"), { ssr: false });
+
+export default function Page() {
+  return (
+    <Suspense fallback={"Loading..."}>
+      <ToolsInventoryLanding/>
+    </Suspense>
+  );
 }

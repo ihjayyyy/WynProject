@@ -1,5 +1,13 @@
-import UnitOfMeasureLanding from '../../../../components/UnitOfMeasure/UnitOfMeasureLanding';
+'use client';
+import { Suspense } from 'react';
+import dynamic from 'next/dynamic';
 
-export default function UOMPage() {
-  return <UnitOfMeasureLanding />;
+const UnitOfMeasureLanding = dynamic(() => import("@/components/UnitOfMeasure/UnitOfMeasureLanding"), { ssr: false });
+
+export default function Page() {
+  return (
+    <Suspense fallback={"Loading..."}>
+      <UnitOfMeasureLanding/>
+    </Suspense>
+  );
 }

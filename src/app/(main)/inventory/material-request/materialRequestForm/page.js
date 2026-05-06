@@ -1,5 +1,13 @@
-import MaterialRequestForm from '../../../../../components/Inventory/MaterialRequest/MaterialRequestForm';
+'use client';
+import { Suspense } from 'react';
+import dynamic from 'next/dynamic';
 
-export default function MaterialRequestFormPage() {
-  return <MaterialRequestForm />;
+const MaterialRequestForm = dynamic(() => import("@/components/Inventory/MaterialRequest/MaterialRequestForm"), { ssr: false });
+
+export default function Page() {
+  return (
+    <Suspense fallback={"Loading..."}>
+      <MaterialRequestForm/>
+    </Suspense>
+  );
 }

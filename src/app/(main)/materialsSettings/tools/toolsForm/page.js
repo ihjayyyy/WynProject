@@ -1,5 +1,13 @@
-import ToolsForm from '../../../../../components/Materials/ToolsForm';
+'use client';
+import { Suspense } from 'react';
+import dynamic from 'next/dynamic';
 
-export default function ToolsFormPage() {
-  return <ToolsForm />;
+const ToolsForm = dynamic(() => import("@/components/Materials/ToolsForm"), { ssr: false });
+
+export default function Page() {
+  return (
+    <Suspense fallback={"Loading..."}>
+      <ToolsForm/>
+    </Suspense>
+  );
 }

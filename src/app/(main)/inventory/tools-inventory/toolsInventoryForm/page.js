@@ -1,5 +1,13 @@
-import ToolsInventoryForm from '../../../../../components/Inventory/ToolsInventoryForm';
+'use client';
+import { Suspense } from 'react';
+import dynamic from 'next/dynamic';
 
-export default function ToolsInventoryFormPage() {
-  return <ToolsInventoryForm />;
+const ToolsInventoryForm = dynamic(() => import("@/components/Inventory/ToolsInventoryForm"), { ssr: false });
+
+export default function Page() {
+  return (
+    <Suspense fallback={"Loading..."}>
+      <ToolsInventoryForm/>
+    </Suspense>
+  );
 }

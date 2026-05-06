@@ -1,5 +1,13 @@
-import WarehouseForm from '../../../../../components/Warehouse/WarehouseForm';
+'use client';
+import { Suspense } from 'react';
+import dynamic from 'next/dynamic';
 
-export default function WarehouseFormPage() {
-  return <WarehouseForm />;
+const WarehouseForm = dynamic(() => import("@/components/Warehouse/WarehouseForm"), { ssr: false });
+
+export default function Page() {
+  return (
+    <Suspense fallback={"Loading..."}>
+      <WarehouseForm/>
+    </Suspense>
+  );
 }

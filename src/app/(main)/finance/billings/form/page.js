@@ -1,7 +1,13 @@
-'use client'
-import { useContext } from 'react';
-import SalesBillingForm from '@/components/SalesBilling/SalesBillingForm';
+'use client';
+import { Suspense } from 'react';
+import dynamic from 'next/dynamic';
+
+const SalesBillingForm = dynamic(() => import("@/components/SalesBilling/SalesBillingForm"), { ssr: false });
 
 export default function Page() {
-  return (<SalesBillingForm />) 
+  return (
+    <Suspense fallback={"Loading..."}>
+      <SalesBillingForm/>
+    </Suspense>
+  );
 }

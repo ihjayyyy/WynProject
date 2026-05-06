@@ -1,13 +1,12 @@
 'use client';
 
 import React, { useMemo, useState } from 'react';
-import { useRouter } from 'next/navigation';
-import { useSearchParams } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { FiUserCheck } from 'react-icons/fi';
 import EntityForm from '../EntityForm/EntityForm';
 import Button from '../ui/Button/Button';
 import { useToast } from '../ui/Toast/Toast';
-import { INITIAL_STAFF, getStaffs, createStaff, updateStaff } from '../../services/Staff';
+import { INITIAL_STAFF, getStaffs, createStaff, updateStaff } from '@/services/Staff';
 
 export default function StaffForm() {
   const router = useRouter();

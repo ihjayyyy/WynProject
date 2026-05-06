@@ -1,5 +1,13 @@
-import InquiryLanding from '../../../components/Inquiry/InquiryLanding';
+'use client';
+import { Suspense } from 'react';
+import dynamic from 'next/dynamic';
 
-export default function InquiryPage() {
-  return <InquiryLanding />;
+const InquiryLanding = dynamic(() => import("@/components/Inquiry/InquiryLanding"), { ssr: false });
+
+export default function Page() {
+  return (
+    <Suspense fallback={"Loading..."}>
+      <InquiryLanding/>
+    </Suspense>
+  );
 }

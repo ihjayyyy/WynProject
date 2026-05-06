@@ -1,5 +1,13 @@
-import AssemblyForm from "@/components/Materials/AssemblyForm";
+'use client';
+import { Suspense } from 'react';
+import dynamic from 'next/dynamic';
 
-export default function AssemblyFormPage() {
-  return <AssemblyForm />;
+const AssemblyForm = dynamic(() => import("@/components/Materials/AssemblyForm"), { ssr: false });
+
+export default function Page() {
+  return (
+    <Suspense fallback={"Loading..."}>
+      <AssemblyForm/>
+    </Suspense>
+  );
 }

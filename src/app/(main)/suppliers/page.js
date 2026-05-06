@@ -1,5 +1,13 @@
-import SuppliersLanding from '../../../components/Suppliers/SuppliersLanding';
+'use client';
+import { Suspense } from 'react';
+import dynamic from 'next/dynamic';
 
-export default function SuppliersPage() {
-  return <SuppliersLanding />;
+const SuppliersLanding = dynamic(() => import("@/components/Suppliers/SuppliersLanding"), { ssr: false });
+
+export default function Page() {
+  return (
+    <Suspense fallback={"Loading..."}>
+      <SuppliersLanding/>
+    </Suspense>
+  );
 }

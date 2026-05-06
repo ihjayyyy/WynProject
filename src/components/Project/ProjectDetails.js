@@ -2,7 +2,7 @@
 
 import React, { useContext, useEffect, useState } from 'react';
 import styles from './ProjectDetails.module.scss';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import Button from '../ui/Button/Button';
 import Input from '../ui/Input/Input';
 import Breadcrumbs from '../ui/Breadcrumbs/Breadcrumbs';
@@ -20,7 +20,7 @@ import { FiBriefcase } from 'react-icons/fi';
 import { AccessContext } from '@/app/contextProviders/accessContext';
 import InvalidPage from '@/components/InvalidPage/page';
 
-export default function ProjectDetails({ id: propId }) {
+export default function ProjectDetails() {
   const PageName = 'Projects.Projects';
   const { isAllowed } = useContext(AccessContext);
   const [project, setProject] = useState(null);
@@ -30,6 +30,9 @@ export default function ProjectDetails({ id: propId }) {
   const [activeTab, setActiveTab] = useState('Details');
   const toast = useToast();
   const router = useRouter();
+  
+  const searchParams = useSearchParams();
+  const projectId = searchParams?.get ? searchParams.get('id') : null;
 
   useEffect(() => {
     let mounted = true;
@@ -41,7 +44,7 @@ export default function ProjectDetails({ id: propId }) {
           toast.error('Failed to load project');
         } else {
           const list = res.data || [];
-          const pid = propId || (typeof window !== 'undefined' ? new URLSearchParams(window.location.search).get('id') : null);
+          const pid = projectId || (typeof window !== 'undefined' ? new URLSearchParams(window.location.search).get('id') : null);
           const found = list.find((p) => String(p.id) === String(pid));
           if (mounted) {
             setProject(found || null);
@@ -54,7 +57,7 @@ export default function ProjectDetails({ id: propId }) {
       setLoading(false);
     })();
     return () => (mounted = false);
-  }, [propId, toast]);
+  }, [projectId, toast]);
 
   const save = async () => {
     if (!project) return;

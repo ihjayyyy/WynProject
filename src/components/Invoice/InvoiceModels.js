@@ -125,7 +125,7 @@ import * as Yup from "yup";
                   
                   let vat = 0;
                   let amount = subamount;
-                  const vatType = po && inv.vatType ? inv.vatType : "";
+                  const vatType = inv && inv.vatType ? inv.vatType : "";
                   switch(vatType){
                      case "included":
                         vat = Math.round((subamount - (subamount / 1.12)) * 100) / 100;
@@ -167,7 +167,7 @@ import * as Yup from "yup";
                   let amount = subamount;
                    let vat = 0;
 
-                  const vatType = po && inv.vatType ? inv.vatType : "";
+                  const vatType = inv && inv.vatType ? inv.vatType : "";
                   switch(vatType){
                      case "included":
                         vat = Math.round((subamount - (subamount / 1.12)) * 100) / 100;
@@ -199,7 +199,7 @@ import * as Yup from "yup";
                  const subamount = (item.value * quantity.value) - discount.value;
                   let amount = subamount;
                    let vat = 0;
-                  const vatType = po && inv.vatType ? inv.vatType : "";
+                  const vatType = inv && inv.vatType ? inv.vatType : "";
                   switch(vatType){
                      case "included":
                         vat = Math.round((subamount - (subamount / 1.12)) * 100) / 100;
@@ -231,7 +231,7 @@ import * as Yup from "yup";
                   const subamount = (quantity.value * unitcost.value) - item.value;
                   let amount = subamount;
                    let vat = 0;
-                  const vatType = po && inv.vatType ? inv.vatType : "";
+                  const vatType = inv && inv.vatType ? inv.vatType : "";
                   switch(vatType){
                      case "included":
                         vat = Math.round((subamount - (subamount / 1.12)) * 100) / 100;

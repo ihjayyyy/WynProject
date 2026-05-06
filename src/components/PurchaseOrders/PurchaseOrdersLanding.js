@@ -29,7 +29,6 @@ const router = useRouter();
 
   const getPO = async()=> {
       const pos = await GetAll();
-      console.log(pos.data)
       setOrders(pos.data)
   }
   useEffect(()=>{
