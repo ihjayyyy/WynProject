@@ -3,8 +3,8 @@
 import React, { useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { FiFileText } from 'react-icons/fi';
-import EntityForm from '../EntityForm/EntityForm';
-import { INITIAL_MATERIAL_REQUEST, getMaterialRequests } from '../../services/MaterialRequest';
+import EntityForm from '../../../components/EntityForm/EntityForm';
+import { INITIAL_MATERIAL_REQUEST, getMaterialRequests } from '../../../services/MaterialRequest';
 
 export default function MaterialRequestForm() {
   const router = useRouter();
