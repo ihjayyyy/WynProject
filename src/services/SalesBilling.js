@@ -123,6 +123,23 @@ async function getSalesBillingByProjectId(projectId) {
   }
 }
 
+// GET /api/SalesBilling/BilledByCustomerId/{customerId} - fetch sales billings by customer ID
+async function getSalesBillingByCustomerId(customerId) {
+  if (!customerId) return { data: null, error: 'Missing customerId' };
+  try {
+    const data = await parseResponse(
+      await fetch(`${API_BASE_URL}/BilledByCustomerId/${customerId}`, {
+        method: 'GET',
+        headers: { 'Content-Type': 'application/json' },
+      })
+    );
+    return { data, error: null };
+  } catch (error) {
+    return { data: null, error: error?.message || error };
+  }
+}
+
+
 
 const SalesBillingService = {
   createSalesBilling,
@@ -131,6 +148,7 @@ const SalesBillingService = {
   getSalesBillingByProjectId,
   editSalesBilling,
   markAsBilled,
+  getSalesBillingByCustomerId,
   INITIAL_SALES_BILLING,
 };
 

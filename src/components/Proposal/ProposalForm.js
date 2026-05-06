@@ -146,7 +146,7 @@ export default function ProposalForm() {
       }
     } },
     { name: 'spacer-1', type: 'spacer', span: 'span1' },
-    { name: 'proposalNumber', label: 'Proposal Number', span: 'span1', readOnly: true },
+    { name: 'proposalNo', label: 'Proposal Number', span: 'span1', readOnly: true },
 
    
     { name: 'name', label: 'Proposal Name', span: 'span1' },

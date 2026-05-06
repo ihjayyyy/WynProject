@@ -15,7 +15,7 @@ const billingColumns = [
   { header: 'Status', key: 'status', render: (item) => <StatusBadge status={item.status} /> },
   { header: 'Amount', key: 'amount', render: (item) => Number(item.amount || 0).toLocaleString() },
   { header: 'Balance', key: 'balance', render: (item) => Number(item.balance || 0).toLocaleString() },
-  { header: 'Payment Status', key: 'paymentStatus' },
+  { header: 'Payment Status', key: 'paymentStatus', render: (item) => <StatusBadge status={item.paymentStatus} /> },
 ];
 
 const SUB_TABS = ['Billing', 'Collection'];
@@ -57,6 +57,7 @@ export default function ProjectBillingCollectionTab({ projectId = 0 }) {
             columns={billingColumns}
             data={billings}
             emptyMessage="No billings found"
+            showActions={false}
             />
         </>
     )}

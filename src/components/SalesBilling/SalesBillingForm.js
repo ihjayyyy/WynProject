@@ -15,6 +15,7 @@ import ProjectService from '@/services/Project';
 import CustomerService from '@/services/Customer';
 import Button from '../ui/Button/Button';
 import StatusBadge from '../ui/StatusBadge/StatusBadge';
+import SBStyles from './SalesBilling.module.scss';
 
 export default function SalesBillingForm() {
   const PageName = 'Finance.SalesBilling';
@@ -32,11 +33,24 @@ export default function SalesBillingForm() {
   const [tableData, setTableData] = useState({ items: [], deletedItems: [] });
   const [projects, setProjects] = useState([]);
   const [customers, setCustomers] = useState([]);
+  const [totalExcluded, setTotalExcluded] = useState(0);
+  const [totalVAT, setTotalVAT] = useState(0);
+  const [totalIncluded, setTotalIncluded] = useState(0);
 
   useEffect(() => {
     ProjectService.getProjects().then(({ data }) => setProjects(Array.isArray(data) ? data : []));
     CustomerService.getCustomers().then(({ data }) => setCustomers(Array.isArray(data) ? data : []));
   }, []);
+
+  // Recompute totals whenever items are loaded or changed
+  useEffect(() => {
+    const items = tableData.items || [];
+    const vat = items.reduce((sum, item) => sum + (Number(item.vat) || 0), 0);
+    const inc = items.reduce((sum, item) => sum + (Number(item.totalAmount) || 0), 0);
+    setTotalVAT(vat);
+    setTotalIncluded(inc);
+    setTotalExcluded(inc - vat);
+  }, [tableData.items]);
 
   // Sync the local billing state when the user interacts with the main form fields
   const handleMainFieldChange = (name, value, allValues) => {
@@ -156,9 +170,8 @@ export default function SalesBillingForm() {
   ), [billing?.id, billing?.salesBillingNo, billing?.status]);
 
   const detailsUpdated = (items, deletedItems) => {
-    const totalVat = (items || []).reduce((sum, item) => sum + (Number(item.vat) || 0), 0);
     setTableData({ items, deletedItems });
-    setBilling(prev => ({ ...prev, children: items, deletedChildren: deletedItems, vat: totalVat }));
+    setBilling(prev => ({ ...prev, children: items, deletedChildren: deletedItems }));
   };
 
   const save = async (entity) => {
@@ -211,6 +224,8 @@ export default function SalesBillingForm() {
       billingType: billing.billingType || 'Standard',
       billingDate: ensureISODate(billing.billingDate || entity.billingDate),
       dueDate: ensureISODate(billing.dueDate || entity.dueDate),
+      amount: totalIncluded,
+      vat: totalVAT,
     };
     let res;
     if (!updatedBilling.id || updatedBilling.id === 0) {
@@ -265,15 +280,30 @@ export default function SalesBillingForm() {
       fields={billingFields}
       initialValues={billing}
       extraContent={
-        <DetailsTable
-          itemModalHeader="Billing Details"
-          parentId={billingId}
-          columns={SalesBillingDetailsColumns}
-          editable={isAllowed(PageName, 'w') && !isReadOnly}
-          itemFields={billingItemFields}
-          data={tableData}
-          onChange={detailsUpdated}
-        />
+        <div className={SBStyles.extraContentContainer}>
+          <DetailsTable
+            itemModalHeader="Billing Details"
+            parentId={billingId}
+            columns={SalesBillingDetailsColumns}
+            editable={isAllowed(PageName, 'w') && !isReadOnly}
+            itemFields={billingItemFields}
+            data={tableData}
+            onChange={detailsUpdated}
+          />
+          <div className={SBStyles.summaryContainer}>
+            <div className={SBStyles.notesContainer}>
+
+            </div>
+            <div className={SBStyles.totalContainer}>
+              <div className={SBStyles.totalLabel}>Total Excluding VAT:</div>
+              <div className={SBStyles.totalValue}>{totalExcluded.toFixed(2)}</div>
+              <div className={SBStyles.totalLabel}>Total VAT:</div>
+              <div className={SBStyles.totalValue}>{totalVAT.toFixed(2)}</div>
+              <div className={SBStyles.totalLabel}>Total Including VAT:</div>
+              <div className={`${SBStyles.totalValue} ${SBStyles.highlight}`}>{totalIncluded.toFixed(2)}</div>
+            </div>
+          </div>
+        </div>
       }
       onSubmit={handleSaveConfirm}
       backPath="/finance/billings"

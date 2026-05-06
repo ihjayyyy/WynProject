@@ -5,7 +5,7 @@ export const SalesBillingFields = (
   customers = [],
   onFieldChanged // Added to sync form state to parent state
 ) => [
-  { name: 'code', label: 'Billing Code', span: 'span1', readOnly: true },
+  { name: 'code', label: 'Billing Code', span: 'span1', readOnly: true, hidden: true },
   {
     name: 'customerName',
     label: 'Customer Name',
@@ -44,11 +44,17 @@ export const SalesBillingFields = (
     },
   },
   { name: 'name', hidden: true, span: 'span1' },
-  { name: 'spacer-2', type: 'spacer', span: 'span1' },
+  { name: 'spacer-2', type: 'spacer', span: 'span2' },
   { name: 'billingDate', label: 'Billing Date', type: 'date', span: 'span2' },
   { name: 'customerNumber', label: 'Customer Number', span: 'span2' },
   { name: 'contactPerson', label: 'Contact Person', span: 'span2' },
-  {
+ 
+  { name: 'spacer-3', type: 'spacer', span: 'span2' },
+  { name: 'dueDate', label: 'Due Date', type: 'date', span: 'span2' },
+
+  // { name: 'paymentDate', label: 'Payment Date', type: 'date', span: 'span2' },
+  { name: 'description', label: 'Description', type: 'textarea', span: 'span5' },
+   {
     name: 'vatType',
     label: 'VAT Type',
     type: 'select',
@@ -65,15 +71,9 @@ export const SalesBillingFields = (
       if (onFieldChanged) onFieldChanged('vatType', val, valuesCopy);
     }
   },
-  { name: 'spacer-3', type: 'spacer', span: 'span1' },
-  { name: 'dueDate', label: 'Due Date', type: 'date', span: 'span2' },
-
-  // { name: 'paymentDate', label: 'Payment Date', type: 'date', span: 'span2' },
-  { name: 'description', label: 'Description', type: 'textarea', span: 'span5' },
-  { name: 'spacer-4', type: 'spacer', span: 'span1' },
   { name: 'projectContractAmount', label: 'Project Contract Amount', type: 'number', span: 'span2' },
   // { name: 'balance', label: 'Balance', type: 'number', span: 'span1' },
-  { name: 'amount', label: 'Amount', type: 'number', span: 'span1' },
+  { name: 'amount', label: 'Amount', type: 'number', span: 'span1', hidden:true },
 ];
 
 export const SalesBillingDetailsColumns = [
