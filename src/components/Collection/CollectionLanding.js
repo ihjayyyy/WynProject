@@ -11,7 +11,14 @@ const baseColumns = [
   { header: 'Receipt No.', key: 'receiptNumber' },
   { header: 'Customer', key: 'customerName' },
   { header: 'Description', key: 'description' },
-  { header: 'Date', key: 'date' },
+  {
+    header: 'Date',
+    key: 'date',
+    render: (item) =>
+      item.date
+        ? new Date(item.date).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: '2-digit' })
+        : '—',
+  },
   { header: 'Amount', key: 'amount' },
   { header: 'Total Received', key: 'totalAmountReceived' },
   { header: 'Total Paid', key: 'totalAmountPaid' },

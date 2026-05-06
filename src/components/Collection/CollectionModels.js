@@ -13,10 +13,9 @@ export const CollectionFields = (customers = [], onFieldChanged) => [
       if (onFieldChanged) onFieldChanged('customerId', val, valuesCopy);
     },
   },
-  { name: 'receiptNumber', label: 'Receipt Number', span: 'span2' },
+  { name: 'spacer-1', type: 'spacer', span: 'span4' },
   { name: 'date', label: 'Date', type: 'date', span: 'span2' },
-  { name: 'checkNumber', label: 'Check Number', span: 'span2' },
-  { name: 'description', label: 'Description', type: 'textarea', span: 'span5' },
+
   {
     name: 'withholdingTaxPercent',
     label: 'Withholding Tax %',
@@ -28,6 +27,14 @@ export const CollectionFields = (customers = [], onFieldChanged) => [
       if (onFieldChanged) onFieldChanged('withholdingTaxPercent', val, valuesCopy);
     },
   },
+  { name: 'spacer-2', type: 'spacer', span: 'span4' },
+
+  { name: 'receiptNumber', label: 'Receipt Number', span: 'span2' },
+  { name: 'description', label: 'Description', type: 'textarea', span: 'span5' },
+  { name: 'spacer-3', type: 'spacer', span: 'span1' },
+
+  { name: 'checkNumber', label: 'Check Number', span: 'span2' },
+
 ];
 
 export const CollectionDetailsColumns = [
