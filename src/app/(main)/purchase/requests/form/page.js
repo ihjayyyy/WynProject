@@ -1,8 +1,13 @@
-'use client'
+'use client';
+import { Suspense } from 'react';
+import dynamic from 'next/dynamic';
 
-import PRForm from '../../../../../components/PurchaseRequests/PRForm';
-export default function OrdersFormPage() {
+const PRForm = dynamic(() => import("@/components/PurchaseRequests/PRForm"), { ssr: false });
 
+export default function Page() {
   return (
-   <PRForm /> ) 
+    <Suspense fallback={"Loading..."}>
+      <PRForm/>
+    </Suspense>
+  );
 }

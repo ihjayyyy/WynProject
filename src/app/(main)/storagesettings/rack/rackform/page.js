@@ -1,5 +1,13 @@
-import RackForm from '../../../../../components/Rack/RackForm';
+'use client';
+import { Suspense } from 'react';
+import dynamic from 'next/dynamic';
 
-export default function RackFormPage() {
-  return <RackForm />;
+const RackForm = dynamic(() => import("@/components/Rack/RackForm"), { ssr: false });
+
+export default function Page() {
+  return (
+    <Suspense fallback={"Loading..."}>
+      <RackForm/>
+    </Suspense>
+  );
 }

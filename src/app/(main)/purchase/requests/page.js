@@ -1,7 +1,13 @@
-'use client'
-import { useContext } from 'react';
-import PRLanding from '../../../../components/PurchaseRequests/PRLanding';
+'use client';
+import { Suspense } from 'react';
+import dynamic from 'next/dynamic';
+
+const PRLanding = dynamic(() => import("@/components/PurchaseRequests/PRLanding"), { ssr: false });
 
 export default function Page() {
-  return (<PRLanding />) 
+  return (
+    <Suspense fallback={"Loading..."}>
+      <PRLanding/>
+    </Suspense>
+  );
 }

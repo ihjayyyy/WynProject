@@ -1,7 +1,13 @@
-import ProjectDetails from '../../../../../components/Project/ProjectDetails';
+'use client';
+import { Suspense } from 'react';
+import dynamic from 'next/dynamic';
 
-export default async function Page({ searchParams }) {
-  const params = await searchParams;
-  const id = params?.id || null;
-  return <ProjectDetails id={id} />;
+const ProjectDetails = dynamic(() => import("@/components/Project/ProjectDetails"), { ssr: false });
+
+export default function Page() {
+  return (
+    <Suspense fallback={"Loading..."}>
+      return <ProjectDetails/>;
+    </Suspense>
+  );
 }

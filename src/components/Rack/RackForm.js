@@ -1,14 +1,13 @@
 'use client';
 
 import React, { useMemo, useState } from 'react';
-import { useRouter } from 'next/navigation';
-import { useSearchParams } from 'next/navigation';
+import { useRouter, useSearchParams} from 'next/navigation';
 import { FiLayers } from 'react-icons/fi';
 import EntityForm from '../EntityForm/EntityForm';
 import Button from '../ui/Button/Button';
 import { useToast } from '../ui/Toast/Toast';
-import { getRacks, createRack, updateRack, INITIAL_RACK } from '../../services/Rack';
-import { getWarehouses } from '../../services/Warehouse';
+import { getRacks, createRack, updateRack, INITIAL_RACK } from '@/services/Rack';
+import { getWarehouses } from '@/services/Warehouse';
 import { useEffect } from 'react';
 
 export default function RackForm() {

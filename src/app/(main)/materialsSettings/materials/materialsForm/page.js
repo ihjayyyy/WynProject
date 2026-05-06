@@ -1,5 +1,13 @@
-import MaterialsForm from '../../../../../components/Materials/MaterialsForm';
+'use client';
+import { Suspense } from 'react';
+import dynamic from 'next/dynamic';
 
-export default function MaterialFormPage() {
-  return <MaterialsForm />;
+const MaterialsForm = dynamic(() => import("@/components/Materials/MaterialsForm"), { ssr: false });
+
+export default function Page() {
+  return (
+    <Suspense fallback={"Loading..."}>
+      <MaterialsForm/>
+    </Suspense>
+  );
 }

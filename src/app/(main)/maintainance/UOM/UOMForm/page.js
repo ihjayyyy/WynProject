@@ -1,5 +1,13 @@
-import UnitOfMeasureForm from '../../../../../components/UnitOfMeasure/UnitOfMeasureForm';
+'use client';
+import { Suspense } from 'react';
+import dynamic from 'next/dynamic';
 
-export default function UOMFormPage() {
-  return <UnitOfMeasureForm />;
+const UnitOfMeasureForm = dynamic(() => import("@/components/UnitOfMeasure/UnitOfMeasureForm"), { ssr: false });
+
+export default function Page() {
+  return (
+    <Suspense fallback={"Loading..."}>
+      <UnitOfMeasureForm/>
+    </Suspense>
+  );
 }

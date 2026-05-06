@@ -1,5 +1,13 @@
-import StaffLanding from '../../../components/Staff/StaffLanding';
+'use client';
+import { Suspense } from 'react';
+import dynamic from 'next/dynamic';
+
+const StaffLanding = dynamic(() => import("@/components/Staff/StaffLanding"), { ssr: false });
 
 export default function StaffPage() {
-  return <StaffLanding />;
+  return (
+    <Suspense fallback={"Loading..."}>
+      <StaffLanding/>
+    </Suspense>
+  );
 }

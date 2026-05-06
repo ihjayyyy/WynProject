@@ -1,5 +1,13 @@
-import UOMConversionLanding from '../../../../components/UOMConversion/UOMConversionLanding';
+'use client';
+import { Suspense } from 'react';
+import dynamic from 'next/dynamic';
 
-export default function UOMConversionLandingPage() {
-  return <UOMConversionLanding />;
+const UOMConversionLanding = dynamic(() => import("@/components/UOMConversion/UOMConversionLanding"), { ssr: false });
+
+export default function Page() {
+  return (
+    <Suspense fallback={"Loading..."}>
+      <UOMConversionLanding/>
+    </Suspense>
+  );
 }

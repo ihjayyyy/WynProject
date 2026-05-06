@@ -1,5 +1,13 @@
-import ProposalLanding from '../../../../components/Proposal/ProposalLanding';
+'use client';
+import { Suspense } from 'react';
+import dynamic from 'next/dynamic';
+
+const ProposalLanding = dynamic(() => import("@/components/Proposal/ProposalLanding"), { ssr: false });
 
 export default function Page() {
-  return <ProposalLanding />;
+  return (
+    <Suspense fallback={"Loading..."}>
+      <ProposalLanding/>
+    </Suspense>
+  );
 }

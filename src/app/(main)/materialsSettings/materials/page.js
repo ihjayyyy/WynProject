@@ -1,5 +1,13 @@
-import MaterialsLanding from '../../../../components/Materials/MaterialsLanding';
+'use client';
+import { Suspense } from 'react';
+import dynamic from 'next/dynamic';
 
-export default function MaterialPage() {
-  return <MaterialsLanding />;
+const MaterialsLanding = dynamic(() => import("@/components/Materials/MaterialsLanding"), { ssr: false });
+
+export default function Page() {
+  return (
+    <Suspense fallback={"Loading..."}>
+      <MaterialsLanding/>
+    </Suspense>
+  );
 }

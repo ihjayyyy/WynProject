@@ -1,8 +1,7 @@
 'use client';
 
 import React, { useMemo, useState, useCallback } from 'react';
-import { useRouter } from 'next/navigation';
-import { useSearchParams } from 'next/navigation';
+import { useRouter, useSearchParams} from 'next/navigation';
 import { FiMessageSquare } from 'react-icons/fi';
 import EntityForm from '../EntityForm/EntityForm';
 import Button from '../ui/Button/Button';
