@@ -9,6 +9,7 @@ import Landing from '../ui/Landing/Landing';
 
 const baseColumns = [
   { header: 'Receipt No.', key: 'receiptNumber' },
+  {header: 'Collection No.', key: 'collectionNo'},
   { header: 'Customer', key: 'customerName' },
   { header: 'Description', key: 'description' },
   {

@@ -38,7 +38,7 @@ export const CollectionFields = (customers = [], onFieldChanged) => [
 ];
 
 export const CollectionDetailsColumns = [
-  { header: 'Collection No.', key: 'collectionNumber', width: '160px' },
+  // { header: 'Collection No.', key: 'collectionNumber', width: '160px' },
   { header: 'Name', key: 'name', width: '180px' },
   {
     header: 'Amount Paid',
@@ -93,7 +93,7 @@ export const CollectionItemFields = (billings = [], withholdingTaxPercent = 0) =
       }
     },
   },
-  { name: 'collectionNumber', label: 'Collection Number', type: 'text' },
+  // { name: 'collectionNumber', label: 'Collection Number', type: 'text' },
   { name: 'amount', label: 'Amount', type: 'number', initialvalue: 0 },
   {
     name: 'amountPaid',

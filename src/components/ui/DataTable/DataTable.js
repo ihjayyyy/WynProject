@@ -78,7 +78,7 @@ export default function DataTable({
             if (item && item.fullRow) {
               const span = columns.length + (showActions ? 1 : 0);
               return (
-                <tr key={item.id || index} className={styles.tableRow} onClick={() => handleRowClick(item)}>
+                <tr key={`fullrow-${index}`} className={styles.tableRow} onClick={() => handleRowClick(item)}>
                   <td colSpan={span}>
                     {item.fullRowContent}
                   </td>
@@ -88,7 +88,7 @@ export default function DataTable({
 
             return (
               <tr
-                key={item.id || index}
+                key={`row-${index}`}
                 className={`${styles.tableRow} ${item.isTotalRow ? styles.totalRow : ''}`}
                 onClick={() => handleRowClick(item)}
               >

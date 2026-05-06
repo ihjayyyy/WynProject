@@ -109,6 +109,11 @@ export default function CollectionForm() {
           date: toDateString(res.data.date),
         };
         setValidCollection(true);
+        if (initCollection.customerId) {
+          SalesBillingService.getSalesBillingByCustomerId(initCollection.customerId).then(({ data }) =>
+            setBillings(Array.isArray(data) ? data : [])
+          );
+        }
       } else {
         setValidCollection(false);
       }
@@ -164,7 +169,6 @@ export default function CollectionForm() {
       id: item.id ?? 0,
       parentId: item.parentId ?? 0,
       collectionId: item.collectionId ?? 0,
-      collectionNumber: item.collectionNumber ?? '',
       amountPaid: item.amountPaid ?? 0,
       totalAmountPaid: item.totalAmountPaid ?? 0,
       withholdingTax: item.withholdingTax ?? 0,
