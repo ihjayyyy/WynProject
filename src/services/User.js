@@ -36,11 +36,11 @@ export async function getUserAccess() {
       { name: 'Projects',
          access:'rwa'
       },   
-          {
+      {
             name: 'Projects.Proposal',
              access:'rwa'
-          },
-          {
+      },
+       {
             name: 'Projects.Projects',
              access:'rwa'
           },

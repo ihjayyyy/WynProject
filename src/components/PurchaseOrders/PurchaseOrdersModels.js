@@ -1,7 +1,7 @@
 import * as Yup from "yup";
 
  export const POFields =(suppliers,onFieldhanged) =>([
-    { name:'supplierCode', label:'Supplier Code', span:'span1', readOnly:true },
+    { name:'code', label:'Supplier Code', span:'span1', readOnly:true },
     { name: 'supplierId', label: 'Supplier', type: 'select', options: suppliers.map((s) => ({ label: s.name, value: s.id })), searchable: true, span: 'span3', 
         onChange: (val, values, setValues) => {
           const found = suppliers.find((s) => s.id === val);
@@ -22,7 +22,7 @@ import * as Yup from "yup";
                   setValues(clearedValues);
                   onFieldhanged("supplierId", val, clearedValues);
                   return;
-               }
+          }
           const valuesCopy = { ...values, 
             supplierCode:found.code, 
             address:found.address,
@@ -33,7 +33,7 @@ import * as Yup from "yup";
             vatType:found.vatType ? found.vatType : "included",
             supplierName:found.supplierName,
             code:found.code,
-            name:found.supplierName
+            name:found.name
          };
           if (found) setValues(valuesCopy);
          onFieldhanged("supplierId", val, valuesCopy); 

@@ -82,7 +82,6 @@ async function Get(id) {
             headers: { Accept: '*/*' },
         });
         const json = await res.json();
-        console.log(json)
         return { data: json && json.value ? json.value : {} , error: null };
     } catch (error) {
         return { data: null, error: error?.message || error };
@@ -91,7 +90,7 @@ async function Get(id) {
 
 async function Create(payload) {
     try {
-         console.log(payload)
+
         const res = await fetch(`${API_BASE_URL}`, {
             method: 'POST',
             headers: { 
@@ -99,9 +98,9 @@ async function Create(payload) {
             },
             body: JSON.stringify(payload),
         });
-        console.log(res)
+
         const json = await res.json();
-                console.log(json)
+
         return { data: json, error: null };
     } catch (error) {
         console.log(error)
@@ -120,7 +119,6 @@ async function Update(id, payload) {
             body: JSON.stringify(payload),
         });
         const json = await res.json();
-        console.log(json)
         return { data: json, error: null };
     } catch (error) {
         return { data: null, error: error?.message || error };
