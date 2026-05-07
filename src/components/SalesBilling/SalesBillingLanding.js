@@ -9,6 +9,7 @@ import Landing from '../ui/Landing/Landing';
 import { useConfirmModal } from '@/app/contextProviders/confirmModalContext';
 import StatusBadge from '../ui/StatusBadge/StatusBadge';
 import { useToast } from '../ui/Toast/Toast';
+import { SalesBillingDetailsColumns } from './SalesBillingModels';
 
 const baseColumns = [
   // { header: 'Id', key: 'id' },
@@ -64,11 +65,17 @@ export default function SalesBillingLanding() {
   const actionItems = useMemo(
     () => [
       { key: 'view', label: 'View', icon: <FiEye size={14} />, onClick: (item) => router.push(`/finance/billings/form?id=${item.id}`) },
+      { key: 'viewpdf', label: 'Generate Billing Document', icon: <FiEye size={14} />, onClick: (item) => (getPDF(item.id))},
       { key: 'edit', label: 'Edit', icon: <FiEdit2 size={14} />, onClick: (item) => router.push(`/finance/billings/form?id=${item.id}&mode=edit`), hidden: (item) => item.status?.toLowerCase() === 'billed' },
       { key: 'markAsBilled', label: 'Mark as Billed', icon: <FiCheckCircle size={14} />, onClick: handleMarkAsBilled, hidden: (item) => item.status?.toLowerCase() !== 'draft' },
     ],
     [router, handleMarkAsBilled]
   );
+
+    const getPDF = async (id) =>{
+      console.log("billing",id);
+      await SalesBillingService.getSalesBillingPDFById(id);
+  }
 
   const columns = useMemo(() => [...baseColumns, { header: 'Action', key: 'actions', align: 'right', render: (item) => <DropdownAction item={item} items={actionItems} /> }], [actionItems]);
 
