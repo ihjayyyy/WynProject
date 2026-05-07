@@ -6,7 +6,7 @@ import { FiCheck, FiCheckCircle, FiEdit2, FiEye, FiSend, FiX, FiXCircle } from '
 import DropdownAction from '../ui/DropdownAction/DropdownAction';
 import Landing from '../ui/Landing/Landing';
 import StatusBadge from '../ui/StatusBadge/StatusBadge';
-import { getProposals, submitProposal, approveProposal, rejectProposal, winProposal, loseProposal } from '../../services/Proposal';
+import { getProposals, submitProposal, approveProposal, rejectProposal, winProposal, loseProposal, getProposalPDFById } from '../../services/Proposal';
 import { convertProposal } from '../../services/Project';
 import { useToast } from '../ui/Toast/Toast';
 import ConfirmModal from '../ui/ConfirmModal/ConfirmModal';
@@ -55,11 +55,16 @@ export default function ProposalLanding() {
   const actionItems = useMemo(
     () => [
       ...(isAllowed(PageName, 'r') ? [{ key: 'view', label: 'View', icon: <FiEye size={14} />, onClick: (item) => router.push(`/projects/proposal/proposalform?id=${item.id}`) }] : []),
+      ...(isAllowed(PageName, 'r') ? [{ key: 'viewpdf', label: 'Generate Proposal Document', icon: <FiEye size={14} />, onClick: (item) => (getProposalPDF(item.id))}] : []),
       ...(isAllowed(PageName, 'w') ? [{ key: 'edit', label: 'Edit', icon: <FiEdit2 size={14} />, onClick: (item) => router.push(`/projects/proposal/proposalform?id=${item.id}&mode=edit`) }] : []),
     ],
     [isAllowed, router]
   );
 
+  const getProposalPDF = async (id) =>{
+      console.log("proposal",id);
+      await getProposalPDFById(id);
+  }
   
   const loadProposals = React.useCallback(async () => {
     setLoading(true);
@@ -88,6 +93,9 @@ export default function ProposalLanding() {
         ...it,
         hidden: it.key === 'edit' ? !isDraft : it.hidden,
       }));
+
+     // itemsFor.push({ key: 'viewpdf', label: 'Generate Proposal Document', icon: <FiEye size={14} />, onClick: (item) => (getProposalPDF(item.id))});
+
       if (isDraft && isAllowed(PageName, 'w')) {
         itemsFor.push({ key: 'submit', label: 'Submit', icon: <FiSend size={14} />, onClick: (it) => {
           setConfirmTarget(it);
