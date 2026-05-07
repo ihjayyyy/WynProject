@@ -52,6 +52,14 @@ export default function StatusBadge({ status, className = '' }) {
       case 'LOST':
       case 'LOSE':
         return styles.lost;
+      case 'PAID':
+        return styles.paid;
+      case 'UNPAID':
+        return styles.unpaid;
+      case 'PARTIALLYPAID':
+      case 'PARTIALLY PAID':
+      case 'PARTIALLY_PAID':
+        return styles.partiallyPaid;
       default:
         return styles.default;
     }

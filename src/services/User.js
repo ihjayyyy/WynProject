@@ -120,6 +120,10 @@ export async function getUserAccess() {
       name: 'Finance.SalesBilling',
       access:'rwa'
     },
+        {
+      name: 'Finance.Collection',
+      access:'rwa'
+    },
       {
         name: 'Materials',
         access:'rwa'

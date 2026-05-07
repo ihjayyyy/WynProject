@@ -8,6 +8,7 @@ import DropdownAction from '../ui/DropdownAction/DropdownAction';
 import Landing from '../ui/Landing/Landing';
 import { useConfirmModal } from '@/app/contextProviders/confirmModalContext';
 import StatusBadge from '../ui/StatusBadge/StatusBadge';
+import { useToast } from '../ui/Toast/Toast';
 
 const baseColumns = [
   // { header: 'Id', key: 'id' },
@@ -18,7 +19,7 @@ const baseColumns = [
   { header: 'Status', key: 'status', render: (item) => <StatusBadge status={item.status} /> },
   { header: 'Amount', key: 'amount' },
   { header: 'Balance', key: 'balance' },
-  { header: 'Payment Status', key: 'paymentStatus' },
+  { header: 'Payment Status', key: 'paymentStatus', render: (item) => <StatusBadge status={item.paymentStatus} /> },
   // { header: 'UpdatedBy', key: 'updatedBy' },
   // { header: 'UpdatedDate', key: 'updatedDate' },
 ];
@@ -27,6 +28,7 @@ export default function SalesBillingLanding() {
   const [billings, setBillings] = useState([]);
   const router = useRouter();
   const confirmModal = useConfirmModal();
+  const toast = useToast();
 
   useEffect(() => {
     SalesBillingService.getSalesBilling().then(({ data, error }) => {
@@ -51,10 +53,13 @@ export default function SalesBillingLanding() {
           setBillings((prev) =>
             prev.map((b) => (b.id === item.id ? { ...b, status: 'Billed' } : b))
           );
+          toast.success('Billing marked as billed.');
+        } else {
+          toast.error('Failed to mark as billed.');
         }
       }
     );
-  }, [confirmModal]);
+  }, [confirmModal, toast]);
 
   const actionItems = useMemo(
     () => [
