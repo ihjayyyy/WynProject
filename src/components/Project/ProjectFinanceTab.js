@@ -72,7 +72,7 @@ export default function ProjectFinanceTab({ projectId, project, editable }) {
       payload.name = project.name || '';
     }
     payload = cleanPayload(payload);
-    payload.hasDownpayment = payload.downPayment > 0;
+    payload.hasDownpayment = 0;
     payload.recoupmentBalance = Number(payload.downPayment) || 0;
     if (finance && finance.id) {
       res = await updateProjectFinance(finance.id, payload);
@@ -133,7 +133,7 @@ export default function ProjectFinanceTab({ projectId, project, editable }) {
         <h3>Finance</h3>
                       <div className={styles.panelActions}>
         {!editing && finance && <Button className="md" onClick={handleGenerateProgressBilling}>Generate Progress Billing</Button>}
-        {!editing && finance && !finance.hasDownpayment && Number(finance.downPayment) > 0 && <Button className="md" onClick={handleGenerateDownpaymentBilling}>Generate Downpayment Billing</Button>}
+        {!editing && finance && !finance.hasDownpayment && <Button className="md" onClick={handleGenerateDownpaymentBilling}>Generate Downpayment Billing</Button>}
         {editing && (
           <>
             <Button className="secondary md" onClick={() => { setForm({ ...finance }); setEditing(false); }}>Cancel</Button>

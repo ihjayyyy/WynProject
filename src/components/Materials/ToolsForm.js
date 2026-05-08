@@ -57,16 +57,10 @@ export default function ToolsForm() {
     let cancelled = false;
     (async () => {
       if (!toolId) {
-        // For new tool, sync both UOM fields if one is set
-        setInitialValues(prev => {
-          const uom = prev.unitOfMeasure || prev.purchaseUnitOfMeasure || '';
-          return {
-            ...INITIAL_MATERIAL,
-            materialType: 'Tool',
-            isAssembly: false,
-            unitOfMeasure: uom,
-            purchaseUnitOfMeasure: uom,
-          };
+        setInitialValues({
+          ...INITIAL_MATERIAL,
+          materialType: 'Tool',
+          isAssembly: false,
         });
         setExists(false);
         return;
@@ -121,11 +115,7 @@ export default function ToolsForm() {
       options: uomOptions,
       span: 'span2',
       onChange: (selected, values, setValues) => {
-        setValues({
-          ...values,
-          unitOfMeasure: selected,
-          purchaseUnitOfMeasure: selected,
-        });
+        setValues({ ...values, unitOfMeasure: selected, purchaseUnitOfMeasure: selected });
       },
     },
     {
@@ -134,13 +124,6 @@ export default function ToolsForm() {
       type: 'select',
       options: uomOptions,
       span: 'span2',
-      onChange: (selected, values, setValues) => {
-        setValues({
-          ...values,
-          purchaseUnitOfMeasure: selected,
-          unitOfMeasure: selected,
-        });
-      },
     },
   ];
 

@@ -7,7 +7,7 @@ const ProjectDetails = dynamic(() => import("@/components/Project/ProjectDetails
 export default function Page() {
   return (
     <Suspense fallback={"Loading..."}>
-      return <ProjectDetails/>;
+      <ProjectDetails/>
     </Suspense>
   );
 }

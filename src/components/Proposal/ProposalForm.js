@@ -246,6 +246,7 @@ export default function ProposalForm() {
     { name: 'spacer-10', type: 'spacer', span: 'span1' },
     { name: 'location', label: 'Location', span: 'span1' },
     { name: 'spacer-9', type: 'spacer', span: 'span1' },
+    { name: 'description', label: 'Description', type: 'textarea', span: 'span2' },
 
   ];
 

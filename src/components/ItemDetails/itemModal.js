@@ -13,7 +13,7 @@ import Select from '../ui/Select/Select';
 import inputStyles from '../ui/Input/Input.module.scss';
 import { useConfirmModal } from "@/app/contextProviders/confirmModalContext";
 
-const ItemModal = ({ headerLabel, mode = "new", itemIndex = -1, isOpen, onClose, fields, onItemRemove, closeOnOutsideClick = true }) => {
+const ItemModal = ({ headerLabel, mode = "new", itemIndex = -1, isOpen, onClose, fields, onItemRemove, closeOnOutsideClick = true, confirmOnClose = false }) => {
 
   const confirmModal = useConfirmModal();
 
@@ -27,6 +27,12 @@ const ItemModal = ({ headerLabel, mode = "new", itemIndex = -1, isOpen, onClose,
   }
 
   const [itemFields, setFields] = useState([]);
+  const [isDirty, setIsDirty] = useState(false);
+
+  // Reset dirty flag each time the modal opens
+  useEffect(() => {
+    if (isOpen) setIsDirty(false);
+  }, [isOpen]);
 
   // Sync itemFields from props only when field names/values actually change
   const prevFieldsRef = useRef(null);
@@ -83,6 +89,16 @@ const ItemModal = ({ headerLabel, mode = "new", itemIndex = -1, isOpen, onClose,
   }, [itemFields, schema]);
 
   const handleClose = () => {
+    if (confirmOnClose && isDirty) {
+      confirmModal.show(
+        'Discard changes',
+        'Are you sure you want to close? All unsaved changes will be lost.',
+        'Discard',
+        'danger',
+        () => () => { reset(); setIsDirty(false); onClose(null); }
+      );
+      return;
+    }
     reset();
     onClose(null);
   };
@@ -109,6 +125,7 @@ const ItemModal = ({ headerLabel, mode = "new", itemIndex = -1, isOpen, onClose,
   };
 
   const handleChange = (e, item) => {
+    setIsDirty(true);
     const val = e.target.type === "checkbox"
       ? e.target.checked
       : e.target.type === "number"

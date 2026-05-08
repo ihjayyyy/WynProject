@@ -111,7 +111,7 @@ export const SalesBillingDetailsColumns = [
   },
 ];
 
-const computeVatAndAmount = (subamount, vatType) => {
+export const computeVatAndAmount = (subamount, vatType) => {
   let vat = 0;
   let totalAmount = subamount;
   switch (vatType) {

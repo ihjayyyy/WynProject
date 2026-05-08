@@ -37,7 +37,7 @@ export default function ProposalScopeModal({ open, initial = '', onCancel, onCon
         </div>
         <div className={styles.actions}>
           <Button variant="secondary" className={styles.button} onClick={onCancel}>Cancel</Button>
-          <Button variant="primary" className={styles.button} onClick={() => onConfirm && onConfirm(value)}>Save</Button>
+          <Button variant="primary" className={styles.button} onClick={() => { onConfirm && onConfirm(value); setValue(''); }}>Save</Button>
         </div>
       </div>
     </div>

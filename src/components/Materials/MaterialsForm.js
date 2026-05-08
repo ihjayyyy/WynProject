@@ -58,16 +58,10 @@ export default function MaterialsForm() {
     let cancelled = false;
     (async () => {
       if (!materialId) {
-        // For new material, sync both UOM fields if one is set
-        setInitialValues(prev => {
-          const uom = prev.unitOfMeasure || prev.purchaseUnitOfMeasure || '';
-          return {
-            ...INITIAL_MATERIAL,
-            materialType: 'Material',
-            isAssembly: false,
-            unitOfMeasure: uom,
-            purchaseUnitOfMeasure: uom,
-          };
+        setInitialValues({
+          ...INITIAL_MATERIAL,
+          materialType: 'Material',
+          isAssembly: false,
         });
         setExists(false);
         return;
@@ -122,11 +116,7 @@ export default function MaterialsForm() {
       options: uomOptions,
       span: 'span2',
       onChange: (selected, values, setValues) => {
-        setValues({
-          ...values,
-          unitOfMeasure: selected,
-          purchaseUnitOfMeasure: selected,
-        });
+        setValues({ ...values, unitOfMeasure: selected, purchaseUnitOfMeasure: selected });
       },
     },
     {
@@ -135,13 +125,6 @@ export default function MaterialsForm() {
       type: 'select',
       options: uomOptions,
       span: 'span2',
-      onChange: (selected, values, setValues) => {
-        setValues({
-          ...values,
-          purchaseUnitOfMeasure: selected,
-          unitOfMeasure: selected,
-        });
-      },
     },
   ];
 

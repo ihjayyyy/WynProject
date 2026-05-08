@@ -17,6 +17,7 @@ export const INITIAL_PROPOSAL = {
     customerReferenceNumber: '',
     margin: 0,
     inquiryId: null,
+    description: '',
     proposalTotal: 0,
     laborCostTotal: 0,
     materialCostTotal: 0,

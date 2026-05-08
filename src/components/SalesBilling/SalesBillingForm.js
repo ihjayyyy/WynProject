@@ -10,7 +10,7 @@ import InvalidPage from '@/components/InvalidPage/page';
 import { AccessContext } from '@/app/contextProviders/accessContext';
 import { useConfirmModal } from '@/app/contextProviders/confirmModalContext';
 import SalesBillingService from '@/services/SalesBilling';
-import { SalesBillingFields, SalesBillingDetailsColumns, SalesBillingItemsFields } from './SalesBillingModels';
+import { SalesBillingFields, SalesBillingDetailsColumns, SalesBillingItemsFields, computeVatAndAmount } from './SalesBillingModels';
 import ProjectService from '@/services/Project';
 import CustomerService from '@/services/Customer';
 import Button from '../ui/Button/Button';
@@ -55,6 +55,17 @@ export default function SalesBillingForm() {
   // Sync the local billing state when the user interacts with the main form fields
   const handleMainFieldChange = (name, value, allValues) => {
     setBilling(prev => ({ ...prev, ...allValues }));
+
+    if (name === 'vatType') {
+      setTableData(prev => {
+        const recalculated = (prev.items || []).map(item => {
+          const subamount = Number(item.amount || 0) - Number(item.discount || 0);
+          const { vat, totalAmount } = computeVatAndAmount(subamount, value);
+          return { ...item, vat, totalAmount };
+        });
+        return { ...prev, items: recalculated };
+      });
+    }
   };
 
   const billingFields = useMemo(() => 

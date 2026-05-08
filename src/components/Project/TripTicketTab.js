@@ -8,7 +8,7 @@ import ItemModal from '../ItemDetails/itemModal';
 import styles from './ProjectScope.module.scss';
 import { FiEdit2, FiTrash2 } from 'react-icons/fi';
 import { getTripTicketByProjectId, createTripTicket, updateTripTicket, deleteTripTicket } from '../../services/TripTicket';
-import { getMaterials } from '../../services/Materials';
+import { byTypeMaterials } from '../../services/Materials';
 import { useToast } from '../ui/Toast/Toast';
 import { useConfirmModal } from '@/app/contextProviders/confirmModalContext';
 import { AccessContext } from '@/app/contextProviders/accessContext';
@@ -42,7 +42,7 @@ export default function TripTicketTab({ projectId = 0 }) {
   const [searchTerm, setSearchTerm] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editing, setEditing] = useState(null);
-  const [materials, setMaterials] = useState([]);
+  const [materials, setMaterials] = useState([]);  // holds tools list
   const toast = useToast();
   const confirmModal = useConfirmModal();
   const PageName = 'Projects.Projects';
@@ -52,7 +52,7 @@ export default function TripTicketTab({ projectId = 0 }) {
     let mounted = true;
     (async () => {
       try {
-        const res = await getMaterials();
+        const res = await byTypeMaterials({ materialType: 'Tool', isAssembly: false });
         if (!mounted) return;
         if (!res.error && Array.isArray(res.data)) setMaterials(res.data || []);
         else setMaterials([]);
@@ -88,7 +88,7 @@ export default function TripTicketTab({ projectId = 0 }) {
       },
       {
         name: 'materialId',
-        label: 'Material',
+        label: 'Tool',
         type: 'select',
         value: record.materialId ? String(record.materialId) : '',
         options: (materials || []).map((m) => ({ value: String(m.id), name: `${m.name || m.code || ''}`.trim() })),

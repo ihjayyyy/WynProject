@@ -30,6 +30,7 @@ const DEFAULT_FORM = {
 };
 
 export default function ProposalMaterialModal({ open, initial = {}, onCancel, onConfirm, keepOpenOnSave = false }) {
+  const [resetKey, setResetKey] = useState(0);
   const [form, setForm] = useState({
     ...DEFAULT_FORM,
     ...initial,
@@ -144,7 +145,29 @@ export default function ProposalMaterialModal({ open, initial = {}, onCancel, on
     { name: 'code', label: 'Material Code', type: 'text', value: calculatedForm.code || '', readonly: true, validator: Yup.string().notRequired() },
     { name: 'materialType', label: 'Type', type: 'text', value: calculatedForm.materialType || '', readonly: true, validator: Yup.string().notRequired() },
     { name: 'uom', label: 'UoM', type: 'text', value: calculatedForm.uom || '', readonly: true, validator: Yup.string().notRequired() },
-    { name: 'unitCost', label: 'Price', type: 'number', value: Number(calculatedForm.unitCost) || 0, readonly: true, validator: Yup.number().notRequired() },
+    {
+      name: 'unitCost',
+      label: 'Price (Editable)',
+      type: 'number',
+      value: Number(calculatedForm.unitCost) || 0,
+      validator: Yup.number().min(0).notRequired(),
+      onChange: (item, updateField, itemFields, nextValue) => {
+        const uc = Number(nextValue) || 0;
+        const qty = Number(itemFields.find((f) => f.name === 'quantity')?.value) || 0;
+        const lab = Number(itemFields.find((f) => f.name === 'laborCost')?.value) || 0;
+        const disc = Number(itemFields.find((f) => f.name === 'discount')?.value) || 0;
+        const base = uc * qty;
+        const materialBase = base - disc;
+        const vat = Number.isFinite(materialBase * 0.12) ? Math.max(0, Number((materialBase * 0.12).toFixed(2))) : 0;
+        const materialCost = Number((materialBase + vat).toFixed(2));
+        const total = Number((materialCost + lab).toFixed(2));
+        updateField('vat', vat);
+        updateField('materialCost', materialCost);
+        updateField('totalAmount', total);
+        updateField('extendedCost', total);
+        updateField('totalPrice', total);
+      },
+    },
     {
       name: 'quantity',
       label: 'Quantity (Editable)',
@@ -224,12 +247,14 @@ export default function ProposalMaterialModal({ open, initial = {}, onCancel, on
 
   return (
     <ItemModal
+      key={resetKey}
       headerLabel={isEditMode ? 'Edit Material' : 'Add Material'}
       mode="new"
       itemIndex={-1}
       isOpen={open}
       fields={fields}
       onItemRemove={() => {}}
+      confirmOnClose
       onClose={(val) => {
         if (!val) {
           onCancel && onCancel();
@@ -278,6 +303,7 @@ export default function ProposalMaterialModal({ open, initial = {}, onCancel, on
           parentId: Number(payload.parentId) || 0,
           scopeOfWork: payload.scopeOfWork || '',
         });
+        setResetKey((k) => k + 1);
       }}
     />
   );
