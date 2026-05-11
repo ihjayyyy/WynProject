@@ -1,0 +1,63 @@
+@use '../../../styles/variables' as *;
+
+.wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.label {
+    font-weight: $font-weight-medium;
+    color: $color-text-secondary-light;
+    font-size: $font-size-xs;
+    margin-bottom: $spacing-xs;
+}
+
+.editorWrap {
+  border-radius: 6px;
+  overflow: hidden;
+
+  :global(.ql-toolbar) {
+    border-top-left-radius: 6px;
+    border-top-right-radius: 6px;
+    border-color: #d1d5db;
+    background: #f9fafb;
+  }
+
+  :global(.ql-container) {
+    border-bottom-left-radius: 6px;
+    border-bottom-right-radius: 6px;
+    border-color: #d1d5db;
+    font-size: 14px;
+    min-height: 120px;
+  }
+
+  :global(.ql-editor) {
+    min-height: 120px;
+    color: #111827;
+  }
+
+  :global(.ql-editor.ql-blank::before) {
+    color: #9ca3af;
+    font-style: normal;
+  }
+}
+
+.readOnly {
+  :global(.ql-container) {
+    border: 1px solid #e5e7eb;
+    background: #f9fafb;
+  }
+
+  :global(.ql-editor) {
+    color: #374151;
+    cursor: default;
+  }
+}
+
+.skeleton {
+  height: 160px;
+  background: #f3f4f6;
+  border-radius: 6px;
+  border: 1px solid #e5e7eb;
+}

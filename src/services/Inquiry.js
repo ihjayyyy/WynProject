@@ -22,6 +22,7 @@ async function getInquiries() {
       method: 'GET',
       headers: { Accept: '*/*' },
     });
+
     const json = await res.json();
     return { data: json && json.value ? json.value : json, error: null };
   } catch (error) {
@@ -36,6 +37,7 @@ async function createInquiry(payload) {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload),
     });
+
     const json = await res.json();
     return { data: json, error: null };
   } catch (error) {
@@ -46,11 +48,13 @@ async function createInquiry(payload) {
 async function updateInquiry(id, payload) {
   try {
     const url = `${API_BASE_URL}/${id}`;
+
     const res = await fetch(url, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload),
     });
+
     const json = await res.json();
     return { data: json, error: null };
   } catch (error) {
@@ -58,5 +62,41 @@ async function updateInquiry(id, payload) {
   }
 }
 
-export { getInquiries, createInquiry, updateInquiry };
-export default { getInquiries, createInquiry, updateInquiry };
+async function acknowledgeInquiry(inquiryId) {
+  try {
+    const url = `${API_BASE_URL}/Acknowledge/${inquiryId}`;
+
+    const res = await fetch(url, {
+      method: 'PUT',
+      headers: {
+        Accept: '*/*',
+      },
+    });
+
+    let json = null;
+
+    try {
+      json = await res.json();
+    } catch {
+      json = null;
+    }
+
+    return { data: json, error: null };
+  } catch (error) {
+    return { data: null, error: error?.message || error };
+  }
+}
+
+export {
+  getInquiries,
+  createInquiry,
+  updateInquiry,
+  acknowledgeInquiry,
+};
+
+export default {
+  getInquiries,
+  createInquiry,
+  updateInquiry,
+  acknowledgeInquiry,
+};

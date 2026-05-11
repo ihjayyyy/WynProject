@@ -8,7 +8,7 @@ import StatusBadge from '../ui/StatusBadge/StatusBadge';
 import DropdownAction from '../ui/DropdownAction/DropdownAction';
 import ConfirmModal from '../ui/ConfirmModal/ConfirmModal';
 import StatsCard from '../ui/StatsCard/StatsCard';
-import { getInquiries, updateInquiry } from '../../services/Inquiry';
+import { getInquiries, updateInquiry, acknowledgeInquiry } from '../../services/Inquiry';
 import { useToast } from '../ui/Toast/Toast';
 
 const baseColumns = [
@@ -20,6 +20,11 @@ const baseColumns = [
     <span>{item.contactPerson}{item.contactPerson && item.contactNumber ? <br /> : null}{item.contactNumber}</span>
   )},
   { header: 'Email', key: 'email' },
+  {
+    header: 'Status',
+    key: 'status',
+    render: (item) => <StatusBadge status={item.status} />
+  }
 ];
 
 export default function InquiryLanding() {
@@ -51,14 +56,25 @@ export default function InquiryLanding() {
     if (!confirmAction) return;
     (async () => {
       try {
-        const res = await updateInquiry(confirmAction.id, { approvalStatus: confirmAction.approvalStatus });
-        if (res?.error) toast.error('Failed to update inquiry status');
-        else toast.success('Inquiry status updated');
+        let res;
+        if (confirmAction.action === 'acknowledge') {
+          res = await acknowledgeInquiry(confirmAction.id);
+          if (res?.error) toast.error('Failed to acknowledge inquiry');
+          else {
+            toast.success('Inquiry acknowledged');
+            const refreshed = await getInquiries();
+            if (!refreshed.error) setInquiries(refreshed.data || []);
+          }
+        } else {
+          res = await updateInquiry(confirmAction.id, { approvalStatus: confirmAction.approvalStatus });
+          if (res?.error) toast.error('Failed to update inquiry status');
+          else toast.success('Inquiry status updated');
+          handleStatusChange(confirmAction.id, confirmAction.approvalStatus);
+          if (confirmAction.approvalStatus === 'Approved') router.push(`/projects/proposal/proposalform?inquiryId=${confirmAction.id}`);
+        }
       } catch (err) {
         toast.error('Failed to update inquiry status');
       }
-      handleStatusChange(confirmAction.id, confirmAction.approvalStatus);
-      if (confirmAction.approvalStatus === 'Approved') router.push(`/projects/proposal/proposalform?inquiryId=${confirmAction.id}`);
       closeConfirm();
     })();
   }, [confirmAction, handleStatusChange, closeConfirm, router]);
@@ -66,41 +82,34 @@ export default function InquiryLanding() {
   const actionItems = useMemo(
     () => [
       { key: 'view', label: 'View', icon: <FiEye size={14} />, onClick: (item) => router.push(`/inquiry/inquiryform?id=${item.id}`) },
-      { key: 'edit', label: 'Edit', icon: <FiEdit2 size={14} />, onClick: (item) => router.push(`/inquiry/inquiryform?id=${item.id}&mode=edit`) },
+      { key: 'edit', label: 'Edit', icon: <FiEdit2 size={14} />, hidden: (item) => String(item.status).toLowerCase() === 'acknowledged', onClick: (item) => router.push(`/inquiry/inquiryform?id=${item.id}&mode=edit`) },
       {
-        key: 'approve',
-        label: 'Approve',
+        key: 'acknowledge',
+        label: 'Acknowledge',
         icon: <FiCheckCircle size={14} />,
-        onClick: (item) =>
-          setConfirmAction({
-            id: item.id,
-            approvalStatus: 'Approved',
-            title: 'Approve Inquiry',
-            message: `Are you sure you want to approve ${item.id}? You will be redirected to the Proposal Form and Inquiry Id will be auto-filled.`,
-            confirmText: 'Approve',
-            confirmVariant: 'primary',
-          }),
-      },
-      {
-        key: 'reject',
-        label: 'Reject',
-        icon: <FiXCircle size={14} />,
-        destructive: true,
-        onClick: (item) =>
-          setConfirmAction({
-            id: item.id,
-            approvalStatus: 'Cancelled',
-            title: 'Reject Inquiry',
-            message: `Are you sure you want to reject ${item.id}?`,
-            confirmText: 'Reject',
-            confirmVariant: 'danger',
-          }),
+        hidden: (item) => String(item.status).toLowerCase() !== 'created',
+        onClick: (item) => setConfirmAction({
+          id: item.id,
+          action: 'acknowledge',
+          title: 'Acknowledge Inquiry',
+          message: `Are you sure you want to acknowledge inquiry ${item.id}?`,
+          confirmText: 'Acknowledge',
+          confirmVariant: 'primary',
+        }),
       },
     ],
     [router]
   );
 
-  const columns = useMemo(() => [...baseColumns, { header: 'Action', key: 'actions', align: 'right', render: (item) => <DropdownAction item={item} items={actionItems} /> }], [actionItems]);
+  const columns = useMemo(() => [
+    ...baseColumns,
+    {
+      header: 'Action',
+      key: 'actions',
+      align: 'right',
+      render: (item) => <DropdownAction item={item} items={actionItems.filter(a => !a.hidden || !a.hidden(item))} />
+    }
+  ], [actionItems]);
 
   const inquiryStats = useMemo(() => {
     const total = inquiries.length;

@@ -44,6 +44,10 @@ export default function StatusBadge({ status, className = '' }) {
         return styles.rejected;
       case 'SUBMITTED':
         return styles.submitted;
+      case 'ACKNOWLEDGED':
+        return styles.acknowledged;
+      case 'CREATED':
+        return styles.created;
       case 'PENDING':
         return styles.pending;
       case 'WON':

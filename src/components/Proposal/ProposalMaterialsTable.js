@@ -1,6 +1,5 @@
 import React, { useMemo, useState, useEffect } from 'react';
 import DataTable from '../ui/DataTable/DataTable';
-import SearchBar from '../ui/SearchBar/SearchBar';
 import pmStyles from './ProposalMaterialsTable.module.scss';
 import Button from '../ui/Button/Button';
 import { FiPlus, FiEdit2, FiTrash2 } from 'react-icons/fi';
@@ -19,8 +18,7 @@ function formatDate(v) {
   }
 }
 
-export default function ProposalMaterialsTable({ items = [], onChange, editable = true, proposalId = 0 }) {
-  const [searchTerm, setSearchTerm] = useState('');
+export default function ProposalMaterialsTable({ items = [], onChange, editable = true, proposalId = 0, parentLaborPercentage = 0 }) {
   const [localItems, setLocalItems] = useState([]);
   const [isAdmin, setIsAdmin] = useState(true); // toggle to simulate admin view
   const [deletedChildren, setDeletedChildren] = useState([]);
@@ -40,25 +38,15 @@ export default function ProposalMaterialsTable({ items = [], onChange, editable 
     setLocalItems(mapped);
   }, [items]);
 
-  const filtered = useMemo(() => {
-    const k = (searchTerm || '').trim().toLowerCase();
-    if (!k) return localItems || [];
-    return (localItems || []).filter((it) =>
-      [it.code, it.name, it.materialType, it.uom]
-        .filter(Boolean)
-        .some((v) => String(v).toLowerCase().includes(k))
-    );
-  }, [localItems, searchTerm]);
-
   const groups = useMemo(() => {
     const map = {};
-    (filtered || []).forEach((it) => {
+    (localItems || []).forEach((it) => {
       const key = it.scopeOfWork || 'General';
       if (!map[key]) map[key] = [];
       map[key].push(it);
     });
     return map;
-  }, [filtered]);
+  }, [localItems]);
 
   const groupKeys = Object.keys(groups);
 
@@ -158,38 +146,46 @@ export default function ProposalMaterialsTable({ items = [], onChange, editable 
       <div className={pmStyles.headerRow}>
         <h2 className={pmStyles.title}>Scope of Work</h2>
         <div className={pmStyles.headerActions}>
-          <SearchBar placeholder="Search scope of work" value={searchTerm} onChange={setSearchTerm} showFilter={false} showButton={editable} buttonLabel="Add Scope" handleOnClick={() => { setScopeEditing(null); setIsScopeModalOpen(true); }} width="320px" />
+          {editable && (
+            <Button variant="primary" onClick={() => { setScopeEditing(null); setIsScopeModalOpen(true); }}>Add Scope</Button>
+          )}
         </div>
       </div>
 
       <div className={pmStyles.tableSection}>
         {groupKeys.length === 0 ? (
-          <div className={pmStyles.empty}>No materials match your search</div>
+          <div className={pmStyles.empty}>No materials added yet</div>
         ) : (
           <DataTable columns={displayedColumns} data={data} showActions={false} emptyMessage="No materials" />
         )}
       </div>
 
-      <ProposalScopeModal open={isScopeModalOpen} initial={scopeEditing} onCancel={() => { setIsScopeModalOpen(false); setScopeEditing(null); }} onConfirm={(val) => {
-        if (!scopeEditing) {
-          const newItem = { id: 0, _localId: `S-${Date.now()}`, scopeOfWork: val, __isScope: true, parentId: proposalId ? Number(proposalId) : undefined };
-          const updatedWithScope = [newItem, ...(localItems || [])];
-          setLocalItems(updatedWithScope);
-          if (typeof onChange === 'function') onChange(updatedWithScope, deletedChildren);
-          // open material modal for the newly created scope
-          setMaterialEditing(null);
-          setMaterialScopeTarget(val);
-          setIsMaterialModalOpen(true);
-        } else {
-          const updatedScopes = (localItems || []).map((it) => (it.scopeOfWork === scopeEditing ? { ...it, scopeOfWork: val } : it));
-          setLocalItems(updatedScopes);
-          if (typeof onChange === 'function') onChange(updatedScopes, deletedChildren);
-        }
-        setIsScopeModalOpen(false);
-        setScopeEditing(null);
-      }} />
+      <ProposalScopeModal
+        open={isScopeModalOpen}
+        initial={scopeEditing ? (() => { const s = (localItems || []).find((it) => it.__isScope && it.scopeOfWork === scopeEditing); return { scopeOfWork: scopeEditing, laborPercentage: s?.laborPercentage || 0, scopeDuration: s?.scopeDuration || 0 }; })() : null}
+        defaultLaborPercentage={parentLaborPercentage || 0}
+        onCancel={() => { setIsScopeModalOpen(false); setScopeEditing(null); }}
+        onConfirm={({ scopeOfWork: val, laborPercentage: pct, scopeDuration: dur }) => {
+          if (!scopeEditing) {
+            const newItem = { id: 0, _localId: `S-${Date.now()}`, scopeOfWork: val, laborPercentage: pct, scopeDuration: dur, __isScope: true, parentId: proposalId ? Number(proposalId) : undefined };
+            const updatedWithScope = [newItem, ...(localItems || [])];
+            setLocalItems(updatedWithScope);
+            if (typeof onChange === 'function') onChange(updatedWithScope, deletedChildren);
+            // open material modal for the newly created scope
+            setMaterialEditing(null);
+            setMaterialScopeTarget(val);
+            setIsMaterialModalOpen(true);
+          } else {
+            const updatedScopes = (localItems || []).map((it) => (it.scopeOfWork === scopeEditing ? { ...it, scopeOfWork: val, laborPercentage: pct, scopeDuration: dur } : it));
+            setLocalItems(updatedScopes);
+            if (typeof onChange === 'function') onChange(updatedScopes, deletedChildren);
+          }
+          setIsScopeModalOpen(false);
+          setScopeEditing(null);
+        }}
+      />
 
-      <ProposalMaterialModal open={isMaterialModalOpen} initial={materialEditing || { parentId: Number(proposalId) || 0, scopeOfWork: materialScopeTarget || 'General' }} keepOpenOnSave={!materialEditing} onCancel={() => { setIsMaterialModalOpen(false); setMaterialScopeTarget(null); setMaterialEditing(null); }} onConfirm={(m, options = {}) => {
+      <ProposalMaterialModal open={isMaterialModalOpen} initial={materialEditing || { parentId: Number(proposalId) || 0, scopeOfWork: materialScopeTarget || 'General', laborPercentage: (() => { const s = (localItems || []).find((it) => it.__isScope && it.scopeOfWork === materialScopeTarget); return s?.laborPercentage ?? parentLaborPercentage ?? 0; })() }} keepOpenOnSave={!materialEditing} onCancel={() => { setIsMaterialModalOpen(false); setMaterialScopeTarget(null); setMaterialEditing(null); }} onConfirm={(m, options = {}) => {
         if (materialEditing) {
           // update existing
           let matched = false;

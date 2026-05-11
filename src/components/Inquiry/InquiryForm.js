@@ -6,8 +6,10 @@ import { FiMessageSquare } from 'react-icons/fi';
 import EntityForm from '../EntityForm/EntityForm';
 import Button from '../ui/Button/Button';
 import { useToast } from '../ui/Toast/Toast';
-import { INITIAL_INQUIRY, getInquiries, createInquiry, updateInquiry } from '../../services/Inquiry';
+import { INITIAL_INQUIRY, getInquiries, createInquiry, updateInquiry, acknowledgeInquiry } from '../../services/Inquiry';
+import StatusBadge from '../ui/StatusBadge/StatusBadge';
 import { getCustomers } from '../../services/Customer';
+import { getStaffs } from '../../services/Staff';
 
 
 export default function InquiryForm() {
@@ -16,12 +18,19 @@ export default function InquiryForm() {
   const inquiryId = searchParams.get('id');
   const mode = searchParams.get('mode');
   const [isEditModeLocal, setIsEditModeLocal] = useState(false);
-  const isEditMode = mode === 'edit' || isEditModeLocal;
-
+  // Only allow edit mode if not acknowledged
+  const [status, setStatus] = useState('');
   const [inquiries, setInquiries] = useState(null);
+  React.useEffect(() => {
+    if (!inquiryId || !inquiries) return;
+    const selected = (inquiries || []).find((item) => String(item.id) === String(inquiryId));
+    setStatus(selected && selected.status ? String(selected.status).toLowerCase() : '');
+  }, [inquiryId, inquiries]);
+  const isEditMode = (mode === 'edit' || isEditModeLocal) && status !== 'acknowledged';
   const [customerOptions, setCustomerOptions] = useState([]);
   const [customersData, setCustomersData] = useState([]);
   const [contactPersonOptions, setContactPersonOptions] = useState([]);
+  const [staffOptions, setStaffOptions] = useState([]);
   
   // Track auto-filled overrides and a key to remount the form when customer changes
   const [autoFillOverrides, setAutoFillOverrides] = useState({});
@@ -62,6 +71,21 @@ export default function InquiryForm() {
     return () => (mounted = false);
   }, []);
 
+  React.useEffect(() => {
+    let mounted = true;
+    (async () => {
+      const res = await getStaffs();
+      if (!mounted) return;
+      if (!res.error) {
+        setStaffOptions((res.data || []).map(s => ({
+          label: s.name || s.code || '',
+          value: s.name || s.code || '',
+        })));
+      }
+    })();
+    return () => (mounted = false);
+  }, []);
+
   const baseInitialValues = useMemo(() => {
     if (!inquiryId) return INITIAL_INQUIRY;
     const selectedInquiry = (inquiries || []).find((item) => String(item.id) === String(inquiryId));
@@ -96,10 +120,13 @@ export default function InquiryForm() {
     setFormKey(k => k + 1);
   }, [customersData]);
 
-  const { isReadOnly, canEnterEditMode } = useMemo(() => {
+  const { isReadOnly, canEnterEditMode, isAcknowledge } = useMemo(() => {
     const exists = Boolean(inquiryId && (inquiries || []).some((item) => String(item.id) === String(inquiryId)));
-    const readOnly = exists && !isEditMode;
-    return { isReadOnly: readOnly, canEnterEditMode: exists };
+    const selected = (inquiries || []).find((item) => String(item.id) === String(inquiryId));
+    const status = selected && selected.status ? String(selected.status).toLowerCase() : '';
+    const acknowledge = status === 'acknowledged';
+    const readOnly = exists && (!isEditMode || acknowledge);
+    return { isReadOnly: readOnly, canEnterEditMode: exists && !acknowledge, isAcknowledge: acknowledge };
   }, [inquiryId, isEditMode, inquiries]);
 
   const formTitle = useMemo(() => {
@@ -131,18 +158,19 @@ export default function InquiryForm() {
 
     { name: 'contactPerson', label: 'Contact Person', type: 'select', options: contactPersonOptions, searchable: true, span: 'span1' },
     { name: 'name', label: 'Name', span: 'span1',hidden:true },
+
     { name: 'spacer-2', type: 'spacer', span: 'span1' },
-    { name: 'preparedBy', label: 'Prepared By', span: 'span1' },
+    { name: 'date', label: 'Date', type: 'date', span: 'span1' },
+    { name: 'preparedBy', label: 'Prepared By', span: 'span1', hidden: true },
 
     { name: 'email', label: 'Email', type: 'email', span: 'span1' },
-    { name: 'spacer-3', type: 'spacer', span: 'span1' },
-    { name: 'notedBy', label: 'Noted By', span: 'span1' },
+    { name: 'spacer-3', type: 'spacer', span: 'span2' },
+    { name: 'notedBy', label: 'Noted By', span: 'span1', hidden: true },
 
     { name: 'contactNumber', label: 'Contact Number', type: 'tel', span: 'span1' },
-    { name: 'spacer-4', type: 'spacer', span: 'span1' },
-    { name: 'date', label: 'Date', type: 'date', span: 'span1' },
+    { name: 'spacer-4', type: 'spacer', span: 'span2' },
 
-    { name: 'attention', label: 'Attention', span: 'span1' },
+    { name: 'attention', label: 'Attention', type: 'select', options: staffOptions, searchable: true, span: 'span1' },
     { name: 'reference', label: 'Reference', span: 'span1',hidden:true },
 
     { name: 'spacer-6', type: 'spacer', span: 'span1' },
@@ -218,6 +246,7 @@ export default function InquiryForm() {
           <Button type="submit" variant="save">Create</Button>
         ) : (
           <>
+            {status && <StatusBadge status={status} />}
             {isReadOnly ? (
               canEnterEditMode ? (
                 <Button variant="outlinedPrimary" onClick={() => setIsEditModeLocal(true)}>Edit</Button>

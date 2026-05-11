@@ -174,6 +174,7 @@ export default function CollectionForm() {
       withholdingTax: item.withholdingTax ?? 0,
       balance: item.balance ?? 0,
       billingId: item.billingId ?? 0,
+      account: item.account ?? '',
     });
 
     const mergedCollection = { ...collection, ...entity };

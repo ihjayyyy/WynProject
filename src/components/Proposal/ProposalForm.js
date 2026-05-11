@@ -16,6 +16,9 @@ import { getCustomers } from '../../services/Customer';
 import { getInquiries } from '../../services/Inquiry';
 import { AccessContext } from '@/app/contextProviders/accessContext';
 import InvalidPage from '@/components/InvalidPage/page';
+import RichTextEditor from '../ui/RichTextEditor/RichTextEditor';
+import formStyles from './ProposalForm.module.scss';
+import { useConfirmModal } from '@/app/contextProviders/confirmModalContext';
 
 export default function ProposalForm() {
   const PageName = 'Projects.Proposal';
@@ -34,6 +37,18 @@ export default function ProposalForm() {
   const [deletedChildrenState, setDeletedChildrenState] = useState([]);
   const [isAdminView, setIsAdminView] = useState(false); // toggle for testing admin view
   const [actionLoading, setActionLoading] = useState(false);
+  const confirmModal = useConfirmModal();
+  const [richText, setRichText] = useState({
+    miscellaneousDescription: '',
+    scopeOfWorkDescription: '',
+    warrantyDescription: '',
+    modeOfPaymentDescription: '',
+    workDurationDescription: '',
+  });
+  const [extraFields, setExtraFields] = useState({
+    miscellaneousTitle: '',
+    attachmentUrl: '',
+  });
   const toast = useToast();
 
   React.useEffect(() => {
@@ -80,6 +95,17 @@ export default function ProposalForm() {
   React.useEffect(() => {
     setChildrenState(initialValues?.children || []);
     setDeletedChildrenState([]);
+    setRichText({
+      miscellaneousDescription: initialValues?.miscellaneousDescription || '',
+      scopeOfWorkDescription: initialValues?.scopeOfWorkDescription || '',
+      warrantyDescription: initialValues?.warrantyDescription || '',
+      modeOfPaymentDescription: initialValues?.modeOfPaymentDescription || '',
+      workDurationDescription: initialValues?.workDurationDescription || '',
+    });
+    setExtraFields({
+      miscellaneousTitle: initialValues?.miscellaneousTitle || '',
+      attachmentUrl: initialValues?.attachmentUrl || '',
+    });
   }, [initialValues]);
 
   // dedupe deleted children by id (when present) or by code+name+parentId for unsaved items
@@ -156,7 +182,7 @@ export default function ProposalForm() {
 
     {
       name: 'customerId',
-      label: 'Customer',
+      label: 'Company Name',
       type: 'select',
       options: customerOptions,
       searchable: true,
@@ -173,6 +199,7 @@ export default function ProposalForm() {
             code: sel.code || '',
             customerName: sel.customerName || sel.name || '',
             contactNumber: sel.contactNumber || '',
+            contactPerson: sel.contactPerson || '',
             address: sel.address || '',
             email: sel.email || '',
           });
@@ -199,20 +226,61 @@ export default function ProposalForm() {
 
     { name: 'contactPerson', label: 'Contact Person', span: 'span1' }, 
     { name: 'spacer-5', type: 'spacer', span: 'span1' },
-    (isReadOnly ? { name: 'proposalTotal', label: 'Proposal Total', type: 'custom', span: 'span1', render: ({ values, setValues }) => {
-        const v = Number(values.proposalTotal) || 0;
-        if (v !== totals.proposalTotal) setValues({ ...values, proposalTotal: totals.proposalTotal });
-        return (
-          <div className={inputStyles.field}>
-            <label>Proposal Total</label>
-            <Input id="proposalTotal" value={totals.proposalTotal} readOnly />
-          </div>
-        );
-      } } : { name: 'spacer-proposalTotal', type: 'spacer', span: 'span1' }),
+    {
+      name: 'laborPercentage',
+      label: 'Labor (%)',
+      type: 'custom',
+      span: 'span1',
+      render: ({ values, setValues }) => (
+        <div className={inputStyles.field}>
+          <label htmlFor="laborPercentage">Labor (%)</label>
+          <Input
+            id="laborPercentage"
+            type="number"
+            value={values.laborPercentage ?? ''}
+            readOnly={isReadOnly}
+            onChange={(e) => {
+              const pct = Number(e.target.value) || 0;
+              setValues({ ...values, laborPercentage: pct });
+            }}
+          />
+          {!isReadOnly && (
+            <Button
+              variant="secondary"
+              onClick={() => {
+                const pct = Number(values.laborPercentage) || 0;
+                confirmModal.show(
+                  'Apply Labor % to All',
+                  `Apply ${pct}% labor to all scopes and materials? This will overwrite their existing values.`,
+                  'Apply',
+                  'primary',
+                  () => () => applyLaborPctToChildren(pct)
+                );
+              }}
+            >
+              Apply to all
+            </Button>
+          )}
+        </div>
+      ),
+    },
 
     { name: 'contactNumber', label: 'Contact Number', span: 'span1' },
     { name: 'spacer-6', type: 'spacer', span: 'span1' },
-        (isReadOnly ? { name: 'laborCostTotal', label: 'Labor Cost Total', type: 'custom', span: 'span1', render: ({ values, setValues }) => {
+    (isReadOnly ? { name: 'proposalTotal', label: 'Proposal Total', type: 'custom', span: 'span1', render: ({ values, setValues }) => {
+      const v = Number(values.proposalTotal) || 0;
+      if (v !== totals.proposalTotal) setValues({ ...values, proposalTotal: totals.proposalTotal });
+      return (
+        <div className={inputStyles.field}>
+          <label>Proposal Total</label>
+          <Input id="proposalTotal" value={totals.proposalTotal} readOnly />
+        </div>
+      );
+    } } : { name: 'spacer-proposalTotal', type: 'spacer', span: 'span1' }),
+
+    { name: 'address', label: 'Address', span: 'span1' },
+    { name: 'spacer-7', type: 'spacer', span: 'span1' },
+            (isReadOnly ? { name: 'laborCostTotal', label: 'Labor Cost Total', type: 'custom', span: 'span1', render: ({ values, setValues }) => {
         const v = Number(values.laborCostTotal) || 0;
         if (v !== totals.laborCostTotal) setValues({ ...values, laborCostTotal: totals.laborCostTotal });
         return (
@@ -223,11 +291,11 @@ export default function ProposalForm() {
         );
       } } : { name: 'spacer-laborCostTotal', type: 'spacer', span: 'span1' }),
     // Margin field: editable when not read-only, or when admin view is active
-    { name: 'margin', label: 'Margin (%)', type: 'number', span: 'span1', readOnly: (values) => (isReadOnly && !isAdminView), hidden:true },
 
-    { name: 'address', label: 'Address', span: 'span1' },
-    { name: 'spacer-7', type: 'spacer', span: 'span1' },
-        (isReadOnly ? { name: 'materialCostTotal', label: 'Material Cost Total', type: 'custom', span: 'span1', render: ({ values, setValues }) => {
+  
+    { name: 'email', label: 'Email', type: 'email', span: 'span1' },
+    { name: 'spacer-11', type: 'spacer', span: 'span1' },
+            (isReadOnly ? { name: 'materialCostTotal', label: 'Material Cost Total', type: 'custom', span: 'span1', render: ({ values, setValues }) => {
         const v = Number(values.materialCostTotal) || 0;
         if (v !== totals.materialCostTotal) setValues({ ...values, materialCostTotal: totals.materialCostTotal });
         return (
@@ -237,18 +305,26 @@ export default function ProposalForm() {
           </div>
         );
       } } : { name: 'spacer-materialCostTotal', type: 'spacer', span: 'span1' }),
-
-  
-    { name: 'email', label: 'Email', type: 'email', span: 'span1' },
-    { name: 'spacer-8', type: 'spacer', span: 'span1' },
-    
-
-    { name: 'spacer-10', type: 'spacer', span: 'span1' },
     { name: 'location', label: 'Location', span: 'span1' },
     { name: 'spacer-9', type: 'spacer', span: 'span1' },
-    { name: 'description', label: 'Description', type: 'textarea', span: 'span2' },
+    { name: 'margin', label: 'Margin (%)', type: 'number', span: 'span1', readOnly: (values) => (isReadOnly && !isAdminView), hidden:true },
 
+
+    { name: 'description', label: 'Description', type: 'textarea', span: 'span2' },
   ];
+
+  const applyLaborPctToChildren = (pct) => {
+    setChildrenState((prev) =>
+      (prev || []).map((c) => {
+        if (!c) return c;
+        if (c.__isScope) return { ...c, laborPercentage: pct };
+        const mc = Number(c.materialCost) || 0;
+        const lc = Number((mc * pct / 100).toFixed(2));
+        const total = Number((mc + lc).toFixed(2));
+        return { ...c, laborPercentage: pct, laborCost: lc, totalAmount: total, extendedCost: total, totalPrice: total };
+      })
+    );
+  };
 
   // sanitize child objects before sending to API (fill defaults, coerce types)
   // normalize dates to `YYYY-MM-DDTHH:MM:SS` (use midnight for date-only values)
@@ -322,6 +398,7 @@ export default function ProposalForm() {
     forecastedEndDate: formatPayloadDate(c.forecastedEndDate, false),
     scopeOfWork: c.scopeOfWork || '',
     remarks: c.remarks || '',
+    laborPercentage: Number(c.laborPercentage) || 0,
   });
 
   return isAllowed(PageName, 'r') ? (
@@ -331,21 +408,83 @@ export default function ProposalForm() {
       icon={<FiFileText />}
       fields={fields}
       initialValues={initialValues}
-      extraContent={<ProposalMaterialsTable proposalId={proposalId} editable={!isReadOnly} items={childrenState || []} isAdmin={isAdminView} hideCostColumns={true} onChange={(updated, deleted) => {
-        setChildrenState(updated || []);
-        if (deleted) setDeletedChildrenState((prev) => dedupeDeleted(deleted || []));
-        // debug: log full proposal form data when materials/scopes change
-        try {
-          const filteredChildren = (updated || []).filter((c) => !c || !c.__isScope);
-          console.log('Proposal form data (debug):', {
-            ...initialValues,
-            children: filteredChildren,
-            deletedChildren: dedupeDeleted(deleted || []),
-          });
-        } catch (err) {
-          console.log('Failed to log proposal data', err);
-        }
-      }} />}
+      extraContent={<>
+        <ProposalMaterialsTable proposalId={proposalId} editable={!isReadOnly} items={childrenState || []} isAdmin={isAdminView} hideCostColumns={true} parentLaborPercentage={Number(initialValues?.laborPercentage) || 0} onChange={(updated, deleted) => {
+          setChildrenState(updated || []);
+          if (deleted) setDeletedChildrenState((prev) => dedupeDeleted(deleted || []));
+          // debug: log full proposal form data when materials/scopes change
+          try {
+            const filteredChildren = (updated || []).filter((c) => !c || !c.__isScope);
+            console.log('Proposal form data (debug):', {
+              ...initialValues,
+              children: filteredChildren,
+              deletedChildren: dedupeDeleted(deleted || []),
+            });
+          } catch (err) {
+            console.log('Failed to log proposal data', err);
+          }
+        }} />
+        <div className={formStyles.extraSection}>
+          <div className={`${inputStyles.field} ${formStyles.fullRow}`}>
+            <label>Attachment URL</label>
+            <Input
+              id="attachmentUrl"
+              value={extraFields.attachmentUrl}
+              onChange={(e) => setExtraFields((p) => ({ ...p, attachmentUrl: e.target.value }))}
+              readOnly={isReadOnly}
+              placeholder="https://..."
+            />
+          </div>          <div className={formStyles.inlineFields}>
+            <div className={inputStyles.field}>
+              <label>Miscellaneous Title</label>
+              <Input
+                id="miscellaneousTitle"
+                value={extraFields.miscellaneousTitle}
+                onChange={(e) => setExtraFields((p) => ({ ...p, miscellaneousTitle: e.target.value }))}
+                readOnly={isReadOnly}
+                placeholder="Miscellaneous title..."
+              />
+            </div>
+          </div>
+          <div className={formStyles.richTextGrid}>
+                        <RichTextEditor
+              label="Miscellaneous Description"
+              value={richText.miscellaneousDescription}
+              onChange={(val) => setRichText((p) => ({ ...p, miscellaneousDescription: val }))}
+              readOnly={isReadOnly}
+              placeholder="Any miscellaneous notes..."
+            />
+            <RichTextEditor
+              label="Scope of Work Description"
+              value={richText.scopeOfWorkDescription}
+              onChange={(val) => setRichText((p) => ({ ...p, scopeOfWorkDescription: val }))}
+              readOnly={isReadOnly}
+              placeholder="Describe the scope of work..."
+            />
+            <RichTextEditor
+              label="Warranty Description"
+              value={richText.warrantyDescription}
+              onChange={(val) => setRichText((p) => ({ ...p, warrantyDescription: val }))}
+              readOnly={isReadOnly}
+              placeholder="Describe the warranty terms..."
+            />
+            <RichTextEditor
+              label="Mode of Payment Description"
+              value={richText.modeOfPaymentDescription}
+              onChange={(val) => setRichText((p) => ({ ...p, modeOfPaymentDescription: val }))}
+              readOnly={isReadOnly}
+              placeholder="Describe the mode of payment..."
+            />
+            <RichTextEditor
+              label="Work Duration Description"
+              value={richText.workDurationDescription}
+              onChange={(val) => setRichText((p) => ({ ...p, workDurationDescription: val }))}
+              readOnly={isReadOnly}
+              placeholder="Describe the work duration..."
+            />
+          </div>
+        </div>
+      </>}
       onSubmit={async (values) => {
         const now = new Date().toISOString();
 
@@ -373,11 +512,19 @@ export default function ProposalForm() {
           expirationDate: formatPayloadDate(values.expirationDate, true) || null,
           customerReferenceNumber: values.customerReferenceNumber || '',
           margin: Number(values.margin) || 0,
+          laborPercentage: Number(values.laborPercentage) || 0,
           inquiryId: values.inquiryId || null,
           // compute totals from children only (ignore form-entered totals)
           proposalTotal: Number(totals.proposalTotal) || 0,
           laborCostTotal: Number(totals.laborCostTotal) || 0,
           materialCostTotal: Number(totals.materialCostTotal) || 0,
+          miscellaneousTitle: extraFields.miscellaneousTitle || '',
+          miscellaneousDescription: richText.miscellaneousDescription || '',
+          scopeOfWorkDescription: richText.scopeOfWorkDescription || '',
+          warrantyDescription: richText.warrantyDescription || '',
+          modeOfPaymentDescription: richText.modeOfPaymentDescription || '',
+          workDurationDescription: richText.workDurationDescription || '',
+          attachmentUrl: extraFields.attachmentUrl || '',
         });
 
         if (!proposalId) {
