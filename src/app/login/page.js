@@ -4,11 +4,18 @@ import LoginForm from '../../components/LoginForm/LoginForm';
 import styles from './page.module.scss';
 import { useRouter } from 'next/navigation';
 import { login } from '../../services/Auth';
+import ConfirmModal from '../../components/ui/ConfirmModal/ConfirmModal';
 
 export default function LoginPage() {
   const router = useRouter();
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [isConfirmOpen, setConfirmModal] = useState(false);
+  const [confirmTitle, setConfirmTitle] = useState('');
+  const [confirmMessage, setConfirmMessage] = useState('');
+  const [confirmText, setConfirmText] = useState('');
+  const [confirmVariant, setConfirmVariant] = useState('');
+  const [confirmEmail, setConfirmEmail] = useState('');
 
   const handleLogin = async (credentials) => {
     setError('');
@@ -37,7 +44,27 @@ export default function LoginPage() {
       console.warn('Unable to persist auth data:', storageError);
     }
 
-    router.push('/dashboard');
+    if (!authData.confirmed) {
+      setConfirmTitle('First Time Login');
+      setConfirmMessage(
+        'This is your first time logging in. Please change your password to confirm your account.',
+      );
+      setConfirmText('Change Password');
+      setConfirmVariant('primary');
+      setConfirmEmail(authData.email || '');
+      setConfirmModal(true);
+    } else {
+      router.push('/dashboard');
+    }
+  };
+
+  const handleConfirm = () => {
+    setConfirmModal(false);
+    router.push(`/changepassword?email=${encodeURIComponent(confirmEmail)}`);
+  };
+
+  const handleCancel = () => {
+    setConfirmModal(false);
   };
 
   return (
@@ -46,6 +73,15 @@ export default function LoginPage() {
         onLogin={handleLogin}
         errorMessage={error}
         isLoading={isLoading}
+      />
+      <ConfirmModal
+        open={isConfirmOpen}
+        title={confirmTitle}
+        message={confirmMessage}
+        confirmText={confirmText}
+        confirmVariant={confirmVariant}
+        onConfirm={handleConfirm}
+        onCancel={handleCancel}
       />
     </main>
   );
