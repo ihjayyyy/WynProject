@@ -1,5 +1,5 @@
 @use '../../styles/variables' as *;
- .loginForm {
+.loginForm {
   width: 100%;
   max-width: 400px;
   margin: $spacing-xl auto;
@@ -11,7 +11,10 @@
   flex-direction: column;
   align-items: stretch;
   gap: $spacing-md;
-  transition: background 0.2s, color 0.2s, box-shadow 0.2s;
+  transition:
+    background 0.2s,
+    color 0.2s,
+    box-shadow 0.2s;
 }
 
 .logoWrap {
@@ -53,7 +56,7 @@
   cursor: pointer;
 }
 
-.checkboxLabel input[type="checkbox"] {
+.checkboxLabel input[type='checkbox'] {
   accent-color: var(--color-primary-light);
   width: $font-size-md;
   height: $font-size-md;
@@ -63,7 +66,7 @@
 :global(body.dark) .forgot {
   color: var(--color-secondary-dark);
 }
-  .forgot {
+.forgot {
   color: var(--color-primary-light);
   font-size: $font-size-sm;
   text-decoration: none;
@@ -83,12 +86,23 @@
   border-radius: $border-radius-sm;
   padding: $spacing-md 0;
   box-shadow: $shadow-md;
-  transition: background 0.2s, color 0.2s;
+  transition:
+    background 0.2s,
+    color 0.2s;
 }
-
 
 .error {
   color: var(--color-error-light);
+  background: var(--color-background-alt-light);
+  padding: $spacing-sm $spacing-md;
+  border-radius: $border-radius-sm;
+  margin-bottom: $spacing-sm;
+  font-size: $font-size-sm;
+  text-align: center;
+}
+
+.success {
+  color: var(--color-success-light);
   background: var(--color-background-alt-light);
   padding: $spacing-sm $spacing-md;
   border-radius: $border-radius-sm;

@@ -1,4 +1,4 @@
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL + "/User";
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL + '/User';
 
 export async function getCurrentUser() {
   try {
@@ -8,179 +8,188 @@ export async function getCurrentUser() {
     // });
     // const json = await res.json();
     // return { data: json && json.value ? json.value : json, error: null };
-      return {data: {error:null,isFailure:false,isSuccess:true,value:
-        {id:1,code:'001',name:'Oliver',email:'oliver@email.com'}
-      }}
+    return {
+      data: {
+        error: null,
+        isFailure: false,
+        isSuccess: true,
+        value: {
+          id: 1,
+          code: '001',
+          name: 'Oliver',
+          email: 'oliver@email.com',
+        },
+      },
+    };
   } catch (error) {
     return { data: null, error: error?.message || error };
   }
 }
 
 export async function getUserAccess() {
-    const access = [{
-        name: 'Dashboard',
-        access:'rwa'
-      },
-      {
-        name: 'Customers',
-         access:'rwa'
-      },
-      {
-        name: 'Suppliers',
-         access:'rwa'
-      },
-      {
-        name: 'Inquiry',
-         access:'rwa'
-      },
-      { name: 'Projects',
-         access:'rwa'
-      },   
-      {
-            name: 'Projects.Proposal',
-             access:'rwa'
-      },
-       {
-            name: 'Projects.Projects',
-             access:'rwa'
-          },
-          {
-            name: 'Projects.MaterialRequests',
-             access:'rwa'
-          },
-          {
-            name: 'Projects.Billings',
-             access:'rwa'
-          },
-          {
-            name: 'Projects.Collections',
-             access:'rwa'
-          },
-      {
-        name: 'Purchase',
-         access:'rwa'
-      },
-        {
-            name: 'Purchase.Requests',
-            access:'rwa'
-          },
-          {
-            name: 'Purchase.Orders',
-            access:'rwa'
-          },
-          {
-            name: 'Purchase.Deliveries',
-            access:'rwa'
-          },
-          {
-            name: 'Purchase.Invoices',
-            access:'rwa'
-          },
-          {
-            name: 'Purchase.Payments',
-            access:'rwa'
-          },
+  const access = [
     {
-        name: 'Finance',
-         access:'rwa'
-      },
-     {
-        name: 'Finance.SalesBilling',
-         access:'rwa'
-      },
-     {
-        name: 'Finance.Invoices',
-         access:'rwa'
-      },
-     {
-        name: 'Finance.Collections',
-         access:'rwa'
-      },
-     {
-        name: 'Finance.Payments',
-         access:'rwa'
-      },
-      {
-        name: 'Storage',
-        access:'rwa'
-      },
-    {
-            name: 'Storage.Warehouse',
-            access:'rwa'
-    },
-      {
-            name: 'Storage.Rack',
-            access:'rwa'
+      name: 'Dashboard',
+      access: 'rwa',
     },
     {
-      name: 'Finance.Billings',
-      access:'rwa'
+      name: 'Customers',
+      access: 'rwa',
+    },
+    {
+      name: 'Suppliers',
+      access: 'rwa',
+    },
+    {
+      name: 'Inquiry',
+      access: 'rwa',
+    },
+    { name: 'Projects', access: 'rwa' },
+    {
+      name: 'Projects.Proposal',
+      access: 'rwa',
+    },
+    {
+      name: 'Projects.Projects',
+      access: 'rwa',
+    },
+    {
+      name: 'Projects.MaterialRequests',
+      access: 'rwa',
+    },
+    {
+      name: 'Projects.Billings',
+      access: 'rwa',
+    },
+    {
+      name: 'Projects.Collections',
+      access: 'rwa',
+    },
+    {
+      name: 'Purchase',
+      access: 'rwa',
+    },
+    {
+      name: 'Purchase.Requests',
+      access: 'rwa',
+    },
+    {
+      name: 'Purchase.Orders',
+      access: 'rwa',
+    },
+    {
+      name: 'Purchase.Deliveries',
+      access: 'rwa',
+    },
+    {
+      name: 'Purchase.Invoices',
+      access: 'rwa',
+    },
+    {
+      name: 'Purchase.Payments',
+      access: 'rwa',
+    },
+    {
+      name: 'Finance',
+      access: 'rwa',
     },
     {
       name: 'Finance.SalesBilling',
-      access:'rwa'
+      access: 'rwa',
     },
-        {
+    {
+      name: 'Finance.Invoices',
+      access: 'rwa',
+    },
+    {
+      name: 'Finance.Collections',
+      access: 'rwa',
+    },
+    {
+      name: 'Finance.Payments',
+      access: 'rwa',
+    },
+    {
+      name: 'Storage',
+      access: 'rwa',
+    },
+    {
+      name: 'Storage.Warehouse',
+      access: 'rwa',
+    },
+    {
+      name: 'Storage.Rack',
+      access: 'rwa',
+    },
+    {
+      name: 'Finance.Billings',
+      access: 'rwa',
+    },
+    {
+      name: 'Finance.SalesBilling',
+      access: 'rwa',
+    },
+    {
       name: 'Finance.Collection',
-      access:'rwa'
+      access: 'rwa',
     },
-      {
-        name: 'Materials',
-        access:'rwa'
-      },
-          {
-            name: 'Materials.Materials',
-            access:'rwa'
-          },
-            {
-              name: 'Materials.ToolsEquipment',
-              access:'rwa'
-            },
-          {
-            name: 'Materials.Assembly',
-            access:'rwa'
-          },
-      {
-        name: 'Inventory',
-        access:'rwa'
-      },
-          {
-            name: 'Inventory.MaterialInventory',
-            access:'rwa'
-          },
-          {
-            name: 'Inventory.ToolsInventory',
-            access:'rwa'
-          },
-          {
-            name: 'Inventory.MaterialRequests',
-            access:'rwa'
-          },
-      {
-        name: 'Employees',
-        access:'rwa'
-      },
-      {
-        name: 'Employees.Employees',
-        access:'rwa'
-      },
-      {
-        name: 'Staff',
-        access:'rwa'
-      },
-      {
-        name: 'Maintenance',
-        access:'rwa'
-      },
-      {
-        name: 'Maintenance.UOM',
-        access: 'rwa'
-      },
-            {
-        name: 'Maintenance.UOMConversion',
-        access: 'rwa'
-      },
-];
+    {
+      name: 'Materials',
+      access: 'rwa',
+    },
+    {
+      name: 'Materials.Materials',
+      access: 'rwa',
+    },
+    {
+      name: 'Materials.ToolsEquipment',
+      access: 'rwa',
+    },
+    {
+      name: 'Materials.Assembly',
+      access: 'rwa',
+    },
+    {
+      name: 'Inventory',
+      access: 'rwa',
+    },
+    {
+      name: 'Inventory.MaterialInventory',
+      access: 'rwa',
+    },
+    {
+      name: 'Inventory.ToolsInventory',
+      access: 'rwa',
+    },
+    {
+      name: 'Inventory.MaterialRequests',
+      access: 'rwa',
+    },
+    {
+      name: 'Employees',
+      access: 'rwa',
+    },
+    {
+      name: 'Employees.Employees',
+      access: 'rwa',
+    },
+    {
+      name: 'Staff',
+      access: 'rwa',
+    },
+    {
+      name: 'Maintenance',
+      access: 'rwa',
+    },
+    {
+      name: 'Maintenance.UOM',
+      access: 'rwa',
+    },
+    {
+      name: 'Maintenance.UOMConversion',
+      access: 'rwa',
+    },
+  ];
 
   try {
     // const res = await fetch(API_BASE_URL, {
@@ -189,9 +198,51 @@ export async function getUserAccess() {
     // });
     // const json = await res.json();
     // return { data: json && json.value ? json.value : json, error: null };
-      return {data: {error:null,isFailure:false,isSuccess:true,
-        value:[...access]
-      }}
+    return {
+      data: {
+        error: null,
+        isFailure: false,
+        isSuccess: true,
+        value: [...access],
+      },
+    };
+  } catch (error) {
+    return { data: null, error: error?.message || error };
+  }
+}
+
+export async function changePassword(payload) {
+  try {
+    const res = await fetch(`${API_BASE_URL}/ChangePassword`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+
+    const text = await res.text();
+    let json = null;
+    try {
+      json = text ? JSON.parse(text) : null;
+    } catch (parsingError) {
+      // Non-JSON response body is allowed.
+    }
+
+    const bodyError =
+      (json && typeof json === 'object' && (json.error || json.message)) ||
+      (typeof json === 'string' ? json : null) ||
+      text;
+
+    if (!res.ok) {
+      return {
+        data: json ?? (text ? { message: text } : null),
+        error: bodyError || `Request failed with status ${res.status}`,
+      };
+    }
+
+    return {
+      data: json ?? (text ? { message: text } : { isSuccess: true }),
+      error: null,
+    };
   } catch (error) {
     return { data: null, error: error?.message || error };
   }
