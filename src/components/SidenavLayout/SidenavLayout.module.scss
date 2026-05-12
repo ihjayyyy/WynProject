@@ -70,12 +70,12 @@
   justify-content: center;
   border-radius: 8px;
   transition: all 0.3s ease;
-  
+
   &.collapsedLogo {
     cursor: pointer;
     width: 36px;
     height: 36px;
-    
+
     &:hover {
       background: var(--color-background-light);
       transform: scale(1.05);
@@ -91,7 +91,7 @@
   object-fit: contain;
   flex-shrink: 0;
   transition: all 0.3s ease;
-  
+
   &.logoHovered {
     opacity: 0.7;
     transform: scale(0.8);
@@ -104,11 +104,16 @@
 }
 
 @keyframes pulseGlow {
-  0%, 100% {
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15), 0 0 0 0 rgba(59, 130, 246, 0.4);
+  0%,
+  100% {
+    box-shadow:
+      0 2px 8px rgba(0, 0, 0, 0.15),
+      0 0 0 0 rgba(59, 130, 246, 0.4);
   }
   50% {
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15), 0 0 0 4px rgba(59, 130, 246, 0.2);
+    box-shadow:
+      0 2px 8px rgba(0, 0, 0, 0.15),
+      0 0 0 4px rgba(59, 130, 246, 0.2);
   }
 }
 
@@ -167,7 +172,7 @@
   -webkit-overflow-scrolling: touch;
   padding-right: 0.25rem; // space for scrollbar
   scrollbar-width: thin; /* Firefox */
-  scrollbar-color: rgba(0,0,0,0.12) transparent; /* Firefox thumb + track */
+  scrollbar-color: rgba(0, 0, 0, 0.12) transparent; /* Firefox thumb + track */
 }
 
 .navList {
@@ -195,12 +200,12 @@
 }
 
 .navigation::-webkit-scrollbar-thumb {
-  background: rgba(0,0,0,0.10);
+  background: rgba(0, 0, 0, 0.1);
   border-radius: 8px;
 }
 
 .navigation:hover::-webkit-scrollbar-thumb {
-  background: rgba(0,0,0,0.16);
+  background: rgba(0, 0, 0, 0.16);
 }
 
 .navLink {
@@ -233,11 +238,11 @@
   &:hover {
     background: var(--color-background-light);
     color: var(--color-accent-light);
-    
+
     .collapsed & {
       transform: scale(1.05); // Reduced scale to prevent overflow
     }
-    
+
     .expanded & {
       // Only change background and color, no transforms
       background: var(--color-background-light);
@@ -249,7 +254,7 @@
     font-weight: 600;
     border-left: 3px solid var(--color-primary-light);
     background: rgba(15, 23, 42, 0.05);
-    
+
     .collapsed & {
       background: rgba(15, 23, 42, 0.1);
       border-left: 3px solid var(--color-primary-light);
@@ -257,7 +262,7 @@
     }
   }
 
-  &.childActive{
+  &.childActive {
     /* child-specific active state (smaller visual weight than parent) */
     color: var(--color-primary-light);
     font-weight: 600;
@@ -274,7 +279,6 @@
   }
 }
 
-
 .navLabel {
   font-size: 0.875rem;
   white-space: nowrap;
@@ -288,6 +292,9 @@
 .sidebarFooter {
   margin-top: auto;
   padding-top: 0.75rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
 }
 
 .userProfile {
@@ -297,6 +304,7 @@
   padding: 0.5rem;
   border-radius: $border-radius-lg;
   transition: background 0.2s ease;
+  text-decoration: none;
 
   .collapsed & {
     justify-content: center;
@@ -310,6 +318,13 @@
   &:hover {
     background: var(--color-background-light);
   }
+}
+
+.logoutButton {
+  width: 100%;
+  justify-content: center;
+  text-align: center;
+  padding: 0.5rem 0.75rem;
 }
 
 .userAvatar {
@@ -473,5 +488,3 @@
     color: var(--color-accent-dark);
   }
 }
-
-

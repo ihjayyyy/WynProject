@@ -1,13 +1,13 @@
- 'use client';
- import React, { useState, useEffect } from 'react';
+'use client';
+import React, { useState, useEffect } from 'react';
 import { FiChevronDown, FiChevronUp } from 'react-icons/fi';
- import { useRouter } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import styles from './EntityForm.module.scss';
- import Breadcrumbs from '../ui/Breadcrumbs/Breadcrumbs';
- import Input from '../ui/Input/Input';
+import Breadcrumbs from '../ui/Breadcrumbs/Breadcrumbs';
+import Input from '../ui/Input/Input';
 import Select from '../ui/Select/Select';
 import inputStyles from '../ui/Input/Input.module.scss';
- import Button from '../ui/Button/Button';
+import Button from '../ui/Button/Button';
 
 /**
  * EntityForm
@@ -26,13 +26,35 @@ import inputStyles from '../ui/Input/Input.module.scss';
  * - headerActions: ReactNode (optional) - custom actions rendered in header
  * - breadcrumbLabel: string (optional) - breadcrumb label override. Defaults to title
  * - breadcrumbItems: Array<{ label, href? }> (optional) - breadcrumb items override
+ * - showBreadcrumbs: boolean (optional) - show or hide the breadcrumb bar. Defaults to true
  * - submitPosition: 'bottom' | 'beforeExtra' (optional) - placement of submit/right actions area. Defaults to 'bottom'
  * - showSubmitButton: boolean (optional) - controls rendering of default Create/Save button. Defaults to true
  * - collapsed: boolean (optional) - controlled collapse state. Requires allowCollapse=true
  * - onCollapsedChange: function(collapsed: boolean) => void (optional) - callback when collapse state changes
  * - allowCollapse: boolean (optional) - enable/disable collapse toggle button. Defaults to false
  */
-export default function EntityForm({ title, icon, fields, initialValues = {}, onSubmit, backPath = '/', readOnly = false, width = '100%', columns = 8, extraContent = null, rightActions = null, headerActions = null, breadcrumbLabel, breadcrumbItems, submitPosition = 'bottom', showSubmitButton = true, collapsed: collapsedProp, onCollapsedChange, allowCollapse = false }) {
+export default function EntityForm({
+  title,
+  icon,
+  fields,
+  initialValues = {},
+  onSubmit,
+  backPath = '/',
+  readOnly = false,
+  width = '100%',
+  columns = 8,
+  extraContent = null,
+  rightActions = null,
+  headerActions = null,
+  breadcrumbLabel,
+  breadcrumbItems,
+  showBreadcrumbs = true,
+  submitPosition = 'bottom',
+  showSubmitButton = true,
+  collapsed: collapsedProp,
+  onCollapsedChange,
+  allowCollapse = false,
+}) {
   const router = useRouter();
   const [values, setValues] = useState({ ...initialValues });
   const [internalCollapsed, setInternalCollapsed] = useState(false);
@@ -100,7 +122,8 @@ export default function EntityForm({ title, icon, fields, initialValues = {}, on
         });
         return out;
       };
-      const incomingId = initialValues && (initialValues.id || initialValues.Guid || null);
+      const incomingId =
+        initialValues && (initialValues.id || initialValues.Guid || null);
       const currentId = values && (values.id || values.Guid || null);
 
       // If incoming values represent a different entity (different id), replace values.
@@ -117,14 +140,19 @@ export default function EntityForm({ title, icon, fields, initialValues = {}, on
       }
     } catch (err) {
       // fallback to safe behavior
-      setValues((() => {
-        try { return normalize(initialValues); } catch (e) { return { ...initialValues }; }
-      })());
+      setValues(
+        (() => {
+          try {
+            return normalize(initialValues);
+          } catch (e) {
+            return { ...initialValues };
+          }
+        })(),
+      );
     }
   }, [initialValues]);
 
   const handleChange = (e) => {
-
     const { name, value, type, files } = e.target;
     if (type === 'file') {
       const file = files && files[0];
@@ -134,7 +162,7 @@ export default function EntityForm({ title, icon, fields, initialValues = {}, on
       const field = (fields || []).find((f) => f.name === name);
 
       if (field && typeof field.onChange === 'function') {
-        console.log('on change')
+        console.log('on change');
         try {
           field.onChange(newValues[name], newValues, setValues);
         } catch (err) {
@@ -149,13 +177,12 @@ export default function EntityForm({ title, icon, fields, initialValues = {}, on
 
     // call field-level onChange if provided
     const field = (fields || []).find((f) => f.name === name);
-    
+
     if (field && typeof field.onChange === 'function') {
       try {
-        
         field.onChange(newValues[name], newValues, setValues);
       } catch (err) {
-        console.log(err)
+        console.log(err);
         // ignore errors from onChange
       }
     }
@@ -172,13 +199,12 @@ export default function EntityForm({ title, icon, fields, initialValues = {}, on
         } else if (result && typeof result === 'object' && result.redirect) {
           redirectTo = result.redirect;
         }
-        
       } else {
         // default behavior: log
         console.log('Form submitted', values);
       }
 
-     // router.push(redirectTo || backPath);
+      // router.push(redirectTo || backPath);
     } catch (err) {
       console.error('EntityForm submit error', err);
       alert('Failed to submit: ' + (err.message || err));
@@ -197,7 +223,8 @@ export default function EntityForm({ title, icon, fields, initialValues = {}, on
 
     // Format date/datetime values for read-only display when field type is provided
     try {
-      const fieldType = field && field.type ? String(field.type).toLowerCase() : '';
+      const fieldType =
+        field && field.type ? String(field.type).toLowerCase() : '';
       if (fieldType === 'date') {
         const d = new Date(value);
         if (!isNaN(d)) return d.toLocaleDateString();
@@ -207,7 +234,9 @@ export default function EntityForm({ title, icon, fields, initialValues = {}, on
         if (!isNaN(d)) return d.toLocaleString();
       }
       if (fieldType === 'select' && Array.isArray(field.options)) {
-        const match = field.options.find((o) => String(o.value) === String(value));
+        const match = field.options.find(
+          (o) => String(o.value) === String(value),
+        );
         if (match) return match.label;
       }
     } catch (err) {
@@ -223,20 +252,26 @@ export default function EntityForm({ title, icon, fields, initialValues = {}, on
       <div className={styles.rightBottomButtons}>
         {rightActions}
         {!readOnly && showSubmitButton && (
-          <Button type="submit" variant="save">{(initialValues && (initialValues.Guid || initialValues.id)) ? 'Save' : 'Create'}</Button>
+          <Button type="submit" variant="save">
+            {initialValues && (initialValues.Guid || initialValues.id)
+              ? 'Save'
+              : 'Create'}
+          </Button>
         )}
       </div>
     </div>
   ) : null;
 
   return (
-    <form className={styles.entityForm} onSubmit={handleSubmit} >
-      <Breadcrumbs
-        showBack
-        items={breadcrumbItems || [{ label: breadcrumbLabel || `${title}` }]}
-        backIcon={icon}
-        backHref={backPath}
-      />
+    <form className={styles.entityForm} onSubmit={handleSubmit}>
+      {showBreadcrumbs ? (
+        <Breadcrumbs
+          showBack
+          items={breadcrumbItems || [{ label: breadcrumbLabel || `${title}` }]}
+          backIcon={icon}
+          backHref={backPath}
+        />
+      ) : null}
 
       <div className={styles.headerSection}>
         <div className={styles.titleRow}>
@@ -247,19 +282,28 @@ export default function EntityForm({ title, icon, fields, initialValues = {}, on
               className={styles.collapseToggle}
               onClick={() => setCollapsed(!collapsed)}
               aria-expanded={!collapsed}
-              aria-label={collapsed ? 'Show details' : 'Hide details'}
-            >
+              aria-label={collapsed ? 'Show details' : 'Hide details'}>
               <span className={styles.caret}>
-                {collapsed ? <FiChevronDown size={16} /> : <FiChevronUp size={16} />}
+                {collapsed ? (
+                  <FiChevronDown size={16} />
+                ) : (
+                  <FiChevronUp size={16} />
+                )}
               </span>
-              <span className={styles.collapseLabel}>{collapsed ? 'Show details' : 'Hide details'}</span>
+              <span className={styles.collapseLabel}>
+                {collapsed ? 'Show details' : 'Hide details'}
+              </span>
             </button>
           ) : null}
         </div>
-        {headerActions ? <div className={styles.headerActions}>{headerActions}</div> : null}
+        {headerActions ? (
+          <div className={styles.headerActions}>{headerActions}</div>
+        ) : null}
       </div>
 
-      <div className={`${columns === 3 ? styles.topFields3Col : styles.topFields8Col} ${collapsed ? styles.collapsed : ''}`} style={{ width: normalizedWidth }}>
+      <div
+        className={`${columns === 3 ? styles.topFields3Col : styles.topFields8Col} ${collapsed ? styles.collapsed : ''}`}
+        style={{ width: normalizedWidth }}>
         {fields.map((f) => {
           // per-field hidden support: allow boolean or function(values) => boolean
           const fieldHidden = (() => {
@@ -289,7 +333,13 @@ export default function EntityForm({ title, icon, fields, initialValues = {}, on
             // Make `code` non-editable for existing entities (when values contain an id/Guid).
             // This enforces that the `code` field cannot be changed during edit flows across forms.
             try {
-              if (f && f.name === 'code' && values && (values.id || values.Guid)) return true;
+              if (
+                f &&
+                f.name === 'code' &&
+                values &&
+                (values.id || values.Guid)
+              )
+                return true;
             } catch (err) {
               // ignore
             }
@@ -300,8 +350,11 @@ export default function EntityForm({ title, icon, fields, initialValues = {}, on
             return (
               <div key={f.name} className={classes}>
                 <div className={styles.readOnlyField}>
-                  {f.label && <label className={styles.readOnlyLabel}>{f.label}</label>}
-                  <div className={`${styles.readOnlyValue} ${f.multiline ? styles.multilineValue : ''}`}>
+                  {f.label && (
+                    <label className={styles.readOnlyLabel}>{f.label}</label>
+                  )}
+                  <div
+                    className={`${styles.readOnlyValue} ${f.multiline ? styles.multilineValue : ''}`}>
                     {formatDisplayValue(values[f.name], f, values)}
                   </div>
                 </div>
@@ -313,7 +366,9 @@ export default function EntityForm({ title, icon, fields, initialValues = {}, on
           if (f.type === 'custom') {
             return (
               <div key={f.name} className={classes}>
-                {typeof f.render === 'function' ? f.render({ values, setValues }) : f.component || null}
+                {typeof f.render === 'function'
+                  ? f.render({ values, setValues })
+                  : f.component || null}
               </div>
             );
           }
@@ -329,7 +384,12 @@ export default function EntityForm({ title, icon, fields, initialValues = {}, on
                     // Wrap onChange to provide a `name` on the event target so
                     // EntityForm.handleChange can pick up which field changed.
                     onChange={(ev) =>
-                      handleChange({ target: { name: f.name, value: ev?.target?.value ?? ev } })
+                      handleChange({
+                        target: {
+                          name: f.name,
+                          value: ev?.target?.value ?? ev,
+                        },
+                      })
                     }
                     options={f.options || []}
                     placeholder={f.placeholder || f.label}
@@ -361,7 +421,9 @@ export default function EntityForm({ title, icon, fields, initialValues = {}, on
 
       {submitPosition === 'beforeExtra' ? actionBlock : null}
 
-      {extraContent ? <div className={styles.extraContent}>{extraContent}</div> : null}
+      {extraContent ? (
+        <div className={styles.extraContent}>{extraContent}</div>
+      ) : null}
 
       {submitPosition !== 'beforeExtra' ? actionBlock : null}
     </form>

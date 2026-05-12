@@ -3,7 +3,7 @@ import { useState } from 'react';
 import LoginForm from '../../components/LoginForm/LoginForm';
 import styles from './page.module.scss';
 import { useRouter } from 'next/navigation';
-import { login } from '../../services/Auth';
+import { login, storeAuthData } from '../../services/Auth';
 import ConfirmModal from '../../components/ui/ConfirmModal/ConfirmModal';
 
 export default function LoginPage() {
@@ -38,11 +38,7 @@ export default function LoginPage() {
       return;
     }
 
-    try {
-      sessionStorage.setItem('auth', JSON.stringify(authData));
-    } catch (storageError) {
-      console.warn('Unable to persist auth data:', storageError);
-    }
+    storeAuthData(authData);
 
     if (!authData.confirmed) {
       setConfirmTitle('First Time Login');

@@ -1,28 +1,34 @@
-
 'use client';
 import styles from './SidenavLayout.module.scss';
 import Link from 'next/link';
 import { sidenavItems } from './sidenavData';
 import Image from 'next/image';
-import  { useState,useContext, useEffect } from 'react';
+import Button from '../ui/Button/Button';
+import { useState, useContext, useEffect } from 'react';
+import { usePathname, useRouter } from 'next/navigation';
 import { AccessContext } from '@/app/contextProviders/accessContext';
-import { usePathname } from 'next/navigation';
+import { clearAuthData } from '@/services/Auth';
 import {
-  FiChevronLeft,    
+  FiChevronLeft,
   FiChevronRight,
   FiChevronDown,
   FiChevronUp,
 } from 'react-icons/fi';
 
 export default function SidenavLayout({ children }) {
+  const router = useRouter();
   const { user, getAccess } = useContext(AccessContext);
-  
 
   const [isCollapsed, setIsCollapsed] = useState(true);
   const [isLogoHovered, setIsLogoHovered] = useState(false);
   const [expandedParents, setExpandedParents] = useState(new Set());
   const pathname = usePathname();
   const pathLower = pathname?.toLowerCase();
+
+  const handleLogout = () => {
+    clearAuthData();
+    router.push('/login');
+  };
 
   const toggleSidebar = () => setIsCollapsed(!isCollapsed);
 
@@ -212,11 +218,10 @@ export default function SidenavLayout({ children }) {
 
   const renderNavItem = (item) => {
     const pageaccess = getAccess(item.name);
-    
-    if(pageaccess.access === 'n') 
-      {
-        return null;
-      }
+
+    if (pageaccess.access === 'n') {
+      return null;
+    }
     const hasChildren = item.children && item.children.length > 0;
     const isExpanded = expandedParents.has(item.label);
     const isActive = isParentActive(item);
@@ -282,19 +287,22 @@ export default function SidenavLayout({ children }) {
           </button>
           {!isCollapsed && isExpanded && (
             <ul className={styles.childNavList}>
-              {item.children.map((child) => getAccess(child.name).access !== 'n' && (
-                  <li key={child.label} className={styles.childNavItem}>
-                  <Link
-                    href={child.href}
-                    title={child.label}
-                    className={`${styles.navLink} ${styles.childNavLink} ${
-                      isChildActive(child) ? styles.childActive : ''
-                    }`}>
-                    {renderIcon(child.icon, 16)}
-                    <span className={styles.navLabel}>{child.label}</span>
-                  </Link>
-                </li>
-              ))}
+              {item.children.map(
+                (child) =>
+                  getAccess(child.name).access !== 'n' && (
+                    <li key={child.label} className={styles.childNavItem}>
+                      <Link
+                        href={child.href}
+                        title={child.label}
+                        className={`${styles.navLink} ${styles.childNavLink} ${
+                          isChildActive(child) ? styles.childActive : ''
+                        }`}>
+                        {renderIcon(child.icon, 16)}
+                        <span className={styles.navLabel}>{child.label}</span>
+                      </Link>
+                    </li>
+                  ),
+              )}
             </ul>
           )}
         </div>
@@ -357,9 +365,9 @@ export default function SidenavLayout({ children }) {
           <ul className={styles.navList}>{sidenavItems.map(renderNavItem)}</ul>
         </nav>
 
-        {/* Footer Section - Unchanged */}
+        {/* Footer Section */}
         <footer className={styles.sidebarFooter}>
-          <div className={styles.userProfile}>
+          <Link href="/userprofile" className={styles.userProfile}>
             <Image
               src="/ODR-Logo.png"
               alt="User Avatar"
@@ -373,7 +381,16 @@ export default function SidenavLayout({ children }) {
                 <span className={styles.userEmail}>{user?.email}</span>
               </div>
             )}
-          </div>
+          </Link>
+          {!isCollapsed && (
+            <Button
+              type="button"
+              variant="outlineDanger"
+              className={styles.logoutButton}
+              onClick={handleLogout}>
+              Logout
+            </Button>
+          )}
         </footer>
       </aside>
 

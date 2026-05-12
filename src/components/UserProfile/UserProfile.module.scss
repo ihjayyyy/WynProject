@@ -1,0 +1,26 @@
+@use '../../styles/variables' as *;
+
+.headerActions {
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.statusMessage {
+  font-size: $font-size-sm;
+  color: $color-success-light;
+  margin-top: $spacing-xs;
+}
+
+.errorMessage {
+  font-size: $font-size-sm;
+  color: $color-error-light;
+  margin-top: $spacing-xs;
+}
+
+.buttonGroup {
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
+}

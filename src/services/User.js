@@ -211,10 +211,83 @@ export async function getUserAccess() {
   }
 }
 
+export async function getUserByGuid(guid) {
+  try {
+    const res = await fetch(`${API_BASE_URL}/${guid}`, {
+      method: 'GET',
+      headers: { Accept: '*/*' },
+    });
+
+    const text = await res.text();
+    let json = null;
+    try {
+      json = text ? JSON.parse(text) : null;
+    } catch (parsingError) {
+      // Non-JSON response body is allowed.
+    }
+
+    const bodyError =
+      (json && typeof json === 'object' && (json.error || json.message)) ||
+      (typeof json === 'string' ? json : null) ||
+      text;
+
+    if (!res.ok) {
+      return {
+        data: json ?? (text ? { message: text } : null),
+        error: bodyError || `Request failed with status ${res.status}`,
+      };
+    }
+
+    return {
+      data: json ?? (text ? { message: text } : null),
+      error: null,
+    };
+  } catch (error) {
+    return { data: null, error: error?.message || error };
+  }
+}
+
 export async function changePassword(payload) {
   try {
     const res = await fetch(`${API_BASE_URL}/ChangePassword`, {
       method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+
+    const text = await res.text();
+    let json = null;
+    try {
+      json = text ? JSON.parse(text) : null;
+    } catch (parsingError) {
+      // Non-JSON response body is allowed.
+    }
+
+    const bodyError =
+      (json && typeof json === 'object' && (json.error || json.message)) ||
+      (typeof json === 'string' ? json : null) ||
+      text;
+
+    if (!res.ok) {
+      return {
+        data: json ?? (text ? { message: text } : null),
+        error: bodyError || `Request failed with status ${res.status}`,
+      };
+    }
+
+    return {
+      data: json ?? (text ? { message: text } : { isSuccess: true }),
+      error: null,
+    };
+  } catch (error) {
+    return { data: null, error: error?.message || error };
+  }
+}
+
+export async function updateUser(userId, payload) {
+  try {
+    const res = await fetch(`${API_BASE_URL}/Update/${userId}`, {
+      method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload),
     });
