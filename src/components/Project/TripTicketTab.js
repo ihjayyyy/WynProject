@@ -37,12 +37,12 @@ const BASE_COLUMNS = [
   { header: 'Trip Cost', key: 'tripCost', render: (item) => Number(item.tripCost || 0).toLocaleString() },
 ];
 
-export default function TripTicketTab({ projectId = 0 }) {
+export default function TripTicketTab({ projectId = 0, editable = true }) {
   const [items, setItems] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editing, setEditing] = useState(null);
-  const [materials, setMaterials] = useState([]);  // holds tools list
+  const [materials, setMaterials] = useState([]);
   const toast = useToast();
   const confirmModal = useConfirmModal();
   const PageName = 'Projects.Projects';
@@ -109,7 +109,7 @@ export default function TripTicketTab({ projectId = 0 }) {
         type: 'text',
         value: selectedMaterial?.code || record.code || '',
         validator: Yup.string().notRequired(),
-        hidden:true,
+        hidden: true,
       },
       {
         name: 'name',
@@ -221,7 +221,7 @@ export default function TripTicketTab({ projectId = 0 }) {
       header: 'Actions',
       key: '__actions',
       align: 'right',
-      render: (item) => (
+      render: (item) => editable && isAllowed(PageName, 'w') ? (
         <div className={styles.actionCell}>
           <Button
             size="sm"
@@ -249,9 +249,9 @@ export default function TripTicketTab({ projectId = 0 }) {
             }}
           />
         </div>
-      ),
+      ) : null,
     },
-  ], [confirmModal, handleDelete]);
+  ], [confirmModal, handleDelete, editable, isAllowed]);
 
   return (
     <div className={styles.landingWrap}>
@@ -263,16 +263,16 @@ export default function TripTicketTab({ projectId = 0 }) {
             value={searchTerm}
             onChange={setSearchTerm}
             showFilter={false}
-            showButton={isAllowed(PageName, 'w')}
-            buttonLabel={isAllowed(PageName, 'w') ? "Add Trip Ticket" : undefined}
-            handleOnClick={isAllowed(PageName, 'w') ? () => { setEditing(null); setIsModalOpen(true); } : undefined}
+            showButton={isAllowed(PageName, 'w') && editable}
+            buttonLabel={isAllowed(PageName, 'w') && editable ? "Add Trip Ticket" : undefined}
+            handleOnClick={isAllowed(PageName, 'w') && editable ? () => { setEditing(null); setIsModalOpen(true); } : undefined}
             width="260px"
           />
         </div>
       </div>
 
       <div className={styles.tableSection}>
-          <DataTable columns={tableColumns} data={filtered} showActions={false} emptyMessage="No trip tickets found" />
+        <DataTable columns={tableColumns} data={filtered} showActions={false} emptyMessage="No trip tickets found" />
       </div>
 
       <ItemModal
@@ -282,7 +282,7 @@ export default function TripTicketTab({ projectId = 0 }) {
         isOpen={isModalOpen}
         fields={tripTicketModalFields}
         onItemRemove={handleDelete}
-        onClose={isAllowed(PageName, 'w') ? async (value) => {
+        onClose={isAllowed(PageName, 'w') && editable ? async (value) => {
           if (!value) {
             setIsModalOpen(false);
             setEditing(null);
@@ -319,8 +319,13 @@ export default function TripTicketTab({ projectId = 0 }) {
 
           setIsModalOpen(false);
           setEditing(null);
-        } : undefined}
-        readOnly={!isAllowed(PageName, 'w')}
+        } : async (value) => {
+          if (!value) {
+            setIsModalOpen(false);
+            setEditing(null);
+          }
+        }}
+        readOnly={!editable || !isAllowed(PageName, 'w')}
       />
     </div>
   );

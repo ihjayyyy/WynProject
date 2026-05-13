@@ -2,12 +2,13 @@
 
 import React, { useMemo, useState, useContext } from 'react';
 import { useRouter } from 'next/navigation';
-import { FiEdit2, FiEye, FiFileText } from 'react-icons/fi';
+import { FiEdit2, FiEye, FiFileText, FiPlay, FiCheckSquare } from 'react-icons/fi';
 import DropdownAction from '../ui/DropdownAction/DropdownAction';
 import Landing from '../ui/Landing/Landing';
 import StatusBadge from '../ui/StatusBadge/StatusBadge';
-import { getProjects, getCompletionPDFById } from '../../services/Project';
+import { getProjects, getCompletionPDFById, startProject, completeProject } from '../../services/Project';
 import { useToast } from '../ui/Toast/Toast';
+import ConfirmModal from '../ui/ConfirmModal/ConfirmModal';
 import { AccessContext } from '@/app/contextProviders/accessContext';
 import InvalidPage from '@/components/InvalidPage/page';
 
@@ -15,6 +16,7 @@ const baseColumns = [
   { header: 'Id', key: 'id' },
   { header: 'Code', key: 'code' },
   { header: 'Name', key: 'name' },
+  { header: 'Status', key: 'status', render: (item) => <StatusBadge status={item.status || item.projectStatus || item.state} /> },
   { header: 'Company', key: 'companyName' },
   { header: 'Contact', key: 'contactNumber' },
   { header: 'Contract Price', key: 'contractPrice', render: (item) => item.contractPrice ? Number(item.contractPrice).toLocaleString() : '' },
@@ -32,16 +34,17 @@ export default function ProjectLanding() {
   const router = useRouter();
   const toast = useToast();
 
-  const actionItems = useMemo(() => [
-    ...(isAllowed(PageName, 'r') ? [{ key: 'view', label: 'View', icon: <FiEye size={14} />, onClick: (item) => router.push(`/projects/project/projectdetails?id=${item.id}`) }] : []),
-    ...(isAllowed(PageName, 'w') ? [{ key: 'edit', label: 'Edit', icon: <FiEdit2 size={14} />, onClick: (item) => router.push(`/projects/project/projectdetails?id=${item.id}&mode=edit`) }] : []),
-    ...(isAllowed(PageName, 'r') ? [{ key: 'viewpdf', label: 'Generate Accomplishment Report', icon: <FiFileText size={14} />, onClick: (item) => (getPDF(item.id))}] : []),
-  ], [isAllowed, router]);
+  // Confirm modal state
+  const [isConfirmOpen, setIsConfirmOpen] = useState(false);
+  const [confirmTitle, setConfirmTitle] = useState('');
+  const [confirmMessage, setConfirmMessage] = useState('');
+  const [confirmAction, setConfirmAction] = useState(null);
+  const [confirmTarget, setConfirmTarget] = useState(null);
 
-  const getPDF = async (id) =>{
-      console.log("project pdf",id);
-      await getCompletionPDFById(id);
-  }
+  const getPDF = async (id) => {
+    console.log('project pdf', id);
+    await getCompletionPDFById(id);
+  };
 
   const loadProjects = React.useCallback(async () => {
     setLoading(true);
@@ -64,11 +67,83 @@ export default function ProjectLanding() {
     return () => (mounted = false);
   }, [loadProjects]);
 
-  const columns = useMemo(() => [...baseColumns, { header: 'Action', key: 'actions', align: 'right', render: (item) => {
-    const isDraft = false;
-    const itemsFor = (actionItems || []).map((it) => ({ ...it, hidden: it.key === 'edit' ? !isDraft : it.hidden }));
-    return <DropdownAction item={item} items={itemsFor} />;
-  } }], [actionItems]);
+  const columns = useMemo(
+    () => [
+      ...baseColumns,
+      {
+        header: 'Action',
+        key: 'actions',
+        align: 'right',
+        render: (item) => {
+          const status = (item.status || '').toString().toUpperCase().replace(/\s+/g, '');
+          const toFinite = (v) => { const n = Number(v); return Number.isFinite(n) ? n : null; };
+          const prog = toFinite(item.overallProgress) ?? toFinite(item.progress) ?? 0;
+
+          const isNotStarted = status === 'NOTSTARTED';
+          const isComplete = prog >= 100;
+
+          const rowActions = [
+            ...(isAllowed(PageName, 'r')
+              ? [{ key: 'view', label: 'View', icon: <FiEye size={14} />, onClick: () => router.push(`/projects/project/projectdetails?id=${item.id}`) }]
+              : []),
+            ...(isAllowed(PageName, 'w')
+              ? [{ key: 'edit', label: 'Edit', icon: <FiEdit2 size={14} />, onClick: () => router.push(`/projects/project/projectdetails?id=${item.id}&mode=edit`) }]
+              : []),
+            ...(isAllowed(PageName, 'r')
+              ? [{ key: 'viewpdf', label: 'Generate Accomplishment Report', icon: <FiFileText size={14} />, onClick: () => getPDF(item.id) }]
+              : []),
+
+            // Start Project — only shown when status is NotStarted
+            ...(isAllowed(PageName, 'w') && isNotStarted
+              ? [{
+                  key: 'start',
+                  label: 'Start Project',
+                  icon: <FiPlay size={14} />,
+                  onClick: () => {
+                    setConfirmTarget(item);
+                    setConfirmTitle('Start Project?');
+                    setConfirmMessage(`Start project "${item.name || item.code || ''}"?`);
+                    setConfirmAction(() => async (target) => {
+                      setLoading(true);
+                      const res = await startProject(target.id);
+                      if (res?.error) toast.error('Failed to start project');
+                      else { toast.success('Project started'); await loadProjects(); }
+                      setLoading(false);
+                    });
+                    setIsConfirmOpen(true);
+                  },
+                }]
+              : []),
+
+            // Complete Project — only shown when overallProgress is 100
+            ...(isAllowed(PageName, 'w') && isComplete
+              ? [{
+                  key: 'complete',
+                  label: 'Complete Project',
+                  icon: <FiCheckSquare size={14} />,
+                  onClick: () => {
+                    setConfirmTarget(item);
+                    setConfirmTitle('Complete Project?');
+                    setConfirmMessage(`Mark project "${item.name || item.code || ''}" as complete?`);
+                    setConfirmAction(() => async (target) => {
+                      setLoading(true);
+                      const res = await completeProject(target.id);
+                      if (res?.error) toast.error('Failed to complete project');
+                      else { toast.success('Project marked complete'); await loadProjects(); }
+                      setLoading(false);
+                    });
+                    setIsConfirmOpen(true);
+                  },
+                }]
+              : []),
+          ];
+
+          return <DropdownAction item={item} items={rowActions} />;
+        },
+      },
+    ],
+    [isAllowed, router, loadProjects, toast]
+  );
 
   const stats = useMemo(() => {
     const total = items.length;
@@ -88,16 +163,38 @@ export default function ProjectLanding() {
   };
 
   return isAllowed(PageName, 'r') ? (
-    <Landing
-      title="Projects"
-      data={items}
-      columns={columns}
-      stats={stats}
-      searchPlaceholder="Search projects"
-      emptyMessage="No projects found"
-      width="320px"
-      filterFn={filterFn}
-      loading={loading}
-    />
-  ) : <InvalidPage />;
+    <>
+      <Landing
+        title="Projects"
+        data={items}
+        columns={columns}
+        stats={stats}
+        searchPlaceholder="Search projects"
+        emptyMessage="No projects found"
+        width="320px"
+        filterFn={filterFn}
+        loading={loading}
+      />
+
+      <ConfirmModal
+        open={isConfirmOpen}
+        title={confirmTitle}
+        message={confirmMessage}
+        confirmText="Confirm"
+        onConfirm={async () => {
+          setIsConfirmOpen(false);
+          if (confirmAction && confirmTarget) {
+            await confirmAction(confirmTarget);
+          }
+        }}
+        onCancel={() => {
+          setIsConfirmOpen(false);
+          setConfirmTarget(null);
+          setConfirmAction(null);
+        }}
+      />
+    </>
+  ) : (
+    <InvalidPage />
+  );
 }

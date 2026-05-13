@@ -6,7 +6,8 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import Button from '../ui/Button/Button';
 import Input from '../ui/Input/Input';
 import Breadcrumbs from '../ui/Breadcrumbs/Breadcrumbs';
-import { getProjectById, getProjects, updateProject } from '../../services/Project';
+import { getProjectById, getProjects, updateProject, startProject, completeProject } from '../../services/Project';
+import ConfirmModal from '../ui/ConfirmModal/ConfirmModal';
 import ProjectScope from './ProjectScope';
 import ProjectStaffTab from './ProjectStaffTab';
 import ProjectFinanceTab from './ProjectFinanceTab';
@@ -19,6 +20,7 @@ import { useToast } from '../ui/Toast/Toast';
 import { FiBriefcase } from 'react-icons/fi';
 import { AccessContext } from '@/app/contextProviders/accessContext';
 import InvalidPage from '@/components/InvalidPage/page';
+import StatusBadge from '../ui/StatusBadge/StatusBadge';
 
 export default function ProjectDetails() {
   const PageName = 'Projects.Projects';
@@ -28,6 +30,12 @@ export default function ProjectDetails() {
   const [editing, setEditing] = useState(false);
   const [form, setForm] = useState({});
   const [activeTab, setActiveTab] = useState('Details');
+  // Confirm modal state for start/complete actions
+  const [isConfirmOpen, setIsConfirmOpen] = useState(false);
+  const [confirmTitle, setConfirmTitle] = useState('');
+  const [confirmMessage, setConfirmMessage] = useState('');
+  const [confirmAction, setConfirmAction] = useState(null);
+  const [confirmTarget, setConfirmTarget] = useState(null);
   const toast = useToast();
   const router = useRouter();
   
@@ -72,7 +80,17 @@ export default function ProjectDetails() {
   if (loading) return <div>Loading...</div>;
   if (!project) return <div>No project found</div>;
 
-  const status = (Number(project.overallProgress) || 0) >= 100 ? 'Completed' : 'On Going';
+  const projectStatus = (project.status || '').toUpperCase();
+  const isFullyLocked = ['COMPLETED', 'CANCELLED', 'CLOSED'].includes(projectStatus);
+  const isOngoing = projectStatus === 'ONGOING';
+  const canWrite = isAllowed(PageName, 'w');
+
+  // Returns true if this tab is editable based on project status
+  const tabEditable = (tab) => {
+    if (isFullyLocked) return false;
+    if (isOngoing) return ['Details', 'Finance', 'Project Scope & Materials'].includes(tab);
+    return true;
+  };
 
   const tabs = ['Details', 'Finance', 'Project Scope & Materials', 'Expenses', 'Trip Tickets', 'Staff', 'Attendance', 'Material Requests', 'Billing & Collection'];
 
@@ -90,7 +108,7 @@ export default function ProjectDetails() {
         <div className={styles.titleBlock}>
           <div className={styles.title}>{project.projectName || project.name}</div>
           <div className={styles.metaRow}>
-            <div>{status}</div>
+            <div><StatusBadge status={project.status} /></div>
             <div>Project No. {project.projectNo || project.code}</div>
           </div>
           <div className={styles.tabs}>
@@ -118,7 +136,79 @@ export default function ProjectDetails() {
             <div className={styles.panelHeader}>
               <h3>Details</h3>
               <div className={styles.panelActions}>
-                {!editing && isAllowed(PageName, 'w') && <Button className="md" onClick={() => setEditing(true)}>Edit</Button>}
+                {!editing && canWrite && tabEditable('Details') && (
+                  <>
+                    <Button className="md" onClick={() => setEditing(true)}>Edit</Button>
+
+                    {/* Start Project button - shown when status is NOTSTARTED */}
+                    {String(project.status || '').toUpperCase() === 'NOTSTARTED' && (
+                      <Button
+                        className="secondary md"
+                        onClick={() => {
+                          setConfirmTarget(project);
+                          setConfirmTitle('Start Project?');
+                          setConfirmMessage(`Start project "${project.projectName || project.name || project.code || ''}"?`);
+                          setConfirmAction(() => async (target) => {
+                            try {
+                              setLoading(true);
+                              const res = await startProject(target.id);
+                              if (res?.error) toast.error('Failed to start project');
+                              else {
+                                toast.success('Project started');
+                                const r = await getProjectById(target.id);
+                                const updated = r.data?.value && typeof r.data.value === 'object' && !Array.isArray(r.data.value)
+                                  ? r.data.value
+                                  : r.data;
+                                setProject(updated);
+                                setForm({ ...updated });
+                              }
+                            } catch (e) {
+                              toast.error('Failed to start project');
+                            }
+                            setLoading(false);
+                          });
+                          setIsConfirmOpen(true);
+                        }}
+                      >
+                        Start Project
+                      </Button>
+                    )}
+
+                    {/* Complete Project button - shown when overallProgress >= 100 */}
+                    {Number(project.overallProgress || 0) >= 100 && String(project.status || '').toUpperCase() !== 'COMPLETED' && (
+                      <Button
+                        className="secondary md"
+                        onClick={() => {
+                          setConfirmTarget(project);
+                          setConfirmTitle('Complete Project?');
+                          setConfirmMessage(`Mark project "${project.projectName || project.name || project.code || ''}" as complete?`);
+                          setConfirmAction(() => async (target) => {
+                            try {
+                              setLoading(true);
+                              const res = await completeProject(target.id);
+                              if (res?.error) toast.error('Failed to complete project');
+                              else {
+                                toast.success('Project marked complete');
+                                const r = await getProjectById(target.id);
+                                const updated = r.data?.value && typeof r.data.value === 'object' && !Array.isArray(r.data.value)
+                                  ? r.data.value
+                                  : r.data;
+                                setProject(updated);
+                                setForm({ ...updated });
+                              }
+                            } catch (e) {
+                              toast.error('Failed to complete project');
+                            }
+                            setLoading(false);
+                          });
+                          setIsConfirmOpen(true);
+                        }}
+                      >
+                        Complete Project
+                      </Button>
+                    )}
+                  </>
+                )}
                 {editing && (
                   <>
                     <Button className="secondary md" onClick={() => { setForm({ ...project }); setEditing(false); }}>Cancel</Button>
@@ -196,8 +286,8 @@ export default function ProjectDetails() {
           </div>
         ) : (
           <div className={styles.panel}>
-              {activeTab === 'Finance' && <ProjectFinanceTab projectId={project.id} project={project} editable={isAllowed(PageName, 'w')} />}
-              {activeTab === 'Project Scope & Materials' && <ProjectScope projectId={project.id} editable={isAllowed(PageName, 'w')} onCompletedQtyUpdated={async () => {
+              {activeTab === 'Finance' && <ProjectFinanceTab projectId={project.id} project={project} editable={canWrite && tabEditable('Finance')} />}
+              {activeTab === 'Project Scope & Materials' && <ProjectScope projectId={project.id} editable={canWrite && tabEditable('Project Scope & Materials')} onCompletedQtyUpdated={async () => {
                 try {
                   const res = await getProjectById(project.id);
                   if (!res.error && res.data) {
@@ -209,15 +299,32 @@ export default function ProjectDetails() {
                   }
                 } catch (e) {}
               }} />}
-              {activeTab === 'Expenses' && <ExpensesTab projectId={project.id} />}
-              {activeTab === 'Trip Tickets' && <TripTicketTab projectId={project.id} />}
-              {activeTab === 'Staff' && <ProjectStaffTab projectId={project.id} />}
-              {activeTab === 'Attendance' && <AttendanceTab projectId={project.id} />}
-              {activeTab === 'Material Requests' && <MaterialRequestsTab projectId={project.id} />}
-              {activeTab === 'Billing & Collection' && <ProjectBillingCollectionTab projectId={project.id} />}
+              {activeTab === 'Expenses' && <ExpensesTab projectId={project.id} editable={canWrite && tabEditable('Expenses')} />}
+              {activeTab === 'Trip Tickets' && <TripTicketTab projectId={project.id} editable={canWrite && tabEditable('Trip Tickets')} />}
+              {activeTab === 'Staff' && <ProjectStaffTab projectId={project.id} editable={canWrite && tabEditable('Staff')} />}
+              {activeTab === 'Attendance' && <AttendanceTab projectId={project.id} editable={canWrite && tabEditable('Attendance')} />}
+              {activeTab === 'Material Requests' && <MaterialRequestsTab projectId={project.id} editable={canWrite && tabEditable('Material Requests')} />}
+              {activeTab === 'Billing & Collection' && <ProjectBillingCollectionTab projectId={project.id} editable={canWrite && tabEditable('Billing & Collection')} />}
           </div>
         )}
       </div>
+      <ConfirmModal
+        open={isConfirmOpen}
+        title={confirmTitle}
+        message={confirmMessage}
+        confirmText="Confirm"
+        onConfirm={async () => {
+          setIsConfirmOpen(false);
+          if (confirmAction && confirmTarget) {
+            await confirmAction(confirmTarget);
+          }
+        }}
+        onCancel={() => {
+          setIsConfirmOpen(false);
+          setConfirmTarget(null);
+          setConfirmAction(null);
+        }}
+      />
     </div>
   );
 }

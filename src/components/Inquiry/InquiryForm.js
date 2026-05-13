@@ -126,9 +126,14 @@ export default function InquiryForm() {
 
   const formTitle = useMemo(() => {
     if (!inquiryId) return 'Inquiry Form';
-    if (isEditMode) return 'Edit Inquiry';
-    return 'View Inquiry';
-  }, [inquiryId, isEditMode]);
+    const titleText = (baseInitialValues && (baseInitialValues.inquiryNo || baseInitialValues.code)) || (isEditMode ? 'Edit Inquiry' : 'View Inquiry');
+    return (
+      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+        <span>{titleText}</span>
+        {status && <StatusBadge status={status} />}
+      </div>
+    );
+  }, [inquiryId, isEditMode, baseInitialValues, status]);
 
   const fields = [
 {
@@ -180,6 +185,7 @@ export default function InquiryForm() {
     <EntityForm
       key={formKey}          // remounts form with fresh initialValues on customer change
       title={formTitle}
+      breadcrumbLabel='Inquiry'
       icon={<FiMessageSquare />}
       fields={fields}
       initialValues={initialValues}
@@ -241,7 +247,6 @@ export default function InquiryForm() {
           <Button type="submit" variant="save">Create</Button>
         ) : (
           <>
-            {status && <StatusBadge status={status} />}
             {isReadOnly ? (
               canEnterEditMode ? (
                 <Button variant="outlinedPrimary" onClick={() => setIsEditModeLocal(true)}>Edit</Button>

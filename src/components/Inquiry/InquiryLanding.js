@@ -13,7 +13,7 @@ import { useToast } from '../ui/Toast/Toast';
 
 const baseColumns = [
   { header: 'Date', key: 'date', render: (item) => (item.date ? new Date(item.date).toLocaleString() : '') },
-  { header: 'Reference', key: 'reference' },
+  // { header: 'Reference', key: 'reference' },
   { header: 'Company', key: 'companyName' },
   { header: 'Attention', key: 'attention' },
   { header: 'Contact', key: 'contactPerson', render: (item) => (

@@ -76,9 +76,13 @@ export default function SuppliersForm() {
 
   const formTitle = useMemo(() => {
     if (!supplierId) return 'Suppliers Form';
-    if (isEditMode) return 'Edit Supplier';
-    return 'View Supplier';
-  }, [supplierId, isEditMode]);
+    const titleText = (initialValues && (initialValues.supplierNo || initialValues.code || initialValues.supplierName || initialValues.name)) || (isEditMode ? 'Edit Supplier' : 'View Supplier');
+    return (
+      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+        <span>{titleText}</span>
+      </div>
+    );
+  }, [supplierId, isEditMode, initialValues]);
 
   const fields = [
     { name: 'code', label: 'Code', span: 'span2' },
@@ -147,7 +151,7 @@ export default function SuppliersForm() {
   return (
     <EntityForm
       title={formTitle}
-      breadcrumbLabel="Supplier Details"
+      breadcrumbLabel='Supplier'
       icon={<FiPackage />}
       fields={fields}
       initialValues={initialValues}

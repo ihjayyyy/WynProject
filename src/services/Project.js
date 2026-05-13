@@ -10,7 +10,6 @@ async function convertProposal(proposalId) {
             headers: { Accept: '*/*' },
         });
 
-        // Try to parse JSON if any; fallback to null for empty responses
         let json = null;
         try {
             json = await res.json();
@@ -67,18 +66,62 @@ async function updateProject(id, payload) {
 }
 
 async function getCompletionPDFById(id) {
-  if (!id) return { data: null, error: 'Missing id' };
-  try {
-    const url = `${API_BASE_URL}/pdf/${id}`;
-    const res = await fetch(url, {
-      method: 'GET',
-      headers: { 'Content-Type': 'application/json' },
-    });
-    handleOpenPdf(res);
-  } catch (error) {
-    return { data: null, error: error?.message || error };
-  }
+    if (!id) return { data: null, error: 'Missing id' };
+    try {
+        const url = `${API_BASE_URL}/pdf/${id}`;
+        const res = await fetch(url, {
+            method: 'GET',
+            headers: { 'Content-Type': 'application/json' },
+        });
+        handleOpenPdf(res);
+    } catch (error) {
+        return { data: null, error: error?.message || error };
+    }
 }
 
-export { convertProposal, getProjectById, getProjects, updateProject, getCompletionPDFById };
-export default { convertProposal, getProjectById, getProjects, updateProject, getCompletionPDFById };
+// NEW ENDPOINTS BELOW
+
+async function startProject(projectId) {
+    try {
+        const url = `${API_BASE_URL}/${projectId}/start`;
+        const res = await fetch(url, {
+            method: 'PUT',
+            headers: { Accept: '*/*' },
+        });
+
+        let json = null;
+        try {
+            json = await res.json();
+        } catch (e) {
+            json = null;
+        }
+
+        return { data: json, error: null };
+    } catch (error) {
+        return { data: null, error: error?.message || error };
+    }
+}
+
+async function completeProject(projectId) {
+    try {
+        const url = `${API_BASE_URL}/${projectId}/complete`;
+        const res = await fetch(url, {
+            method: 'PUT',
+            headers: { Accept: '*/*' },
+        });
+
+        let json = null;
+        try {
+            json = await res.json();
+        } catch (e) {
+            json = null;
+        }
+
+        return { data: json, error: null };
+    } catch (error) {
+        return { data: null, error: error?.message || error };
+    }
+}
+
+export { convertProposal, getProjectById, getProjects, updateProject, getCompletionPDFById, startProject, completeProject };
+export default { convertProposal, getProjectById, getProjects, updateProject, getCompletionPDFById, startProject, completeProject };

@@ -40,6 +40,7 @@ export const CollectionFields = (customers = [], onFieldChanged) => [
 export const CollectionDetailsColumns = [
   // { header: 'Collection No.', key: 'collectionNumber', width: '160px' },
   { header: 'Name', key: 'name', width: '180px' },
+  { header: 'Amount to Collect', key: 'amount', align: 'right', width: '130px', render: (it) => Number(it.amount || 0).toFixed(2) },
   {
     header: 'Amount Paid',
     key: 'amountPaid',
@@ -88,13 +89,33 @@ export const CollectionItemFields = (billings = [], withholdingTaxPercent = 0) =
       if (found) {
         updateField('name', found.name || '');
         updateField('code', found.code || '');
-        updateField('amount', found.amount || 0);
-        updateField('balance', found.balance || 0);
+        const amount = Number(found.balance) || 0;
+        updateField('amount', amount);
+
+        // Calculate amountPaid so that balance becomes zero after withholding
+        const pct = Number(withholdingTaxPercent) || 0;
+        let paid = 0;
+        if (pct >= 100) {
+          paid = amount; // avoid division by zero; fallback
+        } else {
+          paid = amount / (1 - pct / 100);
+        }
+        // round to 2 decimals for currency-like values
+        const round = (n) => Math.round((Number(n) || 0) * 100) / 100;
+        const paidRounded = round(paid);
+        const tax = round(paidRounded * (pct / 100));
+        const total = round(paidRounded - tax);
+
+        updateField('amountPaid', paidRounded);
+        updateField('withholdingTax', tax);
+        updateField('totalAmountPaid', total);
+        // compute balance (should be ~0)
+        updateField('balance', round(amount - total));
       }
     },
   },
   // { name: 'collectionNumber', label: 'Collection Number', type: 'text' },
-  { name: 'amount', label: 'Amount', type: 'number', initialvalue: 0 },
+  { name: 'amount', label: 'Amount to Collect', type: 'number', initialvalue: 0 },
   {
     name: 'amountPaid',
     label: 'Amount Paid',
