@@ -289,7 +289,7 @@ export default function ProjectMaterialModal({ open, initial = {}, onCancel, onC
     },
     { name: 'vat', label: 'VAT', type: 'number', value: Number(calculatedForm.vat) || 0, readonly: true, validator: Yup.number().notRequired() },
     { name: 'materialCost', label: materialCategory === 'Tool' ? 'Tool Amount' : materialCategory === 'Service' ? 'Service Amount' : 'Material Amount', type: 'number', value: Number(calculatedForm.materialCost) || 0, readonly: true, validator: Yup.number().notRequired() },
-    { name: 'laborCost', label: 'Labor Cost', type: 'number', value: Number(calculatedForm.laborCost) || 0, readonly: true, validator: Yup.number().notRequired() },
+    { name: 'laborCost', label: 'Labor Cost', type: 'number', value: Number(calculatedForm.laborCost) || 0, validator: Yup.number().notRequired() },
     { name: 'totalAmount', label: 'Total Amount', type: 'number', value: Number(calculatedForm.totalAmount) || 0, readonly: true, validator: Yup.number().notRequired() },
     { name: 'margin', label: 'Margin', type: 'number', value: Number(calculatedForm.margin) || 0, hidden: true, validator: Yup.number().notRequired() },
     { name: 'extendedCost', label: 'Extended Cost', type: 'number', value: Number(calculatedForm.extendedCost) || 0, hidden: true, validator: Yup.number().notRequired() },

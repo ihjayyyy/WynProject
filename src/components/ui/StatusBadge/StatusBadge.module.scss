@@ -37,7 +37,7 @@
 }
 
 .cancelled {
-  background-color: #fee2e2;
+  background-color: #ffffff;
   color: #991b1b;
   border: 1px solid #991b1b;
 }
@@ -120,6 +120,31 @@
   background-color: #f3f4f6;
   color: #374151;
   border: 1px solid #374151;
+}
+
+/* Project-specific statuses */
+.notStarted {
+  background-color: #ffffff;
+  color: #374151;
+  border: 1px solid #374151;
+}
+
+.ongoing {
+  background-color: #eef2ff;
+  color: #1e3a8a;
+  border: 1px solid #1e3a8a;
+}
+
+.completed {
+  background-color: #d1fae5;
+  color: #065f46;
+  border: 1px solid #065f46;
+}
+
+.closed {
+  background-color: #f8fafc;
+  color: #374151;
+  border: 1px solid #94a3b8;
 }
 
 .paid {

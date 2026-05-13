@@ -18,6 +18,17 @@ export default function StatusBadge({ status, className = '' }) {
   const pickVariant = (status) => {
     if (!status) return styles.default;
     switch (status.toString().toUpperCase()) {
+      // Project statuses
+      case 'NOTSTARTED':
+      case 'NOT STARTED':
+      case 'NOT_STARTED':
+        return styles.notStarted;
+      case 'ONGOING':
+        return styles.ongoing;
+      case 'COMPLETED':
+        return styles.completed;
+      case 'CLOSED':
+        return styles.closed;
       // Delivery / purchase statuses
       case 'PREPARED':
         return styles.prepared;

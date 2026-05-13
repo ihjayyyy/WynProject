@@ -8,11 +8,7 @@ import DropdownAction from '../ui/DropdownAction/DropdownAction';
 import Landing from '../ui/Landing/Landing';
 
 const baseColumns = [
-  { header: 'Receipt No.', key: 'receiptNumber' },
-  {header: 'Collection No.', key: 'collectionNo'},
-  { header: 'Customer', key: 'customerName' },
-  { header: 'Description', key: 'description' },
-  {
+    {
     header: 'Date',
     key: 'date',
     render: (item) =>
@@ -20,6 +16,10 @@ const baseColumns = [
         ? new Date(item.date).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: '2-digit' })
         : '—',
   },
+  { header: 'Receipt No.', key: 'receiptNumber' },
+  {header: 'Collection No.', key: 'collectionNo'},
+  { header: 'Customer', key: 'customerName' },
+  { header: 'Description', key: 'description' },
   { header: 'Amount', key: 'amount' },
   { header: 'Total Received', key: 'totalAmountReceived' },
   { header: 'Total Paid', key: 'totalAmountPaid' },

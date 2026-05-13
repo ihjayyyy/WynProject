@@ -9,8 +9,7 @@ import { getMaterials } from '../../services/Materials';
 import { useToast } from '../ui/Toast/Toast';
 import { AccessContext } from '@/app/contextProviders/accessContext';
 
-
-export default function MaterialRequestsTab({ projectId }) {
+export default function MaterialRequestsTab({ projectId, editable = true }) {
   const PageName = 'Projects.Projects';
   const { isAllowed } = useContext(AccessContext);
   const [items, setItems] = useState([]);
@@ -84,16 +83,16 @@ export default function MaterialRequestsTab({ projectId }) {
     {
       header: 'Actions',
       key: '__actions',
-      render: (item) => (
+      render: (item) => editable && isAllowed(PageName, 'w') ? (
         <Button
           size="sm"
           variant="outlinedPrimary"
           title="Edit"
           onClick={() => { setEditing(item); setIsModalOpen(true); }}
         >Edit</Button>
-      ),
+      ) : null,
     },
-  ], []);
+  ], [editable, isAllowed]);
 
   return (
     <div className={styles.landingWrap}>
@@ -108,16 +107,18 @@ export default function MaterialRequestsTab({ projectId }) {
             width="280px"
           />
           {isAllowed(PageName, 'w') && (
-            <Button onClick={() => { getDocumentPDFById(projectId) }}>Generate RIV</Button>
+            <Button onClick={() => { getDocumentPDFById(projectId); }}>Generate RIV</Button>
           )}
-          {isAllowed(PageName, 'w') && (
+          {isAllowed(PageName, 'w') && editable && (
             <Button onClick={() => { setEditing(null); setIsModalOpen(true); }}>Add Material Request</Button>
           )}
         </div>
       </div>
+
       <div className={styles.tableSection}>
         <DataTable columns={tableColumns} data={filtered} showActions={false} emptyMessage="No material requests found" />
       </div>
+
       <ItemModal
         headerLabel={editing?.id ? 'Edit Material Request' : 'Add Material Request'}
         mode={editing?.id ? 'edit' : 'new'}
@@ -125,13 +126,13 @@ export default function MaterialRequestsTab({ projectId }) {
         isOpen={isModalOpen}
         fields={modalFields}
         onItemRemove={() => {}}
-        onClose={isAllowed(PageName, 'w') ? async (value) => {
+        onClose={isAllowed(PageName, 'w') && editable ? async (value) => {
           if (!value) {
             setIsModalOpen(false);
             setEditing(null);
             return;
           }
-          // Ensure all required fields for the API are present in the payload
+
           const payload = {
             ...INITIAL_MATERIAL_REQUEST,
             ...value,
@@ -151,6 +152,7 @@ export default function MaterialRequestsTab({ projectId }) {
             responseBy: value.responseBy || '',
             responseDate: value.responseDate || '',
           };
+
           if (!value.id || value.id === 0) {
             const response = await createMaterialRequest(payload);
             if (response?.error) toast.error('Failed to add material request');
@@ -160,10 +162,16 @@ export default function MaterialRequestsTab({ projectId }) {
             if (response?.error) toast.error('Failed to update material request');
             else { toast.success('Material request updated'); await loadData(); }
           }
+
           setIsModalOpen(false);
           setEditing(null);
-        } : undefined}
-        readOnly={!isAllowed(PageName, 'w')}
+        } : async (value) => {
+          if (!value) {
+            setIsModalOpen(false);
+            setEditing(null);
+          }
+        }}
+        readOnly={!editable || !isAllowed(PageName, 'w')}
       />
     </div>
   );

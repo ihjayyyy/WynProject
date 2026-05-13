@@ -44,9 +44,13 @@ export default function CustomersForm() {
 
   const formTitle = useMemo(() => {
     if (!customerId) return 'Customers Form';
-    if (isEditMode) return 'Edit Customer';
-    return 'View Customer';
-  }, [customerId, isEditMode]);
+    const titleText = (initialValues && (initialValues.customerNo || initialValues.code || initialValues.name || initialValues.customerName)) || (isEditMode ? 'Edit Customer' : 'View Customer');
+    return (
+      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+        <span>{titleText}</span>
+      </div>
+    );
+  }, [customerId, isEditMode, initialValues]);
 
   const fields = [
     { name: 'code', label: 'Code', span: 'span2' },
@@ -74,7 +78,7 @@ export default function CustomersForm() {
   return (
     <EntityForm
       title={formTitle}
-      breadcrumbLabel="Customer Details"
+      breadcrumbLabel='Customer'
       icon={<FiUsers />}
       fields={fields}
       initialValues={initialValues}

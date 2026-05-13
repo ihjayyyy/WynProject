@@ -121,6 +121,8 @@ export default function ProjectScope({ projectId = 0, editable = true, onComplet
   const [materialEditing, setMaterialEditing] = useState(null);
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
   const [confirmTarget, setConfirmTarget] = useState(null);
+  const [isApplyLaborConfirmOpen, setIsApplyLaborConfirmOpen] = useState(false);
+  const [pendingScopeUpdate, setPendingScopeUpdate] = useState(null);
 
   const [scopesList, setScopesList] = useState([]);
 
@@ -371,6 +373,15 @@ export default function ProjectScope({ projectId = 0, editable = true, onComplet
             } else {
               const existing = typeof scopeEditing === 'object' ? scopeEditing : (scopesList || []).find(s => (s.description && s.description === scopeEditing) || (s.name && s.name === scopeEditing) || (s.code && s.code === scopeEditing));
               if (existing && existing.id) {
+                const prevPct = Number(existing.laborPercentage) || 0;
+                const newPct = Number(val.laborPercentage) || 0;
+                if (newPct !== prevPct) {
+                  setPendingScopeUpdate({ val, existing });
+                  setIsScopeModalOpen(false);
+                  setScopeEditing(null);
+                  setIsApplyLaborConfirmOpen(true);
+                  return;
+                }
                 const payload = buildScopePayload({
                   projectId,
                   base: existing,
@@ -387,6 +398,58 @@ export default function ProjectScope({ projectId = 0, editable = true, onComplet
           }
           setIsScopeModalOpen(false);
           setScopeEditing(null);
+        }}
+      />
+
+      <ConfirmModal
+        open={isApplyLaborConfirmOpen}
+        title="Apply Labor Percentage?"
+        message={`The labor percentage has changed to ${pendingScopeUpdate ? Number(pendingScopeUpdate.val?.laborPercentage) || 0 : 0}%. Apply this to all existing materials in this scope?`}
+        confirmText="Yes, Apply"
+        cancelText="Skip"
+        confirmVariant="primary"
+        onCancel={async () => {
+          if (pendingScopeUpdate) {
+            const { val, existing } = pendingScopeUpdate;
+            try {
+              const payload = buildScopePayload({
+                projectId,
+                base: existing,
+                overrides: val,
+                children: existing.children || [],
+                deletedChildren: existing.deletedChildren || [],
+              });
+              const res = await updateProjectScope(existing.id, payload);
+              if (res && !res.error) await loadData();
+            } catch (err) { /* ignore */ }
+          }
+          setIsApplyLaborConfirmOpen(false);
+          setPendingScopeUpdate(null);
+        }}
+        onConfirm={async () => {
+          if (pendingScopeUpdate) {
+            const { val, existing } = pendingScopeUpdate;
+            const pct = Number(val.laborPercentage) || 0;
+            try {
+              const updatedChildren = (existing.children || []).map((child) => {
+                const matCost = Number(child.materialCost) || (Number(child.unitCost) * Number(child.quantity)) || 0;
+                const lab = Number((matCost * pct / 100).toFixed(2));
+                const total = Number((matCost + lab).toFixed(2));
+                return { ...child, laborPercentage: pct, laborCost: lab, totalAmount: total, extendedCost: total, totalPrice: total };
+              });
+              const payload = buildScopePayload({
+                projectId,
+                base: existing,
+                overrides: val,
+                children: updatedChildren,
+                deletedChildren: existing.deletedChildren || [],
+              });
+              const res = await updateProjectScope(existing.id, payload);
+              if (res && !res.error) await loadData();
+            } catch (err) { /* ignore */ }
+          }
+          setIsApplyLaborConfirmOpen(false);
+          setPendingScopeUpdate(null);
         }}
       />
 

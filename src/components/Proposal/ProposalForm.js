@@ -3,6 +3,7 @@
 import React, { useContext, useMemo, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { FiCheck, FiFileText, FiSend, FiX } from 'react-icons/fi';
+import StatusBadge from '../ui/StatusBadge/StatusBadge';
 import EntityForm from '../EntityForm/EntityForm';
 import Input from '../ui/Input/Input';
 import inputStyles from '../ui/Input/Input.module.scss';
@@ -157,6 +158,11 @@ export default function ProposalForm() {
     return { isReadOnly: readOnly, canEnterEditMode: exists && draft, isDraft: draft };
   }, [proposalId, isEditMode, items]);
 
+  const status = useMemo(() => {
+    const selected = (items || []).find((item) => String(item.id) === String(proposalId));
+    return selected && selected.proposalStatus ? String(selected.proposalStatus).toLowerCase() : '';
+  }, [proposalId, items]);
+
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
   const [confirmTitle, setConfirmTitle] = useState('');
   const [confirmMessage, setConfirmMessage] = useState('');
@@ -164,9 +170,14 @@ export default function ProposalForm() {
 
   const formTitle = useMemo(() => {
     if (!proposalId) return 'Proposal Form';
-    if (isEditMode) return 'Edit Proposal';
-    return 'View Proposal';
-  }, [proposalId, isEditMode]);
+    const titleText = (initialValues && (initialValues.proposalNo || initialValues.code)) || (isEditMode ? 'Edit Proposal' : 'View Proposal');
+    return (
+      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+        <span>{titleText}</span>
+        {status && <StatusBadge status={status} />}
+      </div>
+    );
+  }, [proposalId, isEditMode, initialValues, status]);
 
   const customerOptions = customers.map((c) => ({ value: c.id, label: c.customerName || c.name || c.code }));
   const inquiryOptions = inquiries.map((q) => ({ value: q.id, label: q.reference || q.code || q.name || String(q.id) }));
@@ -435,6 +446,7 @@ export default function ProposalForm() {
     <>
     <EntityForm
       title={formTitle}
+      breadcrumbLabel='Proposal'
       icon={<FiFileText />}
       fields={fields}
       initialValues={initialValues}

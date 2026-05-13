@@ -27,7 +27,7 @@ function getFieldValue(itemFields, fieldName, fallback = '') {
   return field ? field.value : fallback;
 }
 
-export default function ExpensesTab({ projectId = 0 }) {
+export default function ExpensesTab({ projectId = 0, editable = true }) {
   const [items, setItems] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -184,7 +184,7 @@ export default function ExpensesTab({ projectId = 0 }) {
       header: 'Actions',
       key: '__actions',
       align: 'right',
-      render: (item) => isAllowed('Projects.Projects', 'w') ? (
+      render: (item) => isAllowed('Projects.Projects', 'w') && editable ? (
         <div className={styles.actionCell}>
           <Button
             size="sm"
@@ -214,7 +214,7 @@ export default function ExpensesTab({ projectId = 0 }) {
         </div>
       ) : null,
     },
-  ], [confirmModal, handleDelete, scopeOptions, isAllowed]);
+  ], [confirmModal, handleDelete, scopeOptions, isAllowed, editable]);
 
   return (
     <div className={styles.landingWrap}>
@@ -226,9 +226,9 @@ export default function ExpensesTab({ projectId = 0 }) {
             value={searchTerm}
             onChange={setSearchTerm}
             showFilter={false}
-            showButton={isAllowed('Projects.Projects', 'w')}
-            buttonLabel={isAllowed('Projects.Projects', 'w') ? "Add Expense" : undefined}
-            handleOnClick={isAllowed('Projects.Projects', 'w') ? () => { setEditing(null); setIsModalOpen(true); } : undefined}
+showButton={isAllowed('Projects.Projects', 'w') && editable}
+buttonLabel={isAllowed('Projects.Projects', 'w') && editable ? "Add Expense" : undefined}
+handleOnClick={isAllowed('Projects.Projects', 'w') && editable ? () => { setEditing(null); setIsModalOpen(true); } : undefined}
             width="260px"
           />
         </div>
@@ -276,7 +276,7 @@ export default function ExpensesTab({ projectId = 0 }) {
           setIsModalOpen(false);
           setEditing(null);
         } : undefined}
-        readOnly={!isAllowed('Projects.Projects', 'w')}
+        readOnly={!editable || !isAllowed('Projects.Projects', 'w')}
       />
     </div>
   );

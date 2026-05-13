@@ -286,7 +286,7 @@ export default function SalesBillingForm() {
   return (
     <EntityForm
       title={formTitle}
-      breadcrumbLabel="Billing"
+      breadcrumbLabel='Billing'
       icon={<FiList />}
       fields={billingFields}
       initialValues={billing}

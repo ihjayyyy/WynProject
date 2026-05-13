@@ -31,7 +31,7 @@ function findStaff(staffOptions, staffId) {
   return staffOptions.find((staff) => Number(staff.value) === Number(staffId));
 }
 
-export default function ProjectStaffTab({ projectId = 0 }) {
+export default function ProjectStaffTab({ projectId = 0, editable = true }) {
   const [items, setItems] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -82,7 +82,7 @@ export default function ProjectStaffTab({ projectId = 0 }) {
         hidden: true,
         validator: Yup.string().notRequired(),
       },
-            {
+      {
         name: 'scopeId',
         label: 'Scope',
         type: 'select',
@@ -127,7 +127,6 @@ export default function ProjectStaffTab({ projectId = 0 }) {
     if (!projectId) return;
     const res = await getProjectStaffsByProjectId(projectId);
     if (!res.error) {
-      // Handle both { value: [...] } and direct array responses
       const raw = Array.isArray(res.data?.value)
         ? res.data.value
         : Array.isArray(res.data)
@@ -153,7 +152,6 @@ export default function ProjectStaffTab({ projectId = 0 }) {
     loadData();
   }, [loadData]);
 
-  // Load staff dropdown options
   useEffect(() => {
     let mounted = true;
     (async () => {
@@ -178,7 +176,6 @@ export default function ProjectStaffTab({ projectId = 0 }) {
     return () => { mounted = false; };
   }, []);
 
-  // Load scope dropdown options
   useEffect(() => {
     if (!projectId) return;
     let mounted = true;
@@ -224,7 +221,7 @@ export default function ProjectStaffTab({ projectId = 0 }) {
       header: 'Actions',
       key: '__actions',
       align: 'right',
-      render: (it) => (
+      render: (it) => editable && isAllowed(PageName, 'w') ? (
         <div className={styles.actionCell}>
           <Button
             size="sm"
@@ -241,9 +238,9 @@ export default function ProjectStaffTab({ projectId = 0 }) {
             onClick={() => { setConfirmTarget(it); setIsConfirmOpen(true); }}
           />
         </div>
-      ),
+      ) : null,
     },
-  ], [scopeOptions]);
+  ], [scopeOptions, editable, isAllowed]);
 
   return (
     <div className={styles.landingWrap}>
@@ -255,17 +252,16 @@ export default function ProjectStaffTab({ projectId = 0 }) {
             value={searchTerm}
             onChange={setSearchTerm}
             showFilter={false}
-            showButton={isAllowed(PageName, 'w')}
-            buttonLabel={isAllowed(PageName, 'w') ? "Add Staff" : undefined}
-            handleOnClick={isAllowed(PageName, 'w') ? () => { setEditing(null); setIsModalOpen(true); } : undefined}
+            showButton={isAllowed(PageName, 'w') && editable}
+            buttonLabel={isAllowed(PageName, 'w') && editable ? "Add Staff" : undefined}
+            handleOnClick={isAllowed(PageName, 'w') && editable ? () => { setEditing(null); setIsModalOpen(true); } : undefined}
             width="280px"
           />
         </div>
       </div>
 
       <div className={styles.tableSection}>
-
-          <DataTable columns={tableColumns} data={filtered} showActions={false} emptyMessage="No staff found" />
+        <DataTable columns={tableColumns} data={filtered} showActions={false} emptyMessage="No staff found" />
       </div>
 
       <ItemModal
@@ -275,7 +271,7 @@ export default function ProjectStaffTab({ projectId = 0 }) {
         isOpen={isModalOpen}
         fields={projectStaffModalFields}
         onItemRemove={() => {}}
-        onClose={isAllowed(PageName, 'w') ? async (value) => {
+        onClose={isAllowed(PageName, 'w') && editable ? async (value) => {
           if (!value) {
             setIsModalOpen(false);
             setEditing(null);
@@ -304,8 +300,13 @@ export default function ProjectStaffTab({ projectId = 0 }) {
           }
           setIsModalOpen(false);
           setEditing(null);
-        } : undefined}
-        readOnly={!isAllowed(PageName, 'w')}
+        } : async (value) => {
+          if (!value) {
+            setIsModalOpen(false);
+            setEditing(null);
+          }
+        }}
+        readOnly={!editable || !isAllowed(PageName, 'w')}
       />
 
       <ConfirmModal

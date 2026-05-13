@@ -34,14 +34,18 @@ const ItemModal = ({ headerLabel, mode = "new", itemIndex = -1, isOpen, onClose,
     if (isOpen) setIsDirty(false);
   }, [isOpen]);
 
-  // Sync itemFields from props only when field names/values actually change
+  // Sync itemFields from props. Refresh when fields change or modal opens so
+  // reopening the modal always resets the inputs even if the props stringify
+  // identically to the previous values.
   const prevFieldsRef = useRef(null);
   useEffect(() => {
     const next = JSON.stringify((fields || []).map(f => ({ name: f.name, value: f.value, optionsLen: (f.options || []).length })));
-    if (prevFieldsRef.current === next) return;
+    // If nothing changed and modal is closed, skip update. If modal is opening
+    // (isOpen true), always refresh to ensure form inputs reflect prop values.
+    if (prevFieldsRef.current === next && !isOpen) return;
     prevFieldsRef.current = next;
     setFields([...fields]);
-  }, [fields]);
+  }, [fields, isOpen]);
 
   // Build schema only when itemFields structure changes (field names / validators)
   const schema = useMemo(() => {
