@@ -8,6 +8,7 @@ import Input from '../ui/Input/Input';
 import Select from '../ui/Select/Select';
 import inputStyles from '../ui/Input/Input.module.scss';
 import Button from '../ui/Button/Button';
+import { useConfirmModal } from '@/app/contextProviders/confirmModalContext';
 
 /**
  * EntityForm
@@ -29,6 +30,7 @@ import Button from '../ui/Button/Button';
  * - showBreadcrumbs: boolean (optional) - show or hide the breadcrumb bar. Defaults to true
  * - submitPosition: 'bottom' | 'beforeExtra' (optional) - placement of submit/right actions area. Defaults to 'bottom'
  * - showSubmitButton: boolean (optional) - controls rendering of default Create/Save button. Defaults to true
+ * - showCloseButton: boolean (optional) - show a Close button in the header that navigates back with a confirm dialog. Defaults to true
  * - collapsed: boolean (optional) - controlled collapse state. Requires allowCollapse=true
  * - onCollapsedChange: function(collapsed: boolean) => void (optional) - callback when collapse state changes
  * - allowCollapse: boolean (optional) - enable/disable collapse toggle button. Defaults to false
@@ -51,11 +53,13 @@ export default function EntityForm({
   showBreadcrumbs = true,
   submitPosition = 'bottom',
   showSubmitButton = true,
+  showCloseButton = true,
   collapsed: collapsedProp,
   onCollapsedChange,
   allowCollapse = false,
 }) {
   const router = useRouter();
+  const confirmModal = useConfirmModal();
   const [values, setValues] = useState({ ...initialValues });
   const [internalCollapsed, setInternalCollapsed] = useState(false);
 
@@ -296,8 +300,26 @@ export default function EntityForm({
             </button>
           ) : null}
         </div>
-        {headerActions ? (
-          <div className={styles.headerActions}>{headerActions}</div>
+        {(showCloseButton || headerActions) ? (
+          <div className={styles.headerActions}>
+            {showCloseButton && (
+              <Button
+                type="button"
+                variant="warning"
+                onClick={() =>
+                  confirmModal.show(
+                    'Close window',
+                    'Are you sure you want to close this window?',
+                    'Close',
+                    'primary',
+                    () => () => router.push(backPath),
+                  )
+                }>
+                Close
+              </Button>
+            )}
+            {headerActions}
+          </div>
         ) : null}
       </div>
 

@@ -183,11 +183,7 @@ export default function ProjectDetails() {
 
               <div className={styles.field}>
                 <label>Net</label>
-                {editing ? (
-                  <Input type="number" value={form.net ?? ''} onChange={(e) => setForm({ ...form, net: e.target.value === '' ? '' : Number(e.target.value) })} />
-                ) : (
-                  <div className="value">{project.net ? Number(project.net).toLocaleString() : ''}</div>
-                )}
+                  <div className="value">{project.net}</div>
               </div>
             </div>
 

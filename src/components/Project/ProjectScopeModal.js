@@ -26,7 +26,24 @@ export default function ProjectScopeModal({ open, initial = {}, onCancel, onConf
     return d;
   };
 
+  const daysBetween = (start, end) => {
+    if (!start || !end) return 0;
+    const s = new Date(start);
+    const e = new Date(end);
+    if (isNaN(s) || isNaN(e)) return 0;
+    return Math.max(0, Math.round((e - s) / (1000 * 60 * 60 * 24)));
+  };
+
+  const addDays = (dateStr, days) => {
+    if (!dateStr) return '';
+    const d = new Date(dateStr);
+    if (isNaN(d)) return '';
+    d.setDate(d.getDate() + Number(days));
+    return d.toISOString().split('T')[0];
+  };
+
   const buildForm = (init = {}) => {
+    init = init || {};
     const today = new Date();
     const defaultStart = formatISODate(today);
     const defaultEnd = formatISODate(addMonths(today, 1));
@@ -36,13 +53,19 @@ export default function ProjectScopeModal({ open, initial = {}, onCancel, onConf
       name: '',
       code: '',
       percentage: 0,
+      laborPercentage: 0,
       description: '',
       forecastedStartDate: defaultStart,
       forecastedEndDate: defaultEnd,
       actualStartDate: defaultStart,
       actualEndDate: defaultStart,
       milestoneDate: defaultStart,
+      forecastedDuration: 0,
+      actualDuration: 0,
       ...init,
+      // compute durations from dates if not provided
+      forecastedDuration: init.forecastedDuration ?? daysBetween(init.forecastedStartDate || defaultStart, init.forecastedEndDate || defaultEnd),
+      actualDuration: init.actualDuration ?? daysBetween(init.actualStartDate || defaultStart, init.actualEndDate || defaultStart),
     };
   };
 
@@ -79,6 +102,13 @@ export default function ProjectScopeModal({ open, initial = {}, onCancel, onConf
       validator: Yup.string().notRequired(),
     },
     {
+      name: 'laborPercentage',
+      label: 'Labor Percentage (%)',
+      type: 'number',
+      value: Number(form.laborPercentage) || 0,
+      validator: Yup.number().min(0).max(100).notRequired(),
+    },
+    {
       name: 'percentage',
       label: 'Percentage',
       type: 'number',
@@ -92,6 +122,7 @@ export default function ProjectScopeModal({ open, initial = {}, onCancel, onConf
       type: 'date',
       value: form.milestoneDate ? String(form.milestoneDate).split('T')[0] : '',
       validator: Yup.string().notRequired(),
+      hidden: true,
     },
     {
       name: 'forecastedStartDate',
@@ -99,6 +130,10 @@ export default function ProjectScopeModal({ open, initial = {}, onCancel, onConf
       type: 'date',
       value: form.forecastedStartDate ? String(form.forecastedStartDate).split('T')[0] : '',
       validator: Yup.string().notRequired(),
+      onChange: (item, updateField, itemFields, nextValue) => {
+        const end = itemFields.find((f) => f.name === 'forecastedEndDate')?.value || '';
+        updateField('forecastedDuration', daysBetween(nextValue, end));
+      },
     },
     {
       name: 'forecastedEndDate',
@@ -106,6 +141,22 @@ export default function ProjectScopeModal({ open, initial = {}, onCancel, onConf
       type: 'date',
       value: form.forecastedEndDate ? String(form.forecastedEndDate).split('T')[0] : '',
       validator: Yup.string().notRequired(),
+      onChange: (item, updateField, itemFields, nextValue) => {
+        const start = itemFields.find((f) => f.name === 'forecastedStartDate')?.value || '';
+        updateField('forecastedDuration', daysBetween(start, nextValue));
+      },
+    },
+    {
+      name: 'forecastedDuration',
+      label: 'Forecasted Duration (days)',
+      type: 'number',
+      value: Number(form.forecastedDuration) || 0,
+      validator: Yup.number().min(0).notRequired(),
+      onChange: (item, updateField, itemFields, nextValue) => {
+        const start = itemFields.find((f) => f.name === 'forecastedStartDate')?.value || '';
+        const newEnd = addDays(start, Number(nextValue) || 0);
+        if (newEnd) updateField('forecastedEndDate', newEnd);
+      },
     },
     {
       name: 'actualStartDate',
@@ -113,6 +164,10 @@ export default function ProjectScopeModal({ open, initial = {}, onCancel, onConf
       type: 'date',
       value: form.actualStartDate ? String(form.actualStartDate).split('T')[0] : '',
       validator: Yup.string().notRequired(),
+      onChange: (item, updateField, itemFields, nextValue) => {
+        const end = itemFields.find((f) => f.name === 'actualEndDate')?.value || '';
+        updateField('actualDuration', daysBetween(nextValue, end));
+      },
     },
     {
       name: 'actualEndDate',
@@ -120,6 +175,22 @@ export default function ProjectScopeModal({ open, initial = {}, onCancel, onConf
       type: 'date',
       value: form.actualEndDate ? String(form.actualEndDate).split('T')[0] : '',
       validator: Yup.string().notRequired(),
+      onChange: (item, updateField, itemFields, nextValue) => {
+        const start = itemFields.find((f) => f.name === 'actualStartDate')?.value || '';
+        updateField('actualDuration', daysBetween(start, nextValue));
+      },
+    },
+    {
+      name: 'actualDuration',
+      label: 'Actual Duration (days)',
+      type: 'number',
+      value: Number(form.actualDuration) || 0,
+      validator: Yup.number().min(0).notRequired(),
+      onChange: (item, updateField, itemFields, nextValue) => {
+        const start = itemFields.find((f) => f.name === 'actualStartDate')?.value || '';
+        const newEnd = addDays(start, Number(nextValue) || 0);
+        if (newEnd) updateField('actualEndDate', newEnd);
+      },
     },
   ], [form]);
 
@@ -140,6 +211,7 @@ export default function ProjectScopeModal({ open, initial = {}, onCancel, onConf
           id: Number(val.id) || 0,
           name: val.name || '',
           code: val.code || '',
+          laborPercentage: Number(val.laborPercentage) || 0,
           percentage: Number(val.percentage) || 0,
           description: val.description || '',
           forecastedStartDate: val.forecastedStartDate || null,
@@ -147,6 +219,8 @@ export default function ProjectScopeModal({ open, initial = {}, onCancel, onConf
           actualStartDate: val.actualStartDate || null,
           actualEndDate: val.actualEndDate || null,
           milestoneDate: val.milestoneDate || null,
+          forecastedDuration: Number(val.forecastedDuration) || 0,
+          actualDuration: Number(val.actualDuration) || 0,
         };
         onConfirm && onConfirm(payload);
       }}

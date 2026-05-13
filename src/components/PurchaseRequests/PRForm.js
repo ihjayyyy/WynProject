@@ -314,19 +314,7 @@ const submitForApproval = async()=>{
     }
 
   }
-  const handleCloseConfirm  =()=>{
-      const title = "Close window";
-      const message = "Are you sure you want to close this window?";
-      const confirmText = "Close";
-      const variant="primary";
-      const action = ()=> ()=>closeForm();
-      confirmModal.show(title,message,confirmText,variant, action);
-}
 
-  const closeForm = () =>{
-      router.push(backPath);
-      return;
-  }
 
   //buttons
   const CreateButton = () =>{
@@ -420,7 +408,6 @@ const submitForApproval = async()=>{
 
           headerActions={
             <div className={EntityStyle.buttonsContainer}>
-              <Button variant="warning" onClick={handleCloseConfirm}>Close</Button>
               <CreateButton/>
               <CanceButton/>
               <ViewButton/>

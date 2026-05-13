@@ -29,6 +29,8 @@ export default function ProposalMaterialsTable({ items = [], onChange, editable 
   const [materialEditing, setMaterialEditing] = useState(null);
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
   const [confirmTarget, setConfirmTarget] = useState(null);
+  const [isApplyLaborConfirmOpen, setIsApplyLaborConfirmOpen] = useState(false);
+  const [pendingScopeUpdate, setPendingScopeUpdate] = useState(null);
 
   // (deleted helper removed) centralized deletion logic below
 
@@ -162,7 +164,7 @@ export default function ProposalMaterialsTable({ items = [], onChange, editable 
 
       <ProposalScopeModal
         open={isScopeModalOpen}
-        initial={scopeEditing ? (() => { const s = (localItems || []).find((it) => it.__isScope && it.scopeOfWork === scopeEditing); return { scopeOfWork: scopeEditing, laborPercentage: s?.laborPercentage || 0, scopeDuration: s?.scopeDuration || 0 }; })() : null}
+        initial={scopeEditing ? (() => { const s = (localItems || []).find((it) => it.__isScope && it.scopeOfWork === scopeEditing); const fallback = (localItems || []).find((it) => !it.__isScope && it.scopeOfWork === scopeEditing); return { scopeOfWork: scopeEditing, laborPercentage: s?.laborPercentage ?? fallback?.laborPercentage ?? 0, scopeDuration: s?.scopeDuration ?? fallback?.scopeDuration ?? 0 }; })() : null}
         defaultLaborPercentage={parentLaborPercentage || 0}
         onCancel={() => { setIsScopeModalOpen(false); setScopeEditing(null); }}
         onConfirm={({ scopeOfWork: val, laborPercentage: pct, scopeDuration: dur }) => {
@@ -176,9 +178,34 @@ export default function ProposalMaterialsTable({ items = [], onChange, editable 
             setMaterialScopeTarget(val);
             setIsMaterialModalOpen(true);
           } else {
-            const updatedScopes = (localItems || []).map((it) => (it.scopeOfWork === scopeEditing ? { ...it, scopeOfWork: val, laborPercentage: pct, scopeDuration: dur } : it));
-            setLocalItems(updatedScopes);
-            if (typeof onChange === 'function') onChange(updatedScopes, deletedChildren);
+            // Check if laborPercentage changed
+            const s = (localItems || []).find((it) => it.__isScope && it.scopeOfWork === scopeEditing);
+            const fallback = (localItems || []).find((it) => !it.__isScope && it.scopeOfWork === scopeEditing);
+            const prevPct = s?.laborPercentage ?? fallback?.laborPercentage ?? 0;
+            const pctChanged = Number(pct) !== Number(prevPct);
+
+            const applyUpdate = (applyToMaterials) => {
+              const updatedScopes = (localItems || []).map((it) => {
+                if (it.scopeOfWork !== scopeEditing) return it;
+                const updated = { ...it, scopeOfWork: val, laborPercentage: pct, scopeDuration: dur };
+                if (applyToMaterials && !it.__isScope) {
+                  const matCost = Number(it.materialCost) || 0;
+                  const lab = Number((matCost * pct / 100).toFixed(2));
+                  const total = Number((matCost + lab).toFixed(2));
+                  return { ...updated, laborPercentage: pct, laborCost: lab, totalAmount: total, extendedCost: total, totalPrice: total };
+                }
+                return updated;
+              });
+              setLocalItems(updatedScopes);
+              if (typeof onChange === 'function') onChange(updatedScopes, deletedChildren);
+            };
+
+            if (pctChanged) {
+              setPendingScopeUpdate({ val, pct, dur, applyUpdate });
+              setIsApplyLaborConfirmOpen(true);
+            } else {
+              applyUpdate(false);
+            }
           }
           setIsScopeModalOpen(false);
           setScopeEditing(null);
@@ -248,6 +275,24 @@ export default function ProposalMaterialsTable({ items = [], onChange, editable 
           setIsConfirmOpen(false);
           setConfirmTarget(null);
         }} onCancel={() => { setIsConfirmOpen(false); setConfirmTarget(null); }} />
+
+        <ConfirmModal
+          open={isApplyLaborConfirmOpen}
+          title="Apply Labor % to existing materials?"
+          message={`The labor percentage has changed to ${pendingScopeUpdate?.pct ?? 0}%. Do you want to recalculate the labor cost for all existing materials in this scope?`}
+          confirmText="Yes, Apply"
+          confirmVariant="primary"
+          onConfirm={() => {
+            pendingScopeUpdate?.applyUpdate(true);
+            setPendingScopeUpdate(null);
+            setIsApplyLaborConfirmOpen(false);
+          }}
+          onCancel={() => {
+            pendingScopeUpdate?.applyUpdate(false);
+            setPendingScopeUpdate(null);
+            setIsApplyLaborConfirmOpen(false);
+          }}
+        />
     </div>
   );
 }
