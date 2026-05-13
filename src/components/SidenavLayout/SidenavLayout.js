@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { sidenavItems } from './sidenavData';
 import Image from 'next/image';
 import Button from '../ui/Button/Button';
-import { useState, useContext, useEffect } from 'react';
+import { useState, useContext, useEffect, useMemo } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import { AccessContext } from '@/app/contextProviders/accessContext';
 import { clearAuthData } from '@/services/Auth';
@@ -13,7 +13,10 @@ import {
   FiChevronRight,
   FiChevronDown,
   FiChevronUp,
+  FiUser,
+  FiLogOut,
 } from 'react-icons/fi';
+import DropdownAction from '../ui/DropdownAction/DropdownAction';
 
 export default function SidenavLayout({ children }) {
   const router = useRouter();
@@ -29,6 +32,21 @@ export default function SidenavLayout({ children }) {
     clearAuthData();
     router.push('/login');
   };
+
+  const actionItems = useMemo(() => [
+    {
+      key: 'view-profile',
+      label: 'View Profile',
+      icon: <FiUser size={14} />,
+      onClick: (item) => router.push('/userprofile'),
+    },
+    {
+      key: 'logout',
+      label: 'Logout',
+      icon: <FiLogOut size={14} />,
+      onClick: (item) => handleLogout(),
+    },
+  ]);
 
   const toggleSidebar = () => setIsCollapsed(!isCollapsed);
 
@@ -367,7 +385,7 @@ export default function SidenavLayout({ children }) {
 
         {/* Footer Section */}
         <footer className={styles.sidebarFooter}>
-          <Link href="/userprofile" className={styles.userProfile}>
+          <div className={styles.userProfile}>
             <Image
               src="/ODR-Logo.png"
               alt="User Avatar"
@@ -381,16 +399,9 @@ export default function SidenavLayout({ children }) {
                 <span className={styles.userEmail}>{user?.email}</span>
               </div>
             )}
-          </Link>
-          {!isCollapsed && (
-            <Button
-              type="button"
-              variant="outlineDanger"
-              className={styles.logoutButton}
-              onClick={handleLogout}>
-              Logout
-            </Button>
-          )}
+
+            {!isCollapsed && <DropdownAction items={actionItems} />}
+          </div>
         </footer>
       </aside>
 

@@ -2,7 +2,7 @@
 
 .headerActions {
   display: flex;
-  gap: 0.75rem;
+  gap: $spacing-sm;
   align-items: center;
   flex-wrap: wrap;
 }
@@ -21,6 +21,6 @@
 
 .buttonGroup {
   display: flex;
-  gap: 0.75rem;
+  gap: $spacing-sm;
   align-items: center;
 }

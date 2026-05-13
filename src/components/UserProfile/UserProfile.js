@@ -132,37 +132,41 @@ export default function UserProfile() {
         const value = allValues.employeeNumber;
         return !value || value === 'string' ? '—' : value;
       },
+      span: 'span2',
     },
     {
       name: 'firstName',
       label: 'First Name',
       readOnly: !isEditMode,
+      span: 'span2',
     },
     {
       name: 'lastName',
       label: 'Last Name',
       readOnly: !isEditMode,
+      span: 'span2',
     },
     {
       name: 'email',
       label: 'Email',
       type: 'email',
       readOnly: !isEditMode,
+      span: 'span2',
     },
-    { name: 'role', label: 'Role', readOnly: true },
+    { name: 'role', label: 'Role', readOnly: true, span: 'span2' },
     {
       name: 'password',
       label: 'Current Password',
       type: 'password',
       hidden: !showPasswordFields,
-      span: 'span3',
+      span: 'span2',
     },
     {
       name: 'newPassword',
       label: 'New Password',
       type: 'password',
       hidden: !showPasswordFields,
-      span: 'span3',
+      span: 'span2',
     },
   ];
 
@@ -175,6 +179,7 @@ export default function UserProfile() {
       readOnly={false}
       showSubmitButton={false}
       showBreadcrumbs={false}
+      showCloseButton={false}
       columns={3}
       headerActions={
         <div className={styles.headerActions}>
