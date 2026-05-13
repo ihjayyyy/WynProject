@@ -65,9 +65,11 @@ export default function ChangePasswordForm() {
       return;
     }
 
-    setSuccessMessage('Password changed successfully. Redirecting to login...');
+    setSuccessMessage(
+      'Password changed successfully. Redirecting to dashboard...',
+    );
     setTimeout(() => {
-      router.push('/login');
+      router.push('/dashboard');
     }, 1200);
   };
 
