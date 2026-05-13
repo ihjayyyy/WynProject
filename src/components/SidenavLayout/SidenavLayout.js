@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { sidenavItems } from './sidenavData';
 import Image from 'next/image';
 import Button from '../ui/Button/Button';
-import { useState, useContext, useEffect, useMemo } from 'react';
+import { useState, useContext, useCallback, useMemo } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import { AccessContext } from '@/app/contextProviders/accessContext';
 import { clearAuthData } from '@/services/Auth';
@@ -28,25 +28,28 @@ export default function SidenavLayout({ children }) {
   const pathname = usePathname();
   const pathLower = pathname?.toLowerCase();
 
-  const handleLogout = () => {
+  const handleLogout = useCallback(() => {
     clearAuthData();
     router.push('/login');
-  };
+  }, [router]);
 
-  const actionItems = useMemo(() => [
-    {
-      key: 'view-profile',
-      label: 'View Profile',
-      icon: <FiUser size={14} />,
-      onClick: (item) => router.push('/userprofile'),
-    },
-    {
-      key: 'logout',
-      label: 'Logout',
-      icon: <FiLogOut size={14} />,
-      onClick: (item) => handleLogout(),
-    },
-  ]);
+  const actionItems = useMemo(
+    () => [
+      {
+        key: 'view-profile',
+        label: 'View Profile',
+        icon: <FiUser size={14} />,
+        onClick: () => router.push('/userprofile'),
+      },
+      {
+        key: 'logout',
+        label: 'Logout',
+        icon: <FiLogOut size={14} />,
+        onClick: handleLogout,
+      },
+    ],
+    [router, handleLogout],
+  );
 
   const toggleSidebar = () => setIsCollapsed(!isCollapsed);
 
