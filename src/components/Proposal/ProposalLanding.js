@@ -2,7 +2,7 @@
 
 import React, { useMemo, useState, useContext } from 'react';
 import { useRouter } from 'next/navigation';
-import { FiCheck, FiCheckCircle, FiEdit2, FiEye, FiSend, FiX, FiXCircle } from 'react-icons/fi';
+import { FiCheck, FiCheckCircle, FiEdit2, FiEye, FiFileText, FiSend, FiX, FiXCircle } from 'react-icons/fi';
 import DropdownAction from '../ui/DropdownAction/DropdownAction';
 import Landing from '../ui/Landing/Landing';
 import StatusBadge from '../ui/StatusBadge/StatusBadge';
@@ -55,7 +55,7 @@ export default function ProposalLanding() {
   const actionItems = useMemo(
     () => [
       ...(isAllowed(PageName, 'r') ? [{ key: 'view', label: 'View', icon: <FiEye size={14} />, onClick: (item) => router.push(`/projects/proposal/proposalform?id=${item.id}`) }] : []),
-      ...(isAllowed(PageName, 'r') ? [{ key: 'viewpdf', label: 'Generate Proposal Document', icon: <FiEye size={14} />, onClick: (item) => (getProposalPDF(item.id))}] : []),
+      ...(isAllowed(PageName, 'r') ? [{ key: 'viewpdf', label: 'Generate Proposal Document', icon: <FiFileText size={14} />, onClick: (item) => (getProposalPDF(item.id))}] : []),
       ...(isAllowed(PageName, 'w') ? [{ key: 'edit', label: 'Edit', icon: <FiEdit2 size={14} />, onClick: (item) => router.push(`/projects/proposal/proposalform?id=${item.id}&mode=edit`) }] : []),
     ],
     [isAllowed, router]
@@ -94,7 +94,7 @@ export default function ProposalLanding() {
         hidden: it.key === 'edit' ? !isDraft : it.hidden,
       }));
 
-     // itemsFor.push({ key: 'viewpdf', label: 'Generate Proposal Document', icon: <FiEye size={14} />, onClick: (item) => (getProposalPDF(item.id))});
+     // itemsFor.push({ key: 'viewpdf', label: 'Generate Proposal Document', icon: <FiFileText size={14} />, onClick: (item) => (getProposalPDF(item.id))});
 
       if (isDraft && isAllowed(PageName, 'w')) {
         itemsFor.push({ key: 'submit', label: 'Submit', icon: <FiSend size={14} />, onClick: (it) => {
