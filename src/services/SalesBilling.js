@@ -1,3 +1,5 @@
+import { handleOpenPdf } from "./Helper";
+
 // GET /api/SalesBilling/{id} - fetch a single sales billing record by ID
 async function getSalesBillingById(id) {
   if (!id) return { data: null, error: 'Missing id' };
@@ -72,30 +74,6 @@ async function getSalesBillingPDFById(id) {
     return { data: null, error: error?.message || error };
   }
 }
-
-  const handleOpenPdf = async (data) => {
-    try {
-              var blob = await data.blob();
-              console.log(blob)
-       const fileType = blob.type;
-       console.log(data)
-      if (!fileType || !fileType.includes("pdf")) {
-        throw new Error("The file received is not a PDF.");
-      }
-      // Create a Blob URL
-
-      const fileURL = URL.createObjectURL(blob, { type: fileType });
-
-      // Open PDF in a new browser tab
-      window.open(fileURL, "_blank", "noopener,noreferrer");
-
-      // Optional: Revoke the object URL after some time to free memory
-      setTimeout(() => URL.revokeObjectURL(fileURL), 10000);
-    } catch (error) {
-      console.error("Error fetching PDF:", error);
-      alert("Failed to load PDF. Please try again.");
-    }
-  }
 
 // PUT /api/SalesBilling/MarkAsBilled/{salesBillingId} - mark a sales billing as billed
 async function markAsBilled(salesBillingId) {
