@@ -101,6 +101,9 @@ function buildScopePayload({
     milestoneDate: toIsoOrNull(overrides.milestoneDate ?? base.milestoneDate),
     scopeOfWork: overrides.scopeOfWork ?? base.scopeOfWork ?? description,
     scopeAmount: toNumber(overrides.scopeAmount ?? base.scopeAmount),
+    laborPercentage: toNumber(overrides.laborPercentage ?? base.laborPercentage),
+    forecastedDuration: toNumber(overrides.forecastedDuration ?? base.forecastedDuration),
+    actualDuration: toNumber(overrides.actualDuration ?? base.actualDuration),
   };
 }
 
@@ -387,7 +390,17 @@ export default function ProjectScope({ projectId = 0, editable = true, onComplet
         }}
       />
 
-      <ProjectMaterialModal open={isMaterialModalOpen} initial={materialEditing || { parentId: Number(projectId) || 0, scopeOfWork: materialScopeTarget || 'General' }} keepOpenOnSave={!materialEditing} onCancel={() => { setIsMaterialModalOpen(false); setMaterialScopeTarget(null); setMaterialEditing(null); }} onConfirm={async (m, options = {}) => {
+      <ProjectMaterialModal open={isMaterialModalOpen} initial={(() => {
+        const getScopeLaborPct = (scopeName) => {
+          const s = (scopesList || []).find(sc => (sc.description || sc.name || sc.code || '') === scopeName);
+          return Number(s?.laborPercentage) || 0;
+        };
+        if (materialEditing) {
+          const scopeName = materialEditing.scopeOfWork || materialScopeTarget || 'General';
+          return { ...materialEditing, laborPercentage: getScopeLaborPct(scopeName) };
+        }
+        return { parentId: Number(projectId) || 0, scopeOfWork: materialScopeTarget || 'General', laborPercentage: getScopeLaborPct(materialScopeTarget) };
+      })()} keepOpenOnSave={!materialEditing} onCancel={() => { setIsMaterialModalOpen(false); setMaterialScopeTarget(null); setMaterialEditing(null); }} onConfirm={async (m, options = {}) => {
         try {
           // find scope object by parentId or scopeOfWork
           const scopeName = m.scopeOfWork || materialScopeTarget || 'General';

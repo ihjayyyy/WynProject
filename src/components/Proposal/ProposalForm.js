@@ -10,6 +10,7 @@ import ProposalMaterialsTable from './ProposalMaterialsTable';
 import Button from '../ui/Button/Button';
 import { useToast } from '../ui/Toast/Toast';
 import { INITIAL_PROPOSAL, getProposalById, createProposal, updateProposal, submitProposal, approveProposal, rejectProposal, winProposal, loseProposal } from '../../services/Proposal';
+import { getParameter } from '../../services/Parameter';
 import { convertProposal } from '../../services/Project';
 import ConfirmModal from '../ui/ConfirmModal/ConfirmModal';
 import { getCustomers } from '../../services/Customer';
@@ -49,6 +50,7 @@ export default function ProposalForm() {
     miscellaneousTitle: '',
     attachmentUrl: '',
   });
+  const [parameterDefaultsLoaded, setParameterDefaultsLoaded] = useState(false);
   const toast = useToast();
 
   React.useEffect(() => {
@@ -95,18 +97,45 @@ export default function ProposalForm() {
   React.useEffect(() => {
     setChildrenState(initialValues?.children || []);
     setDeletedChildrenState([]);
-    setRichText({
-      miscellaneousDescription: initialValues?.miscellaneousDescription || '',
-      scopeOfWorkDescription: initialValues?.scopeOfWorkDescription || '',
-      warrantyDescription: initialValues?.warrantyDescription || '',
-      modeOfPaymentDescription: initialValues?.modeOfPaymentDescription || '',
-      workDurationDescription: initialValues?.workDurationDescription || '',
-    });
-    setExtraFields({
-      miscellaneousTitle: initialValues?.miscellaneousTitle || '',
-      attachmentUrl: initialValues?.attachmentUrl || '',
-    });
-  }, [initialValues]);
+
+    console.log('Initial proposal values:', initialValues); // debug log
+    // Only fetch parameter defaults if creating a new proposal
+    if (initialValues.id === 0) {
+      getParameter('Proposal').then((res) => {
+        if (res && res.data && Array.isArray(res.data)) {
+          const paramMap = {};
+          res.data.forEach((item) => {
+            paramMap[item.name] = item.value;
+          });
+          setRichText({
+            miscellaneousDescription: paramMap.MiscellaneousDescription || '',
+            scopeOfWorkDescription: paramMap.ScopeOfWorkDescription || '',
+            warrantyDescription: paramMap.WarrantyDescription || '',
+            modeOfPaymentDescription: paramMap.ModeOfPaymentDescription || '',
+            workDurationDescription: paramMap.WorkDurationDescription || '',
+          });
+          setExtraFields((prev) => ({
+            ...prev,
+            miscellaneousTitle: paramMap.MiscellaneousTitle || '',
+          }));
+        }
+        setParameterDefaultsLoaded(true);
+      });
+    } else {
+      setRichText({
+        miscellaneousDescription: initialValues?.miscellaneousDescription || '',
+        scopeOfWorkDescription: initialValues?.scopeOfWorkDescription || '',
+        warrantyDescription: initialValues?.warrantyDescription || '',
+        modeOfPaymentDescription: initialValues?.modeOfPaymentDescription || '',
+        workDurationDescription: initialValues?.workDurationDescription || '',
+      });
+      setExtraFields({
+        miscellaneousTitle: initialValues?.miscellaneousTitle || '',
+        attachmentUrl: initialValues?.attachmentUrl || '',
+      });
+      setParameterDefaultsLoaded(true);
+    }
+  }, [initialValues, parameterDefaultsLoaded]);
 
   // dedupe deleted children by id (when present) or by code+name+parentId for unsaved items
   const dedupeDeleted = (arr = []) => {
@@ -391,6 +420,7 @@ export default function ProposalForm() {
     discount: Number(c.discount) || 0,
     laborCost: Number(c.laborCost) || 0,
     extendedCost: Number(c.extendedCost) || 0,
+    scopeDuration: Number(c.scopeDuration) || 0,
     totalAmount: Number(c.totalAmount) || 0,
     isAssembly: Boolean(c.isAssembly),
     totalPrice: Number(c.totalPrice) || 0,

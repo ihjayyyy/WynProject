@@ -46,14 +46,19 @@ export default function ProposalMaterialModal({ open, initial = {}, onCancel, on
 
   const [materials, setMaterials] = useState([]);
 
-  const [materialCategory, setMaterialCategory] = useState(() => {
-    const t = initial?.materialType || '';
-    return ['Tools', 'Materials', 'Service'].includes(t) ? t : '';
-  });
+  const normalizeMaterialCategory = (t) => {
+    if (!t) return '';
+    const lower = t.toLowerCase();
+    if (lower === 'service') return 'Service';
+    if (lower === 'tools' || lower === 'tool') return 'Tool';
+    if (lower === 'materials' || lower === 'material') return 'Material';
+    return '';
+  };
+
+  const [materialCategory, setMaterialCategory] = useState(() => normalizeMaterialCategory(initial?.materialType || ''));
 
   useEffect(() => {
-    const t = initial?.materialType || '';
-    setMaterialCategory(['Tools', 'Materials', 'Service'].includes(t) ? t : '');
+    setMaterialCategory(normalizeMaterialCategory(initial?.materialType || ''));
   }, [initial]);
 
   useEffect(() => {
@@ -130,11 +135,11 @@ export default function ProposalMaterialModal({ open, initial = {}, onCancel, on
 
   const fields = useMemo(() => {
     const isService = materialCategory === 'Service';
-    const categorySelected = materialCategory === 'Tools' || materialCategory === 'Materials' || materialCategory === 'Service';
+    const categorySelected = materialCategory === 'Tool' || materialCategory === 'Material' || materialCategory === 'Service';
 
-    const filteredMaterials = materialCategory === 'Tools'
+    const filteredMaterials = materialCategory === 'Tool'
       ? materials.filter((m) => (m.materialType || '').toLowerCase().includes('tool'))
-      : materialCategory === 'Materials'
+      : materialCategory === 'Material'
       ? materials.filter((m) => (m.materialType || '').toLowerCase().includes('material'))
       : materials;
 
@@ -147,8 +152,8 @@ export default function ProposalMaterialModal({ open, initial = {}, onCancel, on
       type: 'select',
       value: materialCategory,
       options: [
-        { value: 'Tools', label: 'Tools' },
-        { value: 'Materials', label: 'Materials' },
+        { value: 'Tool', label: 'Tools' },
+        { value: 'Material', label: 'Materials' },
         { value: 'Service', label: 'Service' },
       ],
       validator: Yup.string().required('Material Type is required'),
@@ -184,7 +189,7 @@ export default function ProposalMaterialModal({ open, initial = {}, onCancel, on
     },
     {
       name: 'materialId',
-      label: 'Material Name',
+      label: materialCategory === 'Tool' ? 'Tool Name' : materialCategory === 'Service' ? 'Service Name' : 'Material Name',
       type: 'select',
       hidden: isService || !categorySelected,
       value: calculatedForm.materialId ? String(calculatedForm.materialId) : '',
@@ -203,7 +208,7 @@ export default function ProposalMaterialModal({ open, initial = {}, onCancel, on
         updateField('name', next.name || '');
       },
     },
-    { name: 'code', label: 'Material Code', type: 'text', value: calculatedForm.code || '', readonly: true, validator: Yup.string().notRequired() },
+    { name: 'code', label: materialCategory === 'Tool' ? 'Tool Code' : materialCategory === 'Service' ? 'Service Code' : 'Material Code', type: 'text', value: calculatedForm.code || '', readonly: true, validator: Yup.string().notRequired() },
     { name: 'materialType', label: 'Type', type: 'text', value: calculatedForm.materialType || '', hidden: true, validator: Yup.string().notRequired() },
     { name: 'uom', label: 'UoM', type: 'text', value: calculatedForm.uom || '', readonly: true, validator: Yup.string().notRequired() },
     {
@@ -215,15 +220,17 @@ export default function ProposalMaterialModal({ open, initial = {}, onCancel, on
       onChange: (item, updateField, itemFields, nextValue) => {
         const uc = Number(nextValue) || 0;
         const qty = Number(itemFields.find((f) => f.name === 'quantity')?.value) || 0;
-        const lab = Number(itemFields.find((f) => f.name === 'laborCost')?.value) || 0;
         const disc = Number(itemFields.find((f) => f.name === 'discount')?.value) || 0;
+        const pct = Number(itemFields.find((f) => f.name === 'laborPercentage')?.value) || 0;
         const base = uc * qty;
         const materialBase = base - disc;
         const vat = Number.isFinite(materialBase * 0.12) ? Math.max(0, Number((materialBase * 0.12).toFixed(2))) : 0;
         const materialCost = Number((materialBase + vat).toFixed(2));
+        const lab = pct > 0 ? Number((materialCost * pct / 100).toFixed(2)) : Number(itemFields.find((f) => f.name === 'laborCost')?.value) || 0;
         const total = Number((materialCost + lab).toFixed(2));
         updateField('vat', vat);
         updateField('materialCost', materialCost);
+        updateField('laborCost', lab);
         updateField('totalAmount', total);
         updateField('extendedCost', total);
         updateField('totalPrice', total);
@@ -237,16 +244,18 @@ export default function ProposalMaterialModal({ open, initial = {}, onCancel, on
       validator: Yup.number().min(0).notRequired(),
       onChange: (item, updateField, itemFields, nextValue) => {
         const uc = Number(itemFields.find((f) => f.name === 'unitCost')?.value) || 0;
-        const lab = Number(itemFields.find((f) => f.name === 'laborCost')?.value) || 0;
         const disc = Number(itemFields.find((f) => f.name === 'discount')?.value) || 0;
+        const pct = Number(itemFields.find((f) => f.name === 'laborPercentage')?.value) || 0;
         const qty = Number(nextValue) || 0;
         const base = uc * qty;
         const materialBase = base - disc;
         const vat = Number.isFinite(materialBase * 0.12) ? Math.max(0, Number((materialBase * 0.12).toFixed(2))) : 0;
         const materialCost = Number((materialBase + vat).toFixed(2));
+        const lab = pct > 0 ? Number((materialCost * pct / 100).toFixed(2)) : Number(itemFields.find((f) => f.name === 'laborCost')?.value) || 0;
         const total = Number((materialCost + lab).toFixed(2));
         updateField('vat', vat);
         updateField('materialCost', materialCost);
+        updateField('laborCost', lab);
         updateField('totalAmount', total);
         updateField('extendedCost', total);
         updateField('totalPrice', total);
@@ -260,23 +269,25 @@ export default function ProposalMaterialModal({ open, initial = {}, onCancel, on
       validator: Yup.number().min(0).notRequired(),
       onChange: (item, updateField, itemFields, nextValue) => {
         const uc = Number(itemFields.find((f) => f.name === 'unitCost')?.value) || 0;
-        const lab = Number(itemFields.find((f) => f.name === 'laborCost')?.value) || 0;
         const qty = Number(itemFields.find((f) => f.name === 'quantity')?.value) || 0;
+        const pct = Number(itemFields.find((f) => f.name === 'laborPercentage')?.value) || 0;
         const disc = Number(nextValue) || 0;
         const base = uc * qty;
         const materialBase = base - disc;
         const vat = Number.isFinite(materialBase * 0.12) ? Math.max(0, Number((materialBase * 0.12).toFixed(2))) : 0;
         const materialCost = Number((materialBase + vat).toFixed(2));
+        const lab = pct > 0 ? Number((materialCost * pct / 100).toFixed(2)) : Number(itemFields.find((f) => f.name === 'laborCost')?.value) || 0;
         const total = Number((materialCost + lab).toFixed(2));
         updateField('vat', vat);
         updateField('materialCost', materialCost);
+        updateField('laborCost', lab);
         updateField('totalAmount', total);
         updateField('extendedCost', total);
         updateField('totalPrice', total);
       },
     },
     { name: 'vat', label: 'VAT', type: 'number', value: Number(calculatedForm.vat) || 0, readonly: true, validator: Yup.number().notRequired() },
-    { name: 'materialCost', label: isService ? 'Service Amount' : 'Material Amount', type: 'number', value: Number(calculatedForm.materialCost) || 0, readonly: true, validator: Yup.number().notRequired() },
+    { name: 'materialCost', label: materialCategory === 'Tool' ? 'Tool Amount' : materialCategory === 'Service' ? 'Service Amount' : 'Material Amount', type: 'number', value: Number(calculatedForm.materialCost) || 0, readonly: true, validator: Yup.number().notRequired() },
     {
       name: 'laborCost',
       label: 'Labor Cost (Editable)',

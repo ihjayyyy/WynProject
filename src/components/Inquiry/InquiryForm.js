@@ -29,7 +29,7 @@ export default function InquiryForm() {
   const isEditMode = (mode === 'edit' || isEditModeLocal) && status !== 'acknowledged';
   const [customerOptions, setCustomerOptions] = useState([]);
   const [customersData, setCustomersData] = useState([]);
-  const [contactPersonOptions, setContactPersonOptions] = useState([]);
+
   const [staffOptions, setStaffOptions] = useState([]);
   
   // Track auto-filled overrides and a key to remount the form when customer changes
@@ -60,12 +60,7 @@ export default function InquiryForm() {
           label: c.name || c.companyName || c.code || c.customerName,
           value: c.id
         })));
-        const uniqueContacts = [...new Map(
-          (res.data || [])
-            .filter(c => c.customerName)
-            .map(c => [c.customerName, { label: c.customerName, value: c.customerName }])
-        ).values()];
-        setContactPersonOptions(uniqueContacts);
+
       }
     })();
     return () => (mounted = false);
@@ -156,7 +151,7 @@ export default function InquiryForm() {
     { name: 'spacer-1', type: 'spacer', span: 'span1' },
     { name: 'code', label: 'Code', span: 'span1', readOnly:true },
 
-    { name: 'contactPerson', label: 'Contact Person', type: 'select', options: contactPersonOptions, searchable: true, span: 'span1' },
+    { name: 'contactPerson', label: 'Contact Person', span: 'span1' },
     { name: 'name', label: 'Name', span: 'span1',hidden:true },
 
     { name: 'spacer-2', type: 'spacer', span: 'span1' },
