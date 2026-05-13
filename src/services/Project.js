@@ -1,3 +1,5 @@
+import { handleOpenPdf } from "./Helper";
+
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL + "/Project";
 
 async function convertProposal(proposalId) {
@@ -64,5 +66,19 @@ async function updateProject(id, payload) {
     }
 }
 
-export { convertProposal, getProjectById, getProjects, updateProject };
-export default { convertProposal, getProjectById, getProjects, updateProject };
+async function getCompletionPDFById(id) {
+  if (!id) return { data: null, error: 'Missing id' };
+  try {
+    const url = `${API_BASE_URL}/pdf/${id}`;
+    const res = await fetch(url, {
+      method: 'GET',
+      headers: { 'Content-Type': 'application/json' },
+    });
+    handleOpenPdf(res);
+  } catch (error) {
+    return { data: null, error: error?.message || error };
+  }
+}
+
+export { convertProposal, getProjectById, getProjects, updateProject, getCompletionPDFById };
+export default { convertProposal, getProjectById, getProjects, updateProject, getCompletionPDFById };

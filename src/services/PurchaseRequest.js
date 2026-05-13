@@ -1,3 +1,5 @@
+import { handleOpenPdf } from "./Helper";
+
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL + "/PurchaseRequest";
  export  const InitialData = {
         "projectId":0,
@@ -113,6 +115,22 @@ async function SetStatus(status, id) {
         return { data: null, error: error?.message || error };
     }
 }
+async function getDocumentPDFById(projectId) {
+    console.log(projectId);
+  if (!projectId) return { data: null, error: 'Missing id' };
+  try {
+    const url = `${API_BASE_URL}/pdf/${projectId}`;
+    const res = await fetch(url, {
+      method: 'GET',
+      headers: { 'Content-Type': 'application/json' },
+    });
+    handleOpenPdf(res);
+  } catch (error) {
+    return { data: null, error: error?.message || error };
+  }
+}
+
+
 export {
     GetAll,
     Get,
@@ -122,6 +140,7 @@ export {
     SubmitForApproval,
     Approve,
     Reject,
+    getDocumentPDFById,
 }
 
 export default{
@@ -132,5 +151,6 @@ export default{
     SetStatus,
     SubmitForApproval,
     Approve,
-    Reject
+    Reject,
+    getDocumentPDFById
 }

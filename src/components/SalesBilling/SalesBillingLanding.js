@@ -3,7 +3,7 @@
 import React, { useMemo, useState, useEffect, useCallback } from 'react';
 import SalesBillingService from '@/services/SalesBilling';
 import { useRouter } from 'next/navigation';
-import { FiEdit2, FiEye, FiCheckCircle } from 'react-icons/fi';
+import { FiEdit2, FiEye, FiCheckCircle, FiFileText } from 'react-icons/fi';
 import DropdownAction from '../ui/DropdownAction/DropdownAction';
 import Landing from '../ui/Landing/Landing';
 import { useConfirmModal } from '@/app/contextProviders/confirmModalContext';
@@ -65,7 +65,7 @@ export default function SalesBillingLanding() {
   const actionItems = useMemo(
     () => [
       { key: 'view', label: 'View', icon: <FiEye size={14} />, onClick: (item) => router.push(`/finance/billings/form?id=${item.id}`) },
-      { key: 'viewpdf', label: 'Generate Billing Document', icon: <FiEye size={14} />, onClick: (item) => (getPDF(item.id))},
+      { key: 'viewpdf', label: 'Generate Billing Document', icon: <FiFileText size={14} />, onClick: (item) => (getPDF(item.id))},
       { key: 'edit', label: 'Edit', icon: <FiEdit2 size={14} />, onClick: (item) => router.push(`/finance/billings/form?id=${item.id}&mode=edit`), hidden: (item) => item.status?.toLowerCase() === 'billed' },
       { key: 'markAsBilled', label: 'Mark as Billed', icon: <FiCheckCircle size={14} />, onClick: handleMarkAsBilled, hidden: (item) => item.status?.toLowerCase() !== 'draft' },
     ],

@@ -4,7 +4,7 @@ import ItemModal from '../ItemDetails/itemModal';
 import SearchBar from '../ui/SearchBar/SearchBar';
 import Button from '../ui/Button/Button';
 import styles from './ProjectScope.module.scss';
-import { getMaterialRequestsByProjectId, createMaterialRequest, updateMaterialRequest, INITIAL_MATERIAL_REQUEST } from '../../services/MaterialRequest';
+import { getMaterialRequestsByProjectId, createMaterialRequest, updateMaterialRequest, INITIAL_MATERIAL_REQUEST, getDocumentPDFById } from '../../services/MaterialRequest';
 import { getMaterials } from '../../services/Materials';
 import { useToast } from '../ui/Toast/Toast';
 import { AccessContext } from '@/app/contextProviders/accessContext';
@@ -107,6 +107,9 @@ export default function MaterialRequestsTab({ projectId }) {
             showFilter={false}
             width="280px"
           />
+          {isAllowed(PageName, 'w') && (
+            <Button onClick={() => { getDocumentPDFById(projectId) }}>Generate RIV</Button>
+          )}
           {isAllowed(PageName, 'w') && (
             <Button onClick={() => { setEditing(null); setIsModalOpen(true); }}>Add Material Request</Button>
           )}

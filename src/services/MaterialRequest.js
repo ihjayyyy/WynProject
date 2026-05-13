@@ -1,3 +1,5 @@
+import { handleOpenPdf } from "./Helper";
+
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL + "/MaterialRequest";
 
 export const INITIAL_MATERIAL_REQUEST = {
@@ -74,5 +76,20 @@ async function updateMaterialRequest(id, payload) {
     }
 }
 
-export { getMaterialRequests, createMaterialRequest, updateMaterialRequest, getMaterialRequestsByProjectId };
-export default { getMaterialRequests, createMaterialRequest, updateMaterialRequest, getMaterialRequestsByProjectId };
+async function getDocumentPDFById(projectId) {
+    console.log(projectId);
+  if (!projectId) return { data: null, error: 'Missing id' };
+  try {
+    const url = `${API_BASE_URL}/pdf/${projectId}`;
+    const res = await fetch(url, {
+      method: 'GET',
+      headers: { 'Content-Type': 'application/json' },
+    });
+    handleOpenPdf(res);
+  } catch (error) {
+    return { data: null, error: error?.message || error };
+  }
+}
+
+export { getMaterialRequests, createMaterialRequest, updateMaterialRequest, getMaterialRequestsByProjectId, getDocumentPDFById };
+export default { getMaterialRequests, createMaterialRequest, updateMaterialRequest, getMaterialRequestsByProjectId, getDocumentPDFById };

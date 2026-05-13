@@ -2,11 +2,11 @@
 
 import React, { useMemo, useState, useContext } from 'react';
 import { useRouter } from 'next/navigation';
-import { FiEdit2, FiEye } from 'react-icons/fi';
+import { FiEdit2, FiEye, FiFileText } from 'react-icons/fi';
 import DropdownAction from '../ui/DropdownAction/DropdownAction';
 import Landing from '../ui/Landing/Landing';
 import StatusBadge from '../ui/StatusBadge/StatusBadge';
-import { getProjects } from '../../services/Project';
+import { getProjects, getCompletionPDFById } from '../../services/Project';
 import { useToast } from '../ui/Toast/Toast';
 import { AccessContext } from '@/app/contextProviders/accessContext';
 import InvalidPage from '@/components/InvalidPage/page';
@@ -35,7 +35,13 @@ export default function ProjectLanding() {
   const actionItems = useMemo(() => [
     ...(isAllowed(PageName, 'r') ? [{ key: 'view', label: 'View', icon: <FiEye size={14} />, onClick: (item) => router.push(`/projects/project/projectdetails?id=${item.id}`) }] : []),
     ...(isAllowed(PageName, 'w') ? [{ key: 'edit', label: 'Edit', icon: <FiEdit2 size={14} />, onClick: (item) => router.push(`/projects/project/projectdetails?id=${item.id}&mode=edit`) }] : []),
+    ...(isAllowed(PageName, 'r') ? [{ key: 'viewpdf', label: 'Generate Accomplishment Report', icon: <FiFileText size={14} />, onClick: (item) => (getPDF(item.id))}] : []),
   ], [isAllowed, router]);
+
+  const getPDF = async (id) =>{
+      console.log("project pdf",id);
+      await getCompletionPDFById(id);
+  }
 
   const loadProjects = React.useCallback(async () => {
     setLoading(true);
