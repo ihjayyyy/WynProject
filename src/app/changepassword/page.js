@@ -2,12 +2,17 @@
 
 import styles from '../login/page.module.scss';
 
-import ChangePasswordForm from '@/components/ChangePasswordForm/ChangePasswordForm';
+import { Suspense } from 'react';
+import dynamic from 'next/dynamic';
 
-export default function ChangePassword() {
+const ChangePasswordForm = dynamic(() => import("@/components/ChangePasswordForm/ChangePasswordForm"), { ssr: false });
+
+export default function Page() {
   return (
-    <main className={styles.container}>
-      <ChangePasswordForm />
-    </main>
+    <Suspense fallback={"Loading..."}>
+      <main className={styles.container}>
+        <ChangePasswordForm />
+      </main>
+    </Suspense>
   );
 }
