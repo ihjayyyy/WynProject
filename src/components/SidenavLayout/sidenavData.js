@@ -1,4 +1,28 @@
-import { FiBarChart, FiBox, FiFileText, FiMessageSquare, FiUsers, FiSettings, FiArchive, FiPackage, FiLayers, FiTool, FiDatabase, FiList, FiGrid, FiUser, FiShoppingCart, FiTruck, FiFile, FiCreditCard, FiUserCheck, FiBriefcase, FiClipboard, FiDollarSign, FiFolder } from 'react-icons/fi';
+import {
+  FiBarChart,
+  FiBox,
+  FiFileText,
+  FiMessageSquare,
+  FiUsers,
+  FiSettings,
+  FiArchive,
+  FiPackage,
+  FiLayers,
+  FiTool,
+  FiDatabase,
+  FiList,
+  FiGrid,
+  FiUser,
+  FiShoppingCart,
+  FiTruck,
+  FiFile,
+  FiCreditCard,
+  FiUserCheck,
+  FiBriefcase,
+  FiClipboard,
+  FiDollarSign,
+  FiFolder,
+} from 'react-icons/fi';
 
 export const sidenavItems = [
   {
@@ -66,14 +90,12 @@ export const sidenavItems = [
         icon: FiList,
         href: '/purchase/requests',
         name: 'Purchase.Requests',
-
       },
       {
         label: 'Orders',
         icon: FiList,
         href: '/purchase/orders',
         name: 'Purchase.Orders',
-
       },
       {
         label: 'Deliveries',
@@ -95,10 +117,11 @@ export const sidenavItems = [
       },
     ],
   },
-  {label: 'Finance',
-   icon: FiCreditCard,
-   name: 'Finance',
-   children: [
+  {
+    label: 'Finance',
+    icon: FiCreditCard,
+    name: 'Finance',
+    children: [
       {
         label: 'Project Billings',
         icon: FiDatabase,
@@ -123,8 +146,7 @@ export const sidenavItems = [
         href: '/finance/payment',
         name: 'Finance.Payments',
       },
-
-    ]
+    ],
   },
   {
     label: 'Storage',
@@ -156,12 +178,12 @@ export const sidenavItems = [
         href: '/materialsSettings/materials',
         name: 'Materials.Materials',
       },
-        {
-          label: 'Tools & Equipment',
-          icon: FiTool,
-          href: '/materialsSettings/tools',
-          name: 'Materials.ToolsEquipment',
-        },
+      {
+        label: 'Tools & Equipment',
+        icon: FiTool,
+        href: '/materialsSettings/tools',
+        name: 'Materials.ToolsEquipment',
+      },
       {
         label: 'Assembly',
         icon: FiFileText,
@@ -218,8 +240,13 @@ export const sidenavItems = [
         href: '/maintainance/UOMConvertion',
         name: 'Maintenance.UOMConversion',
       },
+      {
+        label: 'Users',
+        icon: FiUsers,
+        href: '/maintainance/users',
+        name: 'Maintenance.Users',
+      },
       // ...add more maintenance items here if needed
     ],
   },
 ];
-

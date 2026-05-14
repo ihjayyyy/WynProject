@@ -189,6 +189,10 @@ export async function getUserAccess() {
       name: 'Maintenance.UOMConversion',
       access: 'rwa',
     },
+    {
+      name: 'Maintenance.Users',
+      access: 'rwa',
+    },
   ];
 
   try {
@@ -206,6 +210,19 @@ export async function getUserAccess() {
         value: [...access],
       },
     };
+  } catch (error) {
+    return { data: null, error: error?.message || error };
+  }
+}
+
+export async function getAllUsers() {
+  try {
+    const res = await fetch(`${API_BASE_URL}/GetAll`, {
+      method: 'GET',
+      headers: { Accept: '*/' },
+    });
+    const json = await res.json();
+    return { data: json && json.value ? json.value : json, error: null };
   } catch (error) {
     return { data: null, error: error?.message || error };
   }
