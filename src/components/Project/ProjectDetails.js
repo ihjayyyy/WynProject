@@ -6,7 +6,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import Button from '../ui/Button/Button';
 import Input from '../ui/Input/Input';
 import Breadcrumbs from '../ui/Breadcrumbs/Breadcrumbs';
-import { getProjectById, getProjects, updateProject, startProject, completeProject } from '../../services/Project';
+import { getProjectById, getProjects, updateProject, startProject, completeProject, cancelProject, closeProject } from '../../services/Project';
 import ConfirmModal from '../ui/ConfirmModal/ConfirmModal';
 import ProjectScope from './ProjectScope';
 import ProjectStaffTab from './ProjectStaffTab';
@@ -81,6 +81,7 @@ export default function ProjectDetails() {
   if (!project) return <div>No project found</div>;
 
   const projectStatus = (project.status || '').toUpperCase();
+  const isCancelled = projectStatus === 'CANCELLED';
   const isFullyLocked = ['COMPLETED', 'CANCELLED', 'CLOSED'].includes(projectStatus);
   const isOngoing = projectStatus === 'ONGOING';
   const canWrite = isAllowed(PageName, 'w');
@@ -88,7 +89,6 @@ export default function ProjectDetails() {
   // Returns true if this tab is editable based on project status
   const tabEditable = (tab) => {
     if (isFullyLocked) return false;
-    if (isOngoing) return ['Details', 'Finance', 'Project Scope & Materials'].includes(tab);
     return true;
   };
 
@@ -209,6 +209,75 @@ export default function ProjectDetails() {
                     )}
                   </>
                 )}
+                {/* Cancel Project - hidden when already Cancelled */}
+                {!editing && canWrite && !isCancelled && (
+                  <Button
+                    className="secondary md"
+                    onClick={() => {
+                      setConfirmTarget(project);
+                      setConfirmTitle('Cancel Project?');
+                      setConfirmMessage(`Cancel project "${project.projectName || project.name || project.code || ''}"?`);
+                      setConfirmAction(() => async (target) => {
+                        try {
+                          setLoading(true);
+                          const res = await cancelProject(target.id);
+                          if (res?.error) toast.error('Failed to cancel project');
+                          else {
+                            toast.success('Project cancelled');
+                            const r = await getProjectById(target.id);
+                            const updated = r.data?.value && typeof r.data.value === 'object' && !Array.isArray(r.data.value)
+                              ? r.data.value
+                              : r.data;
+                            setProject(updated);
+                            setForm({ ...updated });
+                          }
+                        } catch (e) {
+                          toast.error('Failed to cancel project');
+                        }
+                        setLoading(false);
+                      });
+                      setIsConfirmOpen(true);
+                    }}
+                  >
+                    Cancel Project
+                  </Button>
+                )}
+
+                {/* Close Project - visible when status is COMPLETED or CANCELLED */}
+                {!editing && canWrite && (projectStatus === 'COMPLETED' || isCancelled) && (
+                  <Button
+                    className="secondary md"
+                    onClick={() => {
+                      setConfirmTarget(project);
+                      setConfirmTitle('Close Project?');
+                      setConfirmMessage(`Close project "${project.projectName || project.name || project.code || ''}"?`);
+                      setConfirmAction(() => async (target) => {
+                        try {
+                          setLoading(true);
+                          const res = await closeProject(target.id);
+                          if (res?.error) toast.error('Failed to close project');
+                          else {
+                            toast.success('Project closed');
+                            const r = await getProjectById(target.id);
+                            const updated = r.data?.value && typeof r.data.value === 'object' && !Array.isArray(r.data.value)
+                              ? r.data.value
+                              : r.data;
+                            setProject(updated);
+                            setForm({ ...updated });
+                            router.push('/projects/project');
+                          }
+                        } catch (e) {
+                          toast.error('Failed to close project');
+                        }
+                        setLoading(false);
+                      });
+                      setIsConfirmOpen(true);
+                    }}
+                  >
+                    Close Project
+                  </Button>
+                )}
+
                 {editing && (
                   <>
                     <Button className="secondary md" onClick={() => { setForm({ ...project }); setEditing(false); }}>Cancel</Button>

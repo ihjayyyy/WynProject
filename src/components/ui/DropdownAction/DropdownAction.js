@@ -5,7 +5,7 @@ import { createPortal } from 'react-dom';
 import { FiMoreVertical } from 'react-icons/fi';
 import styles from './DropdownAction.module.scss';
 
-export default function DropdownAction({ item, items }) {
+export default function DropdownAction({ item, items, containsRef }) {
   const [open, setOpen] = useState(false);
   const triggerRef = useRef(null);
   const menuRef = useRef(null);
@@ -15,11 +15,14 @@ export default function DropdownAction({ item, items }) {
 
   useEffect(() => {
     const onDoc = (e) => {
-      // close when clicking outside both trigger and menu
+      // close when clicking outside trigger, menu, and optional containsRef zone
       if (
         triggerRef.current &&
         (triggerRef.current.contains(e.target) || (menuRef.current && menuRef.current.contains(e.target)))
       ) {
+        return;
+      }
+      if (containsRef?.current && containsRef.current.contains(e.target)) {
         return;
       }
       close();
@@ -35,7 +38,7 @@ export default function DropdownAction({ item, items }) {
       document.removeEventListener('click', onDoc);
       document.removeEventListener('keydown', onEsc);
     };
-  }, [close]);
+  }, [close, containsRef]);
 
   const computePosition = useCallback(() => {
     const rect = triggerRef.current?.getBoundingClientRect();

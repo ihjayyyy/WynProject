@@ -74,11 +74,63 @@ async function updateCollection(id, payload) {
   }
 }
 
-export { getCollections, getCollectionById, createCollection, updateCollection };
+async function cancelCollection(salesCollectionId) {
+  try {
+    const url = `${API_BASE_URL}/${salesCollectionId}/cancel`;
+    const res = await fetch(url, {
+      method: 'PUT',
+      headers: { Accept: '*/*' },
+    });
+
+    let json = null;
+    try {
+      json = await res.json();
+    } catch {
+      json = null;
+    }
+
+    return { data: json, error: null };
+  } catch (error) {
+    return { data: null, error: error?.message || error };
+  }
+}
+
+async function closeCollection(salesCollectionId) {
+  try {
+    const url = `${API_BASE_URL}/${salesCollectionId}/close`;
+    const res = await fetch(url, {
+      method: 'PUT',
+      headers: { Accept: '*/*' },
+    });
+
+    let json = null;
+    try {
+      json = await res.json();
+    } catch {
+      json = null;
+    }
+
+    return { data: json, error: null };
+  } catch (error) {
+    return { data: null, error: error?.message || error };
+  }
+}
+
+export {
+  getCollections,
+  getCollectionById,
+  createCollection,
+  updateCollection,
+  cancelCollection,
+  closeCollection,
+};
+
 export default {
   getCollections,
   getCollectionById,
   createCollection,
   updateCollection,
+  cancelCollection,
+  closeCollection,
   INITIAL_COLLECTION,
 };

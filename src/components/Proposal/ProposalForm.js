@@ -2,7 +2,7 @@
 
 import React, { useContext, useMemo, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { FiCheck, FiFileText, FiSend, FiX } from 'react-icons/fi';
+import { FiCheck, FiFileText, FiSend, FiX, FiXCircle, FiArchive } from 'react-icons/fi';
 import StatusBadge from '../ui/StatusBadge/StatusBadge';
 import EntityForm from '../EntityForm/EntityForm';
 import Input from '../ui/Input/Input';
@@ -10,7 +10,7 @@ import inputStyles from '../ui/Input/Input.module.scss';
 import ProposalMaterialsTable from './ProposalMaterialsTable';
 import Button from '../ui/Button/Button';
 import { useToast } from '../ui/Toast/Toast';
-import { INITIAL_PROPOSAL, getProposalById, createProposal, updateProposal, submitProposal, approveProposal, rejectProposal, winProposal, loseProposal } from '../../services/Proposal';
+import { INITIAL_PROPOSAL, getProposalById, createProposal, updateProposal, submitProposal, approveProposal, rejectProposal, winProposal, loseProposal, cancelProposal, closeProposal } from '../../services/Proposal';
 import { getParameter } from '../../services/Parameter';
 import { convertProposal } from '../../services/Project';
 import ConfirmModal from '../ui/ConfirmModal/ConfirmModal';
@@ -154,8 +154,9 @@ export default function ProposalForm() {
     const selected = (items || []).find((item) => String(item.id) === String(proposalId));
     const status = selected && selected.proposalStatus ? String(selected.proposalStatus) : '';
     const draft = status.toLowerCase() === 'draft';
-    const readOnly = exists && (!isEditMode || !draft);
-    return { isReadOnly: readOnly, canEnterEditMode: exists && draft, isDraft: draft };
+    const nonEditable = ['cancelled', 'closed'].includes(status.toLowerCase());
+    const readOnly = exists && (!isEditMode || !draft || nonEditable);
+    return { isReadOnly: readOnly, canEnterEditMode: exists && draft && !nonEditable, isDraft: draft };
   }, [proposalId, isEditMode, items]);
 
   const status = useMemo(() => {
@@ -720,6 +721,40 @@ export default function ProposalForm() {
                     });
                     setIsConfirmOpen(true);
                   }}><FiCheck size={14} style={{ marginRight: 4 }} />Generate Project</Button>
+                ) : null}
+                {/* Cancel Proposal — hidden when already cancelled */}
+                {proposalId && isAllowed(PageName, 'w') && !['cancelled', 'closed'].includes(String(initialValues?.proposalStatus || '').toLowerCase()) ? (
+                  <Button variant="outlineDanger" icon={<FiXCircle size={14} />} disabled={actionLoading} onClick={() => {
+                    setConfirmTitle('Cancel Proposal?');
+                    setConfirmMessage(`Are you sure you want to cancel proposal "${initialValues.name || initialValues.code || ''}"?`);
+                    setConfirmCallback(() => async () => {
+                      setActionLoading(true);
+                      const res = await cancelProposal(proposalId);
+                      if (res?.error) toast.error('Failed to cancel proposal');
+                      else {
+                        toast.success('Proposal cancelled');
+                        const refreshed = await getProposalById(proposalId);
+                        if (!refreshed.error) setItems(refreshed.data || []);
+                      }
+                      setActionLoading(false);
+                    });
+                    setIsConfirmOpen(true);
+                  }}>Cancel Proposal</Button>
+                ) : null}
+                {/* Close Proposal — shown only when cancelled */}
+                {proposalId && isAllowed(PageName, 'w') && String(initialValues?.proposalStatus || '').toLowerCase() === 'cancelled' ? (
+                  <Button variant="primary" icon={<FiArchive size={14} />} disabled={actionLoading} onClick={() => {
+                    setConfirmTitle('Close Proposal?');
+                    setConfirmMessage(`Are you sure you want to close proposal "${initialValues.name || initialValues.code || ''}"?`);
+                    setConfirmCallback(() => async () => {
+                      setActionLoading(true);
+                      const res = await closeProposal(proposalId);
+                      if (res?.error) toast.error('Failed to close proposal');
+                      else { toast.success('Proposal closed'); router.push('/projects/proposal'); }
+                      setActionLoading(false);
+                    });
+                    setIsConfirmOpen(true);
+                  }}>Close Proposal</Button>
                 ) : null}
               </>
             ) : (

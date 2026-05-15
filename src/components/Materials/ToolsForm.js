@@ -105,6 +105,7 @@ export default function ToolsForm() {
       ? [
           { name: 'rackId', label: 'Rack', span: 'span2', type: 'select', options: rackOptions, searchable: true },
           { name: 'initialQuantity', label: 'Initial Quantity', type: 'number', span: 'span2' },
+          { name: 'stockLevel', label: 'Stock Level', type: 'number', span: 'span2' },
         ]
       : []),
     { name: 'referenceNumber', label: 'Reference Number', span: 'span2' },
@@ -140,7 +141,8 @@ export default function ToolsForm() {
         sellingPrice: Number(values.sellingPrice) || 0,
         referenceNumber: values.referenceNumber || '0',
         rackId: Number(values.rackId) || 0,
-        initialQuantity: Number(values.initialQuantity) || 0,
+          initialQuantity: Number(values.initialQuantity) || 0,
+          stockLevel: Number(values.stockLevel ?? values.initialQuantity) || 0,
         isAssembly: false,
       };
       try {
@@ -168,6 +170,7 @@ export default function ToolsForm() {
         purchasePrice: Number(values.purchasePrice ?? values.unitCost) || 0,
         sellingPrice: Number(values.sellingPrice) || 0,
         referenceNumber: values.referenceNumber || '0',
+          stockLevel: Number(values.stockLevel) || 0,
         isAssembly: false,
       };
       const res = await updateMaterial(toolId, payload);

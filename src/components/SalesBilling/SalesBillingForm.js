@@ -2,7 +2,7 @@
 
 import React, { useMemo, useState, useEffect, useContext } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { FiList, FiEdit2, FiCheckCircle } from 'react-icons/fi';
+import { FiList, FiEdit2, FiCheckCircle, FiXCircle, FiArchive } from 'react-icons/fi';
 import DetailsTable from '../ItemDetails/DetailsTable';
 import EntityForm from '../EntityForm/EntityForm';
 import { useToast } from '../ui/Toast/Toast';
@@ -11,7 +11,7 @@ import { AccessContext } from '@/app/contextProviders/accessContext';
 import { useConfirmModal } from '@/app/contextProviders/confirmModalContext';
 import SalesBillingService from '@/services/SalesBilling';
 import { SalesBillingFields, SalesBillingDetailsColumns, SalesBillingItemsFields, computeVatAndAmount } from './SalesBillingModels';
-import ProjectService from '@/services/Project';
+import { getProjects } from '@/services/Project';
 import CustomerService from '@/services/Customer';
 import Button from '../ui/Button/Button';
 import StatusBadge from '../ui/StatusBadge/StatusBadge';
@@ -38,7 +38,7 @@ export default function SalesBillingForm() {
   const [totalIncluded, setTotalIncluded] = useState(0);
 
   useEffect(() => {
-    ProjectService.getProjects().then(({ data }) => setProjects(Array.isArray(data) ? data : []));
+    getProjects().then(({ data }) => setProjects(Array.isArray(data) ? data : []));
     CustomerService.getCustomers().then(({ data }) => setCustomers(Array.isArray(data) ? data : []));
   }, []);
 
@@ -171,7 +171,7 @@ export default function SalesBillingForm() {
     setTableData({ items: initBilling.children || [], deletedItems: initBilling.deletedChildren || [] });
   };
 
-  const isReadOnly = useMemo(() => (validBilling ? mode === 'view' || billing?.status?.toLowerCase() === 'billed' : true), [validBilling, mode, billing?.status]);
+  const isReadOnly = useMemo(() => (validBilling ? mode === 'view' || ['billed', 'cancelled', 'closed'].includes((billing?.status || '').toLowerCase()) : true), [validBilling, mode, billing?.status]);
 
   const formTitle = useMemo(() => (
     <div style={{ display: 'flex', gap: 8 , alignItems: 'center' }}>
@@ -274,6 +274,45 @@ export default function SalesBillingForm() {
     );
   };
 
+  const handleCancel = () => {
+    confirmModal.show(
+      'Cancel Billing',
+      `Are you sure you want to cancel billing "${billing?.salesBillingNo || billing?.id}"?`,
+      'Confirm',
+      'primary',
+      () => async () => {
+        const { error } = await SalesBillingService.cancelSalesBilling(billingId);
+        if (error) {
+          toast.error('Failed to cancel billing.');
+        } else {
+          toast.success('Billing cancelled.');
+          setBilling((prev) => ({ ...prev, status: 'Cancelled' }));
+          setMode('view');
+        }
+      }
+    );
+  };
+
+  const handleClose = () => {
+    confirmModal.show(
+      'Close Billing',
+      `Are you sure you want to close billing "${billing?.salesBillingNo || billing?.id}"?`,
+      'Confirm',
+      'primary',
+      () => async () => {
+        const { error } = await SalesBillingService.closeSalesBilling(billingId);
+        if (error) {
+          toast.error('Failed to close billing.');
+        } else {
+          toast.success('Billing closed.');
+          setBilling((prev) => ({ ...prev, status: 'Closed' }));
+          setMode('view');
+            router.push('/finance/billings');
+        }
+      }
+    );
+  };
+
   if (!isAllowed(PageName, 'r')) return <InvalidPage message="Access Denied" />;
   if (!validBilling) return <InvalidPage message="Billing not found." />;
   if (billing === null) return null; // wait for getBilling to populate
@@ -327,6 +366,14 @@ export default function SalesBillingForm() {
           )}
           {isReadOnly && billingId !== 0 && billing?.status?.toLowerCase() === 'draft' && isAllowed(PageName, 'w') && (
             <Button variant="primary" icon={<FiCheckCircle />} onClick={handleMarkAsBilled}>Mark as Billed</Button>
+          )}
+          {/* Cancel Billing - shown when not already cancelled */}
+          {isAllowed(PageName, 'w') && billingId !== 0 && (billing?.status || '').toLowerCase() !== 'cancelled' && (
+            <Button variant="outlineDanger" icon={<FiXCircle />} onClick={handleCancel}>Cancel Billing</Button>
+          )}
+          {/* Close Billing - only when already cancelled */}
+          {isAllowed(PageName, 'w') && billingId !== 0 && (billing?.status || '').toLowerCase() === 'cancelled' && (
+            <Button variant="primary" icon={<FiArchive />} onClick={handleClose}>Close Billing</Button>
           )}
           {!isReadOnly && billingId !== 0 && (
             <Button variant="outlineDanger" onClick={() => setMode('view')}>Cancel</Button>

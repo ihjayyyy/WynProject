@@ -2,7 +2,7 @@
 
 import React, { useMemo, useState, useEffect, useContext } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { FiList, FiEdit2 } from 'react-icons/fi';
+import { FiList, FiEdit2, FiXCircle, FiArchive } from 'react-icons/fi';
 import DetailsTable from '../ItemDetails/DetailsTable';
 import EntityForm from '../EntityForm/EntityForm';
 import { useToast } from '../ui/Toast/Toast';
@@ -209,6 +209,45 @@ export default function CollectionForm() {
     confirmModal.show('Save Collection', 'Are you sure?', 'Save', 'primary', () => () => save(entity));
   };
 
+  const handleCancelCollection = () => {
+    confirmModal.show(
+      'Cancel Collection',
+      `Are you sure you want to cancel collection "${collection?.collectionNo || collection?.id}"?`,
+      'Confirm',
+      'primary',
+      () => async () => {
+        const { error } = await CollectionService.cancelCollection(collectionId);
+        if (error) {
+          toast.error('Failed to cancel collection.');
+        } else {
+          toast.success('Collection cancelled.');
+          setCollection((prev) => ({ ...prev, status: 'Cancelled' }));
+          setMode('view');
+        }
+      }
+    );
+  };
+
+  const handleCloseCollection = () => {
+    confirmModal.show(
+      'Close Collection',
+      `Are you sure you want to close collection "${collection?.collectionNo || collection?.id}"?`,
+      'Confirm',
+      'primary',
+      () => async () => {
+        const { error } = await CollectionService.closeCollection(collectionId);
+        if (error) {
+          toast.error('Failed to close collection.');
+        } else {
+          toast.success('Collection closed.');
+          setCollection((prev) => ({ ...prev, status: 'Closed' }));
+          setMode('view');
+          router.push('/finance/collections');
+        }
+      }
+    );
+  };
+
   if (!isAllowed(PageName, 'r')) return <InvalidPage message="Access Denied" />;
   if (!validCollection) return <InvalidPage message="Collection not found." />;
   if (collection === null) return null;
@@ -257,8 +296,16 @@ export default function CollectionForm() {
       showSubmitButton={false}
       headerActions={
         <div style={{ display: 'flex', gap: 8 }}>
-          {isReadOnly && isAllowed(PageName, 'w') && (
+          {isReadOnly && collection?.status?.toLowerCase() === 'draft' && isAllowed(PageName, 'w') && (
             <Button variant="primary" onClick={() => setMode('edit')}>Edit</Button>
+          )}
+          {/* Cancel Collection - shown when not already cancelled */}
+          {isAllowed(PageName, 'w') && collectionId !== 0 && (collection?.status || '').toLowerCase() !== 'cancelled' && (
+            <Button variant="outlineDanger" icon={<FiXCircle />} onClick={handleCancelCollection}>Cancel Collection</Button>
+          )}
+          {/* Close Collection - only when already cancelled */}
+          {isAllowed(PageName, 'w') && collectionId !== 0 && (collection?.status || '').toLowerCase() === 'cancelled' && (
+            <Button variant="primary" icon={<FiArchive />} onClick={handleCloseCollection}>Close Collection</Button>
           )}
           {!isReadOnly && collectionId !== 0 && (
             <Button variant="outlineDanger" onClick={() => setMode('view')}>Cancel</Button>

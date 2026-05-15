@@ -167,6 +167,33 @@ async function winProposal(id) {
     }
 }
 
+async function cancelProposal(id) {
+    try {
+        const url = `${API_BASE_URL}/Cancel/${id}`;
+        const res = await fetch(url, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+        });
+        const json = await res.json();
+        return { data: json, error: null };
+    } catch (error) {
+        return { data: null, error: error?.message || error };
+    }
+}
+async function closeProposal(id) {
+    try {
+        const url = `${API_BASE_URL}/Close/${id}`;
+        const res = await fetch(url, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+        });
+        const json = await res.json();
+        return { data: json, error: null };
+    } catch (error) {
+        return { data: null, error: error?.message || error };
+    }
+}
+
 async function loseProposal(id) {
     try {
         const url = `${API_BASE_URL}/Lose/${id}`;
@@ -180,28 +207,70 @@ async function loseProposal(id) {
         return { data: null, error: error?.message || error };
     }
 }
-export { 
-    getProposals, 
-    getProposalById, 
-    createProposal, 
-    updateProposal, 
-    submitProposal, 
-    approveProposal, 
+
+async function reviseProposal(proposalId) {
+    if (!proposalId) return { data: null, error: 'Missing proposalId' };
+
+    try {
+        const url = `${API_BASE_URL}/ReviseProposal/${proposalId}`;
+        const res = await fetch(url, {
+            method: 'GET',
+            headers: { Accept: '*/*' },
+        });
+
+        const json = await res.json();
+        return { data: json, error: null };
+    } catch (error) {
+        return { data: null, error: error?.message || error };
+    }
+}
+
+async function createRevisedProposal(payload) {
+    try {
+        const res = await fetch(`${API_BASE_URL}/CreateRevised`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(payload),
+        });
+
+        const json = await res.json();
+        return { data: json, error: null };
+    } catch (error) {
+        return { data: null, error: error?.message || error };
+    }
+}
+export {
+    getProposals,
+    getProposalById,
+    createProposal,
+    updateProposal,
+    submitProposal,
+    approveProposal,
     rejectProposal,
     getProposalPDFById,
     winProposal,
-    loseProposal
+    loseProposal,
+    cancelProposal,
+    closeProposal,
+    reviseProposal,
+    createRevisedProposal
 };
 
-export default { 
-    getProposals, 
-    getProposalById, 
-    createProposal, 
-    updateProposal, 
-    submitProposal, 
-    approveProposal, 
+export default {
+    getProposals,
+    getProposalById,
+    createProposal,
+    updateProposal,
+    submitProposal,
+    approveProposal,
     rejectProposal,
     getProposalPDFById,
     winProposal,
-    loseProposal
+    loseProposal,
+    cancelProposal,
+    closeProposal,
+    reviseProposal,
+    createRevisedProposal
 };

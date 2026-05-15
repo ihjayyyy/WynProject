@@ -11,6 +11,7 @@ export const INITIAL_MATERIAL = {
   unitCost: 0,
   isAssembly: false,
   referenceNumber: '0',
+  stockLevel: 0,
 };
 
 function unwrapResponse(json) {
@@ -26,6 +27,7 @@ function normalizeMaterial(item) {
     sellingPrice: Number(item.sellingPrice ?? 0) || 0,
     unitCost: Number(item.unitCost ?? purchasePrice) || 0,
     referenceNumber: item.referenceNumber ?? '0',
+    stockLevel: Number(item.stockLevel ?? item.initialQuantity ?? 0) || 0,
   };
 }
 
@@ -40,6 +42,7 @@ function toApiPayload(payload = {}, { includeCreateOnlyFields = false } = {}) {
     sellingPrice: Number(payload.sellingPrice ?? 0) || 0,
     isAssembly: Boolean(payload.isAssembly),
     referenceNumber: payload.referenceNumber ?? '0',
+    stockLevel: Number(payload.stockLevel ?? payload.initialQuantity ?? 0) || 0,
   };
 
   if (!includeCreateOnlyFields) return basePayload;

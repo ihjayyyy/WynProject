@@ -1,6 +1,10 @@
   'use client';
 
 import React, { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { useConfirmModal } from '@/app/contextProviders/confirmModalContext';
+import Button from '../ui/Button/Button';
+import { generateProgressBilling } from '@/services/ProjectFinance';
 import DataTable from '../ui/DataTable/DataTable';
 import StatusBadge from '../ui/StatusBadge/StatusBadge';
 import SalesBillingService from '@/services/SalesBilling';
@@ -19,8 +23,29 @@ const billingColumns = [
   { header: 'Payment Status', key: 'paymentStatus', render: (item) => <StatusBadge status={item.paymentStatus} /> },
 ];
 
-export default function ProjectBillingCollectionTab({ projectId = 0 }) {
+export default function ProjectBillingCollectionTab({ projectId = 0, editable = false }) {
+  const router = useRouter();
+  const confirmModal = useConfirmModal();
   const [billings, setBillings] = useState([]);
+  const [loading, setLoading] = useState(false);
+
+  const handleGenerateProgressBilling = () => {
+    confirmModal.show(
+      'Generate Progress Billing',
+      'Are you sure you want to generate a progress billing? You will be redirected to the Sales Billing form.',
+      'Generate',
+      'primary',
+      () => async () => {
+        setLoading(true);
+        const res = await generateProgressBilling(projectId);
+        setLoading(false);
+        if (res?.data) {
+          sessionStorage.setItem('generatedBilling', JSON.stringify(res.data));
+          router.push('/finance/billings/form');
+        }
+      }
+    );
+  };
 
   useEffect(() => {
     if (!projectId) return;
@@ -34,6 +59,13 @@ export default function ProjectBillingCollectionTab({ projectId = 0 }) {
     <div className={styles.tabContent}>
       <div className={styles.headerRow}>
         <h2 className={styles.title}>Billing and Collection</h2>
+        <div className={styles.panelActions}>
+          {editable && projectId && (
+            <Button className="md" onClick={handleGenerateProgressBilling} disabled={loading}>
+              {loading ? 'Generating...' : 'Generate Progress Billing'}
+            </Button>
+          )}
+        </div>
       </div>
 
       <DataTable

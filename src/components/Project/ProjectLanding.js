@@ -2,11 +2,11 @@
 
 import React, { useMemo, useState, useContext } from 'react';
 import { useRouter } from 'next/navigation';
-import { FiEdit2, FiEye, FiFileText, FiPlay, FiCheckSquare } from 'react-icons/fi';
+import { FiEdit2, FiEye, FiFileText, FiPlay, FiCheckSquare, FiXCircle, FiArchive } from 'react-icons/fi';
 import DropdownAction from '../ui/DropdownAction/DropdownAction';
 import Landing from '../ui/Landing/Landing';
 import StatusBadge from '../ui/StatusBadge/StatusBadge';
-import { getProjects, getCompletionPDFById, startProject, completeProject } from '../../services/Project';
+import { getProjects, getCompletionPDFById, startProject, completeProject, cancelProject, closeProject } from '../../services/Project';
 import { useToast } from '../ui/Toast/Toast';
 import ConfirmModal from '../ui/ConfirmModal/ConfirmModal';
 import { AccessContext } from '@/app/contextProviders/accessContext';
@@ -81,6 +81,8 @@ export default function ProjectLanding() {
 
           const isNotStarted = status === 'NOTSTARTED';
           const isComplete = prog >= 100;
+          const isCompleted = status === 'COMPLETED';
+          const isCancelled = status === 'CANCELLED';
 
           const rowActions = [
             ...(isAllowed(PageName, 'r')
@@ -130,6 +132,50 @@ export default function ProjectLanding() {
                       const res = await completeProject(target.id);
                       if (res?.error) toast.error('Failed to complete project');
                       else { toast.success('Project marked complete'); await loadProjects(); }
+                      setLoading(false);
+                    });
+                    setIsConfirmOpen(true);
+                  },
+                }]
+              : []),
+
+            // Cancel Project — hidden when already Cancelled
+            ...(isAllowed(PageName, 'w') && !isCancelled
+              ? [{
+                  key: 'cancel',
+                  label: 'Cancel Project',
+                  icon: <FiXCircle size={14} />,
+                  onClick: () => {
+                    setConfirmTarget(item);
+                    setConfirmTitle('Cancel Project?');
+                    setConfirmMessage(`Cancel project "${item.name || item.code || ''}"?`);
+                    setConfirmAction(() => async (target) => {
+                      setLoading(true);
+                      const res = await cancelProject(target.id);
+                      if (res?.error) toast.error('Failed to cancel project');
+                      else { toast.success('Project cancelled'); await loadProjects(); }
+                      setLoading(false);
+                    });
+                    setIsConfirmOpen(true);
+                  },
+                }]
+              : []),
+
+            // Close Project — shown when status is Completed or Cancelled
+            ...(isAllowed(PageName, 'w') && (isCompleted || isCancelled)
+              ? [{
+                  key: 'close',
+                  label: 'Close Project',
+                  icon: <FiArchive size={14} />,
+                  onClick: () => {
+                    setConfirmTarget(item);
+                    setConfirmTitle('Close Project?');
+                    setConfirmMessage(`Close project "${item.name || item.code || ''}"?`);
+                    setConfirmAction(() => async (target) => {
+                      setLoading(true);
+                      const res = await closeProject(target.id);
+                      if (res?.error) toast.error('Failed to close project');
+                      else { toast.success('Project closed'); await loadProjects(); }
                       setLoading(false);
                     });
                     setIsConfirmOpen(true);

@@ -94,6 +94,7 @@ export default function ToolsInventoryForm() {
     { name: 'spacer-2', type: 'spacer', span: 'span1' },
     { name: 'name', label: 'Name', span: 'span2' },
     { name: 'quantity', label: 'Quantity', type: 'number', span: 'span2' },
+    { name: 'stockLevel', label: 'Stock Level', type: 'number', span: 'span2' },
   ];
 
   return (
@@ -106,7 +107,7 @@ export default function ToolsInventoryForm() {
         const now = new Date().toISOString().slice(0, 10);
         if (!inventoryId) {
           try {
-            const payload = { name: values.name, code: values.code || '', rackId: values.rackId, materialId: values.materialId, quantity: values.quantity };
+            const payload = { name: values.name, code: values.code || '', rackId: values.rackId, materialId: values.materialId, quantity: values.quantity, stockLevel: Number(values.stockLevel ?? values.quantity) || 0 };
             const result = await createMaterialInventory(payload);
             if (result.error) throw new Error(result.error);
             let created = null;
@@ -126,7 +127,7 @@ export default function ToolsInventoryForm() {
           }
         }
         try {
-          const payload = { name: values.name, code: values.code || '', rackId: values.rackId, materialId: values.materialId, quantity: values.quantity };
+          const payload = { name: values.name, code: values.code || '', rackId: values.rackId, materialId: values.materialId, quantity: values.quantity, stockLevel: Number(values.stockLevel) || 0 };
           const result = await updateMaterialInventory(inventoryId, payload);
           if (result.error) throw new Error(result.error);
           toast.success('Inventory record updated');

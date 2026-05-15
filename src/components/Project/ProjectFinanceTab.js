@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { getProjectFinanceByProjectId, updateProjectFinance, createProjectFinance, INITIAL_PROJECT_FINANCE, generateProgressBilling, generateDownpaymentBilling } from '../../services/ProjectFinance';
+import { getProjectFinanceByProjectId, updateProjectFinance, createProjectFinance, INITIAL_PROJECT_FINANCE, generateDownpaymentBilling } from '../../services/ProjectFinance';
 import { useRouter } from 'next/navigation';
 import { useConfirmModal } from '@/app/contextProviders/confirmModalContext';
 import styles from './ProjectDetails.module.scss';
@@ -89,23 +89,7 @@ export default function ProjectFinanceTab({ projectId, project, editable }) {
     setLoading(false);
   };
 
-  const handleGenerateProgressBilling = () => {
-    confirmModal.show(
-      'Generate Progress Billing',
-      'Are you sure you want to generate a progress billing? You will be redirected to the Sales Billing form.',
-      'Generate',
-      'primary',
-      () => async () => {
-        setLoading(true);
-        const res = await generateProgressBilling(projectId);
-        setLoading(false);
-        if (res?.data) {
-          sessionStorage.setItem('generatedBilling', JSON.stringify(res.data));
-          router.push('/finance/billings/form');
-        }
-      }
-    );
-  };
+  
 
   const handleGenerateDownpaymentBilling = () => {
     confirmModal.show(
@@ -132,7 +116,6 @@ export default function ProjectFinanceTab({ projectId, project, editable }) {
     <div className={styles.panelHeader}>
         <h3>Finance</h3>
                       <div className={styles.panelActions}>
-        {!editing && finance && <Button className="md" onClick={handleGenerateProgressBilling}>Generate Progress Billing</Button>}
         {!editing && finance && !finance.hasDownpayment && <Button className="md" onClick={handleGenerateDownpaymentBilling}>Generate Downpayment Billing</Button>}
         {editing && (
           <>

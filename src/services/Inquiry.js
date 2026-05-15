@@ -89,16 +89,49 @@ async function acknowledgeInquiry(inquiryId) {
   }
 }
 
-async function getDocumentPDFById(projectId) {
-    console.log(projectId);
-  if (!projectId) return { data: null, error: 'Missing id' };
+async function cancelInquiry(inquiryId) {
   try {
-    const url = `${API_BASE_URL}/pdf/${projectId}`;
+    const url = `${API_BASE_URL}/Cancel/${inquiryId}`;
+
     const res = await fetch(url, {
-      method: 'GET',
-      headers: { 'Content-Type': 'application/json' },
+      method: 'PUT',
+      headers: {
+        Accept: '*/*',
+      },
     });
-    handleOpenPdf(res);
+
+    let json = null;
+    try {
+      json = await res.json();
+    } catch {
+      json = null;
+    }
+
+    return { data: json, error: null };
+  } catch (error) {
+    return { data: null, error: error?.message || error };
+  }
+}
+
+async function closeInquiry(inquiryId) {
+  try {
+    const url = `${API_BASE_URL}/Close/${inquiryId}`;
+
+    const res = await fetch(url, {
+      method: 'PUT',
+      headers: {
+        Accept: '*/*',
+      },
+    });
+
+    let json = null;
+    try {
+      json = await res.json();
+    } catch {
+      json = null;
+    }
+
+    return { data: json, error: null };
   } catch (error) {
     return { data: null, error: error?.message || error };
   }
@@ -109,13 +142,17 @@ export {
   createInquiry,
   updateInquiry,
   acknowledgeInquiry,
-  getDocumentPDFById,
+  cancelInquiry,
+  closeInquiry,
 };
 
-export default {
+const InquiryService = {
   getInquiries,
   createInquiry,
   updateInquiry,
   acknowledgeInquiry,
-  getDocumentPDFById,
+  cancelInquiry,
+  closeInquiry,
 };
+
+export default InquiryService;

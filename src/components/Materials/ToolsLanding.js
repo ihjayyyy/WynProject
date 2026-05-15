@@ -74,6 +74,7 @@ export default function ToolsLanding() {
         validator: Yup.string().required('Rack is required'),
       },
       { name: 'quantity', label: 'Quantity', type: 'number', value: 0, validator: Yup.number().min(0).required('Quantity is required') },
+      { name: 'stockLevel', label: 'Stock Level', type: 'number', value: 0, validator: Yup.number().min(0).notRequired() },
     ];
   }, [inventoryModal.material, rackOptions]);
 
@@ -144,6 +145,7 @@ export default function ToolsLanding() {
               rackId: Number(val.rackId) || 0,
               materialId: Number(val.materialId) || 0,
               quantity: Number(val.quantity) || 0,
+              stockLevel: Number(val.stockLevel ?? val.quantity) || 0,
               isDefault: true,
             };
             const result = await createMaterialInventory(payload);

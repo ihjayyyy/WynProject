@@ -6,6 +6,7 @@ export const INITIAL_MATERIAL_INVENTORY = {
   rackId: 0,
   materialId: 0,
   quantity: 0,
+  stockLevel: 0,
 };
 
 async function getMaterialInventories(filters) {

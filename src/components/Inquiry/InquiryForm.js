@@ -2,11 +2,12 @@
 
 import React, { useMemo, useState, useCallback } from 'react';
 import { useRouter, useSearchParams} from 'next/navigation';
-import { FiMessageSquare } from 'react-icons/fi';
+import { FiMessageSquare, FiXCircle, FiArchive } from 'react-icons/fi';
+import { useConfirmModal } from '@/app/contextProviders/confirmModalContext';
 import EntityForm from '../EntityForm/EntityForm';
 import Button from '../ui/Button/Button';
 import { useToast } from '../ui/Toast/Toast';
-import { INITIAL_INQUIRY, getInquiries, createInquiry, updateInquiry, acknowledgeInquiry } from '../../services/Inquiry';
+import { INITIAL_INQUIRY, getInquiries, createInquiry, updateInquiry, acknowledgeInquiry, cancelInquiry, closeInquiry } from '../../services/Inquiry';
 import StatusBadge from '../ui/StatusBadge/StatusBadge';
 import { getCustomers } from '../../services/Customer';
 import { getStaffs } from '../../services/Staff';
@@ -18,6 +19,7 @@ export default function InquiryForm() {
   const inquiryId = searchParams.get('id');
   const mode = searchParams.get('mode');
   const [isEditModeLocal, setIsEditModeLocal] = useState(false);
+  const confirmModal = useConfirmModal();
   // Only allow edit mode if not acknowledged
   const [status, setStatus] = useState('');
   const [inquiries, setInquiries] = useState(null);
@@ -26,7 +28,7 @@ export default function InquiryForm() {
     const selected = (inquiries || []).find((item) => String(item.id) === String(inquiryId));
     setStatus(selected && selected.status ? String(selected.status).toLowerCase() : '');
   }, [inquiryId, inquiries]);
-  const isEditMode = (mode === 'edit' || isEditModeLocal) && status !== 'acknowledged';
+  const isEditMode = (mode === 'edit' || isEditModeLocal) && !['acknowledged', 'cancelled', 'closed'].includes(status);
   const [customerOptions, setCustomerOptions] = useState([]);
   const [customersData, setCustomersData] = useState([]);
 
@@ -120,9 +122,53 @@ export default function InquiryForm() {
     const selected = (inquiries || []).find((item) => String(item.id) === String(inquiryId));
     const status = selected && selected.status ? String(selected.status).toLowerCase() : '';
     const acknowledge = status === 'acknowledged';
-    const readOnly = exists && (!isEditMode || acknowledge);
-    return { isReadOnly: readOnly, canEnterEditMode: exists && !acknowledge, isAcknowledge: acknowledge };
+    const nonEditable = acknowledge || status === 'cancelled' || status === 'closed';
+    const readOnly = exists && (!isEditMode || nonEditable);
+    return { isReadOnly: readOnly, canEnterEditMode: exists && !nonEditable, isAcknowledge: acknowledge };
   }, [inquiryId, isEditMode, inquiries]);
+
+  const handleCancel = async () => {
+    confirmModal.show(
+      'Cancel Inquiry',
+      `Are you sure you want to cancel inquiry "${inquiryId}"?`,
+      'Confirm',
+      'primary',
+      () => async () => {
+        const res = await cancelInquiry(inquiryId);
+        if (res?.error) {
+          toast.error('Failed to cancel inquiry');
+        } else {
+          toast.success('Inquiry cancelled');
+          const refreshed = await getInquiries();
+          if (!refreshed.error) setInquiries(refreshed.data || []);
+            setIsEditModeLocal(false);
+            setStatus('cancelled');
+        }
+      }
+    );
+  };
+
+  const handleClose = async () => {
+    confirmModal.show(
+      'Close Inquiry',
+      `Are you sure you want to close inquiry "${inquiryId}"?`,
+      'Confirm',
+      'primary',
+      () => async () => {
+        const res = await closeInquiry(inquiryId);
+        if (res?.error) {
+          toast.error('Failed to close inquiry');
+        } else {
+          toast.success('Inquiry closed');
+          const refreshed = await getInquiries();
+          if (!refreshed.error) setInquiries(refreshed.data || []);
+          setIsEditModeLocal(false);
+          setStatus('closed');
+          router.push('/inquiry');
+        }
+      }
+    );
+  };
 
   const formTitle = useMemo(() => {
     if (!inquiryId) return 'Inquiry Form';
@@ -247,6 +293,14 @@ export default function InquiryForm() {
           <Button type="submit" variant="save">Create</Button>
         ) : (
           <>
+            {/* Cancel/Close actions */}
+            {inquiryId && (status || '').toLowerCase() !== 'cancelled' && (
+              <Button variant="outlineDanger" icon={<FiXCircle />} onClick={handleCancel}>Cancel Inquiry</Button>
+            )}
+            {inquiryId && (status || '').toLowerCase() === 'cancelled' && (
+              <Button variant="primary" icon={<FiArchive />} onClick={handleClose}>Close Inquiry</Button>
+            )}
+
             {isReadOnly ? (
               canEnterEditMode ? (
                 <Button variant="outlinedPrimary" onClick={() => setIsEditModeLocal(true)}>Edit</Button>

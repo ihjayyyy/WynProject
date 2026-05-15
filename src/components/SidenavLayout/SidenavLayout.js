@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { sidenavItems } from './sidenavData';
 import Image from 'next/image';
 import Button from '../ui/Button/Button';
-import { useState, useContext, useCallback, useMemo } from 'react';
+import { useState, useContext, useCallback, useMemo, useRef } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import { AccessContext } from '@/app/contextProviders/accessContext';
 import { clearAuthData } from '@/services/Auth';
@@ -27,6 +27,8 @@ export default function SidenavLayout({ children }) {
   const [expandedParents, setExpandedParents] = useState(new Set());
   const pathname = usePathname();
   const pathLower = pathname?.toLowerCase();
+  const footerRef = useRef(null);
+  const footerDropdownRef = useRef(null);
 
   const handleLogout = useCallback(() => {
     clearAuthData();
@@ -46,6 +48,7 @@ export default function SidenavLayout({ children }) {
         label: 'Logout',
         icon: <FiLogOut size={14} />,
         onClick: handleLogout,
+        destructive: true,
       },
     ],
     [router, handleLogout],
@@ -387,8 +390,16 @@ export default function SidenavLayout({ children }) {
         </nav>
 
         {/* Footer Section */}
-        <footer className={styles.sidebarFooter}>
-          <div className={styles.userProfile}>
+        <footer className={styles.sidebarFooter} ref={footerRef}>
+          <div className={styles.userProfile} onClick={(e) => {
+            if (isCollapsed) return;
+            // if click is already on the dropdown trigger/menu, let it handle itself
+            if (footerDropdownRef.current && footerDropdownRef.current.contains(e.target)) return;
+            // open/toggle the dropdown by clicking its trigger button;
+            // containsRef on DropdownAction ensures the original click doesn't cause onDoc to close it
+            const btn = footerDropdownRef.current?.querySelector('button');
+            if (btn) btn.click();
+          }} style={{ cursor: isCollapsed ? 'default' : 'pointer' }}>
             <Image
               src="/ODR-Logo.png"
               alt="User Avatar"
@@ -403,7 +414,7 @@ export default function SidenavLayout({ children }) {
               </div>
             )}
 
-            {!isCollapsed && <DropdownAction items={actionItems} />}
+            {!isCollapsed && <div ref={footerDropdownRef}><DropdownAction items={actionItems} containsRef={footerRef} /></div>}
           </div>
         </footer>
       </aside>

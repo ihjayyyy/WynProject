@@ -2,11 +2,11 @@
 
 import React, { useMemo, useState, useContext } from 'react';
 import { useRouter } from 'next/navigation';
-import { FiCheck, FiCheckCircle, FiEdit2, FiEye, FiFileText, FiSend, FiX, FiXCircle } from 'react-icons/fi';
+import { FiCheck, FiCheckCircle, FiEdit2, FiEye, FiFileText, FiSend, FiX, FiXCircle, FiArchive } from 'react-icons/fi';
 import DropdownAction from '../ui/DropdownAction/DropdownAction';
 import Landing from '../ui/Landing/Landing';
 import StatusBadge from '../ui/StatusBadge/StatusBadge';
-import { getProposals, submitProposal, approveProposal, rejectProposal, winProposal, loseProposal, getProposalPDFById } from '../../services/Proposal';
+import { getProposals, submitProposal, approveProposal, rejectProposal, winProposal, loseProposal, getProposalPDFById, cancelProposal, closeProposal } from '../../services/Proposal';
 import { convertProposal } from '../../services/Project';
 import { useToast } from '../ui/Toast/Toast';
 import ConfirmModal from '../ui/ConfirmModal/ConfirmModal';
@@ -15,7 +15,7 @@ import InvalidPage from '@/components/InvalidPage/page';
 
 const baseColumns = [
   { header: 'Id', key: 'id' },
-  { header: 'Code', key: 'code' },
+  { header: 'Proposal No', key: 'proposalNo' },
   { header: 'Name', key: 'name' },
   { header: 'Customer', key: 'customerName' },
   { header: 'Contact', key: 'contactNumber' },
@@ -56,7 +56,7 @@ export default function ProposalLanding() {
     () => [
       ...(isAllowed(PageName, 'r') ? [{ key: 'view', label: 'View', icon: <FiEye size={14} />, onClick: (item) => router.push(`/projects/proposal/proposalform?id=${item.id}`) }] : []),
       ...(isAllowed(PageName, 'r') ? [{ key: 'viewpdf', label: 'Generate Proposal Document', icon: <FiFileText size={14} />, onClick: (item) => (getProposalPDF(item.id))}] : []),
-      ...(isAllowed(PageName, 'w') ? [{ key: 'edit', label: 'Edit', icon: <FiEdit2 size={14} />, onClick: (item) => router.push(`/projects/proposal/proposalform?id=${item.id}&mode=edit`) }] : []),
+      ...(isAllowed(PageName, 'w') ? [{ key: 'edit', label: 'Edit', icon: <FiEdit2 size={14} />, onClick: (item) => router.push(`/projects/proposal/proposalform?id=${item.id}&mode=edit`), hidden: (item) => { const s = String(item.proposalStatus || '').toLowerCase(); return s !== 'draft'; } }] : []),
     ],
     [isAllowed, router]
   );
@@ -204,6 +204,46 @@ export default function ProposalLanding() {
           setIsConfirmOpen(true);
         }});
       }
+
+      // Cancel Proposal — hidden when already cancelled
+      const isCancelled = proposalStatus === 'cancelled';
+      if (!isCancelled && isAllowed(PageName, 'w')) {
+        itemsFor.push({ key: 'cancel', label: 'Cancel Proposal', icon: <FiXCircle size={14} />, onClick: (it) => {
+          setConfirmTarget(it);
+          setConfirmTitle('Cancel Proposal?');
+          setConfirmMessage(`Are you sure you want to cancel proposal "${it.name || it.code || ''}"?`);
+          setConfirmIncludeCreateProject(false);
+          setCreateProjectChecked(false);
+          setConfirmAction(() => async (target) => {
+            setLoading(true);
+            const res = await cancelProposal(target.id);
+            if (res?.error) toast.error('Failed to cancel proposal');
+            else { toast.success('Proposal cancelled'); await loadProposals(); }
+            setLoading(false);
+          });
+          setIsConfirmOpen(true);
+        }});
+      }
+
+      // Close Proposal — shown only when status is cancelled
+      if (isCancelled && isAllowed(PageName, 'w')) {
+        itemsFor.push({ key: 'close', label: 'Close Proposal', icon: <FiArchive size={14} />, onClick: (it) => {
+          setConfirmTarget(it);
+          setConfirmTitle('Close Proposal?');
+          setConfirmMessage(`Are you sure you want to close proposal "${it.name || it.code || ''}"?`);
+          setConfirmIncludeCreateProject(false);
+          setCreateProjectChecked(false);
+          setConfirmAction(() => async (target) => {
+            setLoading(true);
+            const res = await closeProposal(target.id);
+            if (res?.error) toast.error('Failed to close proposal');
+            else { toast.success('Proposal closed'); await loadProposals(); }
+            setLoading(false);
+          });
+          setIsConfirmOpen(true);
+        }});
+      }
+
       return <DropdownAction item={item} items={itemsFor} />;
     } }], [actionItems, isAllowed, loadProposals, toast]);
 

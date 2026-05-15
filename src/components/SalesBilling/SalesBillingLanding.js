@@ -3,7 +3,7 @@
 import React, { useMemo, useState, useEffect, useCallback } from 'react';
 import SalesBillingService from '@/services/SalesBilling';
 import { useRouter } from 'next/navigation';
-import { FiEdit2, FiEye, FiCheckCircle, FiFileText } from 'react-icons/fi';
+import { FiEdit2, FiEye, FiCheckCircle, FiFileText, FiXCircle, FiArchive } from 'react-icons/fi';
 import DropdownAction from '../ui/DropdownAction/DropdownAction';
 import Landing from '../ui/Landing/Landing';
 import { useConfirmModal } from '@/app/contextProviders/confirmModalContext';
@@ -42,6 +42,46 @@ export default function SalesBillingLanding() {
     });
   }, []);
 
+  const handleCancel = useCallback((item) => {
+    confirmModal.show(
+      'Cancel Billing',
+      `Are you sure you want to cancel billing "${item.salesBillingNo || item.id}"?`,
+      'Confirm',
+      'primary',
+      () => async () => {
+        const { error } = await SalesBillingService.cancelSalesBilling(item.id);
+        if (!error) {
+          setBillings((prev) => prev.map((b) => (b.id === item.id ? { ...b, status: 'Cancelled' } : b)));
+          toast.success('Billing cancelled.');
+        } else {
+          toast.error('Failed to cancel billing.');
+        }
+      }
+    );
+  }, [confirmModal, toast]);
+
+  const handleClose = useCallback((item) => {
+    confirmModal.show(
+      'Close Billing',
+      `Are you sure you want to close billing "${item.salesBillingNo || item.id}"?`,
+      'Confirm',
+      'primary',
+      () => async () => {
+        const { error } = await SalesBillingService.closeSalesBilling(item.id);
+        if (!error) {
+          toast.success('Billing closed.');
+          // refetch list
+          const res = await SalesBillingService.getSalesBilling();
+          if (!res?.error) {
+            setBillings(Array.isArray(res.data) ? res.data : (res.data ? [res.data] : []));
+          }
+        } else {
+          toast.error('Failed to close billing.');
+        }
+      }
+    );
+  }, [confirmModal, toast]);
+
   const handleMarkAsBilled = useCallback((item) => {
     confirmModal.show(
       'Mark as Billed',
@@ -66,8 +106,18 @@ export default function SalesBillingLanding() {
     () => [
       { key: 'view', label: 'View', icon: <FiEye size={14} />, onClick: (item) => router.push(`/finance/billings/form?id=${item.id}`) },
       { key: 'viewpdf', label: 'Generate Billing Document', icon: <FiFileText size={14} />, onClick: (item) => (getPDF(item.id))},
-      { key: 'edit', label: 'Edit', icon: <FiEdit2 size={14} />, onClick: (item) => router.push(`/finance/billings/form?id=${item.id}&mode=edit`), hidden: (item) => item.status?.toLowerCase() === 'billed' },
+      { key: 'edit', label: 'Edit', icon: <FiEdit2 size={14} />, onClick: (item) => router.push(`/finance/billings/form?id=${item.id}&mode=edit`), hidden: (item) => {
+        const s = (item.status || '').toString().toLowerCase();
+        return s === 'billed' || s === 'cancelled' || s === 'closed';
+      } },
       { key: 'markAsBilled', label: 'Mark as Billed', icon: <FiCheckCircle size={14} />, onClick: handleMarkAsBilled, hidden: (item) => item.status?.toLowerCase() !== 'draft' },
+      // Cancel Billing - hidden when already cancelled
+      { key: 'cancel', label: 'Cancel Billing', icon: <FiXCircle size={14} />, onClick: handleCancel, hidden: (item) => (item.status || '').toString().toLowerCase() === 'cancelled' },
+      // Close Billing - shown only when status is Cancelled
+      { key: 'close', label: 'Close Billing', icon: <FiArchive size={14} />, onClick: handleClose, hidden: (item) => {
+        const s = (item.status || '').toString().toLowerCase();
+        return s !== 'cancelled';
+      } },
     ],
     [router, handleMarkAsBilled]
   );
