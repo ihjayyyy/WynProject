@@ -127,7 +127,7 @@ export default function UserProfile() {
     {
       name: 'employeeNumber',
       label: 'Employee Number',
-      readOnly: true,
+      readOnly: !isEditMode,
       readOnlyDisplay: (allValues) => {
         const value = allValues.employeeNumber;
         return !value || value === 'string' ? '—' : value;
@@ -150,7 +150,7 @@ export default function UserProfile() {
       name: 'email',
       label: 'Email',
       type: 'email',
-      readOnly: !isEditMode,
+      readOnly: true,
       span: 'span2',
     },
     { name: 'role', label: 'Role', readOnly: true, span: 'span2' },

@@ -8,7 +8,7 @@ import { FiCheckCircle, FiEdit2, FiEye, FiXCircle } from 'react-icons/fi';
 import DropdownAction from '../ui/DropdownAction/DropdownAction';
 
 const baseColumns = [
-  { header: 'User Id', key: 'userId' },
+  // { header: 'User Id', key: 'userId' },
   { header: 'Employee No.', key: 'employeeNumber' },
   { header: 'First Name', key: 'firstName' },
   { header: 'Last Name', key: 'lastName' },
@@ -90,14 +90,16 @@ export default function UsersLanding() {
         label: 'View',
         icon: <FiEye size={14} />,
         onClick: (item) =>
-          router.push(`/customers/customersform?id=${item.id}`),
+          router.push(`/maintainance/users/usersform?id=${item.userId}`),
       },
       {
         key: 'edit',
         label: 'Edit',
         icon: <FiEdit2 size={14} />,
         onClick: (item) =>
-          router.push(`/customers/customersform?id=${item.id}&mode=edit`),
+          router.push(
+            `/maintainance/users/usersform?id=${item.userId}&mode=edit`,
+          ),
       },
     ],
     [router],
@@ -147,7 +149,7 @@ export default function UsersLanding() {
 
   const filterFn = (item, keyword) => {
     return [
-      item.userId,
+      // item.userId,
       item.employeeNumber,
       item.firstName,
       item.lastName,
@@ -165,6 +167,7 @@ export default function UsersLanding() {
       stats={userStats}
       searchPlaceholder="Search user"
       newButtonLabel="Add User"
+      onNew={() => router.push('/maintainance/users/usersform')}
       emptyMessage="No users found"
       filterFn={filterFn}
     />

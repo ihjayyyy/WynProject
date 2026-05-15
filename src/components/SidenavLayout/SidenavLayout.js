@@ -7,6 +7,7 @@ import Button from '../ui/Button/Button';
 import { useState, useContext, useCallback, useMemo, useRef } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import { AccessContext } from '@/app/contextProviders/accessContext';
+import ConfirmModal from '../ui/ConfirmModal/ConfirmModal';
 import { clearAuthData } from '@/services/Auth';
 import {
   FiChevronLeft,
@@ -21,6 +22,7 @@ import DropdownAction from '../ui/DropdownAction/DropdownAction';
 export default function SidenavLayout({ children }) {
   const router = useRouter();
   const { user, getAccess } = useContext(AccessContext);
+  const [isLogoutConfirmOpen, setLogoutConfirmOpen] = useState(false);
 
   const [isCollapsed, setIsCollapsed] = useState(true);
   const [isLogoHovered, setIsLogoHovered] = useState(false);
@@ -31,9 +33,18 @@ export default function SidenavLayout({ children }) {
   const footerDropdownRef = useRef(null);
 
   const handleLogout = useCallback(() => {
+    setLogoutConfirmOpen(true);
+  }, []);
+
+  const confirmLogout = useCallback(() => {
+    setLogoutConfirmOpen(false);
     clearAuthData();
     router.push('/login');
   }, [router]);
+
+  const cancelLogout = useCallback(() => {
+    setLogoutConfirmOpen(false);
+  }, []);
 
   const actionItems = useMemo(
     () => [
@@ -391,15 +402,22 @@ export default function SidenavLayout({ children }) {
 
         {/* Footer Section */}
         <footer className={styles.sidebarFooter} ref={footerRef}>
-          <div className={styles.userProfile} onClick={(e) => {
-            if (isCollapsed) return;
-            // if click is already on the dropdown trigger/menu, let it handle itself
-            if (footerDropdownRef.current && footerDropdownRef.current.contains(e.target)) return;
-            // open/toggle the dropdown by clicking its trigger button;
-            // containsRef on DropdownAction ensures the original click doesn't cause onDoc to close it
-            const btn = footerDropdownRef.current?.querySelector('button');
-            if (btn) btn.click();
-          }} style={{ cursor: isCollapsed ? 'default' : 'pointer' }}>
+          <div
+            className={styles.userProfile}
+            onClick={(e) => {
+              if (isCollapsed) return;
+              // if click is already on the dropdown trigger/menu, let it handle itself
+              if (
+                footerDropdownRef.current &&
+                footerDropdownRef.current.contains(e.target)
+              )
+                return;
+              // open/toggle the dropdown by clicking its trigger button;
+              // containsRef on DropdownAction ensures the original click doesn't cause onDoc to close it
+              const btn = footerDropdownRef.current?.querySelector('button');
+              if (btn) btn.click();
+            }}
+            style={{ cursor: isCollapsed ? 'default' : 'pointer' }}>
             <Image
               src="/ODR-Logo.png"
               alt="User Avatar"
@@ -414,12 +432,25 @@ export default function SidenavLayout({ children }) {
               </div>
             )}
 
-            {!isCollapsed && <div ref={footerDropdownRef}><DropdownAction items={actionItems} containsRef={footerRef} /></div>}
+            {!isCollapsed && (
+              <div ref={footerDropdownRef}>
+                <DropdownAction items={actionItems} containsRef={footerRef} />
+              </div>
+            )}
           </div>
         </footer>
       </aside>
 
       <main className={styles.mainContent}>{children}</main>
+      <ConfirmModal
+        open={isLogoutConfirmOpen}
+        title="Confirm Logout"
+        message="Are you sure you want to log out?"
+        confirmText="Logout"
+        confirmVariant="danger"
+        onConfirm={confirmLogout}
+        onCancel={cancelLogout}
+      />
     </div>
   );
 }
