@@ -1,5 +1,14 @@
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL + '/User';
 
+export const INITIAL_USER = {
+  employeeNumber: '',
+  email: '',
+  firstName: '',
+  lastName: '',
+  password: '',
+  role: 0,
+};
+
 export async function getCurrentUser() {
   try {
     // const res = await fetch(API_BASE_URL, {
@@ -256,7 +265,7 @@ export async function getUserByGuid(guid) {
     }
 
     return {
-      data: json ?? (text ? { message: text } : null),
+      data: json && json.value ? json.value : json,
       error: null,
     };
   } catch (error) {
@@ -331,6 +340,80 @@ export async function updateUser(userId, payload) {
 
     return {
       data: json ?? (text ? { message: text } : { isSuccess: true }),
+      error: null,
+    };
+  } catch (error) {
+    return { data: null, error: error?.message || error };
+  }
+}
+
+export async function registerUser(payload) {
+  try {
+    const res = await fetch(`${API_BASE_URL}/Register`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+
+    const text = await res.text();
+    let json = null;
+    try {
+      json = text ? JSON.parse(text) : null;
+    } catch (parsingError) {
+      // Non-JSON response body is allowed.
+    }
+
+    const bodyError =
+      (json && typeof json === 'object' && (json.error || json.message)) ||
+      (typeof json === 'string' ? json : null) ||
+      text;
+
+    if (!res.ok) {
+      return {
+        data: json ?? (text ? { message: text } : null),
+        error: bodyError || `Request failed with status ${res.status}`,
+      };
+    }
+
+    return {
+      data: json ?? (text ? { message: text } : { isSuccess: true }),
+      error: null,
+    };
+  } catch (error) {
+    return { data: null, error: error?.message || error };
+  }
+}
+
+export async function deactivateActivateUser(email) {
+  try {
+    const res = await fetch(`${API_BASE_URL}/DeactivateUser`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email }),
+    });
+
+    const text = await res.text();
+    let json = null;
+    try {
+      json = text ? JSON.parse(text) : null;
+    } catch (parsingError) {
+      // Non-JSON response body is allowed.
+    }
+
+    const bodyError =
+      (json && typeof json === 'object' && (json.error || json.message)) ||
+      (typeof json === 'string' ? json : null) ||
+      text;
+
+    if (!res.ok) {
+      return {
+        data: json ?? (text ? { message: text } : null),
+        error: bodyError || `Request failed with status ${res.status}`,
+      };
+    }
+
+    return {
+      data: json && json.value ? json.value : json,
       error: null,
     };
   } catch (error) {
