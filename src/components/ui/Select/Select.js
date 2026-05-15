@@ -74,7 +74,7 @@ export default function Select({ id, value, onChange, options = [], className, s
     return () => document.removeEventListener('keydown', onKey);
   }, [open]);
 
-  const selectedOption = options.find(o => o.value === value);
+  const selectedOption = options.find(o => String(o.value) === String(value));
 
   function handleSelect(val) {
     // emulate native select event shape
@@ -129,12 +129,12 @@ export default function Select({ id, value, onChange, options = [], className, s
           {filtered.length === 0 && (
             <li className={styles.noResults}>No results found</li>
           )}
-          {filtered.map((opt, i) => (
+            {filtered.map((opt, i) => (
             <li
               key={`${opt.value}_${i}`}
               role="option"
-              aria-selected={opt.value === value}
-              className={styles.dropdownItem + (opt.value === value ? ` ${styles.selectedItem}` : '')}
+              aria-selected={String(opt.value) === String(value)}
+              className={styles.dropdownItem + (String(opt.value) === String(value) ? ` ${styles.selectedItem}` : '')}
               onClick={() => handleSelect(opt.value)}
             >
               {opt.label}

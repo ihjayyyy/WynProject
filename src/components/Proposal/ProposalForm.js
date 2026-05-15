@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useContext, useMemo, useState } from 'react';
+import React, { useContext, useMemo, useState, version } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { FiCheck, FiFileText, FiSend, FiX, FiXCircle, FiArchive } from 'react-icons/fi';
 import StatusBadge from '../ui/StatusBadge/StatusBadge';
@@ -10,7 +10,7 @@ import inputStyles from '../ui/Input/Input.module.scss';
 import ProposalMaterialsTable from './ProposalMaterialsTable';
 import Button from '../ui/Button/Button';
 import { useToast } from '../ui/Toast/Toast';
-import { INITIAL_PROPOSAL, getProposalById, createProposal, updateProposal, submitProposal, approveProposal, rejectProposal, winProposal, loseProposal, cancelProposal, closeProposal } from '../../services/Proposal';
+import { INITIAL_PROPOSAL, getProposalById, createProposal, updateProposal, submitProposal, approveProposal, rejectProposal, winProposal, loseProposal, cancelProposal, closeProposal, reviseProposal, createRevisedProposal } from '../../services/Proposal';
 import { getParameter } from '../../services/Parameter';
 import { convertProposal } from '../../services/Project';
 import ConfirmModal from '../ui/ConfirmModal/ConfirmModal';
@@ -29,15 +29,17 @@ export default function ProposalForm() {
   const searchParams = useSearchParams();
   const proposalId = searchParams.get('id');
   const mode = searchParams.get('mode');
+  const isReviseMode = mode === 'revise';
   const [isEditModeLocal, setIsEditModeLocal] = useState(false);
-  const isEditMode = mode === 'edit' || isEditModeLocal;
+  const isEditMode = mode === 'edit' || mode === 'revise' || isEditModeLocal;
 
+  // null = not yet loaded
   const [items, setItems] = useState(null);
   const [customers, setCustomers] = useState([]);
   const [inquiries, setInquiries] = useState([]);
   const [childrenState, setChildrenState] = useState([]);
   const [deletedChildrenState, setDeletedChildrenState] = useState([]);
-  const [isAdminView, setIsAdminView] = useState(false); // toggle for testing admin view
+  const [isAdminView, setIsAdminView] = useState(false);
   const [actionLoading, setActionLoading] = useState(false);
   const confirmModal = useConfirmModal();
   const [richText, setRichText] = useState({
@@ -56,14 +58,36 @@ export default function ProposalForm() {
 
   React.useEffect(() => {
     let mounted = true;
-    if (!proposalId) return;
+    if (!proposalId) {
+      // No proposalId = create mode, set items to [] so null guard passes
+      setItems([]);
+      return;
+    }
     (async () => {
-      const res = await getProposalById(proposalId);
-      if (!mounted) return;
-      if (!res.error) setItems(res.data || []);
+      if (isReviseMode) {
+        const res = await reviseProposal(proposalId);
+        if (!mounted) return;
+        if (!res.error) {
+          const actual = res.data?.value;
+          setItems(actual ? [actual] : []);
+        } else {
+          setItems([]);
+        }
+      } else {
+        const res = await getProposalById(proposalId);
+        if (!mounted) return;
+        if (!res.error) {
+          const d = res.data;
+          if (Array.isArray(d)) setItems(d);
+          else if (d === null || d === undefined) setItems([]);
+          else setItems([d]);
+        } else {
+          setItems([]);
+        }
+      }
     })();
     return () => (mounted = false);
-  }, [proposalId]);
+  }, [proposalId, isReviseMode]);
 
   React.useEffect(() => {
     let mounted = true;
@@ -82,32 +106,39 @@ export default function ProposalForm() {
         const res = await getInquiries();
         if (!mounted) return;
         if (!res.error && Array.isArray(res.data)) setInquiries(res.data || []);
-      } catch (err) {
-        // ignore
-      }
+      } catch (err) {}
     })();
     return () => (mounted = false);
   }, []);
 
   const initialValues = useMemo(() => {
     if (!proposalId) return INITIAL_PROPOSAL;
-    const selected = (items || []).find((it) => String(it.id) === String(proposalId));
+
+    if (isReviseMode) {
+      const d = Array.isArray(items) ? items[0] : items;
+      if (!d) return INITIAL_PROPOSAL;
+      return d;
+    }
+
+    let selected;
+    if (Array.isArray(items)) {
+      selected = items.find((it) => String(it.id) === String(proposalId));
+    } else if (items && typeof items === 'object') {
+      selected = String(items.id) === String(proposalId) ? items : undefined;
+    }
     return selected || INITIAL_PROPOSAL;
-  }, [proposalId, items]);
+  }, [proposalId, items, isReviseMode]);
 
   React.useEffect(() => {
     setChildrenState(initialValues?.children || []);
     setDeletedChildrenState([]);
 
-    console.log('Initial proposal values:', initialValues); // debug log
-    // Only fetch parameter defaults if creating a new proposal
-    if (initialValues.id === 0) {
+    console.log('Initial proposal values:', initialValues);
+    if (initialValues.id === 0 && !isReviseMode) {
       getParameter('Proposal').then((res) => {
         if (res && res.data && Array.isArray(res.data)) {
           const paramMap = {};
-          res.data.forEach((item) => {
-            paramMap[item.name] = item.value;
-          });
+          res.data.forEach((item) => { paramMap[item.name] = item.value; });
           setRichText({
             miscellaneousDescription: paramMap.MiscellaneousDescription || '',
             scopeOfWorkDescription: paramMap.ScopeOfWorkDescription || '',
@@ -115,10 +146,7 @@ export default function ProposalForm() {
             modeOfPaymentDescription: paramMap.ModeOfPaymentDescription || '',
             workDurationDescription: paramMap.WorkDurationDescription || '',
           });
-          setExtraFields((prev) => ({
-            ...prev,
-            miscellaneousTitle: paramMap.MiscellaneousTitle || '',
-          }));
+          setExtraFields((prev) => ({ ...prev, miscellaneousTitle: paramMap.MiscellaneousTitle || '' }));
         }
         setParameterDefaultsLoaded(true);
       });
@@ -136,20 +164,46 @@ export default function ProposalForm() {
       });
       setParameterDefaultsLoaded(true);
     }
-  }, [initialValues, parameterDefaultsLoaded]);
+  }, [initialValues]);
 
-  // dedupe deleted children by id (when present) or by code+name+parentId for unsaved items
+  // Normalize top-level date-only fields for inputs (YYYY-MM-DD)
+  const toDateOnlyString = (val) => {
+    if (!val && val !== 0) return '';
+    try {
+      const d = new Date(val);
+      if (isNaN(d.getTime())) return '';
+      const yyyy = d.getFullYear();
+      const mm = String(d.getMonth() + 1).padStart(2, '0');
+      const dd = String(d.getDate()).padStart(2, '0');
+      return `${yyyy}-${mm}-${dd}`;
+    } catch (err) {
+      return '';
+    }
+  };
+
+  const normalizedInitialValues = useMemo(() => {
+    if (!initialValues) return initialValues;
+    return {
+      ...initialValues,
+      forecastedStartDate: toDateOnlyString(initialValues.forecastedStartDate),
+      forecastedEndDate: toDateOnlyString(initialValues.forecastedEndDate),
+      expirationDate: toDateOnlyString(initialValues.expirationDate),
+    };
+  }, [initialValues]);
+
   const dedupeDeleted = (arr = []) => {
     const seen = new Map();
     (arr || []).forEach((c) => {
       if (!c) return;
-      const key = (c.id && Number(c.id) !== 0) ? `id:${Number(c.id)}` : `u:${c.code||''}|${c.name||''}|${c.parentId||''}`;
+      const key = (c.id && Number(c.id) !== 0) ? `id:${Number(c.id)}` : `u:${c.code || ''}|${c.name || ''}|${c.parentId || ''}`;
       if (!seen.has(key)) seen.set(key, c);
     });
     return Array.from(seen.values());
   };
 
   const { isReadOnly, canEnterEditMode, isDraft } = useMemo(() => {
+    if (isReviseMode) return { isReadOnly: false, canEnterEditMode: false, isDraft: true };
+
     const exists = Boolean(proposalId && (items || []).some((item) => String(item.id) === String(proposalId)));
     const selected = (items || []).find((item) => String(item.id) === String(proposalId));
     const status = selected && selected.proposalStatus ? String(selected.proposalStatus) : '';
@@ -157,12 +211,13 @@ export default function ProposalForm() {
     const nonEditable = ['cancelled', 'closed'].includes(status.toLowerCase());
     const readOnly = exists && (!isEditMode || !draft || nonEditable);
     return { isReadOnly: readOnly, canEnterEditMode: exists && draft && !nonEditable, isDraft: draft };
-  }, [proposalId, isEditMode, items]);
+  }, [proposalId, isEditMode, items, isReviseMode]);
 
   const status = useMemo(() => {
+    if (isReviseMode) return 'draft';
     const selected = (items || []).find((item) => String(item.id) === String(proposalId));
     return selected && selected.proposalStatus ? String(selected.proposalStatus).toLowerCase() : '';
-  }, [proposalId, items]);
+  }, [proposalId, items, isReviseMode]);
 
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
   const [confirmTitle, setConfirmTitle] = useState('');
@@ -171,6 +226,14 @@ export default function ProposalForm() {
 
   const formTitle = useMemo(() => {
     if (!proposalId) return 'Proposal Form';
+    if (isReviseMode) {
+      return (
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <span>Revise Proposal</span>
+          <StatusBadge status="draft" />
+        </div>
+      );
+    }
     const titleText = (initialValues && (initialValues.proposalNo || initialValues.code)) || (isEditMode ? 'Edit Proposal' : 'View Proposal');
     return (
       <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -178,7 +241,7 @@ export default function ProposalForm() {
         {status && <StatusBadge status={status} />}
       </div>
     );
-  }, [proposalId, isEditMode, initialValues, status]);
+  }, [proposalId, isEditMode, isReviseMode, initialValues, status]);
 
   const customerOptions = customers.map((c) => ({ value: c.id, label: c.customerName || c.name || c.code }));
   const inquiryOptions = inquiries.map((q) => ({ value: q.id, label: q.reference || q.code || q.name || String(q.id) }));
@@ -192,43 +255,37 @@ export default function ProposalForm() {
   }, [childrenState]);
 
   const fields = [
-
-    { name: 'inquiryId', label: 'Inquiry', type: 'select', options: inquiryOptions, searchable: true, placeholder: 'Select inquiry (optional)', span: 'span1', onChange: (val, values, setValues) => {
-      const sel = (inquiries || []).find((q) => String(q.id) === String(val));
-      if (sel) {
-        setValues({
-          ...values,
-          inquiryId: sel.id,
-          // FIX: use null instead of '' when customerId is missing
-          customerId: sel.customerId != null ? Number(sel.customerId) : null,
-          customerName: sel.customerName || sel.name || '',
-          customerCode: sel.customerCode || sel.code || '',
-          code: sel.code || '',
-          contactNumber: sel.contactNumber || values.contactNumber || '',
-          address: sel.address || values.address || '',
-          contactPerson: sel.contactPerson || values.contactPerson || '',
-          email: sel.email || values.email || '',
-          customerReferenceNumber: sel.reference || sel.code || values.customerReferenceNumber || '',
-        });
-      }
-    } },
+    {
+      name: 'inquiryId', label: 'Inquiry', type: 'select', options: inquiryOptions, searchable: true,
+      placeholder: 'Select inquiry (optional)', span: 'span1',
+      onChange: (val, values, setValues) => {
+        const sel = (inquiries || []).find((q) => String(q.id) === String(val));
+        if (sel) {
+          setValues({
+            ...values,
+            inquiryId: sel.id,
+            customerId: sel.customerId != null ? Number(sel.customerId) : null,
+            customerName: sel.customerName || sel.name || '',
+            customerCode: sel.customerCode || sel.code || '',
+            code: sel.code || '',
+            contactNumber: sel.contactNumber || values.contactNumber || '',
+            address: sel.address || values.address || '',
+            contactPerson: sel.contactPerson || values.contactPerson || '',
+            email: sel.email || values.email || '',
+            customerReferenceNumber: sel.reference || sel.code || values.customerReferenceNumber || '',
+          });
+        }
+      },
+    },
     { name: 'spacer-1', type: 'spacer', span: 'span1' },
     { name: 'proposalNo', label: 'Proposal Number', span: 'span1', readOnly: true },
-
-   
     { name: 'name', label: 'Proposal Name', span: 'span1' },
     { name: 'spacer-2', type: 'spacer', span: 'span1' },
-    { name: 'customerReferenceNumber', label: 'Customer Reference No.', span: 'span1', hidden:true },
+    { name: 'customerReferenceNumber', label: 'Customer Reference No.', span: 'span1', hidden: true },
     { name: 'forecastedStartDate', label: 'Forecast Start', type: 'date', span: 'span1' },
-
     {
-      name: 'customerId',
-      label: 'Company Name',
-      type: 'select',
-      options: customerOptions,
-      searchable: true,
-      placeholder: 'Select customer',
-      span: 'span1',
+      name: 'customerId', label: 'Company Name', type: 'select', options: customerOptions,
+      searchable: true, placeholder: 'Select customer', span: 'span1',
       onChange: (val, values, setValues) => {
         const numVal = val !== undefined && val !== null && val !== '' ? Number(val) : null;
         const sel = numVal != null ? customers.find((c) => c.id === numVal) : null;
@@ -245,33 +302,19 @@ export default function ProposalForm() {
             email: sel.email || '',
           });
         } else {
-          // FIX: use null instead of '' when clearing customer fields
-          setValues({
-            ...values,
-            customerId: null,
-            customerCode: '',
-            customerName: '',
-            contactNumber: '',
-            address: '',
-            email: '',
-          });
+          setValues({ ...values, customerId: null, customerCode: '', customerName: '', contactNumber: '', address: '', email: '' });
         }
       },
     },
     { name: 'spacer-3', type: 'spacer', span: 'span1' },
     { name: 'forecastedEndDate', label: 'Forecast End', type: 'date', span: 'span1' },
-
     { name: 'customerCode', label: 'Customer Code', span: 'span1' },
     { name: 'spacer-4', type: 'spacer', span: 'span1' },
     { name: 'expirationDate', label: 'Expiration Date', type: 'date', span: 'span1' },
-
-    { name: 'contactPerson', label: 'Contact Person', span: 'span1' }, 
+    { name: 'contactPerson', label: 'Contact Person', span: 'span1' },
     { name: 'spacer-5', type: 'spacer', span: 'span1' },
     {
-      name: 'laborPercentage',
-      label: 'Labor (%)',
-      type: 'custom',
-      span: 'span1',
+      name: 'laborPercentage', label: 'Labor (%)', type: 'custom', span: 'span1',
       render: ({ values, setValues }) => (
         <div className={inputStyles.field}>
           <label htmlFor="laborPercentage">Labor (%)</label>
@@ -293,8 +336,7 @@ export default function ProposalForm() {
                 confirmModal.show(
                   'Apply Labor % to All',
                   `Apply ${pct}% labor to all scopes and materials? This will overwrite their existing values.`,
-                  'Apply',
-                  'primary',
+                  'Apply', 'primary',
                   () => () => applyLaborPctToChildren(pct)
                 );
               }}
@@ -305,23 +347,26 @@ export default function ProposalForm() {
         </div>
       ),
     },
-
     { name: 'contactNumber', label: 'Contact Number', span: 'span1' },
     { name: 'spacer-6', type: 'spacer', span: 'span1' },
-    (isReadOnly ? { name: 'proposalTotal', label: 'Proposal Total', type: 'custom', span: 'span1', render: ({ values, setValues }) => {
-      const v = Number(values.proposalTotal) || 0;
-      if (v !== totals.proposalTotal) setValues({ ...values, proposalTotal: totals.proposalTotal });
-      return (
-        <div className={inputStyles.field}>
-          <label>Proposal Total</label>
-          <Input id="proposalTotal" value={totals.proposalTotal} readOnly />
-        </div>
-      );
-    } } : { name: 'spacer-proposalTotal', type: 'spacer', span: 'span1' }),
-
+    (isReadOnly ? {
+      name: 'proposalTotal', label: 'Proposal Total', type: 'custom', span: 'span1',
+      render: ({ values, setValues }) => {
+        const v = Number(values.proposalTotal) || 0;
+        if (v !== totals.proposalTotal) setValues({ ...values, proposalTotal: totals.proposalTotal });
+        return (
+          <div className={inputStyles.field}>
+            <label>Proposal Total</label>
+            <Input id="proposalTotal" value={totals.proposalTotal} readOnly />
+          </div>
+        );
+      },
+    } : { name: 'spacer-proposalTotal', type: 'spacer', span: 'span1' }),
     { name: 'address', label: 'Address', span: 'span1' },
     { name: 'spacer-7', type: 'spacer', span: 'span1' },
-            (isReadOnly ? { name: 'laborCostTotal', label: 'Labor Cost Total', type: 'custom', span: 'span1', render: ({ values, setValues }) => {
+    (isReadOnly ? {
+      name: 'laborCostTotal', label: 'Labor Cost Total', type: 'custom', span: 'span1',
+      render: ({ values, setValues }) => {
         const v = Number(values.laborCostTotal) || 0;
         if (v !== totals.laborCostTotal) setValues({ ...values, laborCostTotal: totals.laborCostTotal });
         return (
@@ -330,13 +375,13 @@ export default function ProposalForm() {
             <Input id="laborCostTotal" value={totals.laborCostTotal} readOnly />
           </div>
         );
-      } } : { name: 'spacer-laborCostTotal', type: 'spacer', span: 'span1' }),
-    // Margin field: editable when not read-only, or when admin view is active
-
-  
+      },
+    } : { name: 'spacer-laborCostTotal', type: 'spacer', span: 'span1' }),
     { name: 'email', label: 'Email', type: 'email', span: 'span1' },
     { name: 'spacer-11', type: 'spacer', span: 'span1' },
-            (isReadOnly ? { name: 'materialCostTotal', label: 'Material Cost Total', type: 'custom', span: 'span1', render: ({ values, setValues }) => {
+    (isReadOnly ? {
+      name: 'materialCostTotal', label: 'Material Cost Total', type: 'custom', span: 'span1',
+      render: ({ values, setValues }) => {
         const v = Number(values.materialCostTotal) || 0;
         if (v !== totals.materialCostTotal) setValues({ ...values, materialCostTotal: totals.materialCostTotal });
         return (
@@ -345,12 +390,11 @@ export default function ProposalForm() {
             <Input id="materialCostTotal" value={totals.materialCostTotal} readOnly />
           </div>
         );
-      } } : { name: 'spacer-materialCostTotal', type: 'spacer', span: 'span1' }),
+      },
+    } : { name: 'spacer-materialCostTotal', type: 'spacer', span: 'span1' }),
     { name: 'location', label: 'Location', span: 'span1' },
     { name: 'spacer-9', type: 'spacer', span: 'span1' },
-    { name: 'margin', label: 'Margin (%)', type: 'number', span: 'span1', readOnly: (values) => (isReadOnly && !isAdminView), hidden:true },
-
-
+    { name: 'margin', label: 'Margin (%)', type: 'number', span: 'span1', readOnly: (values) => (isReadOnly && !isAdminView), hidden: true },
     { name: 'description', label: 'Description', type: 'textarea', span: 'span2' },
   ];
 
@@ -367,53 +411,33 @@ export default function ProposalForm() {
     );
   };
 
-  // sanitize child objects before sending to API (fill defaults, coerce types)
-  // normalize dates to `YYYY-MM-DDTHH:MM:SS` (use midnight for date-only values)
   const formatPayloadDate = (v, dateOnly = false) => {
-    // Always return ISO string, default to today if blank
     if (v === null || v === undefined || v === '') {
       const now = new Date();
-      if (dateOnly) {
-        // Only date part, midnight
-        return now.toISOString().slice(0, 10) + 'T00:00:00.000Z';
-      }
+      if (dateOnly) return now.toISOString().slice(0, 10) + 'T00:00:00.000Z';
       return now.toISOString();
     }
     if (v instanceof Date) {
       const pad = (n) => String(n).padStart(2, '0');
-      const Y = v.getFullYear();
-      const M = pad(v.getMonth() + 1);
-      const D = pad(v.getDate());
-      const h = pad(v.getHours());
-      const m = pad(v.getMinutes());
-      const s = pad(v.getSeconds());
+      const Y = v.getFullYear(), M = pad(v.getMonth() + 1), D = pad(v.getDate());
+      const h = pad(v.getHours()), m = pad(v.getMinutes()), s = pad(v.getSeconds());
       if (dateOnly) return `${Y}-${M}-${D}T00:00:00`;
       return `${Y}-${M}-${D}T${h}:${m}:${s}`;
     }
     const s = String(v).trim();
-    // date-only like 2026-03-31 -> add midnight
     if (/^\d{4}-\d{2}-\d{2}$/.test(s)) return `${s}T00:00:00`;
-    // datetime without seconds: 2026-03-25T08:00 -> add :00
     if (/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(s)) return `${s}:00`;
-    // datetime with seconds (possibly with fraction) -> strip fraction
     const m = s.match(/^(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})/);
     if (m) return m[1];
-    // fallback: try to parse and format in local time
     try {
       const d = new Date(s);
       if (isNaN(d)) return s;
       const pad = (n) => String(n).padStart(2, '0');
-      const Y = d.getFullYear();
-      const M = pad(d.getMonth() + 1);
-      const D = pad(d.getDate());
-      const h = pad(d.getHours());
-      const mm = pad(d.getMinutes());
-      const ss = pad(d.getSeconds());
+      const Y = d.getFullYear(), M = pad(d.getMonth() + 1), D = pad(d.getDate());
+      const h = pad(d.getHours()), mm = pad(d.getMinutes()), ss = pad(d.getSeconds());
       if (dateOnly) return `${Y}-${M}-${D}T00:00:00`;
       return `${Y}-${M}-${D}T${h}:${mm}:${ss}`;
-    } catch (err) {
-      return s;
-    }
+    } catch (err) { return s; }
   };
 
   const sanitizeChild = (c = {}, defaultParentId = 0) => ({
@@ -443,243 +467,272 @@ export default function ProposalForm() {
     laborPercentage: Number(c.laborPercentage) || 0,
   });
 
+  const buildModelPayload = (values) => {
+    const rawCustomerId = values.customerId;
+    const resolvedCustomerId =
+      rawCustomerId !== undefined && rawCustomerId !== null && rawCustomerId !== ''
+        ? Number(rawCustomerId) : null;
+    return {
+      code: values.code || '',
+      name: values.name || '',
+      customerId: resolvedCustomerId,
+      customerCode: values.customerCode || '',
+      customerName: values.customerName || '',
+      contactNumber: values.contactNumber || '',
+      address: values.address || '',
+      contactPerson: values.contactPerson || '',
+      email: values.email || '',
+      location: values.location || '',
+      forecastedStartDate: formatPayloadDate(values.forecastedStartDate, false) || null,
+      forecastedEndDate: formatPayloadDate(values.forecastedEndDate, false) || null,
+      expirationDate: formatPayloadDate(values.expirationDate, true) || null,
+      customerReferenceNumber: values.customerReferenceNumber || '',
+      margin: Number(values.margin) || 0,
+      laborPercentage: Number(values.laborPercentage) || 0,
+      inquiryId: values.inquiryId || null,
+      proposalTotal: Number(totals.proposalTotal) || 0,
+      laborCostTotal: Number(totals.laborCostTotal) || 0,
+      materialCostTotal: Number(totals.materialCostTotal) || 0,
+      miscellaneousTitle: extraFields.miscellaneousTitle || '',
+      miscellaneousDescription: richText.miscellaneousDescription || '',
+      scopeOfWorkDescription: richText.scopeOfWorkDescription || '',
+      warrantyDescription: richText.warrantyDescription || '',
+      modeOfPaymentDescription: richText.modeOfPaymentDescription || '',
+      workDurationDescription: richText.workDurationDescription || '',
+      attachmentUrl: extraFields.attachmentUrl || '',
+    };
+  };
+
+  const cleanChildren = (state, defaultParentId) =>
+    (state || [])
+      .filter((c) => !c || !c.__isScope)
+      .map(({ _localId, __isScope, ...rest }) => sanitizeChild(rest, defaultParentId));
+
+  const cleanDeleted = (state, defaultParentId) =>
+    dedupeDeleted((state || []).filter((c) => !c || !c.__isScope).filter((c) => Number(c.id) !== 0))
+      .map(({ _localId, __isScope, ...rest }) => sanitizeChild(rest, defaultParentId));
+
+  // Same pattern as SalesBillingForm — don't render EntityForm until data is ready
+  if (proposalId && items === null) return null;
+
   return isAllowed(PageName, 'r') ? (
     <>
-    <EntityForm
-      title={formTitle}
-      breadcrumbLabel='Proposal'
-      icon={<FiFileText />}
-      fields={fields}
-      initialValues={initialValues}
-      extraContent={<>
-        <ProposalMaterialsTable proposalId={proposalId} editable={!isReadOnly} items={childrenState || []} isAdmin={isAdminView} hideCostColumns={true} parentLaborPercentage={Number(initialValues?.laborPercentage) || 0} onChange={(updated, deleted) => {
-          setChildrenState(updated || []);
-          if (deleted) setDeletedChildrenState((prev) => dedupeDeleted(deleted || []));
-          // debug: log full proposal form data when materials/scopes change
-          try {
-            const filteredChildren = (updated || []).filter((c) => !c || !c.__isScope);
-            console.log('Proposal form data (debug):', {
-              ...initialValues,
-              children: filteredChildren,
-              deletedChildren: dedupeDeleted(deleted || []),
-            });
-          } catch (err) {
-            console.log('Failed to log proposal data', err);
-          }
-        }} />
-        <div className={formStyles.extraSection}>
-          <div className={`${inputStyles.field} ${formStyles.fullRow}`}>
-            <label>Attachment URL</label>
-            <Input
-              id="attachmentUrl"
-              value={extraFields.attachmentUrl}
-              onChange={(e) => setExtraFields((p) => ({ ...p, attachmentUrl: e.target.value }))}
-              readOnly={isReadOnly}
-              placeholder="https://..."
+      <EntityForm
+        title={formTitle}
+        breadcrumbLabel='Proposal'
+        icon={<FiFileText />}
+        fields={fields}
+        initialValues={normalizedInitialValues}
+        extraContent={
+          <>
+            <ProposalMaterialsTable
+              proposalId={proposalId}
+              editable={!isReadOnly}
+              items={childrenState || []}
+              isAdmin={isAdminView}
+              hideCostColumns={true}
+              parentLaborPercentage={Number(initialValues?.laborPercentage) || 0}
+              onChange={(updated, deleted) => {
+                setChildrenState(updated || []);
+                if (deleted) setDeletedChildrenState((prev) => dedupeDeleted(deleted || []));
+                try {
+                  const filteredChildren = (updated || []).filter((c) => !c || !c.__isScope);
+                  console.log('Proposal form data (debug):', {
+                    ...initialValues,
+                    children: filteredChildren,
+                    deletedChildren: dedupeDeleted(deleted || []),
+                  });
+                } catch (err) {
+                  console.log('Failed to log proposal data', err);
+                }
+              }}
             />
-          </div>          <div className={formStyles.inlineFields}>
-            <div className={inputStyles.field}>
-              <label>Miscellaneous Title</label>
-              <Input
-                id="miscellaneousTitle"
-                value={extraFields.miscellaneousTitle}
-                onChange={(e) => setExtraFields((p) => ({ ...p, miscellaneousTitle: e.target.value }))}
-                readOnly={isReadOnly}
-                placeholder="Miscellaneous title..."
-              />
+            <div className={formStyles.extraSection}>
+              <div className={`${inputStyles.field} ${formStyles.fullRow}`}>
+                <label>Attachment URL</label>
+                <Input
+                  id="attachmentUrl"
+                  value={extraFields.attachmentUrl}
+                  onChange={(e) => setExtraFields((p) => ({ ...p, attachmentUrl: e.target.value }))}
+                  readOnly={isReadOnly}
+                  placeholder="https://..."
+                />
+              </div>
+              <div className={formStyles.inlineFields}>
+                <div className={inputStyles.field}>
+                  <label>Miscellaneous Title</label>
+                  <Input
+                    id="miscellaneousTitle"
+                    value={extraFields.miscellaneousTitle}
+                    onChange={(e) => setExtraFields((p) => ({ ...p, miscellaneousTitle: e.target.value }))}
+                    readOnly={isReadOnly}
+                    placeholder="Miscellaneous title..."
+                  />
+                </div>
+              </div>
+              <div className={formStyles.richTextGrid}>
+                <RichTextEditor label="Miscellaneous Description" value={richText.miscellaneousDescription} onChange={(val) => setRichText((p) => ({ ...p, miscellaneousDescription: val }))} readOnly={isReadOnly} placeholder="Any miscellaneous notes..." />
+                <RichTextEditor label="Scope of Work Description" value={richText.scopeOfWorkDescription} onChange={(val) => setRichText((p) => ({ ...p, scopeOfWorkDescription: val }))} readOnly={isReadOnly} placeholder="Describe the scope of work..." />
+                <RichTextEditor label="Warranty Description" value={richText.warrantyDescription} onChange={(val) => setRichText((p) => ({ ...p, warrantyDescription: val }))} readOnly={isReadOnly} placeholder="Describe the warranty terms..." />
+                <RichTextEditor label="Mode of Payment Description" value={richText.modeOfPaymentDescription} onChange={(val) => setRichText((p) => ({ ...p, modeOfPaymentDescription: val }))} readOnly={isReadOnly} placeholder="Describe the mode of payment..." />
+                <RichTextEditor label="Work Duration Description" value={richText.workDurationDescription} onChange={(val) => setRichText((p) => ({ ...p, workDurationDescription: val }))} readOnly={isReadOnly} placeholder="Describe the work duration..." />
+              </div>
             </div>
-          </div>
-          <div className={formStyles.richTextGrid}>
-                        <RichTextEditor
-              label="Miscellaneous Description"
-              value={richText.miscellaneousDescription}
-              onChange={(val) => setRichText((p) => ({ ...p, miscellaneousDescription: val }))}
-              readOnly={isReadOnly}
-              placeholder="Any miscellaneous notes..."
-            />
-            <RichTextEditor
-              label="Scope of Work Description"
-              value={richText.scopeOfWorkDescription}
-              onChange={(val) => setRichText((p) => ({ ...p, scopeOfWorkDescription: val }))}
-              readOnly={isReadOnly}
-              placeholder="Describe the scope of work..."
-            />
-            <RichTextEditor
-              label="Warranty Description"
-              value={richText.warrantyDescription}
-              onChange={(val) => setRichText((p) => ({ ...p, warrantyDescription: val }))}
-              readOnly={isReadOnly}
-              placeholder="Describe the warranty terms..."
-            />
-            <RichTextEditor
-              label="Mode of Payment Description"
-              value={richText.modeOfPaymentDescription}
-              onChange={(val) => setRichText((p) => ({ ...p, modeOfPaymentDescription: val }))}
-              readOnly={isReadOnly}
-              placeholder="Describe the mode of payment..."
-            />
-            <RichTextEditor
-              label="Work Duration Description"
-              value={richText.workDurationDescription}
-              onChange={(val) => setRichText((p) => ({ ...p, workDurationDescription: val }))}
-              readOnly={isReadOnly}
-              placeholder="Describe the work duration..."
-            />
-          </div>
-        </div>
-      </>}
-      onSubmit={async (values) => {
-        const now = new Date().toISOString();
+          </>
+        }
+        onSubmit={async (values) => {
+          const modelPayload = buildModelPayload(values);
 
-        // FIX: coerce customerId to a number or null — never an empty string
-        const rawCustomerId = values.customerId;
-        const resolvedCustomerId =
-          rawCustomerId !== undefined && rawCustomerId !== null && rawCustomerId !== ''
-            ? Number(rawCustomerId)
-            : null;
-
-        const modelPayload = ({
-          code: values.code || '',
-          name: values.name || '',
-          // FIX: always send number or null, never ''
-          customerId: resolvedCustomerId,
-          customerCode: values.customerCode || '',
-          customerName: values.customerName || '',
-          contactNumber: values.contactNumber || '',
-          address: values.address || '',
-          contactPerson: values.contactPerson || '',
-          email: values.email || '',
-          location: values.location || '',
-          forecastedStartDate: formatPayloadDate(values.forecastedStartDate, false) || null,
-          forecastedEndDate: formatPayloadDate(values.forecastedEndDate, false) || null,
-          expirationDate: formatPayloadDate(values.expirationDate, true) || null,
-          customerReferenceNumber: values.customerReferenceNumber || '',
-          margin: Number(values.margin) || 0,
-          laborPercentage: Number(values.laborPercentage) || 0,
-          inquiryId: values.inquiryId || null,
-          // compute totals from children only (ignore form-entered totals)
-          proposalTotal: Number(totals.proposalTotal) || 0,
-          laborCostTotal: Number(totals.laborCostTotal) || 0,
-          materialCostTotal: Number(totals.materialCostTotal) || 0,
-          miscellaneousTitle: extraFields.miscellaneousTitle || '',
-          miscellaneousDescription: richText.miscellaneousDescription || '',
-          scopeOfWorkDescription: richText.scopeOfWorkDescription || '',
-          warrantyDescription: richText.warrantyDescription || '',
-          modeOfPaymentDescription: richText.modeOfPaymentDescription || '',
-          workDurationDescription: richText.workDurationDescription || '',
-          attachmentUrl: extraFields.attachmentUrl || '',
-        });
-
-        if (!proposalId) {
-          const payload = {
-            // id: 0,
-            ...modelPayload,
-            children: (childrenState || []).filter((c) => !c || !c.__isScope).map(({ _localId, __isScope, ...rest }) => sanitizeChild(rest, proposalId ? Number(proposalId) : 0)),
-            deletedChildren: dedupeDeleted((deletedChildrenState || []).filter((c) => !c || !c.__isScope).filter((c) => Number(c.id) !== 0)).map(({ _localId, __isScope, ...rest }) => sanitizeChild(rest, proposalId ? Number(proposalId) : 0)),
-          };
-          const res = await createProposal(payload);
-          if (res?.error) {
-            toast.error('Failed to create proposal');
-          } else {
-            toast.success('Proposal created');
+          // REVISE MODE
+          if (isReviseMode) {
+            const payload = {
+              ...modelPayload,
+              proposalNo: initialValues.proposalNo || '',
+              proposalStatus: initialValues.proposalStatus || 'draft',
+              version: initialValues.version || 1,
+              originalProposalId: Number(proposalId),
+              children: cleanChildren(childrenState, 0),
+              deletedChildren: cleanDeleted(deletedChildrenState, 0),
+            };
+            const res = await createRevisedProposal(payload);
+            if (res?.error) toast.error('Failed to create revised proposal');
+            else toast.success('Revised proposal created');
+            try { router.push('/projects/proposal'); } catch (err) {}
+            return '/projects/proposal';
           }
+
+          // CREATE MODE
+          if (!proposalId) {
+            const payload = {
+              ...modelPayload,
+              children: cleanChildren(childrenState, 0),
+              deletedChildren: cleanDeleted(deletedChildrenState, 0),
+            };
+            const res = await createProposal(payload);
+            if (res?.error) toast.error('Failed to create proposal');
+            else toast.success('Proposal created');
+            try { router.push('/projects/proposal'); } catch (err) {}
+            return '/projects/proposal';
+          }
+
+          // EDIT/UPDATE MODE
+          const payload = {
+            ...modelPayload,
+            children: cleanChildren(childrenState, Number(proposalId)),
+            deletedChildren: cleanDeleted(deletedChildrenState, Number(proposalId)),
+          };
+          const res = await updateProposal(proposalId, payload);
+          if (res?.error) toast.error('Failed to save proposal');
+          else toast.success('Proposal saved');
           try { router.push('/projects/proposal'); } catch (err) {}
           return '/projects/proposal';
-        }
+        }}
+        backPath="/projects/proposal"
+        width="100%"
+        columns={3}
+        showSubmitButton={false}
+        readOnly={isReadOnly || !isAllowed(PageName, 'w')}
+        headerActions={(() => {
+          const proposalStatus = String(initialValues?.proposalStatus || '').toLowerCase();
+          const isDraftStatus = proposalStatus === 'draft';
+          const isSubmitted = proposalStatus === 'submitted';
+          const isApproved = proposalStatus === 'approved';
+          const isRejected = proposalStatus === 'rejected';
+          const isWon = proposalStatus === 'won' || proposalStatus === 'win';
+          const shouldShowGenerateProject = isWon && initialValues?.isProjectCreated === false;
 
-        const payload = {
-          // id: Number(proposalId),
-          ...modelPayload,
-          children: (childrenState || []).filter((c) => !c || !c.__isScope).map(({ _localId, __isScope, ...rest }) => sanitizeChild(rest, proposalId ? Number(proposalId) : 0)),
-          deletedChildren: dedupeDeleted((deletedChildrenState || []).filter((c) => !c || !c.__isScope).filter((c) => Number(c.id) !== 0)).map(({ _localId, __isScope, ...rest }) => sanitizeChild(rest, proposalId ? Number(proposalId) : 0)),
-        };
-        const res = await updateProposal(proposalId, payload);
-        if (res?.error) toast.error('Failed to save proposal');
-        else toast.success('Proposal saved');
-        try { router.push('/projects/proposal'); } catch (err) {}
-        return '/projects/proposal';
-      }}
-      backPath="/projects/proposal"
-      width="100%"
-      columns={3}
-      showSubmitButton={false}
-      readOnly={isReadOnly || !isAllowed(PageName, 'w')}
-      headerActions={(() => {
-        const proposalStatus = String(initialValues?.proposalStatus || '').toLowerCase();
-        const isDraftStatus = proposalStatus === 'draft';
-        const isSubmitted = proposalStatus === 'submitted';
-        const isApproved = proposalStatus === 'approved';
-        const isRejected = proposalStatus === 'rejected';
-        const isWon = proposalStatus === 'won' || proposalStatus === 'win';
-        const shouldShowGenerateProject = isWon && initialValues?.isProjectCreated === false;
-
-        if (!proposalId) {
-          return isAllowed(PageName, 'w') ? <Button type="submit" variant="save">Create</Button> : null;
-        }
-
-        return (
-          <>
-            {isReadOnly ? (
+          // REVISE MODE: only Save/Cancel
+          if (isReviseMode) {
+            return (
               <>
-                {canEnterEditMode && isAllowed(PageName, 'w') ? (
-                  <Button variant="outlinedPrimary" onClick={() => setIsEditModeLocal(true)}>Edit</Button>
-                ) : null}
-                {isDraftStatus && isAllowed(PageName, 'w') ? (
-                  <Button variant="primary" disabled={actionLoading} onClick={() => {
-                    setConfirmTitle('Submit proposal?');
-                    setConfirmMessage(`Submit proposal "${initialValues.name || initialValues.code || ''}"?`);
-                    setConfirmCallback(() => async () => {
-                      setActionLoading(true);
-                      const res = await submitProposal(proposalId);
-                      if (res?.error) toast.error('Failed to submit proposal');
-                      else { toast.success('Proposal submitted'); try { router.push('/projects/proposal'); } catch (err) {} }
-                      setActionLoading(false);
-                    });
-                    setIsConfirmOpen(true);
-                  }}><FiSend size={14} style={{ marginRight: 4 }} />Submit</Button>
-                ) : null}
-                {isSubmitted && isAllowed(PageName, 'a') ? (
-                  <>
-                    <Button variant="save" disabled={actionLoading} onClick={() => {
-                      setConfirmTitle('Approve proposal?');
-                      setConfirmMessage(`Approve proposal "${initialValues.name || initialValues.code || ''}"?`);
+                <Button variant="outlineDanger" onClick={() => router.push('/projects/proposal')}>Cancel</Button>
+                {isAllowed(PageName, 'w') ? <Button type="submit" variant="save">Save Revision</Button> : null}
+              </>
+            );
+          }
+
+          if (!proposalId) {
+            return isAllowed(PageName, 'w') ? <Button type="submit" variant="save">Create</Button> : null;
+          }
+
+          return (
+            <>
+              {isReadOnly ? (
+                <>
+                  {canEnterEditMode && isAllowed(PageName, 'w') ? (
+                    <Button variant="outlinedPrimary" onClick={() => setIsEditModeLocal(true)}>Edit</Button>
+                  ) : null}
+                  {isDraftStatus && isAllowed(PageName, 'w') ? (
+                    <Button variant="primary" disabled={actionLoading} onClick={() => {
+                      setConfirmTitle('Submit proposal?');
+                      setConfirmMessage(`Submit proposal "${initialValues.name || initialValues.code || ''}"?`);
                       setConfirmCallback(() => async () => {
                         setActionLoading(true);
-                        const res = await approveProposal(proposalId);
-                        if (res?.error) toast.error('Failed to approve proposal');
-                        else { toast.success('Proposal approved'); try { router.push('/projects/proposal'); } catch (err) {} }
+                        const res = await submitProposal(proposalId);
+                        if (res?.error) toast.error('Failed to submit proposal');
+                        else { toast.success('Proposal submitted'); try { router.push('/projects/proposal'); } catch (err) {} }
                         setActionLoading(false);
                       });
                       setIsConfirmOpen(true);
-                    }}><FiCheck size={14} style={{ marginRight: 4 }} />Approve</Button>
-                    <Button variant="outlineDanger" disabled={actionLoading} onClick={() => {
-                      setConfirmTitle('Reject proposal?');
-                      setConfirmMessage(`Reject proposal "${initialValues.name || initialValues.code || ''}"?`);
-                      setConfirmCallback(() => async () => {
-                        setActionLoading(true);
-                        const res = await rejectProposal(proposalId);
-                        if (res?.error) toast.error('Failed to reject proposal');
-                        else { toast.success('Proposal rejected'); try { router.push('/projects/proposal'); } catch (err) {} }
-                        setActionLoading(false);
-                      });
-                      setIsConfirmOpen(true);
-                    }}><FiX size={14} style={{ marginRight: 4 }} />Reject</Button>
-                  </>
-                ) : null}
-                {isApproved && isAllowed(PageName, 'w') ? (
-                  <>
-                    <Button variant="save" disabled={actionLoading} onClick={() => {
-                      setConfirmTitle('Mark proposal as Won?');
-                      setConfirmMessage(`Mark proposal "${initialValues.name || initialValues.code || ''}" as Won?`);
-                      setConfirmCallback(() => async () => {
-                        setActionLoading(true);
-                        const res = await winProposal(proposalId);
-                        if (res?.error) toast.error('Failed to mark proposal as won');
-                        else { toast.success('Proposal marked as won'); try { router.push('/projects/proposal'); } catch (err) {} }
-                        setActionLoading(false);
-                      });
-                      setIsConfirmOpen(true);
-                    }}><FiCheck size={14} style={{ marginRight: 4 }} />Win</Button>
+                    }}><FiSend size={14} style={{ marginRight: 4 }} />Submit</Button>
+                  ) : null}
+                  {isSubmitted && isAllowed(PageName, 'a') ? (
+                    <>
+                      <Button variant="save" disabled={actionLoading} onClick={() => {
+                        setConfirmTitle('Approve proposal?');
+                        setConfirmMessage(`Approve proposal "${initialValues.name || initialValues.code || ''}"?`);
+                        setConfirmCallback(() => async () => {
+                          setActionLoading(true);
+                          const res = await approveProposal(proposalId);
+                          if (res?.error) toast.error('Failed to approve proposal');
+                          else { toast.success('Proposal approved'); try { router.push('/projects/proposal'); } catch (err) {} }
+                          setActionLoading(false);
+                        });
+                        setIsConfirmOpen(true);
+                      }}><FiCheck size={14} style={{ marginRight: 4 }} />Approve</Button>
+                      <Button variant="outlineDanger" disabled={actionLoading} onClick={() => {
+                        setConfirmTitle('Reject proposal?');
+                        setConfirmMessage(`Reject proposal "${initialValues.name || initialValues.code || ''}"?`);
+                        setConfirmCallback(() => async () => {
+                          setActionLoading(true);
+                          const res = await rejectProposal(proposalId);
+                          if (res?.error) toast.error('Failed to reject proposal');
+                          else { toast.success('Proposal rejected'); try { router.push('/projects/proposal'); } catch (err) {} }
+                          setActionLoading(false);
+                        });
+                        setIsConfirmOpen(true);
+                      }}><FiX size={14} style={{ marginRight: 4 }} />Reject</Button>
+                    </>
+                  ) : null}
+                  {isApproved && isAllowed(PageName, 'w') ? (
+                    <>
+                      <Button variant="save" disabled={actionLoading} onClick={() => {
+                        setConfirmTitle('Mark proposal as Won?');
+                        setConfirmMessage(`Mark proposal "${initialValues.name || initialValues.code || ''}" as Won?`);
+                        setConfirmCallback(() => async () => {
+                          setActionLoading(true);
+                          const res = await winProposal(proposalId);
+                          if (res?.error) toast.error('Failed to mark proposal as won');
+                          else { toast.success('Proposal marked as won'); try { router.push('/projects/proposal'); } catch (err) {} }
+                          setActionLoading(false);
+                        });
+                        setIsConfirmOpen(true);
+                      }}><FiCheck size={14} style={{ marginRight: 4 }} />Win</Button>
+                      <Button variant="outlineDanger" disabled={actionLoading} onClick={() => {
+                        setConfirmTitle('Mark proposal as Lost?');
+                        setConfirmMessage(`Mark proposal "${initialValues.name || initialValues.code || ''}" as Lost?`);
+                        setConfirmCallback(() => async () => {
+                          setActionLoading(true);
+                          const res = await loseProposal(proposalId);
+                          if (res?.error) toast.error('Failed to mark proposal as lost');
+                          else { toast.success('Proposal marked as lost'); try { router.push('/projects/proposal'); } catch (err) {} }
+                          setActionLoading(false);
+                        });
+                        setIsConfirmOpen(true);
+                      }}><FiX size={14} style={{ marginRight: 4 }} />Lose</Button>
+                    </>
+                  ) : null}
+                  {isRejected && isAllowed(PageName, 'w') ? (
                     <Button variant="outlineDanger" disabled={actionLoading} onClick={() => {
                       setConfirmTitle('Mark proposal as Lost?');
                       setConfirmMessage(`Mark proposal "${initialValues.name || initialValues.code || ''}" as Lost?`);
@@ -692,97 +745,81 @@ export default function ProposalForm() {
                       });
                       setIsConfirmOpen(true);
                     }}><FiX size={14} style={{ marginRight: 4 }} />Lose</Button>
-                  </>
-                ) : null}
-                {isRejected && isAllowed(PageName, 'w') ? (
-                  <Button variant="outlineDanger" disabled={actionLoading} onClick={() => {
-                    setConfirmTitle('Mark proposal as Lost?');
-                    setConfirmMessage(`Mark proposal "${initialValues.name || initialValues.code || ''}" as Lost?`);
-                    setConfirmCallback(() => async () => {
-                      setActionLoading(true);
-                      const res = await loseProposal(proposalId);
-                      if (res?.error) toast.error('Failed to mark proposal as lost');
-                      else { toast.success('Proposal marked as lost'); try { router.push('/projects/proposal'); } catch (err) {} }
-                      setActionLoading(false);
-                    });
-                    setIsConfirmOpen(true);
-                  }}><FiX size={14} style={{ marginRight: 4 }} />Lose</Button>
-                ) : null}
-                {shouldShowGenerateProject && isAllowed(PageName, 'w') ? (
-                  <Button variant="primary" disabled={actionLoading} onClick={() => {
-                    setConfirmTitle('Generate Project?');
-                    setConfirmMessage(`Create a project from proposal "${initialValues.name || initialValues.code || ''}"?`);
-                    setConfirmCallback(() => async () => {
-                      setActionLoading(true);
-                      const res = await convertProposal(proposalId);
-                      if (res?.error) toast.error('Failed to create project from proposal');
-                      else { toast.success('Project created from proposal'); try { router.push('/projects/proposal'); } catch (err) {} }
-                      setActionLoading(false);
-                    });
-                    setIsConfirmOpen(true);
-                  }}><FiCheck size={14} style={{ marginRight: 4 }} />Generate Project</Button>
-                ) : null}
-                {/* Cancel Proposal — hidden when already cancelled */}
-                {proposalId && isAllowed(PageName, 'w') && !['cancelled', 'closed'].includes(String(initialValues?.proposalStatus || '').toLowerCase()) ? (
-                  <Button variant="outlineDanger" icon={<FiXCircle size={14} />} disabled={actionLoading} onClick={() => {
-                    setConfirmTitle('Cancel Proposal?');
-                    setConfirmMessage(`Are you sure you want to cancel proposal "${initialValues.name || initialValues.code || ''}"?`);
-                    setConfirmCallback(() => async () => {
-                      setActionLoading(true);
-                      const res = await cancelProposal(proposalId);
-                      if (res?.error) toast.error('Failed to cancel proposal');
-                      else {
-                        toast.success('Proposal cancelled');
-                        const refreshed = await getProposalById(proposalId);
-                        if (!refreshed.error) setItems(refreshed.data || []);
-                      }
-                      setActionLoading(false);
-                    });
-                    setIsConfirmOpen(true);
-                  }}>Cancel Proposal</Button>
-                ) : null}
-                {/* Close Proposal — shown only when cancelled */}
-                {proposalId && isAllowed(PageName, 'w') && String(initialValues?.proposalStatus || '').toLowerCase() === 'cancelled' ? (
-                  <Button variant="primary" icon={<FiArchive size={14} />} disabled={actionLoading} onClick={() => {
-                    setConfirmTitle('Close Proposal?');
-                    setConfirmMessage(`Are you sure you want to close proposal "${initialValues.name || initialValues.code || ''}"?`);
-                    setConfirmCallback(() => async () => {
-                      setActionLoading(true);
-                      const res = await closeProposal(proposalId);
-                      if (res?.error) toast.error('Failed to close proposal');
-                      else { toast.success('Proposal closed'); router.push('/projects/proposal'); }
-                      setActionLoading(false);
-                    });
-                    setIsConfirmOpen(true);
-                  }}>Close Proposal</Button>
-                ) : null}
-              </>
-            ) : (
-              <>
-                <Button variant="outlineDanger" onClick={() => {
-                  if (mode === 'edit') {
-                    router.push(`/projects/proposal/proposalform?id=${proposalId}`);
-                    return;
-                  }
-                  setIsEditModeLocal(false);
-                }}>Cancel</Button>
-                {isAllowed(PageName, 'w') ? <Button type="submit" variant="save">Save</Button> : null}
-              </>
-            )}
-          </>
-        );
-      })()}
-    />
-    <ConfirmModal
-      open={isConfirmOpen}
-      title={confirmTitle}
-      message={confirmMessage}
-      confirmText="Confirm"
-      onConfirm={async () => {
-        setIsConfirmOpen(false);
-        if (confirmCallback) await confirmCallback();
-      }}
-      onCancel={() => setIsConfirmOpen(false)}
-    />
-  </>) : <InvalidPage />;
+                  ) : null}
+                  {shouldShowGenerateProject && isAllowed(PageName, 'w') ? (
+                    <Button variant="primary" disabled={actionLoading} onClick={() => {
+                      setConfirmTitle('Generate Project?');
+                      setConfirmMessage(`Create a project from proposal "${initialValues.name || initialValues.code || ''}"?`);
+                      setConfirmCallback(() => async () => {
+                        setActionLoading(true);
+                        const res = await convertProposal(proposalId);
+                        if (res?.error) toast.error('Failed to create project from proposal');
+                        else { toast.success('Project created from proposal'); try { router.push('/projects/proposal'); } catch (err) {} }
+                        setActionLoading(false);
+                      });
+                      setIsConfirmOpen(true);
+                    }}><FiCheck size={14} style={{ marginRight: 4 }} />Generate Project</Button>
+                  ) : null}
+                  {proposalId && isAllowed(PageName, 'w') && !['cancelled', 'closed'].includes(String(initialValues?.proposalStatus || '').toLowerCase()) ? (
+                    <Button variant="outlineDanger" icon={<FiXCircle size={14} />} disabled={actionLoading} onClick={() => {
+                      setConfirmTitle('Cancel Proposal?');
+                      setConfirmMessage(`Are you sure you want to cancel proposal "${initialValues.name || initialValues.code || ''}"?`);
+                      setConfirmCallback(() => async () => {
+                        setActionLoading(true);
+                        const res = await cancelProposal(proposalId);
+                        if (res?.error) toast.error('Failed to cancel proposal');
+                        else {
+                          toast.success('Proposal cancelled');
+                          const refreshed = await getProposalById(proposalId);
+                          if (!refreshed.error) setItems(refreshed.data || []);
+                        }
+                        setActionLoading(false);
+                      });
+                      setIsConfirmOpen(true);
+                    }}>Cancel Proposal</Button>
+                  ) : null}
+                  {proposalId && isAllowed(PageName, 'w') && String(initialValues?.proposalStatus || '').toLowerCase() === 'cancelled' ? (
+                    <Button variant="primary" icon={<FiArchive size={14} />} disabled={actionLoading} onClick={() => {
+                      setConfirmTitle('Close Proposal?');
+                      setConfirmMessage(`Are you sure you want to close proposal "${initialValues.name || initialValues.code || ''}"?`);
+                      setConfirmCallback(() => async () => {
+                        setActionLoading(true);
+                        const res = await closeProposal(proposalId);
+                        if (res?.error) toast.error('Failed to close proposal');
+                        else { toast.success('Proposal closed'); router.push('/projects/proposal'); }
+                        setActionLoading(false);
+                      });
+                      setIsConfirmOpen(true);
+                    }}>Close Proposal</Button>
+                  ) : null}
+                </>
+              ) : (
+                <>
+                  <Button variant="outlineDanger" onClick={() => {
+                    if (mode === 'edit') {
+                      router.push(`/projects/proposal/proposalform?id=${proposalId}`);
+                      return;
+                    }
+                    setIsEditModeLocal(false);
+                  }}>Cancel</Button>
+                  {isAllowed(PageName, 'w') ? <Button type="submit" variant="save">Save</Button> : null}
+                </>
+              )}
+            </>
+          );
+        })()}
+      />
+      <ConfirmModal
+        open={isConfirmOpen}
+        title={confirmTitle}
+        message={confirmMessage}
+        confirmText="Confirm"
+        onConfirm={async () => {
+          setIsConfirmOpen(false);
+          if (confirmCallback) await confirmCallback();
+        }}
+        onCancel={() => setIsConfirmOpen(false)}
+      />
+    </>
+  ) : <InvalidPage />;
 }

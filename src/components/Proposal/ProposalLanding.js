@@ -16,6 +16,7 @@ import InvalidPage from '@/components/InvalidPage/page';
 const baseColumns = [
   { header: 'Id', key: 'id' },
   { header: 'Proposal No', key: 'proposalNo' },
+  { header: 'Version', key: 'version' },
   { header: 'Name', key: 'name' },
   { header: 'Customer', key: 'customerName' },
   { header: 'Contact', key: 'contactNumber' },
@@ -55,6 +56,18 @@ export default function ProposalLanding() {
   const actionItems = useMemo(
     () => [
       ...(isAllowed(PageName, 'r') ? [{ key: 'view', label: 'View', icon: <FiEye size={14} />, onClick: (item) => router.push(`/projects/proposal/proposalform?id=${item.id}`) }] : []),
+      ...(isAllowed(PageName, 'w') ? [{
+        key: 'revise',
+        label: 'Revise',
+        icon: <FiEdit2 size={14} />,
+        onClick: (item) => router.push(`/projects/proposal/proposalform?id=${item.id}&mode=revise`),
+        hidden: (item) => {
+          const ps = String(item?.proposalStatus || '').toLowerCase();
+          const as = String(item?.approvalStatus || '').toLowerCase();
+          // Show revise when Draft, For Approval, Approved, or Won
+          return !(ps === 'draft' || as === 'for approval' || ps === 'approved' || ps === 'won' || ps === 'win');
+        }
+      }] : []),
       ...(isAllowed(PageName, 'r') ? [{ key: 'viewpdf', label: 'Generate Proposal Document', icon: <FiFileText size={14} />, onClick: (item) => (getProposalPDF(item.id))}] : []),
       ...(isAllowed(PageName, 'w') ? [{ key: 'edit', label: 'Edit', icon: <FiEdit2 size={14} />, onClick: (item) => router.push(`/projects/proposal/proposalform?id=${item.id}&mode=edit`), hidden: (item) => { const s = String(item.proposalStatus || '').toLowerCase(); return s !== 'draft'; } }] : []),
     ],

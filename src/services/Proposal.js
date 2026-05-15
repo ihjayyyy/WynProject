@@ -257,8 +257,7 @@ export {
     reviseProposal,
     createRevisedProposal
 };
-
-export default {
+const ProposalService = {
     getProposals,
     getProposalById,
     createProposal,
@@ -272,5 +271,7 @@ export default {
     cancelProposal,
     closeProposal,
     reviseProposal,
-    createRevisedProposal
+    createRevisedProposal,
 };
+
+export default ProposalService;
