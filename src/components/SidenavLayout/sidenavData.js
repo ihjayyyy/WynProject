@@ -216,6 +216,12 @@ export const sidenavItems = [
         href: '/inventory/material-request',
         name: 'Inventory.MaterialRequests',
       },
+      {
+        label: 'Inventory Report',
+        icon: FiFileText,
+        href: '/inventory/inventory-report',
+        name: 'Inventory.Report',
+      },
     ],
   },
   {

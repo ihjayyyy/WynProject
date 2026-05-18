@@ -30,6 +30,7 @@ export default function ProposalForm() {
   const proposalId = searchParams.get('id');
   const mode = searchParams.get('mode');
   const isReviseMode = mode === 'revise';
+  const isCopyMode = mode === 'copy';
   const [isEditModeLocal, setIsEditModeLocal] = useState(false);
   const isEditMode = mode === 'edit' || mode === 'revise' || isEditModeLocal;
 
@@ -87,7 +88,8 @@ export default function ProposalForm() {
       }
     })();
     return () => (mounted = false);
-  }, [proposalId, isReviseMode]);
+  }, [proposalId, isReviseMode, isCopyMode]);
+  
 
   React.useEffect(() => {
     let mounted = true;
@@ -203,6 +205,7 @@ export default function ProposalForm() {
 
   const { isReadOnly, canEnterEditMode, isDraft } = useMemo(() => {
     if (isReviseMode) return { isReadOnly: false, canEnterEditMode: false, isDraft: true };
+    if (isCopyMode) return { isReadOnly: false, canEnterEditMode: false, isDraft: true };
 
     const exists = Boolean(proposalId && (items || []).some((item) => String(item.id) === String(proposalId)));
     const selected = (items || []).find((item) => String(item.id) === String(proposalId));
@@ -211,13 +214,14 @@ export default function ProposalForm() {
     const nonEditable = ['cancelled', 'closed'].includes(status.toLowerCase());
     const readOnly = exists && (!isEditMode || !draft || nonEditable);
     return { isReadOnly: readOnly, canEnterEditMode: exists && draft && !nonEditable, isDraft: draft };
-  }, [proposalId, isEditMode, items, isReviseMode]);
+  }, [proposalId, isEditMode, items, isReviseMode, isCopyMode]);
 
   const status = useMemo(() => {
     if (isReviseMode) return 'draft';
+    if (isCopyMode) return 'draft';
     const selected = (items || []).find((item) => String(item.id) === String(proposalId));
     return selected && selected.proposalStatus ? String(selected.proposalStatus).toLowerCase() : '';
-  }, [proposalId, items, isReviseMode]);
+  }, [proposalId, items, isReviseMode, isCopyMode]);
 
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
   const [confirmTitle, setConfirmTitle] = useState('');
@@ -234,6 +238,14 @@ export default function ProposalForm() {
         </div>
       );
     }
+    if (isCopyMode) {
+      return (
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <span>Copy Proposal</span>
+          <StatusBadge status="draft" />
+        </div>
+      );
+    }
     const titleText = (initialValues && (initialValues.proposalNo || initialValues.code)) || (isEditMode ? 'Edit Proposal' : 'View Proposal');
     return (
       <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -241,7 +253,7 @@ export default function ProposalForm() {
         {status && <StatusBadge status={status} />}
       </div>
     );
-  }, [proposalId, isEditMode, isReviseMode, initialValues, status]);
+  }, [proposalId, isEditMode, isReviseMode, isCopyMode, initialValues, status]);
 
   const customerOptions = customers.map((c) => ({ value: c.id, label: c.customerName || c.name || c.code }));
   const inquiryOptions = inquiries.map((q) => ({ value: q.id, label: q.reference || q.code || q.name || String(q.id) }));
@@ -258,6 +270,7 @@ export default function ProposalForm() {
     {
       name: 'inquiryId', label: 'Inquiry', type: 'select', options: inquiryOptions, searchable: true,
       placeholder: 'Select inquiry (optional)', span: 'span1',
+      readOnly: isReviseMode,
       onChange: (val, values, setValues) => {
         const sel = (inquiries || []).find((q) => String(q.id) === String(val));
         if (sel) {
@@ -279,13 +292,14 @@ export default function ProposalForm() {
     },
     { name: 'spacer-1', type: 'spacer', span: 'span1' },
     { name: 'proposalNo', label: 'Proposal Number', span: 'span1', readOnly: true },
-    { name: 'name', label: 'Proposal Name', span: 'span1' },
+    { name: 'name', label: 'Proposal Name', span: 'span1', readOnly: isReviseMode },
     { name: 'spacer-2', type: 'spacer', span: 'span1' },
     { name: 'customerReferenceNumber', label: 'Customer Reference No.', span: 'span1', hidden: true },
     { name: 'forecastedStartDate', label: 'Forecast Start', type: 'date', span: 'span1' },
     {
       name: 'customerId', label: 'Company Name', type: 'select', options: customerOptions,
       searchable: true, placeholder: 'Select customer', span: 'span1',
+      readOnly: isReviseMode,
       onChange: (val, values, setValues) => {
         const numVal = val !== undefined && val !== null && val !== '' ? Number(val) : null;
         const sel = numVal != null ? customers.find((c) => c.id === numVal) : null;
@@ -308,10 +322,10 @@ export default function ProposalForm() {
     },
     { name: 'spacer-3', type: 'spacer', span: 'span1' },
     { name: 'forecastedEndDate', label: 'Forecast End', type: 'date', span: 'span1' },
-    { name: 'customerCode', label: 'Customer Code', span: 'span1' },
+    { name: 'customerCode', label: 'Customer Code', span: 'span1', readOnly: isReviseMode },
     { name: 'spacer-4', type: 'spacer', span: 'span1' },
     { name: 'expirationDate', label: 'Expiration Date', type: 'date', span: 'span1' },
-    { name: 'contactPerson', label: 'Contact Person', span: 'span1' },
+    { name: 'contactPerson', label: 'Contact Person', span: 'span1', readOnly: isReviseMode },
     { name: 'spacer-5', type: 'spacer', span: 'span1' },
     {
       name: 'laborPercentage', label: 'Labor (%)', type: 'custom', span: 'span1',
@@ -347,7 +361,7 @@ export default function ProposalForm() {
         </div>
       ),
     },
-    { name: 'contactNumber', label: 'Contact Number', span: 'span1' },
+    { name: 'contactNumber', label: 'Contact Number', span: 'span1', readOnly: isReviseMode },
     { name: 'spacer-6', type: 'spacer', span: 'span1' },
     (isReadOnly ? {
       name: 'proposalTotal', label: 'Proposal Total', type: 'custom', span: 'span1',
@@ -362,7 +376,7 @@ export default function ProposalForm() {
         );
       },
     } : { name: 'spacer-proposalTotal', type: 'spacer', span: 'span1' }),
-    { name: 'address', label: 'Address', span: 'span1' },
+    { name: 'address', label: 'Address', span: 'span1', readOnly: isReviseMode },
     { name: 'spacer-7', type: 'spacer', span: 'span1' },
     (isReadOnly ? {
       name: 'laborCostTotal', label: 'Labor Cost Total', type: 'custom', span: 'span1',
@@ -377,7 +391,7 @@ export default function ProposalForm() {
         );
       },
     } : { name: 'spacer-laborCostTotal', type: 'spacer', span: 'span1' }),
-    { name: 'email', label: 'Email', type: 'email', span: 'span1' },
+    { name: 'email', label: 'Email', type: 'email', span: 'span1', readOnly: isReviseMode },
     { name: 'spacer-11', type: 'spacer', span: 'span1' },
     (isReadOnly ? {
       name: 'materialCostTotal', label: 'Material Cost Total', type: 'custom', span: 'span1',
@@ -392,10 +406,10 @@ export default function ProposalForm() {
         );
       },
     } : { name: 'spacer-materialCostTotal', type: 'spacer', span: 'span1' }),
-    { name: 'location', label: 'Location', span: 'span1' },
+    { name: 'location', label: 'Location', span: 'span1', readOnly: isReviseMode },
     { name: 'spacer-9', type: 'spacer', span: 'span1' },
     { name: 'margin', label: 'Margin (%)', type: 'number', span: 'span1', readOnly: (values) => (isReadOnly && !isAdminView), hidden: true },
-    { name: 'description', label: 'Description', type: 'textarea', span: 'span2' },
+    { name: 'description', label: 'Description', type: 'textarea', span: 'span2', readOnly: isReviseMode },
   ];
 
   const applyLaborPctToChildren = (pct) => {
@@ -601,6 +615,21 @@ export default function ProposalForm() {
             return '/projects/proposal';
           }
 
+          // COPY MODE - create a new proposal from existing one
+          if (isCopyMode) {
+            const cleaned = cleanChildren(childrenState, 0).map((c) => ({ ...c, id: 0 }));
+            const payload = {
+              ...modelPayload,
+              children: cleaned,
+              deletedChildren: [],
+            };
+            const res = await createProposal(payload);
+            if (res?.error) toast.error('Failed to create proposal');
+            else toast.success('Proposal created');
+            try { router.push('/projects/proposal'); } catch (err) {}
+            return '/projects/proposal';
+          }
+
           // CREATE MODE
           if (!proposalId) {
             const payload = {
@@ -649,6 +678,16 @@ export default function ProposalForm() {
                 {isAllowed(PageName, 'w') ? <Button type="submit" variant="save">Save Revision</Button> : null}
               </>
             );
+          }
+
+          // COPY MODE: allow creating a new proposal from this one
+          if (isCopyMode) {
+            return isAllowed(PageName, 'w') ? (
+              <>
+                <Button variant="outlineDanger" onClick={() => router.push('/projects/proposal')}>Cancel</Button>
+                {isAllowed(PageName, 'w') ? <Button type="submit" variant="save">Create Copy</Button> : null}
+              </>
+            ) : null;
           }
 
           if (!proposalId) {

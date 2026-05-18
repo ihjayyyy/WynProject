@@ -2,7 +2,7 @@
 
 import React, { useMemo, useState, useContext } from 'react';
 import { useRouter } from 'next/navigation';
-import { FiCheck, FiCheckCircle, FiEdit2, FiEye, FiFileText, FiSend, FiX, FiXCircle, FiArchive } from 'react-icons/fi';
+import { FiCheck, FiCheckCircle, FiEdit2, FiEye, FiFileText, FiSend, FiX, FiXCircle, FiArchive, FiCopy } from 'react-icons/fi';
 import DropdownAction from '../ui/DropdownAction/DropdownAction';
 import Landing from '../ui/Landing/Landing';
 import StatusBadge from '../ui/StatusBadge/StatusBadge';
@@ -65,6 +65,17 @@ export default function ProposalLanding() {
           const ps = String(item?.proposalStatus || '').toLowerCase();
           const as = String(item?.approvalStatus || '').toLowerCase();
           // Show revise when Draft, For Approval, Approved, or Won
+          return !(ps === 'draft' || as === 'for approval' || ps === 'approved' || ps === 'won' || ps === 'win');
+        }
+      }] : []),
+      ...(isAllowed(PageName, 'w') ? [{
+        key: 'copy',
+        label: 'Copy',
+        icon: <FiCopy size={14} />,
+        onClick: (item) => router.push(`/projects/proposal/proposalform?id=${item.id}&mode=copy`),
+        hidden: (item) => {
+          const ps = String(item?.proposalStatus || '').toLowerCase();
+          const as = String(item?.approvalStatus || '').toLowerCase();
           return !(ps === 'draft' || as === 'for approval' || ps === 'approved' || ps === 'won' || ps === 'win');
         }
       }] : []),

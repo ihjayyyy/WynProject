@@ -88,18 +88,45 @@ async function updateMaterialInventory(id, payload) {
   }
 }
 
+async function generateMaterialInventoryReport() {
+  try {
+    const url = `${API_BASE_URL}/GenerateReport`;
+
+    const res = await fetch(url, {
+      method: 'GET',
+      headers: {
+        Accept: 'application/json',
+      },
+    });
+
+    const json = await res.json();
+
+    return {
+      data: json?.value || [],
+      error: null,
+    };
+  } catch (error) {
+    return {
+      data: null,
+      error: error?.message || error,
+    };
+  }
+}
+
 export {
   getMaterialInventories,
   getMaterialInventory,
-  getMaterialInventoryByMaterialId, // ✅ export it
+  getMaterialInventoryByMaterialId,
   createMaterialInventory,
-  updateMaterialInventory
+  updateMaterialInventory,
+  generateMaterialInventoryReport
 };
 
 export default {
   getMaterialInventories,
   getMaterialInventory,
-  getMaterialInventoryByMaterialId, // ✅ include in default
+  getMaterialInventoryByMaterialId,
   createMaterialInventory,
-  updateMaterialInventory
+  updateMaterialInventory,
+  generateMaterialInventoryReport
 };

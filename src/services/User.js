@@ -167,6 +167,10 @@ export async function getUserAccess() {
       access: 'rwa',
     },
     {
+      name: 'Inventory.Report',
+      access: 'rwa',
+    },
+    {
       name: 'Inventory.ToolsInventory',
       access: 'rwa',
     },
