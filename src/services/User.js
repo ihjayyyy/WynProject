@@ -202,6 +202,10 @@ export async function getUserAccess() {
       name: 'Maintenance.Users',
       access: 'rwa',
     },
+    {
+      name: 'Maintenance.Roles',
+      access: 'rwa',
+    },
   ];
 
   try {

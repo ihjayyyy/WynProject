@@ -22,6 +22,7 @@ import {
   FiClipboard,
   FiDollarSign,
   FiFolder,
+  FiUserPlus,
 } from 'react-icons/fi';
 
 export const sidenavItems = [
@@ -245,6 +246,12 @@ export const sidenavItems = [
         icon: FiUsers,
         href: '/maintainance/users',
         name: 'Maintenance.Users',
+      },
+      {
+        label: 'Roles',
+        icon: FiUserPlus,
+        href: '/maintainance/roles',
+        name: 'Maintenance.Roles',
       },
       // ...add more maintenance items here if needed
     ],
