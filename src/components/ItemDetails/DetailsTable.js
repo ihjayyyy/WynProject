@@ -1,12 +1,12 @@
-import React, { useMemo, useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import DataTable from '../ui/DataTable/DataTable';
 import ItemModal from './itemModal';
 import detailStyle from "./DetailsTable.module.scss"
 import * as Yup from "yup";
-import { FiPlus, FiEdit2, FiTrash2 } from 'react-icons/fi';
+import { FiPlus, FiTrash2 } from 'react-icons/fi';
 import Button from '../ui/Button/Button';
 
-export default function DetailsTable({ itemModalHeader, columns = [], data = { items: [], deletedItems: [] }, itemFields = [], onChange, editable = false, emptyMessage = 'No current items', parentId = 0 }) {
+export default function DetailsTable({ itemModalHeader, columns = [], data = { items: [], deletedItems: [] }, itemFields = [], onChange, editable = false, emptyMessage = 'No current items', parentId = 0, showActions = editable }) {
 
   const [items, setItems] = useState([]);
   const [deleteditems, setDeletedItems] = useState([]);
@@ -40,7 +40,7 @@ export default function DetailsTable({ itemModalHeader, columns = [], data = { i
     if (isInternalChangeRef.current) {
       onChange(items, deleteditems);
     }
-  }, [items, deleteditems]);
+  }, [items, deleteditems, onChange]);
 
   const initializeItem = (data) => {
     const initializedFields = modalFields.map((item) => {
@@ -145,7 +145,7 @@ export default function DetailsTable({ itemModalHeader, columns = [], data = { i
           <Button icon={<FiPlus />} onClick={(e) => { e.stopPropagation(); openModal(); }}>Add</Button>
         )}
       </div>
-      <DataTable columns={columns} data={items} showActions={editable} emptyMessage={emptyMessage} onActionClick={openModal} />
+      <DataTable columns={columns} data={items} showActions={showActions} emptyMessage={emptyMessage} onActionClick={openModal} />
       <ItemModal headerLabel={itemModalHeader} itemIndex={itemIndex} mode={modalMode} isOpen={isModalOpen} onClose={close} fields={[...modalFields]} onItemRemove={deleteDataTableItem} />
     </div>
   );

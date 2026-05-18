@@ -12,3 +12,20 @@ export async function getAllPayments() {
     return { data: null, error: error?.message || error };
   }
 }
+
+export async function createPayment(payload) {
+  try {
+    const res = await fetch(API_BASE_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+    const json = await res.json();
+    return { data: json, error: null };
+  } catch (error) {
+    return { data: null, error: error?.message || error };
+  }
+}
+
+const PurchasePaymentService = { getAllPayments, createPayment };
+export default PurchasePaymentService;
