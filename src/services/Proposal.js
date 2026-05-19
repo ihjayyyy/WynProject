@@ -78,6 +78,21 @@ async function getProposalPDFById(id) {
         return { data: null, error: error?.message || error };
     }
 }
+async function getProposalBreakdownPDFById(id) {
+    if (!id) return { data: null, error: 'Missing id' };
+    try {
+        const url = `${API_BASE_URL}/pdf/withmaterials/${id}`;
+        const res = await fetch(url, {
+            method: 'GET',
+            headers: { Accept: '*/*' },
+        });
+
+       handleOpenPdf(res);
+
+    } catch (error) {
+        return { data: null, error: error?.message || error };
+    }
+}
 
 async function createProposal(payload) {
     try {
@@ -250,6 +265,7 @@ export {
     approveProposal,
     rejectProposal,
     getProposalPDFById,
+    getProposalBreakdownPDFById,
     winProposal,
     loseProposal,
     cancelProposal,
@@ -266,6 +282,7 @@ const ProposalService = {
     approveProposal,
     rejectProposal,
     getProposalPDFById,
+    getProposalBreakdownPDFById,
     winProposal,
     loseProposal,
     cancelProposal,
