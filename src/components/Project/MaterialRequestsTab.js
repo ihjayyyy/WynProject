@@ -4,10 +4,11 @@ import ItemModal from '../ItemDetails/itemModal';
 import SearchBar from '../ui/SearchBar/SearchBar';
 import Button from '../ui/Button/Button';
 import styles from './ProjectScope.module.scss';
-import { getMaterialRequestsByProjectId, createMaterialRequest, updateMaterialRequest, INITIAL_MATERIAL_REQUEST, getDocumentPDFById } from '../../services/MaterialRequest';
+import { getMaterialRequestsByProjectId, createMaterialRequest, updateMaterialRequest, INITIAL_MATERIAL_REQUEST, getDocumentPDFById, getDocumentPDFByRivNumber } from '../../services/MaterialRequest';
 import { getMaterials } from '../../services/Materials';
 import { useToast } from '../ui/Toast/Toast';
 import { AccessContext } from '@/app/contextProviders/accessContext';
+import { FiPrinter } from 'react-icons/fi';
 
 export default function MaterialRequestsTab({ projectId, editable = true }) {
   const PageName = 'Projects.Projects';
@@ -84,12 +85,21 @@ export default function MaterialRequestsTab({ projectId, editable = true }) {
       header: 'Actions',
       key: '__actions',
       render: (item) => editable && isAllowed(PageName, 'w') ? (
-        <Button
-          size="sm"
-          variant="outlinedPrimary"
-          title="Edit"
-          onClick={() => { setEditing(item); setIsModalOpen(true); }}
-        >Edit</Button>
+        <div>
+          <Button
+            size="sm"
+            variant="outlinedPrimary"
+            title="Edit"
+            onClick={() => { setEditing(item); setIsModalOpen(true); }}
+          >Edit</Button>
+          {(item.rivNumber != "" && item.rivNumber != null) && <Button
+            size="sm"
+            variant="outlinedPrimary"
+            title="Print RIV"
+            onClick={() => { getDocumentPDFByRivNumber(item).then(() => {getMaterialRequestsByProjectId(projectId);}); }}
+            style={{marginLeft: "4px"}}
+          >RIV</Button>}
+        </div>
       ) : null,
     },
   ], [editable, isAllowed]);
@@ -106,7 +116,7 @@ export default function MaterialRequestsTab({ projectId, editable = true }) {
             showFilter={false}
             width="280px"
           />
-          {isAllowed(PageName, 'w') && (
+          {isAllowed(PageName, 'w') && filtered.find(itm => itm.status.toLowerCase().includes("draft")) && (
             <Button onClick={() => { getDocumentPDFById(projectId); }}>Generate RIV</Button>
           )}
           {isAllowed(PageName, 'w') && editable && (

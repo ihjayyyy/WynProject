@@ -82,6 +82,22 @@ async function getDocumentPDFById(projectId) {
   try {
     const url = `${API_BASE_URL}/pdf/${projectId}`;
     const res = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+    });
+    handleOpenPdf(res);
+  } catch (error) {
+    return { data: null, error: error?.message || error };
+  }
+}
+
+async function getDocumentPDFByRivNumber(item) {
+    console.log(item);
+  if (!item.projectId) return { data: null, error: 'Missing id' };
+  if (!item.rivNumber) return { data: null, error: 'Missing RIV Number' };
+  try {
+    const url = `${API_BASE_URL}/pdf/${item.projectId}/${item.rivNumber}`;
+    const res = await fetch(url, {
       method: 'GET',
       headers: { 'Content-Type': 'application/json' },
     });
@@ -91,5 +107,5 @@ async function getDocumentPDFById(projectId) {
   }
 }
 
-export { getMaterialRequests, createMaterialRequest, updateMaterialRequest, getMaterialRequestsByProjectId, getDocumentPDFById };
-export default { getMaterialRequests, createMaterialRequest, updateMaterialRequest, getMaterialRequestsByProjectId, getDocumentPDFById };
+export { getMaterialRequests, createMaterialRequest, updateMaterialRequest, getMaterialRequestsByProjectId, getDocumentPDFById, getDocumentPDFByRivNumber };
+export default { getMaterialRequests, createMaterialRequest, updateMaterialRequest, getMaterialRequestsByProjectId, getDocumentPDFById, getDocumentPDFByRivNumber };
