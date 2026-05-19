@@ -7,7 +7,7 @@ import React, {
   useState,
   useContext,
 } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { FiList } from 'react-icons/fi';
 import DetailsTable from '../ItemDetails/DetailsTable';
 import EntityForm from '../EntityForm/EntityForm';
@@ -17,7 +17,11 @@ import { AccessContext } from '@/app/contextProviders/accessContext';
 import { useConfirmModal } from '@/app/contextProviders/confirmModalContext';
 import { getSuppliers } from '@/services/Supplier';
 import { GetAll as getAllInvoices } from '@/services/PurchaseInvoice';
-import { createPayment } from '@/services/PurchasePayments';
+import {
+  createPayment,
+  getPaymentById,
+  updatePayment,
+} from '@/services/PurchasePayments';
 import {
   PurchasePaymentFields,
   PurchasePaymentDetailsColumns,
@@ -56,6 +60,16 @@ export default function PurchasePaymentsForm() {
   const [computedNetAmount, setComputedNetAmount] = useState(0);
   const [withholdingTaxPercentage, setWithholdingTaxPercentage] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
+  const searchParams = useSearchParams();
+  const [paymentId, setPaymentId] = useState(
+    Number(searchParams.get('id') || 0),
+  );
+  const [mode, setMode] = useState(
+    searchParams.get('mode') || (paymentId ? 'view' : 'new'),
+  );
+  const [payment, setPayment] = useState(null);
+  const [loadingPayment, setLoadingPayment] = useState(false);
+  const [formKey, setFormKey] = useState(0);
 
   const initialPayment = useMemo(
     () => ({
@@ -84,6 +98,44 @@ export default function PurchasePaymentsForm() {
     };
     loadSuppliers();
   }, []);
+
+  const toDateString = (val) => {
+    if (!val) {
+      const d = new Date();
+      return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+    }
+    try {
+      const d = new Date(val);
+      if (isNaN(d.getTime())) return toDateString();
+      return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+    } catch {
+      return toDateString();
+    }
+  };
+
+  useEffect(() => {
+    const loadPayment = async () => {
+      if (!paymentId) return;
+      setLoadingPayment(true);
+      const res = await getPaymentById(paymentId);
+      if (!res?.error && res.data) {
+        const p = {
+          ...res.data,
+          paymentDate: toDateString(res.data.paymentDate),
+        };
+        setPayment(p);
+        setTableData({
+          items: p.children || [],
+          deletedItems: p.deletedChildren || [],
+        });
+        // preload invoices for supplier
+        if (p.supplierId) fetchInvoices(p.supplierId);
+      }
+      setLoadingPayment(false);
+    };
+    loadPayment();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [paymentId]);
 
   const fetchInvoices = async (supplierId) => {
     if (!supplierId) {
@@ -194,13 +246,19 @@ export default function PurchasePaymentsForm() {
       deletedChildren: (tableData.deletedItems || []).map(normalizeChild),
     };
 
-    const res = await createPayment(payload);
+    let res;
+    if (paymentId && paymentId !== 0) {
+      res = await updatePayment(paymentId, payload);
+    } else {
+      res = await createPayment(payload);
+    }
+
     if (res?.error) {
-      toast.error('Failed to create payment.');
+      toast.error('Failed to save payment.');
       return;
     }
 
-    toast.success('Payment has been created.');
+    toast.success('Payment has been saved.');
     router.push('/purchase/payments');
   };
 
@@ -214,16 +272,24 @@ export default function PurchasePaymentsForm() {
     );
   };
 
-  if (!isAllowed(PageName, 'w')) return <InvalidPage message="Access Denied" />;
-  if (isLoading) return null;
+  if (mode === 'view') {
+    if (!isAllowed(PageName, 'r'))
+      return <InvalidPage message="Access Denied" />;
+  } else {
+    if (!isAllowed(PageName, 'w'))
+      return <InvalidPage message="Access Denied" />;
+  }
+
+  if (isLoading || loadingPayment) return null;
 
   return (
     <EntityForm
+      key={formKey}
       title="New Purchase Payment"
       breadcrumbLabel="Purchase Payment"
       icon={<FiList />}
       fields={paymentFields}
-      initialValues={initialPayment}
+      initialValues={payment || initialPayment}
       extraContent={
         <div className={PurchasePaymentsStyles.extraContentContainer}>
           <DetailsTable
@@ -240,26 +306,69 @@ export default function PurchasePaymentsForm() {
             <div className={PurchasePaymentsStyles.notesContainer} />
             <div className={PurchasePaymentsStyles.totalContainer}>
               <div className={PurchasePaymentsStyles.totalLabel}>Amount:</div>
-              <div className={PurchasePaymentsStyles.totalValue}>{computedAmount.toFixed(2)}</div>
+              <div className={PurchasePaymentsStyles.totalValue}>
+                {computedAmount.toFixed(2)}
+              </div>
 
-              <div className={PurchasePaymentsStyles.totalLabel}>Withholding Tax:</div>
-              <div className={PurchasePaymentsStyles.totalValue}>{computedWithholdingTax.toFixed(2)}</div>
+              <div className={PurchasePaymentsStyles.totalLabel}>
+                Withholding Tax:
+              </div>
+              <div className={PurchasePaymentsStyles.totalValue}>
+                {computedWithholdingTax.toFixed(2)}
+              </div>
 
-              <div className={PurchasePaymentsStyles.totalLabel}>Net Amount:</div>
-              <div className={`${PurchasePaymentsStyles.totalValue} ${PurchasePaymentsStyles.highlight}`}>{computedNetAmount.toFixed(2)}</div>
+              <div className={PurchasePaymentsStyles.totalLabel}>
+                Net Amount:
+              </div>
+              <div
+                className={`${PurchasePaymentsStyles.totalValue} ${PurchasePaymentsStyles.highlight}`}>
+                {computedNetAmount.toFixed(2)}
+              </div>
             </div>
           </div>
         </div>
       }
       onSubmit={handleSaveConfirm}
       backPath="/purchase/payments"
-      readOnly={false}
+      readOnly={mode === 'view'}
       showSubmitButton={false}
       headerActions={
         <div style={{ display: 'flex', gap: 8 }}>
-          <Button type="submit" variant="save">
-            Create
-          </Button>
+          {mode === 'view' && isAllowed(PageName, 'w') && (
+            <Button variant="primary" onClick={() => setMode('edit')}>
+              Edit
+            </Button>
+          )}
+
+          {mode !== 'view' && (
+            <>
+              <Button
+                variant="outlineDanger"
+                onClick={() => {
+                  // Cancel edit: if editing existing payment, revert to view and reset table data and form
+                  if (paymentId && paymentId !== 0) {
+                    setTableData({
+                      items: payment?.children || [],
+                      deletedItems: payment?.deletedChildren || [],
+                    });
+                    setMode('view');
+                    setFormKey((k) => k + 1);
+                    if (payment?.supplierId) fetchInvoices(payment.supplierId);
+                  } else {
+                    // new payment flow: navigate back
+                    router.push('/purchase/payments');
+                  }
+                }}>
+                Cancel
+              </Button>
+
+              {isAllowed(PageName, 'w') && (
+                <Button type="submit" variant="save">
+                  {paymentId && paymentId !== 0 ? 'Save' : 'Create'}
+                </Button>
+              )}
+            </>
+          )}
         </div>
       }
     />

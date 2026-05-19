@@ -50,11 +50,17 @@ export default function PurchasePaymentsLanding() {
         key: 'view',
         label: 'View',
         icon: <FiEye size={14} />,
+        onClick: (item) =>
+          router.push(`/purchase/payments/paymentsform?id=${item.id}`),
       },
       {
         key: 'edit',
         label: 'Edit',
         icon: <FiEdit2 size={14} />,
+        onClick: (item) =>
+          router.push(
+            `/purchase/payments/paymentsform?id=${item.id}&mode=edit`,
+          ),
       },
     ],
     [],
