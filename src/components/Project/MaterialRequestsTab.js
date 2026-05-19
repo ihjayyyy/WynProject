@@ -172,7 +172,7 @@ export default function MaterialRequestsTab({ projectId, editable = true }) {
                 variant="outlinedPrimary"
                 icon={<FiPrinter size={14} />}
                 title="Print RIV"
-                onClick={() => { getDocumentPDFByRivNumber(item).then(() => {getMaterialRequestsByProjectId(projectId);}); }}
+                onClick={() => { getDocumentPDFByRivNumber(item); }}
                 style={{ marginLeft: '6px' }}
               />
             )}
@@ -194,7 +194,13 @@ export default function MaterialRequestsTab({ projectId, editable = true }) {
             width="280px"
           />
           {isAllowed(PageName, 'w') && filtered.find(itm => (itm.status || '').toLowerCase().includes("draft")) && (
-            <Button onClick={() => { getDocumentPDFById(projectId); }}>Generate RIV</Button>
+            <Button onClick={async () => {
+                await getDocumentPDFById(projectId).then(async _ => {
+                  const res = await getMaterialRequestsByProjectId(projectId);
+                  console.log("resres", res)
+                  setItems(Array.isArray(res.data) ? res.data : (res.data ? [res.data] : []));
+                });
+            }}>Generate RIV</Button>
           )}
           {isAllowed(PageName, 'w') && editable && (
             <Button onClick={() => { setEditing(null); setIsModalOpen(true); }}>Add Material Request</Button>
