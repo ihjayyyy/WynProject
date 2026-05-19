@@ -129,18 +129,11 @@ export default function InquiryLanding() {
 
   const filterFn = (item, keyword) => {
     return [
-      item.id,
-      item.code,
-      item.name,
       item.companyName,
       item.contactPerson,
       item.contactNumber,
       item.email,
       item.attention,
-      item.preparedBy,
-      item.notedBy,
-      item.reference,
-      item.details,
     ]
       .filter(Boolean)
       .some((value) => String(value).toLowerCase().includes(keyword));

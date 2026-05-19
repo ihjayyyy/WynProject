@@ -185,11 +185,13 @@ export default function ProposalForm() {
 
   const normalizedInitialValues = useMemo(() => {
     if (!initialValues) return initialValues;
+    const today = new Date().toISOString().slice(0, 10);
     return {
       ...initialValues,
       forecastedStartDate: toDateOnlyString(initialValues.forecastedStartDate),
       forecastedEndDate: toDateOnlyString(initialValues.forecastedEndDate),
       expirationDate: toDateOnlyString(initialValues.expirationDate),
+      requestDate: toDateOnlyString(initialValues.requestDate) || today,
     };
   }, [initialValues]);
 
@@ -295,7 +297,7 @@ export default function ProposalForm() {
     { name: 'name', label: 'Proposal Name', span: 'span1', readOnly: isReviseMode },
     { name: 'spacer-2', type: 'spacer', span: 'span1' },
     { name: 'customerReferenceNumber', label: 'Customer Reference No.', span: 'span1', hidden: true },
-    { name: 'forecastedStartDate', label: 'Forecast Start', type: 'date', span: 'span1' },
+    { name: 'requestDate', label: 'Proposal Date', type: 'date', span: 'span1' },
     {
       name: 'customerId', label: 'Company Name', type: 'select', options: customerOptions,
       searchable: true, placeholder: 'Select customer', span: 'span1',
@@ -321,12 +323,19 @@ export default function ProposalForm() {
       },
     },
     { name: 'spacer-3', type: 'spacer', span: 'span1' },
-    { name: 'forecastedEndDate', label: 'Forecast End', type: 'date', span: 'span1' },
+    { name: 'forecastedStartDate', label: 'Forecast Start', type: 'date', span: 'span1' },
+
     { name: 'customerCode', label: 'Customer Code', span: 'span1', readOnly: isReviseMode },
     { name: 'spacer-4', type: 'spacer', span: 'span1' },
-    { name: 'expirationDate', label: 'Expiration Date', type: 'date', span: 'span1' },
+    { name: 'forecastedEndDate', label: 'Forecast End', type: 'date', span: 'span1' },
+
     { name: 'contactPerson', label: 'Contact Person', span: 'span1', readOnly: isReviseMode },
     { name: 'spacer-5', type: 'spacer', span: 'span1' },
+    { name: 'expirationDate', label: 'Expiration Date', type: 'date', span: 'span1' },
+
+    
+    { name: 'contactNumber', label: 'Contact Number', span: 'span1', readOnly: isReviseMode },
+    { name: 'spacer-6', type: 'spacer', span: 'span1' },
     {
       name: 'laborPercentage', label: 'Labor (%)', type: 'custom', span: 'span1',
       render: ({ values, setValues }) => (
@@ -361,9 +370,9 @@ export default function ProposalForm() {
         </div>
       ),
     },
-    { name: 'contactNumber', label: 'Contact Number', span: 'span1', readOnly: isReviseMode },
-    { name: 'spacer-6', type: 'spacer', span: 'span1' },
-    (isReadOnly ? {
+    { name: 'address', label: 'Address', span: 'span1', readOnly: isReviseMode },
+    { name: 'spacer-7', type: 'spacer', span: 'span1' },
+        (isReadOnly ? {
       name: 'proposalTotal', label: 'Proposal Total', type: 'custom', span: 'span1',
       render: ({ values, setValues }) => {
         const v = Number(values.proposalTotal) || 0;
@@ -376,9 +385,9 @@ export default function ProposalForm() {
         );
       },
     } : { name: 'spacer-proposalTotal', type: 'spacer', span: 'span1' }),
-    { name: 'address', label: 'Address', span: 'span1', readOnly: isReviseMode },
-    { name: 'spacer-7', type: 'spacer', span: 'span1' },
-    (isReadOnly ? {
+    { name: 'email', label: 'Email', type: 'email', span: 'span1', readOnly: isReviseMode },
+    { name: 'spacer-11', type: 'spacer', span: 'span1' },
+        (isReadOnly ? {
       name: 'laborCostTotal', label: 'Labor Cost Total', type: 'custom', span: 'span1',
       render: ({ values, setValues }) => {
         const v = Number(values.laborCostTotal) || 0;
@@ -391,9 +400,9 @@ export default function ProposalForm() {
         );
       },
     } : { name: 'spacer-laborCostTotal', type: 'spacer', span: 'span1' }),
-    { name: 'email', label: 'Email', type: 'email', span: 'span1', readOnly: isReviseMode },
-    { name: 'spacer-11', type: 'spacer', span: 'span1' },
-    (isReadOnly ? {
+    { name: 'location', label: 'Location', span: 'span1', readOnly: isReviseMode },
+    { name: 'spacer-9', type: 'spacer', span: 'span1' },
+        (isReadOnly ? {
       name: 'materialCostTotal', label: 'Material Cost Total', type: 'custom', span: 'span1',
       render: ({ values, setValues }) => {
         const v = Number(values.materialCostTotal) || 0;
@@ -406,8 +415,6 @@ export default function ProposalForm() {
         );
       },
     } : { name: 'spacer-materialCostTotal', type: 'spacer', span: 'span1' }),
-    { name: 'location', label: 'Location', span: 'span1', readOnly: isReviseMode },
-    { name: 'spacer-9', type: 'spacer', span: 'span1' },
     { name: 'margin', label: 'Margin (%)', type: 'number', span: 'span1', readOnly: (values) => (isReadOnly && !isAdminView), hidden: true },
     { name: 'description', label: 'Description', type: 'textarea', span: 'span2', readOnly: isReviseMode },
   ];
@@ -500,6 +507,7 @@ export default function ProposalForm() {
       forecastedStartDate: formatPayloadDate(values.forecastedStartDate, false) || null,
       forecastedEndDate: formatPayloadDate(values.forecastedEndDate, false) || null,
       expirationDate: formatPayloadDate(values.expirationDate, true) || null,
+      requestDate: formatPayloadDate(values.requestDate, true) || null,
       customerReferenceNumber: values.customerReferenceNumber || '',
       margin: Number(values.margin) || 0,
       laborPercentage: Number(values.laborPercentage) || 0,

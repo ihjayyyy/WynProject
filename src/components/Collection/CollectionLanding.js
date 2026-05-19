@@ -111,7 +111,7 @@ export default function CollectionLanding() {
   }, [collections]);
 
   const filterFn = (item, keyword) =>
-    [item.id, item.receiptNumber, item.customerName, item.description, item.amount]
+    [item.id, item.receiptNumber, item.customerName, item.description, item.collectionNo, item.status]
       .filter(Boolean)
       .some((v) => String(v).toLowerCase().includes(keyword));
 

@@ -140,13 +140,10 @@ export default function SalesBillingLanding() {
 
   const filterFn = (item, keyword) => {
     const itemText = [
-      item.id,
-      item.code,
+      item.billingNo,
       item.customerName,
       item.status,
-      item.amount,
-      item.updatedBy,
-      item.updatedDate,
+      item.paymentStatus,
     ]
       .filter(Boolean)
       .some((v) => String(v).toLowerCase().includes(keyword));

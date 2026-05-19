@@ -10,7 +10,8 @@ import * as Yup from 'yup';
 import { getAuthData } from '../../services/Auth';
 import { useToast } from '../ui/Toast/Toast';
 import { AccessContext } from '@/app/contextProviders/accessContext';
-import { FiPrinter } from 'react-icons/fi';
+import { FiPrinter, FiEdit2 } from 'react-icons/fi';
+import StatusBadge from '../ui/StatusBadge/StatusBadge';
 
 export default function MaterialRequestsTab({ projectId, editable = true }) {
   const PageName = 'Projects.Projects';
@@ -134,8 +135,14 @@ export default function MaterialRequestsTab({ projectId, editable = true }) {
   }, [items, searchTerm]);
 
   const tableColumns = useMemo(() => [
+            { header: 'Requested Date', key: 'requestDate',     render: (item) =>
+      item.requestDate
+        ? new Date(item.requestDate).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: '2-digit' })
+        : '—', },
+    { header: 'RIV Number', key: 'rivNumber' },
     { header: 'Name', key: 'name' },
     { header: 'Code', key: 'code' },
+    { header: 'Status', key: 'status', render: (item) => <StatusBadge status={item.status} /> },
     { header: 'Project Qty', key: 'projectQty' },
     { header: 'Requested Qty', key: 'requestedQty' },
     { header:'Delivered Qty', key: 'deliveredQuantity' },
@@ -149,22 +156,28 @@ export default function MaterialRequestsTab({ projectId, editable = true }) {
       header: 'Actions',
       key: '__actions',
       render: (item) => editable && isAllowed(PageName, 'w') ? (
-        <div>
-          <Button
-            size="sm"
-            variant="outlinedPrimary"
-            title="Edit"
-            onClick={() => { setEditing(item); setIsModalOpen(true); }}
-          >Edit</Button>
-          {(item.rivNumber != "" && item.rivNumber != null) && <Button
-            size="sm"
-            variant="outlinedPrimary"
-            title="Print RIV"
-            onClick={() => { getDocumentPDFByRivNumber(item).then(() => {getMaterialRequestsByProjectId(projectId);}); }}
-            style={{marginLeft: "4px"}}
-          >RIV</Button>}
-        </div>
-      ) : null,
+          <div>
+            {((item.status || '').toLowerCase().includes('draft')) && (
+              <Button
+                size="sm"
+                variant="outlinedPrimary"
+                icon={<FiEdit2 size={14} />}
+                title="Edit"
+                onClick={() => { setEditing(item); setIsModalOpen(true); }}
+              />
+            )}
+            {(item.rivNumber != "" && item.rivNumber != null) && (
+              <Button
+                size="sm"
+                variant="outlinedPrimary"
+                icon={<FiPrinter size={14} />}
+                title="Print RIV"
+                onClick={() => { getDocumentPDFByRivNumber(item).then(() => {getMaterialRequestsByProjectId(projectId);}); }}
+                style={{ marginLeft: '6px' }}
+              />
+            )}
+          </div>
+        ) : null,
     },
   ], [editable, isAllowed]);
 
@@ -180,7 +193,7 @@ export default function MaterialRequestsTab({ projectId, editable = true }) {
             showFilter={false}
             width="280px"
           />
-          {isAllowed(PageName, 'w') && filtered.find(itm => itm.status.toLowerCase().includes("draft")) && (
+          {isAllowed(PageName, 'w') && filtered.find(itm => (itm.status || '').toLowerCase().includes("draft")) && (
             <Button onClick={() => { getDocumentPDFById(projectId); }}>Generate RIV</Button>
           )}
           {isAllowed(PageName, 'w') && editable && (
@@ -200,12 +213,20 @@ export default function MaterialRequestsTab({ projectId, editable = true }) {
         isOpen={isModalOpen}
         fields={modalFields}
         onItemRemove={() => {}}
-        onClose={isAllowed(PageName, 'w') && editable ? async (value) => {
+          onClose={isAllowed(PageName, 'w') && editable ? async (value) => {
           if (!value) {
               setIsModalOpen(false);
               setEditing(null);
               return;
             }
+
+              // Prevent updating non-draft items
+              if (value.id && editing && !((editing.status || '').toLowerCase().includes('draft'))) {
+                toast.error('Only draft material requests can be edited');
+                setIsModalOpen(false);
+                setEditing(null);
+                return;
+              }
 
             // Field validation (Yup) will prevent saving when requestedQty > projectQty
 
@@ -247,7 +268,7 @@ export default function MaterialRequestsTab({ projectId, editable = true }) {
             setEditing(null);
           }
         }}
-        readOnly={!editable || !isAllowed(PageName, 'w')}
+        readOnly={!editable || !isAllowed(PageName, 'w') || (editing && !((editing.status || '').toLowerCase().includes('draft')))}
       />
     </div>
   );

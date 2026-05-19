@@ -32,6 +32,10 @@ export default function StatusBadge({ status, className = '' }) {
       // Delivery / purchase statuses
       case 'PREPARED':
         return styles.prepared;
+      case 'REQUESTED':
+      case 'REQUEST':
+      case 'REQUESTED ':
+        return styles.requested;
       case 'PARTIAL':
         return styles.partial;
       case 'DELIVERED':

@@ -14,7 +14,7 @@ import InvalidPage from '@/components/InvalidPage/page';
 
 const baseColumns = [
   { header: 'Id', key: 'id' },
-  { header: 'Code', key: 'code' },
+  { header: 'Project No', key: 'projectNo' },
   { header: 'Name', key: 'name' },
   { header: 'Status', key: 'status', render: (item) => <StatusBadge status={item.status || item.projectStatus || item.state} /> },
   { header: 'Company', key: 'companyName' },
@@ -203,7 +203,7 @@ export default function ProjectLanding() {
   }, [items]);
 
   const filterFn = (item, keyword) => {
-    return [item.id, item.code, item.name, item.companyName, item.contactNumber, item.address, item.reference, item.updatedBy]
+    return [item.id, item.projectNo, item.name, item.companyName, item.status]
       .filter(Boolean)
       .some((v) => String(v).toLowerCase().includes(keyword));
   };

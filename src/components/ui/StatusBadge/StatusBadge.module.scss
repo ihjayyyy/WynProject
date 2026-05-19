@@ -56,6 +56,13 @@
   border: 1px solid #1e3a8a;
 }
 
+.requested {
+  /* same tone as submitted/requested - soft blue */
+  background-color: #eef2ff;
+  color: #1e3a8a;
+  border: 1px solid #1e3a8a;
+}
+
 .pending {
   background-color: #fffbeb;
   color: #92400e;

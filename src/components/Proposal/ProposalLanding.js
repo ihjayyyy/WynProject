@@ -34,8 +34,8 @@ const baseColumns = [
       </div>
     ),
   },
-  { header: 'UpdatedBy', key: 'updatedBy' },
-  { header: 'UpdatedAt', key: 'updatedAt', render: (item) => (item.updatedAt ? new Date(item.updatedAt).toLocaleString() : '') },
+  // { header: 'UpdatedBy', key: 'updatedBy' },
+  // { header: 'UpdatedAt', key: 'updatedAt', render: (item) => (item.updatedAt ? new Date(item.updatedAt).toLocaleString() : '') },
 ];
 
 export default function ProposalLanding() {
@@ -279,7 +279,7 @@ export default function ProposalLanding() {
   }, [items]);
 
   const filterFn = (item, keyword) => {
-    return [item.id, item.code, item.name, item.customerName, item.contactNumber, item.address, item.customerReferenceNumber, item.updatedBy]
+    return [item.id, item.proposalNo, item.name, item.customerName, item.customerReferenceNumber]
       .filter(Boolean)
       .some((v) => String(v).toLowerCase().includes(keyword));
   };

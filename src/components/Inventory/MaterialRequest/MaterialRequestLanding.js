@@ -1,9 +1,9 @@
 'use client';
 
 import React, { useMemo, useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+// no router needed for view-only landing
 import Landing from '../../ui/Landing/Landing';
-import { FiEye } from 'react-icons/fi';
+// no action icons or dropdown needed
 import { getMaterialRequests } from '../../../services/MaterialRequest';
 
 const baseColumns = [
@@ -12,14 +12,12 @@ const baseColumns = [
   { header: 'Code', key: 'code' },
   { header: 'Material', key: 'materialId' },
   { header: 'Project', key: 'projectId' },
-  { header: 'Qty', key: 'qty' },
   { header: 'Requested By', key: 'requestedBy' },
   { header: 'Status', key: 'status' },
-  { header: 'Request Date', key: 'requestDate' },
+  { header: 'Request Date', key: 'requestDate', render: (item) => (item.requestDate ? new Date(item.requestDate).toLocaleString() : '') },
 ];
 
 export default function MaterialRequestLanding() {
-  const router = useRouter();
   const [requests, setRequests] = useState([]);
 
   useEffect(() => {
@@ -36,11 +34,8 @@ export default function MaterialRequestLanding() {
   const columns = useMemo(() => {
     return [
       ...baseColumns,
-      { header: 'Action', key: 'actions', align: 'right', render: (item) => (
-        <button onClick={() => router.push(`/inventory/material-request/${item.id}`)} title="View"><FiEye size={14} /></button>
-      ) },
     ];
-  }, [router]);
+  }, []);
 
   const stats = useMemo(() => {
     const total = requests.length;

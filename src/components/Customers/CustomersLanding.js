@@ -67,10 +67,6 @@ export default function CustomersLanding() {
   const filterFn = (item, keyword) => {
     return [
       item.id,
-      item.createdBy,
-      item.createdDate,
-      item.updatedBy,
-      item.updatedDate,
       item.code,
       item.name,
       item.customerName,
