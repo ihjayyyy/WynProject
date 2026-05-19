@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState, useMemo } from "react";
 import Landing from "../ui/Landing/Landing";
-import { generateMaterialInventoryReport } from "../../services/MaterialInventory";
+import { generateMaterialInventoryReport, getDocumentPDF } from "../../services/MaterialInventory";
 
 export default function MaterialInventoryReportLanding() {
   const [items, setItems] = useState([]);
@@ -73,6 +73,8 @@ export default function MaterialInventoryReportLanding() {
       emptyMessage={error ? `Error: ${String(error)}` : "No records found"}
       width="320px"
       filterFn={filterFn}
+      onNew={getDocumentPDF}
+      newButtonLabel={"Generate Report PDF"}
     />
   );
 }

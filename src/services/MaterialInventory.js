@@ -1,3 +1,5 @@
+import { handleOpenPdf } from "./Helper";
+
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL + "/MaterialInventory";
 
 export const INITIAL_MATERIAL_INVENTORY = {
@@ -112,6 +114,18 @@ async function generateMaterialInventoryReport() {
     };
   }
 }
+async function getDocumentPDF() {
+  try {
+    const url = `${API_BASE_URL}/GenerateReport/pdf`;
+    const res = await fetch(url, {
+            method: 'GET',
+            headers: { Accept: '*/*' },
+    });
+    handleOpenPdf(res);
+  } catch (error) {
+    return { data: null, error: error?.message || error };
+  }
+}
 
 export {
   getMaterialInventories,
@@ -119,7 +133,8 @@ export {
   getMaterialInventoryByMaterialId,
   createMaterialInventory,
   updateMaterialInventory,
-  generateMaterialInventoryReport
+  generateMaterialInventoryReport,
+  getDocumentPDF
 };
 
 export default {
@@ -128,5 +143,6 @@ export default {
   getMaterialInventoryByMaterialId,
   createMaterialInventory,
   updateMaterialInventory,
-  generateMaterialInventoryReport
+  generateMaterialInventoryReport,
+  getDocumentPDF
 };
