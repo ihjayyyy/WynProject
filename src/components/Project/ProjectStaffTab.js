@@ -233,10 +233,11 @@ export default function ProjectStaffTab({ projectId = 0, editable = true }) {
           <Button
             size="sm"
             variant="danger"
-            icon={<FiTrash2 />}
             title="Delete"
             onClick={() => { setConfirmTarget(it); setIsConfirmOpen(true); }}
-          />
+          >
+            Delete
+          </Button>
         </div>
       ) : null,
     },

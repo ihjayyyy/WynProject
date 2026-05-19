@@ -7,7 +7,6 @@ export const INITIAL_MATERIAL_REQUEST = {
     code: '',
     materialId: 0,
     projectId: 0,
-    qty: 0,
     projectQty: 0,
     requestedQty: 0,
     balance: 0,
@@ -15,9 +14,6 @@ export const INITIAL_MATERIAL_REQUEST = {
     requestedBy: '',
     deadline: '',
     requestDate: '',
-    status: '',
-    responseBy: '',
-    responseDate: '',
 };
 
 async function getMaterialRequests() {
