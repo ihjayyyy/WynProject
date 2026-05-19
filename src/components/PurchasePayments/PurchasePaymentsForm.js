@@ -342,11 +342,11 @@ export default function PurchasePaymentsForm() {
 
           {mode !== 'view' && (
             <>
-              <Button
-                variant="outlineDanger"
-                onClick={() => {
-                  // Cancel edit: if editing existing payment, revert to view and reset table data and form
-                  if (paymentId && paymentId !== 0) {
+              {paymentId !== 0 && (
+                <Button
+                  variant="outlineDanger"
+                  onClick={() => {
+                    // Cancel edit: if editing existing payment, revert to view and reset table data and form
                     setTableData({
                       items: payment?.children || [],
                       deletedItems: payment?.deletedChildren || [],
@@ -354,17 +354,14 @@ export default function PurchasePaymentsForm() {
                     setMode('view');
                     setFormKey((k) => k + 1);
                     if (payment?.supplierId) fetchInvoices(payment.supplierId);
-                  } else {
-                    // new payment flow: navigate back
-                    router.push('/purchase/payments');
-                  }
-                }}>
-                Cancel
-              </Button>
+                  }}>
+                  Cancel
+                </Button>
+              )}
 
               {isAllowed(PageName, 'w') && (
                 <Button type="submit" variant="save">
-                  {paymentId && paymentId !== 0 ? 'Save' : 'Create'}
+                  {paymentId !== 0 ? 'Save' : 'Create'}
                 </Button>
               )}
             </>

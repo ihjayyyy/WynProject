@@ -9,7 +9,9 @@ export const PurchasePaymentFields = (suppliers = [], onFieldChanged) => [
     options: suppliers.map((s) => ({ label: s.name, value: s.id })),
     searchable: true,
     span: 'span2',
-    onChange: onFieldChanged,
+    onChange: (value, allValues, setValues) =>
+      typeof onFieldChanged === 'function' &&
+      onFieldChanged('supplierId', value, allValues, setValues),
   },
   { name: 'spacer-1', type: 'spacer', span: 'span4' },
   { name: 'paymentDate', label: 'Payment Date', type: 'date', span: 'span2' },
@@ -18,7 +20,9 @@ export const PurchasePaymentFields = (suppliers = [], onFieldChanged) => [
     label: 'Withholding Tax %',
     type: 'number',
     span: 'span2',
-    onChange: onFieldChanged,
+    onChange: (value, allValues, setValues) =>
+      typeof onFieldChanged === 'function' &&
+      onFieldChanged('withholdingTaxPercentage', value, allValues, setValues),
   },
   { name: 'spacer-2', type: 'spacer', span: 'span4' },
   {
