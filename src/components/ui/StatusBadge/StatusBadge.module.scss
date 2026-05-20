@@ -97,6 +97,13 @@
   border: 1px solid #065f46;
 }
 
+.transferred {
+  /* use a success-like variant for transferred */
+  background-color: #d1fae5;
+  color: #065f46;
+  border: 1px solid #065f46;
+}
+
 .won {
   /* stronger success variant for won */
   background-color: #d1fae5;

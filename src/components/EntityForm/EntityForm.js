@@ -237,11 +237,17 @@ export default function EntityForm({
         const d = new Date(value);
         if (!isNaN(d)) return d.toLocaleString();
       }
-      if (fieldType === 'select' && Array.isArray(field.options)) {
-        const match = field.options.find(
-          (o) => String(o.value) === String(value),
-        );
-        if (match) return match.label;
+      if (fieldType === 'select') {
+        try {
+          const rawOpts = typeof field.options === 'function' ? field.options(allValues || {}) : field.options;
+          if (Array.isArray(rawOpts)) {
+            const opts = rawOpts.map((o) => ({ value: o.value, label: o.label ?? o.name ?? String(o.value) }));
+            const match = opts.find((o) => String(o.value) === String(value));
+            if (match) return match.label;
+          }
+        } catch (err) {
+          // ignore option evaluation errors
+        }
       }
     } catch (err) {
       // fallthrough to default
@@ -400,25 +406,35 @@ export default function EntityForm({
               {f.type === 'select' ? (
                 <div className={inputStyles.field}>
                   {f.label && <label htmlFor={f.name}>{f.label}</label>}
-                  <Select
-                    id={f.name}
-                    value={values[f.name] ?? ''}
-                    // Wrap onChange to provide a `name` on the event target so
-                    // EntityForm.handleChange can pick up which field changed.
-                    onChange={(ev) =>
-                      handleChange({
-                        target: {
-                          name: f.name,
-                          value: ev?.target?.value ?? ev,
-                        },
-                      })
-                    }
-                    options={f.options || []}
-                    placeholder={f.placeholder || f.label}
-                    searchable={!!f.searchable}
-                    className={f.className}
-                    disabled={fieldReadOnly}
-                  />
+                  {
+                    (() => {
+                      const rawOpts = typeof f.options === 'function' ? f.options(values) : (f.options || []);
+                      const opts = Array.isArray(rawOpts)
+                        ? rawOpts.map((o) => ({ value: o.value, label: o.label ?? o.name ?? String(o.value) }))
+                        : [];
+                      return (
+                        <Select
+                          id={f.name}
+                          value={values[f.name] ?? ''}
+                          // Wrap onChange to provide a `name` on the event target so
+                          // EntityForm.handleChange can pick up which field changed.
+                          onChange={(ev) =>
+                            handleChange({
+                              target: {
+                                name: f.name,
+                                value: ev?.target?.value ?? ev,
+                              },
+                            })
+                          }
+                          options={opts}
+                          placeholder={f.placeholder || f.label}
+                          searchable={!!f.searchable}
+                          className={f.className}
+                          disabled={fieldReadOnly}
+                        />
+                      );
+                    })()
+                  }
                 </div>
               ) : (
                 <Input

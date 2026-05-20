@@ -74,7 +74,8 @@ export default function Select({ id, value, onChange, options = [], className, s
     return () => document.removeEventListener('keydown', onKey);
   }, [open]);
 
-  const selectedOption = options.find(o => String(o.value) === String(value));
+  const opts = Array.isArray(options) ? options : [];
+  const selectedOption = opts.find(o => String(o.value) === String(value));
 
   function handleSelect(val) {
     // emulate native select event shape
@@ -87,8 +88,8 @@ export default function Select({ id, value, onChange, options = [], className, s
   // When `searchable` is false we render a read-only control that toggles the same dropdown list.
 
   const filtered = query.trim() === ''
-    ? options
-    : options.filter(o => (o.label || '').toString().toLowerCase().includes(query.toLowerCase()));
+    ? opts
+    : opts.filter(o => (o.label || '').toString().toLowerCase().includes(query.toLowerCase()));
 
   return (
     <div ref={wrapperRef} className={styles.selectWrapper + ' ' + styles.searchableWrapper + (className ? ` ${className}` : '')}>

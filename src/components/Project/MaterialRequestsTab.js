@@ -53,7 +53,7 @@ export default function MaterialRequestsTab({ projectId, editable = true }) {
           const key = c.materialId ? `mat:${c.materialId}` : `child:${c.id}`;
           if (seen.has(key)) return;
           seen.add(key);
-          mats.push({ id: c.materialId || c.id || 0, name: c.name || '', code: c.code || '', quantity: Number(c.quantity) || Number(c.initialQuantity) || 0 });
+          mats.push({ id: c.materialId || c.id || 0, name: c.name || '', code: c.code || '', quantity: Number(c.quantity) || Number(c.initialQuantity) || 0, uom: c.uom || '' });
         });
       });
       setMaterials(mats);
@@ -97,9 +97,11 @@ export default function MaterialRequestsTab({ projectId, editable = true }) {
           const mid = Number(nextValue) || 0;
           const mat = materials.find((m) => Number(m.id) === Number(mid));
           if (mat) {
+            console.log("Selected material", mat);
             updateField('projectQty', Number(mat.quantity) || 0);
             updateField('name', mat.name || '');
             updateField('code', mat.code || '');
+            updateField('uom', mat.uom || '');
           } else {
             updateField('projectQty', 0);
           }
@@ -116,6 +118,7 @@ export default function MaterialRequestsTab({ projectId, editable = true }) {
           updateField('balance', req);
         } },
       { name: 'balance', label: 'Balance', type: 'number', value: record.balance || record.requestedQty || '', readonly: true },
+      { name: 'uom', label: 'UOM', type: 'text', value: (selectedMaterial && selectedMaterial.uom) || record.uom || '', readonly: true },
       { name: 'reasonOrProject', label: 'Reason/Project', type: 'text', value: record.reasonOrProject || '' },
       { name: 'requestedBy', label: 'Requested By', type: 'text', value: record.requestedBy || authName || '', required: true, hidden: true },
       { name: 'deadline', label: 'Deadline', type: 'date', value: fmt(record.deadline) || defaultDeadline },
@@ -142,6 +145,7 @@ export default function MaterialRequestsTab({ projectId, editable = true }) {
     { header: 'RIV Number', key: 'rivNumber' },
     { header: 'Name', key: 'name' },
     { header: 'Code', key: 'code' },
+    { header: 'UOM', key: 'uom' },
     { header: 'Status', key: 'status', render: (item) => <StatusBadge status={item.status} /> },
     { header: 'Project Qty', key: 'projectQty' },
     { header: 'Requested Qty', key: 'requestedQty' },

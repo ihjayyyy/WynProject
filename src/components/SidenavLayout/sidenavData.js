@@ -193,6 +193,12 @@ export const sidenavItems = [
         name: 'Inventory.MaterialRequests',
       },
       {
+        label: 'Material Transfer',
+        icon: FiPackage,
+        href: '/inventory/materialtransfer',
+        name: 'Inventory.MaterialTransfer',
+      },
+      {
         label: 'Deliveries',
         icon: FiTruck,
         href: '/purchase/deliveries',
