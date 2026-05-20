@@ -28,6 +28,12 @@ import InvalidPage from '@/components/InvalidPage/page';
 import { AccessContext } from '@/app/contextProviders/accessContext';
 import { useConfirmModal } from '@/app/contextProviders/confirmModalContext';
 
+const toDateInputValue = (date) => {
+  const d = date ? new Date(date) : new Date();
+  if (isNaN(d)) return '';
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+};
+
 export default function PurchaseInvoiceForm() {
   const PageName = 'Purchase.Invoices';
   const { isAllowed } = useContext(AccessContext);
@@ -49,13 +55,11 @@ export default function PurchaseInvoiceForm() {
   const [tableData, setTableData] = useState([]);
   const [totalExcluded, setTotalExcluded] = useState(0);
   const [totalVAT, setTotalVAT] = useState(0);
-  const [totalIncluded, setTotalIncludedd] = useState(0);
+  const [totalIncluded, setTotalIncluded] = useState(0);
 
-  //load Supplier and Materials
+  // Load Suppliers and Materials
   useEffect(() => {
     const fetchSupplier = async () => {
-      console.log('Load Suppliers');
-
       const res = await getSuppliers();
       if (res && !res.error) {
         setSuppliers(res.data);
@@ -73,7 +77,6 @@ export default function PurchaseInvoiceForm() {
   }, []);
 
   const fetchOrders = async (supplierid) => {
-    console.log(supplierid);
     const res = await GetOrdersBySupplier(supplierid);
     if (res && !res.error) {
       setOrders(res.data);
@@ -82,7 +85,6 @@ export default function PurchaseInvoiceForm() {
 
   const loadOrders = async (orderId) => {
     const res = await GetPO(orderId);
-    console.log(res);
 
     const children = res.data.children.map((d) => {
       var orderItem = {
@@ -93,18 +95,21 @@ export default function PurchaseInvoiceForm() {
         code: d.code,
         name: d.name,
         uom: d.uom,
-
-        orderQuantity: d.quantity,
-        quantity: d.orderBalance,
-        previousBalance: d.orderBalance,
+        orderQuantity: Number(d.quantity) || 0,
+        quantity: Number(d.orderBalance) || 0,      
+        previousBalance: Number(d.orderBalance) || 0,
         remainingBalance: 0,
+        unitCost: Number(d.unitCost || 0),           
+        discount: Number(d.discount || 0),            
+        vat: Number(d.vat || 0),                      
+        amount: Number(d.amount || 0),                
         remarks: '',
       };
       return orderItem;
     });
 
-    setForm({ ...formData, children: children });
-    setTableData({ ...tableData, items: children });
+    setForm((prev) => ({ ...prev, children }));
+    setTableData((prev) => ({ ...prev, items: children }));
   };
 
   useEffect(() => {
@@ -123,18 +128,16 @@ export default function PurchaseInvoiceForm() {
     confirmModal.show(title, message, confirmText, variant, action);
   };
 
-  // set Form Fields
+  // Set Form Fields
   const onFormChange = (fieldname, value, updatedformData) => {
-    console.log('field changed.', fieldname, value, updatedformData);
-
     if (fieldname === 'supplierId') {
       fetchOrders(value);
     }
-
     if (fieldname === 'purchaseOrderId') {
       confirmLoadOrders(value);
     }
   };
+
   const formFields = FormFields(suppliers, orders, onFormChange);
   const childTableColumns = TableColumns;
   const [childFields, setItemFields] = useState(
@@ -143,21 +146,21 @@ export default function PurchaseInvoiceForm() {
 
   const GetFormData = async () => {
     let initData = { ...InitialData };
+
     if (formId !== 0) {
       const getdata = await Get(formId);
-      console.log('get form data', getdata);
       initData = getdata.data;
 
-      // Normalize date fields for form input
-      if (initData.invoiceDate) {
-        const d = new Date(initData.invoiceDate);
-        if (!isNaN(d)) {
-          initData.invoiceDate = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-        }
+      initData.invoiceDate = toDateInputValue(initData.invoiceDate);
+
+      if (initData.dueDate) {
+        initData.dueDate = toDateInputValue(initData.dueDate);
       }
     } else {
       setMode('new');
+      initData.invoiceDate = toDateInputValue(null);
     }
+
     setForm(initData);
     setvalidForm(Object.keys(initData).length === 0 ? false : true);
     setTableData({
@@ -166,18 +169,18 @@ export default function PurchaseInvoiceForm() {
     });
   };
 
-  //set Form Data
+  // Set Form Data
   useEffect(() => {
     GetFormData();
   }, [formId]);
 
-  //Set Form View
+  // Set Form View
   const isReadOnly = useMemo(() => {
     if (validForm) return mode === 'view';
     else return true;
   }, [formData, mode]);
 
-  //Set Form Title
+  // Set Form Title
   const formTitle = useMemo(() => {
     const title =
       formData && formData.status ? formData.invoiceNumber : 'New Invoice';
@@ -192,8 +195,6 @@ export default function PurchaseInvoiceForm() {
   }, [formData]);
 
   const detailsUpdated = (items, deletedItems) => {
-    console.log('Table has changed');
-    // console.log(po)
     const totalVAT = items.reduce(
       (total, item) => total + Number(item.vat || 0),
       0,
@@ -203,10 +204,10 @@ export default function PurchaseInvoiceForm() {
       0,
     );
     const totalexcluded = totalIncluded - totalVAT;
-    //calculate VAT
+
     setTotalExcluded(totalexcluded);
     setTotalVAT(totalVAT);
-    setTotalIncludedd(totalIncluded);
+    setTotalIncluded(totalIncluded);
 
     const formDataCopy = { ...formData };
     formDataCopy.children = items;
@@ -217,34 +218,27 @@ export default function PurchaseInvoiceForm() {
     setForm(formDataCopy);
   };
 
-  //Set Item Details data
+  // Set Item Details data
   useEffect(() => {
-    console.log('initialize Form items');
     updateItemFields();
   }, [materials, formData]);
 
   const updateItemFields = () => {
-    console.log(formData);
     var items = ItemsFields(materials, formData);
-    console.log(items);
     setItemFields(items);
   };
 
   const handleSaveConfirm = (entity) => {
-    console.log(entity);
-    const title = 'Save PO';
-    const message = 'Are you sure you want to save this PO?';
+    const title = 'Save Invoice';
+    const message = 'Are you sure you want to save this Invoice?';
     const confirmText = 'Save';
     const variant = 'primary';
     const action = () => async () => await save(entity);
     confirmModal.show(title, message, confirmText, variant, action);
   };
-  //Events: Save Form
+
+  // Events: Save Form
   const save = async (entity) => {
-    console.log(formData);
-
-    //final validate entity
-
     entity.children = (formData.children || []).map((child) => ({
       ...child,
       quantity: Number(child.quantity || 0),
@@ -253,23 +247,23 @@ export default function PurchaseInvoiceForm() {
       vat: Number(child.vat || 0),
       amount: Number(child.amount || 0),
     }));
-    entity.deletedChildren = po.deletedChildren;
+
+    entity.deletedChildren = formData.deletedChildren;
+
     const updatedForm = {
       ...formData,
       ...entity,
       vat: formData.vat,
       amount: formData.amount,
     };
-    console.log('submit');
-    console.log(updatedForm);
+
+    updatedForm.id = updatedForm.id ?? 0;
 
     let res = {};
-    updatedForm.id = updatedForm.id === null ?? 0;
-
-    updatedForm.id == 0
+    updatedForm.id === 0
       ? (res = await Create(updatedForm))
       : (res = await Update(updatedForm.id, updatedForm));
-    console.log(res);
+
     if (res?.error) {
       toast.error('Failed to save purchase Invoice.');
       return null;
@@ -290,10 +284,10 @@ export default function PurchaseInvoiceForm() {
 
   const Cancel = async () => {
     setMode('view');
-    const res = await SetStatus('Cancel', po.id);
+    const res = await SetStatus('Cancel', formData.id);
 
     if (res?.error) {
-      toast.error('Failed to submit purchase invoice.');
+      toast.error('Failed to cancel purchase invoice.');
       return null;
     } else {
       toast.success('Purchase Invoice has been cancelled.');
@@ -303,7 +297,7 @@ export default function PurchaseInvoiceForm() {
 
   const handleSubmitConfirm = () => {
     const title = 'Submit for approval';
-    const message = 'Are you sure you want to this invoice for approval?';
+    const message = 'Are you sure you want to submit this invoice for approval?';
     const confirmText = 'Submit';
     const variant = 'primary';
     const action = () => async () => await submitForApproval();
@@ -311,9 +305,7 @@ export default function PurchaseInvoiceForm() {
   };
 
   const submitForApproval = async () => {
-    //setMode("edit");
-    const res = await SubmitForApproval(po.id);
-    console.log(res);
+    const res = await SubmitForApproval(formData.id);
     if (res?.error) {
       toast.error('Failed to submit purchase invoice.');
       return null;
@@ -322,11 +314,12 @@ export default function PurchaseInvoiceForm() {
       router.push(backPath);
     }
   };
+
   const handleCanceEditConfirm = () => {
     const title = 'Cancel Edit';
     const message = 'Are you sure you want to cancel editing of this invoice?';
     const confirmText = 'Cancel Edit';
-    const variant = 'dangaer';
+    const variant = 'danger';
     const action = () => () => CancelEdit();
     confirmModal.show(title, message, confirmText, variant, action);
   };
@@ -346,7 +339,7 @@ export default function PurchaseInvoiceForm() {
 
   const approve = async () => {
     setMode('view');
-    const res = await Approve(po.id);
+    const res = await Approve(formData.id);
 
     if (res?.error) {
       toast.error('Failed to approve purchase invoice.');
@@ -358,8 +351,8 @@ export default function PurchaseInvoiceForm() {
   };
 
   const handleInvoiceConfirm = () => {
-    const title = 'Order';
-    const message = 'Are you sure you want to order this invoice?';
+    const title = 'Confirm Invoice';
+    const message = 'Are you sure you want to confirm this invoice?';
     const confirmText = 'Confirm Invoice';
     const variant = 'primary';
     const action = () => async () => await confirmForm();
@@ -368,7 +361,7 @@ export default function PurchaseInvoiceForm() {
 
   const confirmForm = async () => {
     setMode('view');
-    const res = await SetStatus('Invoice', formData.id);
+    const res = await ConfirmInvoice(formData.id);
 
     if (res?.error) {
       toast.error('Failed to confirm purchase invoice.');
@@ -390,7 +383,7 @@ export default function PurchaseInvoiceForm() {
 
   const reject = async () => {
     setMode('view');
-    const res = await Reject(po.id);
+    const res = await Reject(formData.id);
 
     if (res?.error) {
       toast.error('Failed to reject purchase invoice.');
@@ -412,7 +405,7 @@ export default function PurchaseInvoiceForm() {
 
   const archive = async () => {
     setMode('view');
-    const res = await SetStatus('Archive', po.id);
+    const res = await SetStatus('Archive', formData.id);
 
     if (res?.error) {
       toast.error('Failed to archive purchase invoice.');
@@ -437,7 +430,7 @@ export default function PurchaseInvoiceForm() {
     return;
   };
 
-  //buttons
+  // Buttons
   const CreateButton = () => {
     return isAllowed(PageName, 'w') && !formId ? (
       <Button type="submit" variant="save">
@@ -559,7 +552,7 @@ export default function PurchaseInvoiceForm() {
     validForm ? (
       <EntityForm
         title={formTitle}
-        breadcrumbLabel="Purchase Order"
+        breadcrumbLabel="Purchase Invoice"
         icon={<FiList />}
         fields={formFields}
         initialValues={formData}
@@ -614,6 +607,7 @@ export default function PurchaseInvoiceForm() {
             <CRUDButton />
             <ConfirmButton />
             <ArchiveButton />
+            <ApprovalButton />
           </div>
         }
       />
