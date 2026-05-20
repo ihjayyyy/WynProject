@@ -16,7 +16,7 @@ import InvalidPage from '@/components/InvalidPage/page';
 import { AccessContext } from '@/app/contextProviders/accessContext';
 import { useConfirmModal } from '@/app/contextProviders/confirmModalContext';
 import { getSuppliers } from '@/services/Supplier';
-import { GetAll as getAllInvoices } from '@/services/PurchaseInvoice';
+import { GetInvoicedBySupplier as getInvoicesBySupplier } from '@/services/PurchaseInvoice';
 import {
   createPayment,
   getPaymentById,
@@ -143,12 +143,35 @@ export default function PurchasePaymentsForm() {
       return;
     }
 
-    const res = await getAllInvoices();
+    const res = await getInvoicesBySupplier(supplierId);
     if (res && !res.error && Array.isArray(res.data)) {
-      const filtered = res.data.filter(
-        (invoice) => Number(invoice.supplierId) === Number(supplierId),
-      );
-      setInvoices(filtered);
+      setInvoices(res.data);
+      // If we already have table items loaded (e.g. viewing an existing payment),
+      // enrich them with invoice name/code from the fetched invoices so the table renders correctly.
+      setTableData((prev) => {
+        const items = (prev.items || []).map((it) => {
+          const found = res.data.find(
+            (i) => Number(i.id) === Number(it.invoiceId),
+          );
+          if (found) {
+            const material =
+              found.children && found.children.length
+                ? found.children[0]
+                : null;
+            return {
+              ...it,
+              name:
+                material?.name || found.invoiceNumber || found.name || it.name,
+              code: material?.code || found.code || it.code,
+              invoiceAmount: Number(
+                it.invoiceAmount || found.balance || found.invoiceAmount || 0,
+              ),
+            };
+          }
+          return it;
+        });
+        return { ...prev, items };
+      });
     } else {
       setInvoices([]);
     }
@@ -180,15 +203,22 @@ export default function PurchasePaymentsForm() {
   );
 
   useEffect(() => {
+    const items = tableData.items || [];
     const amount = parseFloat(
-      (tableData.items || [])
-        .reduce((sum, it) => sum + (Number(it.paidAmount) || 0), 0)
+      items
+        .reduce((sum, it) => sum + (Number(it.invoiceAmount) || 0), 0)
         .toFixed(2),
     );
     const withholding = parseFloat(
-      (amount * (withholdingTaxPercentage || 0)) / 100 || 0,
-    ).toFixed(2);
-    const net = parseFloat((amount - Number(withholding)).toFixed(2));
+      items
+        .reduce((sum, it) => sum + (Number(it.withholdingTax) || 0), 0)
+        .toFixed(2),
+    );
+    const net = parseFloat(
+      items
+        .reduce((sum, it) => sum + (Number(it.totalAmountPaid) || 0), 0)
+        .toFixed(2),
+    );
 
     setComputedAmount(amount);
     setComputedWithholdingTax(Number(withholding));
@@ -201,8 +231,8 @@ export default function PurchasePaymentsForm() {
   );
 
   const paymentItemFields = useMemo(
-    () => PurchasePaymentItemFields(invoices),
-    [invoices],
+    () => PurchasePaymentItemFields(invoices, withholdingTaxPercentage),
+    [invoices, withholdingTaxPercentage],
   );
 
   const detailsUpdated = (items, deletedItems) => {
@@ -218,6 +248,8 @@ export default function PurchasePaymentsForm() {
     invoiceId: item.invoiceId ?? 0,
     invoiceAmount: Number(item.invoiceAmount) || 0,
     paidAmount: Number(item.paidAmount) || 0,
+    withholdingTax: Number(item.withholdingTax) || 0,
+    totalAmountPaid: Number(item.totalAmountPaid) || 0,
     balance: Number(item.balance) || 0,
   });
 
@@ -294,7 +326,7 @@ export default function PurchasePaymentsForm() {
         <div className={PurchasePaymentsStyles.extraContentContainer}>
           <DetailsTable
             itemModalHeader="Payment Details"
-            parentId={0}
+            parentId={paymentId}
             columns={PurchasePaymentDetailsColumns}
             editable={true}
             showActions={false}

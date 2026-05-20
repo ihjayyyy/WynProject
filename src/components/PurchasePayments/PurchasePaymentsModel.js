@@ -43,7 +43,11 @@ export const PurchasePaymentFields = (suppliers = [], onFieldChanged) => [
 ];
 
 export const PurchasePaymentDetailsColumns = [
-  { header: 'Invoice', key: 'name', width: '220px' },
+  {
+    header: 'Invoice',
+    key: 'name',
+    width: '220px',
+  },
   {
     header: 'Invoice Amount',
     key: 'invoiceAmount',
@@ -79,7 +83,10 @@ export const PurchasePaymentDetailsColumns = [
   },
 ];
 
-export const PurchasePaymentItemFields = (invoices = []) => [
+export const PurchasePaymentItemFields = (
+  invoices = [],
+  withholdingTaxPercent = 0,
+) => [
   { name: 'id', type: 'number', hidden: true, initialvalue: 0 },
   { name: 'parentId', type: 'number', hidden: true, initialvalue: 0 },
   { name: 'paymentId', type: 'number', hidden: true, initialvalue: 0 },
@@ -97,15 +104,22 @@ export const PurchasePaymentItemFields = (invoices = []) => [
       const found = invoices.find((i) => Number(i.id) === Number(target.value));
       const invoiceAmount = Number(found?.balance ?? found?.invoiceAmount ?? 0);
       updateField('invoiceAmount', invoiceAmount);
-      updateField(
-        'name',
-        found?.invoiceNumber || found?.name || `Invoice #${found?.id || 0}`,
-      );
-      updateField('code', found?.code || '');
-      const paid = Number(
-        fields.find((f) => f.name === 'paidAmount')?.value || 0,
-      );
-      updateField('balance', parseFloat((invoiceAmount - paid).toFixed(2)));
+      const material =
+        found?.children && found.children.length ? found.children[0] : null;
+      const code = material?.code || found?.code || '';
+      const displayName =
+        material?.name ||
+        found?.invoiceNumber ||
+        found?.name ||
+        `Invoice #${found?.id || 0}`;
+      updateField('name', displayName);
+      updateField('code', code);
+
+      const round = (n) => Math.round((Number(n) || 0) * 100) / 100;
+      updateField('paidAmount', 0);
+      updateField('withholdingTax', 0);
+      updateField('totalAmountPaid', 0);
+      updateField('balance', round(invoiceAmount));
     },
   },
   {
@@ -127,8 +141,26 @@ export const PurchasePaymentItemFields = (invoices = []) => [
         fields.find((f) => f.name === 'invoiceAmount')?.value || 0,
       );
       const paid = Number(target.value) || 0;
-      updateField('balance', parseFloat((invoiceAmount - paid).toFixed(2)));
+      const pct = Number(withholdingTaxPercent) || 0;
+      const tax = parseFloat((paid * (pct / 100)).toFixed(2));
+      const total = parseFloat((paid - tax).toFixed(2));
+      updateField('withholdingTax', tax);
+      updateField('totalAmountPaid', total);
+      updateField('balance', parseFloat((invoiceAmount - total).toFixed(2)));
     },
+  },
+  {
+    name: 'withholdingTax',
+    label: 'Withholding Tax',
+    type: 'number',
+    initialvalue: 0,
+  },
+  {
+    name: 'totalAmountPaid',
+    label: 'Net Amount',
+    type: 'number',
+    initialvalue: 0,
+    readonly: true,
   },
   {
     name: 'balance',
