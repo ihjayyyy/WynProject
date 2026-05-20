@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useMemo, useState, useEffect,useContext } from 'react';
+import React, { useMemo, useState, useEffect,useContext, useCallback } from 'react';
 import { useRouter,useSearchParams } from 'next/navigation';
 import { FiList } from 'react-icons/fi';
 import { FormFields,TableColumns,ItemsFields } from './PRModels';
@@ -120,15 +120,13 @@ const formTitle = useMemo(() => {
 }, [formData]);
 
 //Events : When Details Changed
-const detailsUpdated = (items, deletedItems) =>{
-      console.log("Table has changed")
-
-        const dataCopy = {...formData};
-        dataCopy.children = items;
-        dataCopy.deletedChildren = deletedItems;
-
-    setFormData(dataCopy);
-  }
+const detailsUpdated = useCallback((items, deletedItems) => {
+  console.log("Table has changed");
+  const dataCopy = { ...formData };
+  dataCopy.children = items;
+  dataCopy.deletedChildren = deletedItems;
+  setFormData(dataCopy);
+}, [formData]);
 
 //Set Item Details data
 useEffect(() => {
@@ -156,14 +154,17 @@ const handleSaveConfirm =(entity)=>{
   const save = async(entity)=>{
     console.log(formData)
 
-    //final validate entity
+  if (!entity.requestDate) {
+    const today = new Date();
+    entity.requestDate = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+  }
 
-    entity.children = (formData.children || []).map((child) => ({
-      ...child,
-      quantity: Number(child.quantity || 0),
-    }));
-    entity.deletedChildren = formData.deletedChildren;
-    const updatedForm = {...formData, ...entity}
+  entity.children = (formData.children || []).map((child) => ({
+    ...child,
+    quantity: Number(child.quantity || 0),
+  }));
+  entity.deletedChildren = formData.deletedChildren;
+  const updatedForm = { ...formData, ...entity };
     console.log("submit")
     console.log(updatedForm)
     
