@@ -86,29 +86,41 @@ export default function PurchaseInvoiceForm() {
   const loadOrders = async (orderId) => {
     const res = await GetPO(orderId);
 
-    const children = res.data.children.map((d) => {
-      var orderItem = {
-        id: 0,
-        parentId: 0,
-        poChildId: d.id,
-        materialId: d.materialId,
-        code: d.code,
-        name: d.name,
-        uom: d.uom,
-        orderQuantity: Number(d.quantity) || 0,
-        quantity: Number(d.orderBalance) || 0,      
-        previousBalance: Number(d.orderBalance) || 0,
-        remainingBalance: 0,
-        unitCost: Number(d.unitCost || 0),           
-        discount: Number(d.discount || 0),            
-        vat: Number(d.vat || 0),                      
-        amount: Number(d.amount || 0),                
-        remarks: '',
-      };
-      return orderItem;
-    });
+    const children = res.data.children.map((d) => ({
+      id: 0,
+      parentId: 0,
+      poChildId: d.id,
+      materialId: d.materialId,
+      code: d.code,
+      name: d.name,
+      uom: d.uom,
+      orderQuantity: Number(d.quantity) || 0,
+      quantity: Number(d.orderBalance) || 0,
+      previousBalance: Number(d.orderBalance) || 0,
+      remainingBalance: 0,
+      unitCost: Number(d.unitCost || 0),
+      discount: Number(d.discount || 0),
+      vat: Number(d.vat || 0),
+      amount: Number(d.amount || 0),
+      remarks: '',
+    }));
 
-    setForm((prev) => ({ ...prev, children }));
+    const computedVAT = children.reduce((sum, c) => sum + Number(c.vat || 0), 0);
+    const computedAmount = children.reduce((sum, c) => sum + Number(c.amount || 0), 0);
+    const computedExcluded = computedAmount - computedVAT;
+
+    setTotalExcluded(computedExcluded);
+    setTotalVAT(computedVAT);
+    setTotalIncluded(computedAmount);
+
+    setForm((prev) => ({
+      ...prev,
+      children,
+      deletedChildren: prev.deletedChildren || [],
+      vat: computedVAT,
+      amount: computedAmount,
+    }));
+
     setTableData((prev) => ({ ...prev, items: children }));
   };
 
@@ -237,41 +249,48 @@ export default function PurchaseInvoiceForm() {
     confirmModal.show(title, message, confirmText, variant, action);
   };
 
-  // Events: Save Form
-  const save = async (entity) => {
-    entity.children = (formData.children || []).map((child) => ({
-      ...child,
-      quantity: Number(child.quantity || 0),
-      unitCost: Number(child.unitCost || 0),
-      discount: Number(child.discount || 0),
-      vat: Number(child.vat || 0),
-      amount: Number(child.amount || 0),
-    }));
+const save = async (entity) => {
+  entity.children = (formData.children || []).map((child) => ({
+    ...child,
+    quantity: Number(child.quantity || 0),
+    unitCost: Number(child.unitCost || 0),
+    discount: Number(child.discount || 0),
+    vat: Number(child.vat || 0),
+    amount: Number(child.amount || 0),
+  }));
 
-    entity.deletedChildren = formData.deletedChildren;
+  entity.deletedChildren = formData.deletedChildren;
 
-    const updatedForm = {
-      ...formData,
-      ...entity,
-      vat: formData.vat,
-      amount: formData.amount,
-    };
+  // ✅ Compute totals directly from children instead of relying on formData.vat/amount
+  const computedVat = entity.children.reduce(
+    (sum, child) => sum + Number(child.vat || 0), 0
+  );
+  const computedAmount = entity.children.reduce(
+    (sum, child) => sum + Number(child.amount || 0), 0
+  );
 
-    updatedForm.id = updatedForm.id ?? 0;
-
-    let res = {};
-    updatedForm.id === 0
-      ? (res = await Create(updatedForm))
-      : (res = await Update(updatedForm.id, updatedForm));
-
-    if (res?.error) {
-      toast.error('Failed to save purchase Invoice.');
-      return null;
-    } else {
-      toast.success('Purchase Invoice has been saved.');
-      router.push(backPath);
-    }
+  const updatedForm = {
+    ...formData,
+    ...entity,
+    vat: computedVat,       
+    amount: computedAmount,
   };
+
+  updatedForm.id = updatedForm.id ?? 0;
+
+  let res = {};
+  updatedForm.id === 0
+    ? (res = await Create(updatedForm))
+    : (res = await Update(updatedForm.id, updatedForm));
+
+  if (res?.error) {
+    toast.error('Failed to save purchase Invoice.');
+    return null;
+  } else {
+    toast.success('Purchase Invoice has been saved.');
+    router.push(backPath);
+  }
+};
 
   const handleCancelConfirm = () => {
     const title = 'Cancel Invoice';
