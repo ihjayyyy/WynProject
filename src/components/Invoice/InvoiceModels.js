@@ -23,6 +23,7 @@ import * as Yup from "yup";
           const valuesCopy = { ...values, 
             code:found.code,
             name:found.name,
+            supplierName:found.name,
             contactNumber:found.contactNumber,
             contactPerson:found.contactPerson,
             email:found.email,
@@ -48,11 +49,11 @@ import * as Yup from "yup";
                   onFieldhanged("purchaseOrderId", val, clearedValues);
                   return;
                }
-            var today = new Date();
-            var dueDate = today.setDate(today.getDate() + found.terms);   
-            console.log(dueDate)
+const dueDateObj = new Date();
+dueDateObj.setDate(dueDateObj.getDate() + found.terms);
+const dueDate = `${dueDateObj.getFullYear()}-${String(dueDateObj.getMonth() + 1).padStart(2, '0')}-${String(dueDateObj.getDate()).padStart(2, '0')}`;
             const valuesCopy = { ...values, 
-            orderNumber:found.orderNumber,
+            purchaseOrderNumber:found.orderNumber,
             contactNumber:found.contactNumber,
             contactPerson:found.contactPerson,
             email:found.email,

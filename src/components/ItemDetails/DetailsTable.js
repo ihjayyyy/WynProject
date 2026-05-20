@@ -15,18 +15,40 @@ export default function DetailsTable({ itemModalHeader, columns = [], data = { i
   const [modalMode, setModalMode] = useState("new");
   const [itemIndex, setItemIndex] = useState(-1);
 
-  // FIX: Track whether the last items/deleteditems change came from the parent (via data prop)
-  // or from an internal user action (add/update/delete). We only call onChange for internal
-  // actions — not when we're just syncing down from the parent — which breaks the loop.
+  // Tracks whether the last items/deleteditems change was from a user action
+  // (add/update/delete) vs a sync from the parent data prop.
+  // Only call onChange for internal actions to avoid echoing state back up.
   const isInternalChangeRef = useRef(false);
 
-  // Sync itemFields from props
+  // Hold a stable ref to onChange so the notify effect never re-runs just
+  // because the parent re-rendered and passed a new function reference.
+  // (detailsUpdated in PRForm is recreated on every render.)
+  const onChangeRef = useRef(onChange);
+  useEffect(() => { onChangeRef.current = onChange; }, [onChange]);
+
+  // FIX: Ref-based equality guard — only call setModalFields when fields have
+  // actually changed in a meaningful way. itemFields is a new array reference
+  // on every render (produced by ItemsFields via useMemo in the parent), so a
+  // naive [itemFields] dependency always fires and causes an infinite loop.
+  const prevItemFieldsKeyRef = useRef(null);
   useEffect(() => {
-    const localizeItemFields = itemFields.map((item) => ({ ...item }));
-    setModalFields(localizeItemFields);
+    const nextKey = JSON.stringify(
+      (itemFields || []).map(f => ({
+        name: f.name,
+        value: f.value,
+        readonly: f.readonly,
+        hidden: f.hidden,
+        optionsLen: (f.options || []).length,
+      }))
+    );
+
+    if (prevItemFieldsKeyRef.current === nextKey) return; // nothing meaningful changed
+    prevItemFieldsKeyRef.current = nextKey;
+
+    setModalFields(itemFields.map((item) => ({ ...item })));
   }, [itemFields]);
 
-  // Sync items from parent data prop — mark as external so onChange is NOT fired
+  // Sync items from parent data prop — mark as external so onChange is NOT fired.
   useEffect(() => {
     const mapped = (data.items || []).map((item) => ({ ...item }));
     const deletedItems = (data.deletedItems || []).map((item) => ({ ...item }));
@@ -35,12 +57,15 @@ export default function DetailsTable({ itemModalHeader, columns = [], data = { i
     setDeletedItems(deletedItems);
   }, [data]);
 
-  // Notify parent only when items changed due to an internal user action (add/update/delete)
+  // Notify parent only when items changed due to an internal user action (add/update/delete).
+  // onChange is intentionally excluded from deps — we use onChangeRef to avoid
+  // re-running this effect every time the parent re-renders with a new function ref.
   useEffect(() => {
     if (isInternalChangeRef.current) {
-      onChange(items, deleteditems);
+      onChangeRef.current(items, deleteditems);
     }
-  }, [items, deleteditems, onChange]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [items, deleteditems]);
 
   const initializeItem = (data) => {
     const initializedFields = modalFields.map((item) => {
@@ -101,7 +126,6 @@ export default function DetailsTable({ itemModalHeader, columns = [], data = { i
   const close = (data, index) => {
     if (data) {
       index === "undefined" || index === -1 ? addDataTableItem(data) : updateDataTableItem(data, index);
-      // Note: onChange is handled by the items useEffect above for add/update
     }
     setModalOpen(false);
   };

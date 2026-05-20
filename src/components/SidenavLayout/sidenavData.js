@@ -98,11 +98,30 @@ export const sidenavItems = [
         href: '/purchase/orders',
         name: 'Purchase.Orders',
       },
+    ],
+  },
+  {
+    label: 'Finance',
+    icon: FiCreditCard,
+    name: 'Finance',
+    children: [
       {
-        label: 'Deliveries',
-        icon: FiTruck,
-        href: '/purchase/deliveries',
-        name: 'Purchase.Deliveries',
+        label: 'Project Billings',
+        icon: FiDatabase,
+        href: '/finance/billings',
+        name: 'Finance.Billings',
+      },
+      // {
+      //   label: 'Purchase Billing',
+      //   icon: FiFile,
+      //   href: '/finance/invoice',
+      //   name: 'Finance.Invoices',
+      // },
+      {
+        label: 'Collections',
+        icon: FiFolder,
+        href: '/finance/collections',
+        name: 'Finance.Collections',
       },
       {
         label: 'Invoices',
@@ -118,56 +137,13 @@ export const sidenavItems = [
       },
     ],
   },
-  {
-    label: 'Finance',
-    icon: FiCreditCard,
-    name: 'Finance',
-    children: [
-      {
-        label: 'Project Billings',
-        icon: FiDatabase,
-        href: '/finance/billings',
-        name: 'Finance.Billings',
-      },
-      {
-        label: 'Purchase Billing',
-        icon: FiFile,
-        href: '/finance/invoice',
-        name: 'Finance.Invoices',
-      },
-      {
-        label: 'Collections',
-        icon: FiFolder,
-        href: '/finance/collections',
-        name: 'Finance.Collections',
-      },
-      {
-        label: 'Payment',
-        icon: FiCreditCard,
-        href: '/finance/payment',
-        name: 'Finance.Payments',
-      },
-    ],
-  },
-  {
-    label: 'Storage',
-    icon: FiSettings,
-    name: 'Storage',
-    children: [
-      {
-        label: 'Warehouse',
-        icon: FiDatabase,
-        href: '/storagesettings/warehouse',
-        name: 'Storage.Warehouse',
-      },
-      {
-        label: 'Rack',
-        icon: FiLayers,
-        href: '/storagesettings/rack',
-        name: 'Storage.Rack',
-      },
-    ],
-  },
+  // {
+  //   label: 'Storage',
+  //   icon: FiSettings,
+  //   name: 'Storage',
+  //   children: [
+  //   ],
+  // },
   {
     label: 'Materials',
     icon: FiPackage,
@@ -217,6 +193,12 @@ export const sidenavItems = [
         name: 'Inventory.MaterialRequests',
       },
       {
+        label: 'Deliveries',
+        icon: FiTruck,
+        href: '/purchase/deliveries',
+        name: 'Purchase.Deliveries',
+      },
+      {
         label: 'Inventory Report',
         icon: FiFileText,
         href: '/inventory/inventory-report',
@@ -225,27 +207,27 @@ export const sidenavItems = [
     ],
   },
   {
-    label: 'Staff',
-    icon: FiUsers,
-    href: '/staff',
-    name: 'Staff',
-  },
-  {
     label: 'Maintenance',
     icon: FiTool,
     name: 'Maintenance',
     children: [
       {
-        label: 'Unit of Measure',
-        icon: FiList,
-        href: '/maintainance/UOM',
-        name: 'Maintenance.UOM',
+        label: 'Warehouse',
+        icon: FiDatabase,
+        href: '/storagesettings/warehouse',
+        name: 'Storage.Warehouse',
       },
       {
-        label: 'UOM Conversion',
-        icon: FiList,
-        href: '/maintainance/UOMConvertion',
-        name: 'Maintenance.UOMConversion',
+        label: 'Rack',
+        icon: FiLayers,
+        href: '/storagesettings/rack',
+        name: 'Storage.Rack',
+      },
+      {
+        label: 'Staff',
+        icon: FiUsers,
+        href: '/staff',
+        name: 'Staff',
       },
       {
         label: 'Users',
@@ -258,6 +240,18 @@ export const sidenavItems = [
         icon: FiUserPlus,
         href: '/maintainance/roles',
         name: 'Maintenance.Roles',
+      },
+      {
+        label: 'Unit of Measure',
+        icon: FiList,
+        href: '/maintainance/UOM',
+        name: 'Maintenance.UOM',
+      },
+      {
+        label: 'UOM Conversion',
+        icon: FiList,
+        href: '/maintainance/UOMConvertion',
+        name: 'Maintenance.UOMConversion',
       },
       // ...add more maintenance items here if needed
     ],

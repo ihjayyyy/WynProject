@@ -111,30 +111,45 @@ export default function PurchaseOrdersForm() {
 
 const GetPO = async () => {
   let initPO = { ...InitialData };
+
+  const today = new Date();
+  const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+
   if (orderId !== 0) {
     const getpo = await Get(orderId);
     initPO = getpo.data;
-    console.log(initPO)
-    // Normalize date fields for form input
+
+    // Normalize orderDate — default to today if null/invalid
     if (initPO.orderDate) {
       const d = new Date(initPO.orderDate);
-      if (!isNaN(d)) {
-        initPO.orderDate = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-      }
+      initPO.orderDate = !isNaN(d)
+        ? `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+        : todayStr;
+    } else {
+      initPO.orderDate = todayStr;
     }
+
+    // Normalize estimatedDeliveryDate — default to today if null/invalid
     if (initPO.estimatedDeliveryDate) {
       const d = new Date(initPO.estimatedDeliveryDate);
-      if (!isNaN(d)) {
-        initPO.estimatedDeliveryDate = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-      }
+      initPO.estimatedDeliveryDate = !isNaN(d)
+        ? `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+        : todayStr;
+    } else {
+      initPO.estimatedDeliveryDate = todayStr;
     }
+
   } else {
     setMode("new");
+    // Default both dates to today for new records
+    initPO.orderDate = todayStr;
+    initPO.estimatedDeliveryDate = todayStr;
   }
+
   setPO(initPO);
   setvalidPO(Object.keys(initPO).length === 0 ? false : true);
   setTableData({ items: initPO.children, deletedItems: initPO.deletedChildren });
-}
+};
 
 //Set Form View
 const isReadOnly  = useMemo(() => {
