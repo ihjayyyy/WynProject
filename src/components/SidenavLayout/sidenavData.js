@@ -67,18 +67,18 @@ export const sidenavItems = [
         href: '/projects/project',
         name: 'Projects.Projects',
       },
-      {
-        label: 'Billings',
-        icon: FiDollarSign,
-        href: '/projects/billings',
-        name: 'Projects.Billings',
-      },
-      {
-        label: 'Collections',
-        icon: FiFolder,
-        href: '/projects/collections',
-        name: 'Projects.Collections',
-      },
+      // {
+      //   label: 'Billings',
+      //   icon: FiDollarSign,
+      //   href: '/projects/billings',
+      //   name: 'Projects.Billings',
+      // },
+      // {
+      //   label: 'Collections',
+      //   icon: FiFolder,
+      //   href: '/projects/collections',
+      //   name: 'Projects.Collections',
+      // },
     ],
   },
   {
