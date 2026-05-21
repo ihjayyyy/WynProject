@@ -17,6 +17,7 @@ import StatusBadge from '../ui/StatusBadge/StatusBadge';
 import { getWarehouses } from '@/services/Warehouse';
 import { getProjects } from '@/services/Project';
 import { getMaterialRequestsByProjectId } from '@/services/MaterialRequest';
+import { getByProjectId } from '@/services/ProjectScope';
 import { getMaterialTransfer, createMaterialTransfer, updateMaterialTransfer, transferMaterialTransfer } from '@/services/MaterialTransfer';
 import { useToast } from '../ui/Toast/Toast';
 import InvalidPage from '@/components/InvalidPage/page';
@@ -59,12 +60,7 @@ export default function MaterialTransferForm() {
   const [transferToId, setTransferToId] = useState(0);
 
   // ── Stable onFormChange via ref ──────────────────────────────────────────────
-  // Prevents stale closure inside the memoized formFields
-
   const onFormChangeRef = useRef(null);
-  // Accept the optional `updatedValues` param so we can read the
-  // freshly-applied form values (provided by FormFields) and keep
-  // the dedicated tracking state in sync instead of clearing it.
   onFormChangeRef.current = (fieldname, value, updatedValues) => {
     if (fieldname === 'transferFromType') {
       setTransferFromType(value);
@@ -143,37 +139,63 @@ export default function MaterialTransferForm() {
     GetFormData();
   }, [formId]);
 
-  // ── Fetch material requests when either side is a project ───────────────────
+  // ── Fetch material options based on transfer direction ───────────────────────
 
   useEffect(() => {
     let mounted = true;
 
-    // Determine which side (if any) is a project, and use that ID
-    const projectId =
-      transferFromType === 'Projects' ? transferFromId :
-      transferToType   === 'Projects' ? transferToId   : 0;
+  const isWarehouseToProject = transferFromType === 'Warehouse' && transferToType === 'Project';
+  const isProjectToWarehouse = transferFromType === 'Project' && transferToType === 'Warehouse';
 
-    if (!projectId) {
+    const shouldFetch =
+      (isWarehouseToProject && transferToId) ||
+      (isProjectToWarehouse && transferFromId);
+
+    if (!shouldFetch) {
       setMaterialRequestOptions([]);
       return;
     }
 
     (async () => {
-      const res = await getMaterialRequestsByProjectId(projectId);
-      if (!mounted) return;
+      let opts = [];
 
-      if (!res?.error && Array.isArray(res.data)) {
-        const opts = res.data.map((r) => ({
-          value: r.materialId ?? r.id,
-          label: r.name || r.code || String(r.materialId ?? r.id),
-          code: r.code || '',
-          name: r.name || '',
-          uom: r.uom || r.purchaseUnitOfMeasure || r.unitOfMeasure || '',
-        }));
-        setMaterialRequestOptions(opts);
-      } else {
-        setMaterialRequestOptions([]);
+      if (isWarehouseToProject && transferToId) {
+        const res = await getMaterialRequestsByProjectId(transferToId);
+        if (!mounted) return;
+        if (!res?.error && Array.isArray(res.data)) {
+          opts = res.data.map((r) => ({
+            value: r.materialId ?? r.id,
+            label: r.name || r.code || String(r.materialId ?? r.id),
+            code: r.code || '',
+            name: r.name || '',
+            uom: r.uom || r.purchaseUnitOfMeasure || r.unitOfMeasure || '',
+          }));
+        }
+      } else if (isProjectToWarehouse && transferFromId) {
+        const res = await getByProjectId(transferFromId);
+        if (!mounted) return;
+        if (!res?.error && Array.isArray(res.data)) {
+          // Flatten all children across all scopes — deduplicate by materialId
+          const seen = new Set();
+          res.data.forEach((scope) => {
+            (scope.children || []).forEach((child) => {
+              const key = child.materialId;
+              if (!seen.has(key)) {
+                seen.add(key);
+                opts.push({
+                  value: child.materialId,
+                  label: child.name || child.code || String(child.materialId),
+                  code: child.code || '',
+                  name: child.name || '',
+                  uom: child.uom || '',
+                });
+              }
+            });
+          });
+        }
       }
+
+      if (mounted) setMaterialRequestOptions(opts);
     })();
 
     return () => { mounted = false; };
@@ -205,7 +227,7 @@ export default function MaterialTransferForm() {
       <div className={EntityStyle.formTitle}>
         <span style={{ marginRight: '8px' }}>{title}</span>
         {formData.status && (
-          <StatusBadge status={formData.status}/>
+          <StatusBadge status={formData.status} />
         )}
       </div>
     );
@@ -326,26 +348,31 @@ export default function MaterialTransferForm() {
             <CreateButton />
             <ViewButton />
             <CRUDButton />
-            {/* Transfer button when record is viewable and draft */}
             {isAllowed(PageName, 'w') && formData?.id && String(formData?.status || '').toLowerCase() === 'draft' && (
-              <Button variant="primary" disabled={actionLoading} onClick={() => {
-                confirmModal.show(
-                  'Transfer materials',
-                  `Mark transfer "${formData.name || formData.code || ''}" as transferred?`,
-                  'Transfer',
-                  'primary',
-                  () => async () => {
-                    setActionLoading(true);
-                    const res = await transferMaterialTransfer(Number(formData.id));
-                    if (res?.error) toast.error('Failed to mark transfer as transferred');
-                    else {
-                      toast.success('Transfer marked as transferred');
-                      await GetFormData();
+              <Button
+                variant="primary"
+                disabled={actionLoading}
+                onClick={() => {
+                  confirmModal.show(
+                    'Transfer materials',
+                    `Mark transfer "${formData.name || formData.code || ''}" as transferred?`,
+                    'Transfer',
+                    'primary',
+                    () => async () => {
+                      setActionLoading(true);
+                      const res = await transferMaterialTransfer(Number(formData.id));
+                      if (res?.error) toast.error('Failed to mark transfer as transferred');
+                      else {
+                        toast.success('Transfer marked as transferred');
+                        await GetFormData();
+                      }
+                      setActionLoading(false);
                     }
-                    setActionLoading(false);
-                  }
-                );
-              }}><FiSend size={14} style={{ marginRight: 6 }} />Transfer</Button>
+                  );
+                }}
+              >
+                <FiSend size={14} style={{ marginRight: 6 }} />Transfer
+              </Button>
             )}
           </div>
         }

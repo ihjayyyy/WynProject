@@ -15,11 +15,10 @@ export const INITIAL_MATERIAL_TRANSFER = {
 
 const OPPOSITE_TYPE = {
   Warehouse: 'Project',
-  Projects: 'Warehouse',
+  Project: 'Warehouse',
 };
 
 export const FormFields = (warehouses = [], projects = [], onFieldChanged) => ([
-  // name and code are hidden — auto-populated from transferFrom selection
   { name: 'name', label: 'Name', type: 'textbox', hidden: true },
   { name: 'code', label: 'Code', type: 'textbox', hidden: true },
 
@@ -29,7 +28,7 @@ export const FormFields = (warehouses = [], projects = [], onFieldChanged) => ([
     type: 'select',
     options: [
       { label: 'Warehouse', value: 'Warehouse' },
-      { label: 'Projects', value: 'Projects' },
+      { label: 'Project', value: 'Project' },
     ],
     span: 'span2',
     onChange: (val, values, setValues) => {
@@ -66,7 +65,6 @@ export const FormFields = (warehouses = [], projects = [], onFieldChanged) => ([
     searchable: true,
     span: 'span2',
     onChange: (val, values, setValues) => {
-      // Find the selected warehouse or project and assign its name/code to the form
       const list = values?.transferFromType === 'Warehouse' ? warehouses : projects;
       const selected = list.find((l) => String(l.id) === String(val));
       if (selected) {
@@ -93,7 +91,7 @@ export const FormFields = (warehouses = [], projects = [], onFieldChanged) => ([
       const opposite = OPPOSITE_TYPE[values?.transferFromType];
       if (!opposite) return [
         { label: 'Warehouse', value: 'Warehouse' },
-        { label: 'Projects', value: 'Projects' },
+        { label: 'Project', value: 'Project' },
       ];
       return [{ label: opposite, value: opposite }];
     },

@@ -69,7 +69,7 @@ const dueDate = `${dueDateObj.getFullYear()}-${String(dueDateObj.getMonth() + 1)
     { name:'contactPerson', label:'Contact Person', span:'span2'},
     { name:'contactNumber', label:'Contact Number',  span:'span2'}, 
     { name: 'spacer-3', type: 'spacer', span: 'span2' },
-    { name:'terms', label:'Terms', span:'span2'}, 
+    { name:'terms', label:'Terms', span:'span2', type:'number'}, 
     { name:'email', label:'Email', span:'span2'}, 
     { name:'vatType', label:'VAT', type:'select', span:'span2', options: [{label:'Included', value:"included"},{label:'Not Included', value:"notincluded"}, {label:'NON-VAT', value:"nonvat"}],
              onChange: (val, values, setValues) => {
