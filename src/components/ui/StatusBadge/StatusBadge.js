@@ -43,6 +43,9 @@ export default function StatusBadge({ status, className = '' }) {
       case 'TRANSFERRED':
       case 'TRANSFER':
         return styles.transferred;
+      case 'RECEIVED':
+      case 'RECEIVE':
+        return styles.received;
       
       case 'APPROVED':
         return styles.approved;

@@ -144,8 +144,8 @@ export default function MaterialTransferForm() {
   useEffect(() => {
     let mounted = true;
 
-  const isWarehouseToProject = transferFromType === 'Warehouse' && transferToType === 'Project';
-  const isProjectToWarehouse = transferFromType === 'Project' && transferToType === 'Warehouse';
+    const isWarehouseToProject = transferFromType === 'Warehouse' && transferToType === 'Project';
+    const isProjectToWarehouse = transferFromType === 'Project' && transferToType === 'Warehouse';
 
     const shouldFetch =
       (isWarehouseToProject && transferToId) ||
@@ -169,6 +169,7 @@ export default function MaterialTransferForm() {
             code: r.code || '',
             name: r.name || '',
             uom: r.uom || r.purchaseUnitOfMeasure || r.unitOfMeasure || '',
+            scopeId: r.scopeId ?? 0,
           }));
         }
       } else if (isProjectToWarehouse && transferFromId) {
@@ -188,6 +189,7 @@ export default function MaterialTransferForm() {
                   code: child.code || '',
                   name: child.name || '',
                   uom: child.uom || '',
+                  scopeId: child.scopeId ?? 0,
                 });
               }
             });
@@ -261,8 +263,12 @@ export default function MaterialTransferForm() {
       children: (formData.children || []).map((child) => ({
         ...child,
         quantity: Number(child.quantity || 0),
+        scopeId: child.scopeId ?? 0,
       })),
-      deletedChildren: formData.deletedChildren || [],
+      deletedChildren: (formData.deletedChildren || []).map((child) => ({
+        ...child,
+        scopeId: child.scopeId ?? 0,
+      })),
     };
     payload.id = payload.id ?? 0;
 

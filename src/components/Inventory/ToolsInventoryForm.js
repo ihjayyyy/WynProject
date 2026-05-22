@@ -2,7 +2,7 @@
 
 import React, { useMemo, useState, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { FiArchive } from 'react-icons/fi';
+import { FiHardDrive } from 'react-icons/fi';
 import EntityForm from '../EntityForm/EntityForm';
 import Button from '../ui/Button/Button';
 import { INITIAL_MATERIAL_INVENTORY, getMaterialInventory, createMaterialInventory, updateMaterialInventory } from '../../services/MaterialInventory';
@@ -100,7 +100,7 @@ export default function ToolsInventoryForm() {
   return (
     <EntityForm
       title={formTitle}
-      icon={<FiArchive />}
+      icon={<FiHardDrive />}
       fields={fields}
       initialValues={initialValues}
       onSubmit={async (values) => {

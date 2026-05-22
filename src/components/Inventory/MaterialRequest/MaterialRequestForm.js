@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { FiFileText } from 'react-icons/fi';
+import { FiBookOpen } from 'react-icons/fi';
 import EntityForm from '../../../components/EntityForm/EntityForm';
 import { INITIAL_MATERIAL_REQUEST, getMaterialRequests } from '../../../services/MaterialRequest';
 
@@ -45,7 +45,7 @@ export default function MaterialRequestForm() {
   return (
     <EntityForm
       title="View Material Request"
-      icon={<FiFileText />}
+      icon={<FiBookOpen />}
       fields={fields}
       initialValues={initialValues}
       readOnly

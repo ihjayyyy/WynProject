@@ -2,7 +2,7 @@
 
 import React, { useMemo, useState, useEffect,useContext } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { FiList } from 'react-icons/fi';
+import { FiClipboard } from 'react-icons/fi';
 import {  POFields, PODetailsColumns, POItemsFields } from './PurchaseOrdersModels';
 import DetailsTable from '../ItemDetails/DetailsTable';
 import EntityForm from '../EntityForm/EntityForm';
@@ -452,7 +452,7 @@ const submitForApproval = async()=>{
         <EntityForm
           title={formTitle}
           breadcrumbLabel="Purchase Order"
-          icon={<FiList />}
+          icon={<FiClipboard />}
           fields={poFields}
           initialValues={po}
 

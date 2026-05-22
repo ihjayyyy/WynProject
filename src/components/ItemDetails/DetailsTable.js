@@ -16,6 +16,7 @@ export default function DetailsTable({
   emptyMessage = 'No current items',
   parentId = 0,
   showActions = editable,
+  allowAdd,
 }) {
   const [items, setItems] = useState([]);
   const [deleteditems, setDeletedItems] = useState([]);
@@ -187,10 +188,12 @@ export default function DetailsTable({
     setItems(itemsCopy);
   };
 
+  const canAdd = typeof allowAdd === 'undefined' ? editable : allowAdd;
+
   return (
     <div className={detailStyle.detailContainer}>
       <div className={detailStyle.newButtonContainer}>
-        {editable && (
+        {canAdd && (
           <Button
             icon={<FiPlus />}
             onClick={(e) => {

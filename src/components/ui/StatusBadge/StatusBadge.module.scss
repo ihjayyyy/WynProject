@@ -104,6 +104,13 @@
   border: 1px solid #065f46;
 }
 
+.received {
+  /* distinct teal for received */
+  background-color: #e6fffa;
+  color: #065f46;
+  border: 1px solid #10b981;
+}
+
 .won {
   /* stronger success variant for won */
   background-color: #d1fae5;

@@ -2,7 +2,7 @@
 
 import React, { useMemo, useState, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { FiBox } from 'react-icons/fi';
+import { FiShare2 } from 'react-icons/fi';
 import EntityForm from '../EntityForm/EntityForm';
 import Button from '../ui/Button/Button';
 import { useToast } from '../ui/Toast/Toast';
@@ -191,7 +191,7 @@ export default function AssemblyForm() {
   return (
     <EntityForm
       title={formTitle}
-      icon={<FiBox />}
+      icon={<FiShare2 />}
       fields={fields}
       initialValues={initialValues}
       extraContent={

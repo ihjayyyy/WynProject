@@ -2,7 +2,7 @@
 
 import React, { useContext, useMemo, useState, version } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { FiCheck, FiFileText, FiSend, FiX, FiXCircle, FiArchive } from 'react-icons/fi';
+import { FiCheck, FiSend, FiX, FiXCircle, FiArchive } from 'react-icons/fi';
 import StatusBadge from '../ui/StatusBadge/StatusBadge';
 import EntityForm from '../EntityForm/EntityForm';
 import Input from '../ui/Input/Input';
@@ -542,7 +542,7 @@ export default function ProposalForm() {
       <EntityForm
         title={formTitle}
         breadcrumbLabel='Proposal'
-        icon={<FiFileText />}
+        icon={<FiSend />}
         fields={fields}
         initialValues={normalizedInitialValues}
         extraContent={

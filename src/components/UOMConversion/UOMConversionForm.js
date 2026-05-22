@@ -2,7 +2,7 @@
 
 import React, { useMemo, useState, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { FiList } from 'react-icons/fi';
+import { FiToggleLeft } from 'react-icons/fi';
 import EntityForm from '../EntityForm/EntityForm';
 import Button from '../ui/Button/Button';
 import { useToast } from '../ui/Toast/Toast';
@@ -101,7 +101,7 @@ export default function UOMConversionForm() {
     <EntityForm
       title={formTitle}
       breadcrumbLabel="UOM Conversion Details"
-      icon={<FiList />}
+      icon={<FiToggleLeft  />}
       fields={fields}
       initialValues={initialValues}
       onSubmit={async (values) => {

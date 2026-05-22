@@ -23,6 +23,26 @@ import {
   FiDollarSign,
   FiFolder,
   FiUserPlus,
+  FiInbox,
+  FiSend,
+  FiMap,
+  FiAward,
+  FiRepeat,
+  FiSliders,
+  FiPenTool,
+  FiToggleLeft,
+  FiAlignLeft,
+  FiHardDrive,
+  FiCpu,
+  FiActivity,
+  FiBookOpen,
+  FiCheckSquare,
+  FiDownload,
+  FiUpload,
+  FiPocket,
+  FiTag,
+  FiCompass,
+  FiShare2,
 } from 'react-icons/fi';
 
 export const sidenavItems = [
@@ -57,7 +77,7 @@ export const sidenavItems = [
     children: [
       {
         label: 'Proposal',
-        icon: FiFileText,
+        icon: FiSend,
         href: '/projects/proposal',
         name: 'Projects.Proposal',
       },
@@ -88,13 +108,13 @@ export const sidenavItems = [
     children: [
       {
         label: 'Request',
-        icon: FiList,
+        icon: FiInbox,
         href: '/purchase/requests',
         name: 'Purchase.Requests',
       },
       {
         label: 'Orders',
-        icon: FiList,
+        icon: FiClipboard,
         href: '/purchase/orders',
         name: 'Purchase.Orders',
       },
@@ -107,7 +127,7 @@ export const sidenavItems = [
     children: [
       {
         label: 'Project Billings',
-        icon: FiDatabase,
+        icon: FiDollarSign,
         href: '/finance/billings',
         name: 'Finance.Billings',
       },
@@ -131,7 +151,7 @@ export const sidenavItems = [
       },
       {
         label: 'Payments',
-        icon: FiCreditCard,
+        icon: FiPocket,
         href: '/purchase/payments',
         name: 'Purchase.Payments',
       },
@@ -163,7 +183,7 @@ export const sidenavItems = [
       },
       {
         label: 'Assembly',
-        icon: FiFileText,
+        icon: FiShare2,
         href: '/materialsSettings/assembly',
         name: 'Materials.Assembly',
       },
@@ -182,21 +202,27 @@ export const sidenavItems = [
       },
       {
         label: 'Tools Inventory',
-        icon: FiList,
+        icon: FiHardDrive,
         href: '/inventory/tools-inventory',
         name: 'Inventory.ToolsInventory',
       },
       {
         label: 'Material Requests',
-        icon: FiList,
+        icon: FiBookOpen,
         href: '/inventory/material-request',
         name: 'Inventory.MaterialRequests',
       },
       {
         label: 'Material Transfer',
-        icon: FiPackage,
+        icon: FiRepeat,
         href: '/inventory/materialtransfer',
         name: 'Inventory.MaterialTransfer',
+      },
+      {
+        label: 'Material Received',
+        icon: FiDownload,
+        href: '/inventory/materialreceived',
+        name: 'Inventory.MaterialReceived',
       },
       {
         label: 'Deliveries',
@@ -206,7 +232,7 @@ export const sidenavItems = [
       },
       {
         label: 'Inventory Report',
-        icon: FiFileText,
+        icon: FiActivity,
         href: '/inventory/inventory-report',
         name: 'Inventory.Report',
       },
@@ -214,7 +240,7 @@ export const sidenavItems = [
   },
   {
     label: 'Maintenance',
-    icon: FiTool,
+    icon: FiSliders,
     name: 'Maintenance',
     children: [
       {
@@ -225,19 +251,19 @@ export const sidenavItems = [
       },
       {
         label: 'Rack',
-        icon: FiLayers,
+        icon: FiAlignLeft,
         href: '/storagesettings/rack',
         name: 'Storage.Rack',
       },
       {
         label: 'Staff',
-        icon: FiUsers,
+        icon: FiUserCheck,
         href: '/staff',
         name: 'Staff',
       },
       {
         label: 'Users',
-        icon: FiUsers,
+        icon: FiCompass,
         href: '/maintainance/users',
         name: 'Maintenance.Users',
       },
@@ -249,13 +275,13 @@ export const sidenavItems = [
       },
       {
         label: 'Unit of Measure',
-        icon: FiList,
+        icon: FiTag,
         href: '/maintainance/UOM',
         name: 'Maintenance.UOM',
       },
       {
         label: 'UOM Conversion',
-        icon: FiList,
+        icon: FiToggleLeft,
         href: '/maintainance/UOMConvertion',
         name: 'Maintenance.UOMConversion',
       },

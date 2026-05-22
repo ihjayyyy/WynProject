@@ -8,7 +8,7 @@ import React, {
   useContext,
 } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { FiList } from 'react-icons/fi';
+import { FiPocket } from 'react-icons/fi';
 import DetailsTable from '../ItemDetails/DetailsTable';
 import EntityForm from '../EntityForm/EntityForm';
 import { useToast } from '../ui/Toast/Toast';
@@ -352,7 +352,7 @@ export default function PurchasePaymentsForm() {
       key={formKey}
       title="New Purchase Payment"
       breadcrumbLabel="Purchase Payment"
-      icon={<FiList />}
+      icon={<FiPocket />}
       fields={paymentFields}
       initialValues={payment || initialPayment}
       extraContent={

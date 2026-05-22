@@ -174,6 +174,10 @@ export async function getUserAccess() {
       name: 'Inventory.MaterialTransfer',
       access: 'rwa',
     },
+            {
+      name: 'Inventory.MaterialReceived',
+      access: 'rwa',
+    },
     {
       name: 'Inventory.ToolsInventory',
       access: 'rwa',

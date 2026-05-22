@@ -132,6 +132,7 @@ export const TableColumns = [
 export const ItemsFields = (materialOptions = []) => ([
   { name: 'id', label: 'id', type: 'number', hidden: true, initialvalue: 0 },
   { name: 'parentId', label: 'parentId', type: 'number', hidden: true, initialvalue: 0 },
+  { name: 'scopeId', label: 'scopeId', type: 'number', hidden: true, initialvalue: 0 },
   {
     name: 'materialId',
     label: 'Material',
@@ -147,11 +148,13 @@ export const ItemsFields = (materialOptions = []) => ([
         updateField('code', '');
         updateField('name', '');
         updateField('uom', '');
+        updateField('scopeId', 0);
         return;
       }
       updateField('code', material.code || '');
       updateField('name', material.name || material.label || '');
       updateField('uom', material.uom || '');
+      updateField('scopeId', material.scopeId ?? 0);
     },
   },
   { name: 'code', label: 'Code', type: 'text', hidden: true },

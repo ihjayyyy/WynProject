@@ -2,7 +2,7 @@
 
 import React, { useMemo, useState } from 'react';
 import { useRouter, useSearchParams} from 'next/navigation';
-import { FiLayers } from 'react-icons/fi';
+import { FiAlignLeft } from 'react-icons/fi';
 import EntityForm from '../EntityForm/EntityForm';
 import Button from '../ui/Button/Button';
 import { useToast } from '../ui/Toast/Toast';
@@ -68,7 +68,7 @@ export default function RackForm() {
     <EntityForm
       title={formTitle}
       breadcrumbLabel="Rack Details"
-      icon={<FiLayers />}
+      icon={<FiAlignLeft />}
       fields={fields}
       initialValues={initialValues}
       onSubmit={async (values) => {

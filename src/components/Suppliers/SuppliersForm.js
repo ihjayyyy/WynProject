@@ -2,7 +2,7 @@
 
 import React, { useMemo, useState, useEffect } from 'react';
 import { useRouter, useSearchParams} from 'next/navigation';
-import { FiPackage } from 'react-icons/fi';
+import { FiUser } from 'react-icons/fi';
 import EntityForm from '../EntityForm/EntityForm';
 import Button from '../ui/Button/Button';
 import { useToast } from '../ui/Toast/Toast';
@@ -152,7 +152,7 @@ export default function SuppliersForm() {
     <EntityForm
       title={formTitle}
       breadcrumbLabel='Supplier'
-      icon={<FiPackage />}
+      icon={<FiUser />}
       fields={fields}
       initialValues={initialValues}
       onSubmit={handleSubmit}

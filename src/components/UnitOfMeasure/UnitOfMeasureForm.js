@@ -2,7 +2,7 @@
 
 import React, { useMemo, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { FiList } from 'react-icons/fi';
+import { FiTag } from 'react-icons/fi';
 import EntityForm from '../EntityForm/EntityForm';
 import Button from '../ui/Button/Button';
 import { useToast } from '../ui/Toast/Toast';
@@ -57,7 +57,7 @@ export default function UnitOfMeasureForm() {
     <EntityForm
       title={formTitle}
       breadcrumbLabel="Unit of Measure Details"
-      icon={<FiList />}
+      icon={<FiTag />}
       fields={fields}
       initialValues={initialValues}
       onSubmit={async (values) => {

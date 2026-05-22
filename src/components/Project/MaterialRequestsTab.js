@@ -50,10 +50,20 @@ export default function MaterialRequestsTab({ projectId, editable = true }) {
       raw.forEach((scope) => {
         const children = Array.isArray(scope.children) ? scope.children : [];
         children.forEach((c) => {
-          const key = c.materialId ? `mat:${c.materialId}` : `child:${c.id}`;
+          // Deduplicate by materialId + scopeId pair so the same material
+          // from different scopes each get their own entry
+          const resolvedScopeId = scope.id ?? 0;
+          const key = `mat:${c.materialId || c.id}:scope:${resolvedScopeId}`;
           if (seen.has(key)) return;
           seen.add(key);
-          mats.push({ id: c.materialId || c.id || 0, name: c.name || '', code: c.code || '', quantity: Number(c.quantity) || Number(c.initialQuantity) || 0, uom: c.uom || '' });
+          mats.push({
+            id: c.materialId || c.id || 0,
+            name: c.name || '',
+            code: c.code || '',
+            quantity: Number(c.quantity) || Number(c.initialQuantity) || 0,
+            uom: c.uom || '',
+            scopeId: resolvedScopeId, // ← always use parent scope.id (child's scopeId is always 0)
+          });
         });
       });
       setMaterials(mats);
@@ -61,7 +71,12 @@ export default function MaterialRequestsTab({ projectId, editable = true }) {
     return () => { mounted = false; };
   }, [projectId]);
 
-  const materialOptions = materials.map((m) => ({ value: m.id, label: m.name }));
+  const materialOptions = materials.map((m) => ({
+    value: `${m.id}:${m.scopeId}`, // unique per material+scope combination
+    label: m.name,
+    materialId: m.id,
+    scopeId: m.scopeId,
+  }));
 
   const modalFields = useMemo(() => {
     const record = editing || {};
@@ -79,51 +94,62 @@ export default function MaterialRequestsTab({ projectId, editable = true }) {
         const d = new Date(v);
         if (isNaN(d)) return '';
         return d.toISOString().slice(0, 10);
-      } catch (e) { return '';} 
+      } catch (e) { return ''; }
     };
     return [
       { name: 'id', label: 'Id', type: 'number', value: Number(record.id) || 0, hidden: true },
       { name: 'projectId', label: 'Project Id', type: 'number', value: Number(projectId) || 0, hidden: true },
+      { name: 'scopeId', label: 'Scope Id', type: 'number', value: (selectedMaterial && selectedMaterial.scopeId) || record.scopeId || 0, hidden: true }, // ← added
       { name: 'name', label: 'Name', type: 'text', value: (selectedMaterial && selectedMaterial.name) || record.name || '', hidden: true },
       { name: 'code', label: 'Code', type: 'text', value: (selectedMaterial && selectedMaterial.code) || record.code || '', hidden: true },
       {
         name: 'materialId',
         label: 'Material',
         type: 'select',
-        value: record.materialId || '',
+        value: record.materialId ? `${record.materialId}:${record.scopeId ?? 0}` : '',
         options: materialOptions,
         required: true,
         onChange: (item, updateField, itemFields, nextValue) => {
-          const mid = Number(nextValue) || 0;
-          const mat = materials.find((m) => Number(m.id) === Number(mid));
+          // nextValue is "materialId:scopeId" composite string
+          const [midStr, sidStr] = String(nextValue || '').split(':');
+          const mid = Number(midStr) || 0;
+          const sid = Number(sidStr) || 0;
+          const mat = materials.find((m) => Number(m.id) === mid && Number(m.scopeId) === sid);
           if (mat) {
             console.log("Selected material", mat);
+            updateField('materialId', mid);
             updateField('projectQty', Number(mat.quantity) || 0);
             updateField('name', mat.name || '');
             updateField('code', mat.code || '');
             updateField('uom', mat.uom || '');
+            updateField('scopeId', sid);
           } else {
+            updateField('materialId', 0);
             updateField('projectQty', 0);
+            updateField('scopeId', 0);
           }
         }
       },
       { name: 'projectQty', label: 'Project Quantity', type: 'number', value: (selectedMaterial && (selectedMaterial.quantity !== undefined ? selectedMaterial.quantity : selectedMaterial.projectQty)) || record.projectQty || '', readonly: true },
-      { name: 'requestedQty', label: 'Requested Quantity', type: 'number', value: record.requestedQty || '', validator: Yup.number().required('Requested Quantity is required').min(0).test('max-project', 'Requested quantity cannot exceed project quantity', function(value) {
+      {
+        name: 'requestedQty', label: 'Requested Quantity', type: 'number', value: record.requestedQty || '',
+        validator: Yup.number().required('Requested Quantity is required').min(0).test('max-project', 'Requested quantity cannot exceed project quantity', function (value) {
           const pq = Number(this.parent?.projectQty) || 0;
           if (!pq) return true;
           return Number(value || 0) <= pq;
-        }), onChange: (item, updateField, itemFields, nextValue) => {
+        }),
+        onChange: (item, updateField, itemFields, nextValue) => {
           const req = Number(nextValue) || 0;
           updateField('requestedQty', req);
           updateField('balance', req);
-        } },
+        }
+      },
       { name: 'balance', label: 'Balance', type: 'number', value: record.balance || record.requestedQty || '', readonly: true },
       { name: 'uom', label: 'UOM', type: 'text', value: (selectedMaterial && selectedMaterial.uom) || record.uom || '', readonly: true },
       { name: 'reasonOrProject', label: 'Reason/Project', type: 'text', value: record.reasonOrProject || '' },
       { name: 'requestedBy', label: 'Requested By', type: 'text', value: record.requestedBy || authName || '', required: true, hidden: true },
       { name: 'deadline', label: 'Deadline', type: 'date', value: fmt(record.deadline) || defaultDeadline },
       { name: 'requestDate', label: 'Request Date', type: 'date', value: fmt(record.requestDate) || today, hidden: true },
-      // status, responseBy, responseDate removed as requested
     ];
   }, [editing, projectId, materialOptions]);
 
@@ -138,10 +164,12 @@ export default function MaterialRequestsTab({ projectId, editable = true }) {
   }, [items, searchTerm]);
 
   const tableColumns = useMemo(() => [
-            { header: 'Requested Date', key: 'requestDate',     render: (item) =>
-      item.requestDate
-        ? new Date(item.requestDate).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: '2-digit' })
-        : '—', },
+    {
+      header: 'Requested Date', key: 'requestDate', render: (item) =>
+        item.requestDate
+          ? new Date(item.requestDate).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: '2-digit' })
+          : '—',
+    },
     { header: 'RIV Number', key: 'rivNumber' },
     { header: 'Name', key: 'name' },
     { header: 'Code', key: 'code' },
@@ -149,39 +177,41 @@ export default function MaterialRequestsTab({ projectId, editable = true }) {
     { header: 'Status', key: 'status', render: (item) => <StatusBadge status={item.status} /> },
     { header: 'Project Qty', key: 'projectQty' },
     { header: 'Requested Qty', key: 'requestedQty' },
-    { header:'Delivered Qty', key: 'deliveredQuantity' },
+    { header: 'Delivered Qty', key: 'deliveredQuantity' },
     { header: 'Balance', key: 'balance' },
     { header: 'Requested By', key: 'requestedBy' },
-    { header: 'Deadline', key: 'deadline',     render: (item) =>
-      item.deadline
-        ? new Date(item.deadline).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: '2-digit' })
-        : '—', },
+    {
+      header: 'Deadline', key: 'deadline', render: (item) =>
+        item.deadline
+          ? new Date(item.deadline).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: '2-digit' })
+          : '—',
+    },
     {
       header: 'Actions',
       key: '__actions',
       render: (item) => editable && isAllowed(PageName, 'w') ? (
-          <div>
-            {((item.status || '').toLowerCase().includes('draft')) && (
-              <Button
-                size="sm"
-                variant="outlinedPrimary"
-                icon={<FiEdit2 size={14} />}
-                title="Edit"
-                onClick={() => { setEditing(item); setIsModalOpen(true); }}
-              />
-            )}
-            {(item.rivNumber != "" && item.rivNumber != null) && (
-              <Button
-                size="sm"
-                variant="outlinedPrimary"
-                icon={<FiPrinter size={14} />}
-                title="Print RIV"
-                onClick={() => { getDocumentPDFByRivNumber(item); }}
-                style={{ marginLeft: '6px' }}
-              />
-            )}
-          </div>
-        ) : null,
+        <div>
+          {((item.status || '').toLowerCase().includes('draft')) && (
+            <Button
+              size="sm"
+              variant="outlinedPrimary"
+              icon={<FiEdit2 size={14} />}
+              title="Edit"
+              onClick={() => { setEditing(item); setIsModalOpen(true); }}
+            />
+          )}
+          {(item.rivNumber != "" && item.rivNumber != null) && (
+            <Button
+              size="sm"
+              variant="outlinedPrimary"
+              icon={<FiPrinter size={14} />}
+              title="Print RIV"
+              onClick={() => { getDocumentPDFByRivNumber(item); }}
+              style={{ marginLeft: '6px' }}
+            />
+          )}
+        </div>
+      ) : null,
     },
   ], [editable, isAllowed]);
 
@@ -199,11 +229,11 @@ export default function MaterialRequestsTab({ projectId, editable = true }) {
           />
           {isAllowed(PageName, 'w') && filtered.find(itm => (itm.status || '').toLowerCase().includes("draft")) && (
             <Button onClick={async () => {
-                await getDocumentPDFById(projectId).then(async _ => {
-                  const res = await getMaterialRequestsByProjectId(projectId);
-                  console.log("resres", res)
-                  setItems(Array.isArray(res.data) ? res.data : (res.data ? [res.data] : []));
-                });
+              await getDocumentPDFById(projectId).then(async _ => {
+                const res = await getMaterialRequestsByProjectId(projectId);
+                console.log("resres", res);
+                setItems(Array.isArray(res.data) ? res.data : (res.data ? [res.data] : []));
+              });
             }}>Generate RIV</Button>
           )}
           {isAllowed(PageName, 'w') && editable && (
@@ -223,22 +253,20 @@ export default function MaterialRequestsTab({ projectId, editable = true }) {
         isOpen={isModalOpen}
         fields={modalFields}
         onItemRemove={() => {}}
-          onClose={isAllowed(PageName, 'w') && editable ? async (value) => {
+        onClose={isAllowed(PageName, 'w') && editable ? async (value) => {
           if (!value) {
-              setIsModalOpen(false);
-              setEditing(null);
-              return;
-            }
+            setIsModalOpen(false);
+            setEditing(null);
+            return;
+          }
 
-              // Prevent updating non-draft items
-              if (value.id && editing && !((editing.status || '').toLowerCase().includes('draft'))) {
-                toast.error('Only draft material requests can be edited');
-                setIsModalOpen(false);
-                setEditing(null);
-                return;
-              }
-
-            // Field validation (Yup) will prevent saving when requestedQty > projectQty
+          // Prevent updating non-draft items
+          if (value.id && editing && !((editing.status || '').toLowerCase().includes('draft'))) {
+            toast.error('Only draft material requests can be edited');
+            setIsModalOpen(false);
+            setEditing(null);
+            return;
+          }
 
           const auth = getAuthData() || {};
           const authName = `${(auth.firstName || '').trim()} ${(auth.lastName || '').trim()}`.trim() || auth.email || auth.userId || '';
@@ -251,6 +279,7 @@ export default function MaterialRequestsTab({ projectId, editable = true }) {
             code: value.code || (materials.find((m) => Number(m.id) === Number(value.materialId))?.code) || '',
             materialId: Number(value.materialId) || 0,
             projectId: Number(projectId) || 0,
+            scopeId: Number(value.scopeId) || 0, // ← added to payload
             projectQty: value.projectQty !== undefined ? Number(value.projectQty) : 0,
             requestedQty: value.requestedQty !== undefined ? Number(value.requestedQty) : 0,
             balance: value.balance !== undefined ? Number(value.balance) : 0,

@@ -2,7 +2,7 @@
 
 import React, { useMemo, useState, useEffect, useContext } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { FiList, FiEdit2, FiCheckCircle, FiXCircle, FiArchive } from 'react-icons/fi';
+import { FiDollarSign, FiCheckCircle, FiXCircle, FiArchive } from 'react-icons/fi';
 import DetailsTable from '../ItemDetails/DetailsTable';
 import EntityForm from '../EntityForm/EntityForm';
 import { useToast } from '../ui/Toast/Toast';
@@ -326,7 +326,7 @@ export default function SalesBillingForm() {
     <EntityForm
       title={formTitle}
       breadcrumbLabel='Billing'
-      icon={<FiList />}
+      icon={<FiDollarSign />}
       fields={billingFields}
       initialValues={billing}
       extraContent={

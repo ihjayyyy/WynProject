@@ -2,7 +2,7 @@
 
 import React, { useEffect, useMemo, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { FiUsers } from 'react-icons/fi';
+import { FiCompass } from 'react-icons/fi';
 import EntityForm from '../EntityForm/EntityForm';
 import Button from '../ui/Button/Button';
 import ConfirmModal from '../ui/ConfirmModal/ConfirmModal';
@@ -181,7 +181,7 @@ export default function UsersForm() {
         key={userId ? `user-${userId}` : 'new-user'}
         title={formTitle}
         breadcrumbLabel="User"
-        icon={<FiUsers />}
+        icon={<FiCompass />}
         fields={fields}
         initialValues={initialValues}
         onSubmit={handleSubmit}

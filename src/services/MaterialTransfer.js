@@ -86,5 +86,67 @@ async function transferMaterialTransfer(id) {
   }
 }
 
-export { getMaterialTransfers, getMaterialTransfer, createMaterialTransfer, updateMaterialTransfer, transferMaterialTransfer };
-export default { getMaterialTransfers, getMaterialTransfer, createMaterialTransfer, updateMaterialTransfer, transferMaterialTransfer };
+async function receiveMaterialTransfer(id, payload) {
+  try {
+    const url = `${API_BASE_URL}/receive/${id}`;
+    const res = await fetch(url, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+    const json = await res.json();
+    return { data: json, error: null };
+  } catch (error) {
+    return { data: null, error: error?.message || error };
+  }
+}
+
+async function getReceivedMaterialTransfers() {
+  try {
+    const url = `${API_BASE_URL}/received`;
+    const res = await fetch(url, {
+      method: 'GET',
+      headers: { Accept: '*/*' },
+    });
+    const json = await res.json();
+    return { data: json && json.value ? json.value : json, error: null };
+  } catch (error) {
+    return { data: null, error: error?.message || error };
+  }
+}
+
+async function getTransferredMaterialTransfers() {
+  try {
+    const url = `${API_BASE_URL}/transferred`;
+    const res = await fetch(url, {
+      method: 'GET',
+      headers: { Accept: '*/*' },
+    });
+    const json = await res.json();
+    return { data: json && json.value ? json.value : json, error: null };
+  } catch (error) {
+    return { data: null, error: error?.message || error };
+  }
+}
+
+export {
+  getMaterialTransfers,
+  getMaterialTransfer,
+  getReceivedMaterialTransfers,
+  getTransferredMaterialTransfers,
+  createMaterialTransfer,
+  updateMaterialTransfer,
+  transferMaterialTransfer,
+  receiveMaterialTransfer
+};
+
+export default {
+  getMaterialTransfers,
+  getMaterialTransfer,
+  getReceivedMaterialTransfers,
+  getTransferredMaterialTransfers,
+  createMaterialTransfer,
+  updateMaterialTransfer,
+  transferMaterialTransfer,
+  receiveMaterialTransfer
+};

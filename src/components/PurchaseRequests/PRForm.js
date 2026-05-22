@@ -2,7 +2,7 @@
 
 import React, { useMemo, useState, useEffect,useContext, useCallback } from 'react';
 import { useRouter,useSearchParams } from 'next/navigation';
-import { FiList } from 'react-icons/fi';
+import { FiInbox } from 'react-icons/fi';
 import { FormFields,TableColumns,ItemsFields } from './PRModels';
 import DetailsTable from '../ItemDetails/DetailsTable';
 import EntityForm from '../EntityForm/EntityForm';
@@ -377,7 +377,7 @@ const submitForApproval = async()=>{
         <EntityForm
           title={formTitle}
           breadcrumbLabel="Purchase Request"
-          icon={<FiList />}
+          icon={<FiInbox />}
           fields={formFields}
           initialValues={formData}
 
