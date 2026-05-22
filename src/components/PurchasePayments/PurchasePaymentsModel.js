@@ -1,5 +1,3 @@
-import DropdownAction from '../ui/DropdownAction/DropdownAction';
-
 export const PurchasePaymentFields = (suppliers = [], onFieldChanged) => [
   { name: 'paymentNumber', hidden: true },
   {
@@ -44,10 +42,10 @@ export const PurchasePaymentFields = (suppliers = [], onFieldChanged) => [
 
 export const PurchasePaymentDetailsColumns = [
   {
-    header: 'Invoice ID',
-    key: 'invoiceId',
+    header: 'Invoice',
+    key: 'invoiceNumber',
     width: '180px',
-    render: (it) => it.invoiceId,
+    render: (it) => it.invoiceNumber,
   },
   {
     header: 'Invoice Amount',
@@ -84,18 +82,6 @@ export const PurchasePaymentDetailsColumns = [
     width: '140px',
     render: (it) => Number(it.balance || 0).toFixed(2),
   },
-  {
-    header: 'Actions',
-    key: 'actions',
-    width: '120px',
-    align: 'center',
-    render: (item) => (
-      <DropdownAction
-        item={item}
-        items={[{ key: 'noop', label: 'No actions available', disabled: true }]}
-      />
-    ),
-  },
 ];
 
 export const PurchasePaymentItemFields = (
@@ -105,6 +91,7 @@ export const PurchasePaymentItemFields = (
   { name: 'id', type: 'number', hidden: true, initialvalue: 0 },
   { name: 'parentId', type: 'number', hidden: true, initialvalue: 0 },
   { name: 'paymentId', type: 'number', hidden: true, initialvalue: 0 },
+  { name: 'invoiceNumber', type: 'text', hidden: true, initialvalue: '' },
   {
     name: 'invoiceId',
     label: 'Invoice',
@@ -129,6 +116,7 @@ export const PurchasePaymentItemFields = (
         `Invoice #${found?.id || 0}`;
       updateField('name', displayName);
       updateField('code', code);
+      updateField('invoiceNumber', found?.invoiceNumber || '');
 
       const round = (n) => Math.round((Number(n) || 0) * 100) / 100;
       updateField('paidAmount', 0);

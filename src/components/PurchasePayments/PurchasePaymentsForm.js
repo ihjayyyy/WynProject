@@ -161,6 +161,7 @@ export default function PurchasePaymentsForm() {
                 : null;
             return {
               ...it,
+              invoiceNumber: found.invoiceNumber || it.invoiceNumber,
               name:
                 material?.name || found.invoiceNumber || found.name || it.name,
               code: material?.code || found.code || it.code,
@@ -362,7 +363,6 @@ export default function PurchasePaymentsForm() {
             parentId={paymentId}
             columns={PurchasePaymentDetailsColumns}
             editable={true}
-            showActions={false}
             itemFields={paymentItemFields}
             data={tableData}
             onChange={detailsUpdated}
