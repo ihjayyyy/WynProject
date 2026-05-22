@@ -129,6 +129,21 @@ async function getTransferredMaterialTransfers() {
   }
 }
 
+async function getDocumentPDFById(transferId) {
+    console.log(transferId);
+  if (!transferId) return { data: null, error: 'Missing id' };
+  try {
+    const url = `${API_BASE_URL}/pdf/${transferId}`;
+    const res = await fetch(url, {
+        method: 'GET',
+        headers: { Accept: '*/*' },
+    });
+    handleOpenPdf(res);
+  } catch (error) {
+    return { data: null, error: error?.message || error };
+  }
+}
+
 export {
   getMaterialTransfers,
   getMaterialTransfer,
@@ -137,7 +152,8 @@ export {
   createMaterialTransfer,
   updateMaterialTransfer,
   transferMaterialTransfer,
-  receiveMaterialTransfer
+  receiveMaterialTransfer,
+  getDocumentPDFById
 };
 
 export default {
@@ -148,5 +164,6 @@ export default {
   createMaterialTransfer,
   updateMaterialTransfer,
   transferMaterialTransfer,
-  receiveMaterialTransfer
+  receiveMaterialTransfer,
+  getDocumentPDFById
 };

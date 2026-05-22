@@ -2,13 +2,13 @@
 
 import React, { useMemo, useState, useEffect, useContext } from 'react';
 import { useRouter } from 'next/navigation';
-import { FiEdit2, FiEye, FiSend } from 'react-icons/fi';
+import { FiEdit2, FiEye, FiFileText, FiSend } from 'react-icons/fi';
 import DropdownAction from '../ui/DropdownAction/DropdownAction';
 import StatusBadge from '../ui/StatusBadge/StatusBadge';
 import Landing from '../ui/Landing/Landing';
 import ConfirmModal from '../ui/ConfirmModal/ConfirmModal';
 import { AccessContext } from '@/app/contextProviders/accessContext';
-import { getMaterialTransfers, transferMaterialTransfer } from '@/services/MaterialTransfer';
+import { getMaterialTransfers, transferMaterialTransfer, getDocumentPDFById } from '@/services/MaterialTransfer';
 import { useToast } from '../ui/Toast/Toast';
 
 const baseColumns = [
@@ -96,6 +96,7 @@ export default function MaterialTransferLanding() {
         render: (item) => {
           const status = String(item?.status || '').toLowerCase();
           const isDraft = status === 'draft';
+          const isTransferred = status === 'transferred';
           const itemsFor = (actionItems || []).map((it) => ({ ...it }));
 
           if (isDraft && isAllowed(PageName, 'w')) {
@@ -112,6 +113,11 @@ export default function MaterialTransferLanding() {
               });
               setIsConfirmOpen(true);
             }});
+          }
+          if (isTransferred && isAllowed(PageName, 'r')) {
+            itemsFor.push(
+              { key: 'viewpdf', label: 'Generate RV', icon: <FiFileText size={14} />, onClick: () => getDocumentPDFById(item.id) }
+            );
           }
 
           return <DropdownAction item={item} items={itemsFor} />;
