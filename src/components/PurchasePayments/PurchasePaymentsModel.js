@@ -44,23 +44,38 @@ export const PurchasePaymentFields = (suppliers = [], onFieldChanged) => [
 
 export const PurchasePaymentDetailsColumns = [
   {
-    header: 'Invoice',
-    key: 'name',
-    width: '220px',
+    header: 'Invoice ID',
+    key: 'invoiceId',
+    width: '180px',
+    render: (it) => it.invoiceId,
   },
   {
     header: 'Invoice Amount',
     key: 'invoiceAmount',
     align: 'right',
-    width: '140px',
+    width: '120px',
     render: (it) => Number(it.invoiceAmount || 0).toFixed(2),
   },
   {
     header: 'Paid Amount',
     key: 'paidAmount',
     align: 'right',
-    width: '140px',
+    width: '120px',
     render: (it) => Number(it.paidAmount || 0).toFixed(2),
+  },
+  {
+    header: 'Withholding Tax',
+    key: 'withholdingTax',
+    align: 'right',
+    width: '120px',
+    render: (it) => Number(it.withholdingTax || 0).toFixed(2),
+  },
+  {
+    header: 'Net Amount',
+    key: 'totalAmountPaid',
+    align: 'right',
+    width: '120px',
+    render: (it) => Number(it.totalAmountPaid || 0).toFixed(2),
   },
   {
     header: 'Remaining Balance',
@@ -95,7 +110,7 @@ export const PurchasePaymentItemFields = (
     label: 'Invoice',
     type: 'select',
     options: invoices.map((i) => ({
-      label: `${i.invoiceNumber || i.name || `Invoice #${i.id}`} (${Number((i.balance ?? i.invoiceAmount) || 0).toFixed(2)})`,
+      label: `${i.invoiceNumber || i.name || `Invoice #${i.id}`} `,
       value: i.id,
     })),
     searchable: true,
@@ -154,6 +169,7 @@ export const PurchasePaymentItemFields = (
     label: 'Withholding Tax',
     type: 'number',
     initialvalue: 0,
+    readonly: true,
   },
   {
     name: 'totalAmountPaid',

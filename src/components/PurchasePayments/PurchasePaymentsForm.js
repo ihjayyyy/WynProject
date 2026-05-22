@@ -124,6 +124,7 @@ export default function PurchasePaymentsForm() {
           paymentDate: toDateString(res.data.paymentDate),
         };
         setPayment(p);
+        setWithholdingTaxPercentage(Number(p.withholdingTaxPercentage) || 0);
         setTableData({
           items: p.children || [],
           deletedItems: p.deletedChildren || [],
@@ -201,6 +202,38 @@ export default function PurchasePaymentsForm() {
     },
     [suppliers],
   );
+
+  useEffect(() => {
+    const items = tableData.items || [];
+    if (!items.length) return;
+    const pct = Number(withholdingTaxPercentage) || 0;
+    const updatedItems = items.map((item) => {
+      const paid = Number(item.paidAmount) || 0;
+      const invoiceAmount = Number(item.invoiceAmount) || 0;
+      const tax = parseFloat((paid * (pct / 100)).toFixed(2));
+      const total = parseFloat((paid - tax).toFixed(2));
+      return {
+        ...item,
+        withholdingTax: tax,
+        totalAmountPaid: total,
+        balance: parseFloat((invoiceAmount - total).toFixed(2)),
+      };
+    });
+
+    const hasChanges = updatedItems.some((updatedItem, index) => {
+      const current = items[index];
+      return (
+        Number(updatedItem.withholdingTax) !== Number(current.withholdingTax) ||
+        Number(updatedItem.totalAmountPaid) !==
+          Number(current.totalAmountPaid) ||
+        Number(updatedItem.balance) !== Number(current.balance)
+      );
+    });
+
+    if (hasChanges) {
+      setTableData((prev) => ({ ...prev, items: updatedItems }));
+    }
+  }, [withholdingTaxPercentage, tableData.items]);
 
   useEffect(() => {
     const items = tableData.items || [];

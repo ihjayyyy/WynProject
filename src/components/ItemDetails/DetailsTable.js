@@ -1,18 +1,27 @@
 import React, { useState, useEffect, useRef } from 'react';
 import DataTable from '../ui/DataTable/DataTable';
 import ItemModal from './itemModal';
-import detailStyle from "./DetailsTable.module.scss"
-import * as Yup from "yup";
+import detailStyle from './DetailsTable.module.scss';
+import * as Yup from 'yup';
 import { FiPlus, FiTrash2 } from 'react-icons/fi';
 import Button from '../ui/Button/Button';
 
-export default function DetailsTable({ itemModalHeader, columns = [], data = { items: [], deletedItems: [] }, itemFields = [], onChange, editable = false, emptyMessage = 'No current items', parentId = 0, showActions = editable }) {
-
+export default function DetailsTable({
+  itemModalHeader,
+  columns = [],
+  data = { items: [], deletedItems: [] },
+  itemFields = [],
+  onChange,
+  editable = false,
+  emptyMessage = 'No current items',
+  parentId = 0,
+  showActions = editable,
+}) {
   const [items, setItems] = useState([]);
   const [deleteditems, setDeletedItems] = useState([]);
   const [isModalOpen, setModalOpen] = useState(false);
   const [modalFields, setModalFields] = useState(itemFields);
-  const [modalMode, setModalMode] = useState("new");
+  const [modalMode, setModalMode] = useState('new');
   const [itemIndex, setItemIndex] = useState(-1);
 
   // Tracks whether the last items/deleteditems change was from a user action
@@ -24,26 +33,32 @@ export default function DetailsTable({ itemModalHeader, columns = [], data = { i
   // because the parent re-rendered and passed a new function reference.
   // (detailsUpdated in PRForm is recreated on every render.)
   const onChangeRef = useRef(onChange);
-  useEffect(() => { onChangeRef.current = onChange; }, [onChange]);
+  useEffect(() => {
+    onChangeRef.current = onChange;
+  }, [onChange]);
 
   // FIX: Ref-based equality guard — only call setModalFields when fields have
   // actually changed in a meaningful way. itemFields is a new array reference
   // on every render (produced by ItemsFields via useMemo in the parent), so a
   // naive [itemFields] dependency always fires and causes an infinite loop.
-  const prevItemFieldsKeyRef = useRef(null);
+  // Also check onChange function references since they change when parent state changes.
+  const prevItemFieldsRef = useRef(null);
   useEffect(() => {
-    const nextKey = JSON.stringify(
-      (itemFields || []).map(f => ({
-        name: f.name,
-        value: f.value,
-        readonly: f.readonly,
-        hidden: f.hidden,
-        optionsLen: (f.options || []).length,
-      }))
-    );
+    const hasChanged =
+      !prevItemFieldsRef.current ||
+      (itemFields || []).length !== prevItemFieldsRef.current.length ||
+      (itemFields || []).some((f, i) => {
+        const prev = prevItemFieldsRef.current[i];
+        return (
+          f.name !== prev.name ||
+          f.readonly !== prev.readonly ||
+          f.hidden !== prev.hidden ||
+          f.onChange !== prev.onChange // Include function reference
+        );
+      });
 
-    if (prevItemFieldsKeyRef.current === nextKey) return; // nothing meaningful changed
-    prevItemFieldsKeyRef.current = nextKey;
+    if (!hasChanged) return;
+    prevItemFieldsRef.current = itemFields;
 
     setModalFields(itemFields.map((item) => ({ ...item })));
   }, [itemFields]);
@@ -69,21 +84,25 @@ export default function DetailsTable({ itemModalHeader, columns = [], data = { i
 
   const initializeItem = (data) => {
     const initializedFields = modalFields.map((item) => {
-      const keyValue = data ? data.find(k => k.key === item.name) : null;
-      const value = keyValue ? keyValue.value : item.initialvalue && item.initialvalue !== "undefined" ? item.initialvalue : "";
+      const keyValue = data ? data.find((k) => k.key === item.name) : null;
+      const value = keyValue
+        ? keyValue.value
+        : item.initialvalue && item.initialvalue !== 'undefined'
+          ? item.initialvalue
+          : '';
 
       let i = { ...item };
       switch (item.type) {
-        case "text" || "select":
+        case 'text' || 'select':
           i = { ...item, value: value };
           break;
-        case "number":
+        case 'number':
           i = { ...item, value: value ? value : 0 };
           break;
-        case "currency":
+        case 'currency':
           i = { ...item, value: value ? value : 0 };
           break;
-        case "checkbox":
+        case 'checkbox':
           i = { ...item, value: value ? value : false };
           break;
         default:
@@ -91,7 +110,11 @@ export default function DetailsTable({ itemModalHeader, columns = [], data = { i
           break;
       }
 
-      return ({ ...i, parentId: parentId, hidden: item.hidden ? item.hidden : false });
+      return {
+        ...i,
+        parentId: parentId,
+        hidden: item.hidden ? item.hidden : false,
+      };
     });
 
     setModalFields(initializedFields);
@@ -106,10 +129,10 @@ export default function DetailsTable({ itemModalHeader, columns = [], data = { i
     setItemIndex(index);
     initializeItem();
     if (data) {
-      setModalMode("edit");
+      setModalMode('edit');
       loadItem(data);
     } else {
-      setModalMode("new");
+      setModalMode('new');
       initializeItem();
     }
     setModalOpen(true);
@@ -118,14 +141,16 @@ export default function DetailsTable({ itemModalHeader, columns = [], data = { i
   const loadItem = (data) => {
     const itemKeyValue = Object.entries(data).map(([key, value]) => ({
       key: key,
-      value: value
+      value: value,
     }));
     initializeItem(itemKeyValue);
   };
 
   const close = (data, index) => {
     if (data) {
-      index === "undefined" || index === -1 ? addDataTableItem(data) : updateDataTableItem(data, index);
+      index === 'undefined' || index === -1
+        ? addDataTableItem(data)
+        : updateDataTableItem(data, index);
     }
     setModalOpen(false);
   };
@@ -166,11 +191,32 @@ export default function DetailsTable({ itemModalHeader, columns = [], data = { i
     <div className={detailStyle.detailContainer}>
       <div className={detailStyle.newButtonContainer}>
         {editable && (
-          <Button icon={<FiPlus />} onClick={(e) => { e.stopPropagation(); openModal(); }}>Add</Button>
+          <Button
+            icon={<FiPlus />}
+            onClick={(e) => {
+              e.stopPropagation();
+              openModal();
+            }}>
+            Add
+          </Button>
         )}
       </div>
-      <DataTable columns={columns} data={items} showActions={showActions} emptyMessage={emptyMessage} onActionClick={openModal} />
-      <ItemModal headerLabel={itemModalHeader} itemIndex={itemIndex} mode={modalMode} isOpen={isModalOpen} onClose={close} fields={[...modalFields]} onItemRemove={deleteDataTableItem} />
+      <DataTable
+        columns={columns}
+        data={items}
+        showActions={showActions}
+        emptyMessage={emptyMessage}
+        onActionClick={openModal}
+      />
+      <ItemModal
+        headerLabel={itemModalHeader}
+        itemIndex={itemIndex}
+        mode={modalMode}
+        isOpen={isModalOpen}
+        onClose={close}
+        fields={[...modalFields]}
+        onItemRemove={deleteDataTableItem}
+      />
     </div>
   );
 }
