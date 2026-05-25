@@ -114,7 +114,28 @@ export const FormFields = (warehouses = [], projects = [], onFieldChanged) => ([
     searchable: true,
     span: 'span2',
     onChange: (val, values, setValues) => {
-      onFieldChanged?.('transferTo', val, values);
+      const toType = OPPOSITE_TYPE[values?.transferFromType];
+      const list = toType === 'Warehouse' ? warehouses : projects;
+      const selectedTo = list.find((l) => String(l.id) === String(val));
+
+      // find selected from (may be in warehouses or projects depending on transferFromType)
+      const fromList = values?.transferFromType === 'Warehouse' ? warehouses : projects;
+      const selectedFrom = fromList.find((l) => String(l.id) === String(values?.transferFrom));
+
+      const fromName = selectedFrom ? (selectedFrom.name || '') : '';
+      const toName = selectedTo ? (selectedTo.name || '') : '';
+
+      setValues((prev) => ({
+        ...prev,
+        transferTo: val,
+        name: fromName && toName ? `${fromName} to ${toName}` : (selectedTo?.name || prev.name || ''),
+      }));
+
+      onFieldChanged?.('transferTo', val, {
+        ...values,
+        transferTo: val,
+        name: fromName && toName ? `${fromName} to ${toName}` : (selectedTo?.name || values.name || ''),
+      });
     },
   },
 

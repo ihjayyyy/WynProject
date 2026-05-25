@@ -13,8 +13,9 @@ import { useToast } from '../ui/Toast/Toast';
 
 const baseColumns = [
   { header: 'Id', key: 'id' },
-  { header: 'Name', key: 'name' },
-  { header: 'Code', key: 'code' },
+  {header: 'Transfer Number', key: 'transferNo'},
+  // { header: 'Name', key: 'name' },
+  // { header: 'Code', key: 'code' },
     {
     header: 'Date',
     key: 'date',

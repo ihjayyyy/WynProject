@@ -13,8 +13,10 @@ import { useToast } from '../ui/Toast/Toast';
 
 const baseColumns = [
   { header: 'Id', key: 'id' },
-  { header: 'Name', key: 'name' },
-  { header: 'Code', key: 'code' },
+  {header: 'Transfer Number', key: 'transferNo'},
+
+  // { header: 'Name', key: 'name' },
+  // { header: 'Code', key: 'code' },
     {
     header: 'Date',
     key: 'date',
@@ -23,10 +25,16 @@ const baseColumns = [
         ? new Date(item.date).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: '2-digit' })
         : '—',
   },
-  { header: 'From Type', key: 'transferFromType' },
   { header: 'From', key: 'transferFromName' },
-  { header: 'To Type', key: 'transferToType' },
   { header: 'To', key: 'transferToName' },
+  { header: 'Quantity', key: 'quantity', render: (item) => {
+    const qty = item.children?.reduce((s, c) => s + (Number(c.quantity) || 0), 0) || 0;
+    return qty;
+  }},
+  { header: 'Quantity Received', key: 'quantityReceived', render: (item) => {
+    const qty = item.children?.reduce((s, c) => s + (Number(c.receivedQuantity) || 0), 0) || 0;
+    return qty;
+  }},
   { header: 'Status', key: 'status', render: (item) => <StatusBadge status={item.status} /> },
 ];
 
@@ -165,7 +173,7 @@ return [
       stats={stats}
       searchPlaceholder="Search received materials"
       newButtonLabel="New Received Material"
-      onNew={() => router.push('/inventory/materialreceived/form')}
+      onNew={() => router.push('/inventory/materialreceived/form?mode=new')}
       emptyMessage="No material received found"
       width="320px"
       filterFn={filterFn}

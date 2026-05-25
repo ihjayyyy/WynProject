@@ -44,14 +44,12 @@ export default function MaterialRequestsTab({ projectId, editable = true }) {
         setMaterials([]);
         return;
       }
-      // Flatten children across scopes and dedupe by materialId (or child id fallback)
+      // Flatten children across scopes and dedupe by materialId + scopeId pair
       const mats = [];
       const seen = new Set();
       raw.forEach((scope) => {
         const children = Array.isArray(scope.children) ? scope.children : [];
         children.forEach((c) => {
-          // Deduplicate by materialId + scopeId pair so the same material
-          // from different scopes each get their own entry
           const resolvedScopeId = scope.id ?? 0;
           const key = `mat:${c.materialId || c.id}:scope:${resolvedScopeId}`;
           if (seen.has(key)) return;
@@ -62,7 +60,7 @@ export default function MaterialRequestsTab({ projectId, editable = true }) {
             code: c.code || '',
             quantity: Number(c.quantity) || Number(c.initialQuantity) || 0,
             uom: c.uom || '',
-            scopeId: resolvedScopeId, // ← always use parent scope.id (child's scopeId is always 0)
+            scopeId: resolvedScopeId,
           });
         });
       });
@@ -71,17 +69,54 @@ export default function MaterialRequestsTab({ projectId, editable = true }) {
     return () => { mounted = false; };
   }, [projectId]);
 
-  const materialOptions = materials.map((m) => ({
-    value: `${m.id}:${m.scopeId}`, // unique per material+scope combination
-    label: m.name,
-    materialId: m.id,
-    scopeId: m.scopeId,
-  }));
+  /**
+   * Returns the total requestedQty already submitted for a given
+   * materialId + scopeId combination, excluding the item currently
+   * being edited (so editing doesn't double-count itself).
+   */
+  const getTotalRequestedQty = useCallback((materialId, scopeId) => {
+    return items
+      .filter((item) =>
+        Number(item.materialId) === Number(materialId) &&
+        Number(item.scopeId) === Number(scopeId) &&
+        item.id !== editing?.id
+      )
+      .reduce((sum, item) => sum + (Number(item.requestedQty) || 0), 0);
+  }, [items, editing]);
+
+  /**
+   * Build material options, excluding any materialId+scopeId combo
+   * that has already consumed its full project quantity.
+   * When editing an existing request, always keep that material in the
+   * list (it was already selected, and its own qty is excluded from the
+   * alreadyRequested sum by getTotalRequestedQty).
+   */
+  const materialOptions = materials
+    .filter((m) => {
+      const alreadyRequested = getTotalRequestedQty(m.id, m.scopeId);
+      const remaining = m.quantity - alreadyRequested;
+      // Always show the material that is currently being edited
+      const isCurrentlyEditing =
+        editing &&
+        Number(editing.materialId) === Number(m.id) &&
+        Number(editing.scopeId) === Number(m.scopeId);
+      return isCurrentlyEditing || remaining > 0;
+    })
+    .map((m) => {
+      const alreadyRequested = getTotalRequestedQty(m.id, m.scopeId);
+      const remaining = m.quantity - alreadyRequested;
+      return {
+        value: `${m.id}:${m.scopeId}`,
+        label: m.name,
+        materialId: m.id,
+        scopeId: m.scopeId,
+      };
+    });
 
   const modalFields = useMemo(() => {
     const record = editing || {};
-    const findMaterial = (id) => materials.find((m) => Number(m.id) === Number(id));
-    const selectedMaterial = findMaterial(record.materialId);
+    const findMaterial = (id, scopeId) => materials.find((m) => Number(m.id) === Number(id) && Number(m.scopeId) === Number(scopeId));
+    const selectedMaterial = findMaterial(record.materialId, record.scopeId);
     const auth = getAuthData() || {};
     const authName = `${(auth.firstName || '').trim()} ${(auth.lastName || '').trim()}`.trim() || auth.email || auth.userId || '';
     const today = new Date().toISOString().slice(0, 10);
@@ -99,7 +134,7 @@ export default function MaterialRequestsTab({ projectId, editable = true }) {
     return [
       { name: 'id', label: 'Id', type: 'number', value: Number(record.id) || 0, hidden: true },
       { name: 'projectId', label: 'Project Id', type: 'number', value: Number(projectId) || 0, hidden: true },
-      { name: 'scopeId', label: 'Scope Id', type: 'number', value: (selectedMaterial && selectedMaterial.scopeId) || record.scopeId || 0, hidden: true }, // ← added
+      { name: 'scopeId', label: 'Scope Id', type: 'number', value: (selectedMaterial && selectedMaterial.scopeId) || record.scopeId || 0, hidden: true },
       { name: 'name', label: 'Name', type: 'text', value: (selectedMaterial && selectedMaterial.name) || record.name || '', hidden: true },
       { name: 'code', label: 'Code', type: 'text', value: (selectedMaterial && selectedMaterial.code) || record.code || '', hidden: true },
       {
@@ -110,13 +145,11 @@ export default function MaterialRequestsTab({ projectId, editable = true }) {
         options: materialOptions,
         required: true,
         onChange: (item, updateField, itemFields, nextValue) => {
-          // nextValue is "materialId:scopeId" composite string
           const [midStr, sidStr] = String(nextValue || '').split(':');
           const mid = Number(midStr) || 0;
           const sid = Number(sidStr) || 0;
           const mat = materials.find((m) => Number(m.id) === mid && Number(m.scopeId) === sid);
           if (mat) {
-            console.log("Selected material", mat);
             updateField('materialId', mid);
             updateField('projectQty', Number(mat.quantity) || 0);
             updateField('name', mat.name || '');
@@ -132,12 +165,22 @@ export default function MaterialRequestsTab({ projectId, editable = true }) {
       },
       { name: 'projectQty', label: 'Project Quantity', type: 'number', value: (selectedMaterial && (selectedMaterial.quantity !== undefined ? selectedMaterial.quantity : selectedMaterial.projectQty)) || record.projectQty || '', readonly: true },
       {
-        name: 'requestedQty', label: 'Requested Quantity', type: 'number', value: record.requestedQty || '',
-        validator: Yup.number().required('Requested Quantity is required').min(0).test('max-project', 'Requested quantity cannot exceed project quantity', function (value) {
-          const pq = Number(this.parent?.projectQty) || 0;
-          if (!pq) return true;
-          return Number(value || 0) <= pq;
-        }),
+        name: 'requestedQty',
+        label: 'Requested Quantity',
+        type: 'number',
+        value: record.requestedQty || '',
+        validator: Yup.number()
+          .required('Requested Quantity is required')
+          .min(0)
+          .test('max-remaining', 'Requested quantity exceeds remaining project quantity', function (value) {
+            const pq = Number(this.parent?.projectQty) || 0;
+            if (!pq) return true;
+            const materialId = this.parent?.materialId;
+            const scopeId = this.parent?.scopeId;
+            const alreadyRequested = getTotalRequestedQty(materialId, scopeId);
+            const remaining = pq - alreadyRequested;
+            return Number(value || 0) <= remaining;
+          }),
         onChange: (item, updateField, itemFields, nextValue) => {
           const req = Number(nextValue) || 0;
           updateField('requestedQty', req);
@@ -151,7 +194,7 @@ export default function MaterialRequestsTab({ projectId, editable = true }) {
       { name: 'deadline', label: 'Deadline', type: 'date', value: fmt(record.deadline) || defaultDeadline },
       { name: 'requestDate', label: 'Request Date', type: 'date', value: fmt(record.requestDate) || today, hidden: true },
     ];
-  }, [editing, projectId, materialOptions]);
+  }, [editing, projectId, materialOptions, getTotalRequestedQty]);
 
   const filtered = useMemo(() => {
     const keyword = (searchTerm || '').trim().toLowerCase();
@@ -231,7 +274,6 @@ export default function MaterialRequestsTab({ projectId, editable = true }) {
             <Button onClick={async () => {
               await getDocumentPDFById(projectId).then(async _ => {
                 const res = await getMaterialRequestsByProjectId(projectId);
-                console.log("resres", res);
                 setItems(Array.isArray(res.data) ? res.data : (res.data ? [res.data] : []));
               });
             }}>Generate RIV</Button>
@@ -275,11 +317,11 @@ export default function MaterialRequestsTab({ projectId, editable = true }) {
           const payload = {
             ...INITIAL_MATERIAL_REQUEST,
             ...value,
-            name: value.name || (materials.find((m) => Number(m.id) === Number(value.materialId))?.name) || '',
-            code: value.code || (materials.find((m) => Number(m.id) === Number(value.materialId))?.code) || '',
+            name: value.name || (materials.find((m) => Number(m.id) === Number(value.materialId) && Number(m.scopeId) === Number(value.scopeId))?.name) || '',
+            code: value.code || (materials.find((m) => Number(m.id) === Number(value.materialId) && Number(m.scopeId) === Number(value.scopeId))?.code) || '',
             materialId: Number(value.materialId) || 0,
             projectId: Number(projectId) || 0,
-            scopeId: Number(value.scopeId) || 0, // ← added to payload
+            scopeId: Number(value.scopeId) || 0,
             projectQty: value.projectQty !== undefined ? Number(value.projectQty) : 0,
             requestedQty: value.requestedQty !== undefined ? Number(value.requestedQty) : 0,
             balance: value.balance !== undefined ? Number(value.balance) : 0,
@@ -288,6 +330,18 @@ export default function MaterialRequestsTab({ projectId, editable = true }) {
             deadline: value.deadline || '',
             requestDate: value.requestDate || today,
           };
+
+          // Final guard: check cumulative requested qty for materialId + scopeId
+          // before hitting the API, in case Yup validation was bypassed.
+          const alreadyRequested = getTotalRequestedQty(payload.materialId, payload.scopeId);
+          const remaining = (payload.projectQty || 0) - alreadyRequested;
+          if (payload.requestedQty > remaining) {
+            toast.error(
+              `Cannot request ${payload.requestedQty}. Only ${remaining} remaining for this material` +
+              ` (project qty: ${payload.projectQty}, already requested: ${alreadyRequested}).`
+            );
+            return; // keep modal open so user can correct the value
+          }
 
           if (!value.id || value.id === 0) {
             const response = await createMaterialRequest(payload);
