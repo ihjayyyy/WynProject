@@ -56,10 +56,55 @@ export async function updatePayment(id, payload) {
   }
 }
 
+export async function submitPayment(paymentId) {
+  try {
+    const res = await fetch(`${API_BASE_URL}/${paymentId}/submit`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+    });
+    const json = await res.json();
+    const data = json && json.value ? json.value : json;
+    return { data, error: null };
+  } catch (error) {
+    return { data: null, error: error?.message || error };
+  }
+}
+
+export async function cancelPayment(paymentId) {
+  try {
+    const res = await fetch(`${API_BASE_URL}/${paymentId}/cancel`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+    });
+    const json = await res.json();
+    const data = json && json.value ? json.value : json;
+    return { data, error: null };
+  } catch (error) {
+    return { data: null, error: error?.message || error };
+  }
+}
+
+export async function archivePayment(paymentId) {
+  try {
+    const res = await fetch(`${API_BASE_URL}/${paymentId}/archive`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+    });
+    const json = await res.json();
+    const data = json && json.value ? json.value : json;
+    return { data, error: null };
+  } catch (error) {
+    return { data: null, error: error?.message || error };
+  }
+}
+
 const PurchasePaymentService = {
   getAllPayments,
   createPayment,
   getPaymentById,
   updatePayment,
+  submitPayment,
+  cancelPayment,
+  archivePayment,
 };
 export default PurchasePaymentService;

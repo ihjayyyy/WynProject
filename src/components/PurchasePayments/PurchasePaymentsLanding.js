@@ -5,6 +5,7 @@ import { FiEdit2, FiEye } from 'react-icons/fi';
 import DropdownAction from '../ui/DropdownAction/DropdownAction';
 import { useEffect, useMemo, useState } from 'react';
 import Landing from '../ui/Landing/Landing';
+import StatusBadge from '../ui/StatusBadge/StatusBadge';
 import { getAllPayments } from '@/services/PurchasePayments';
 
 const baseColumns = [
@@ -24,6 +25,11 @@ const baseColumns = [
   { header: 'Payment No.', key: 'paymentNumber' },
   { header: 'Supplier', key: 'supplierName' },
   { header: 'Amount', key: 'amount' },
+  {
+    header: 'Status',
+    key: 'status',
+    render: (item) => <StatusBadge status={item.status} />,
+  },
 ];
 
 export default function PurchasePaymentsLanding() {

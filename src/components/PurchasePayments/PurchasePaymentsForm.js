@@ -21,6 +21,9 @@ import {
   createPayment,
   getPaymentById,
   updatePayment,
+  submitPayment,
+  cancelPayment,
+  archivePayment,
 } from '@/services/PurchasePayments';
 import {
   PurchasePaymentFields,
@@ -28,6 +31,7 @@ import {
   PurchasePaymentItemFields,
 } from './PurchasePaymentsModel';
 import Button from '../ui/Button/Button';
+import StatusBadge from '../ui/StatusBadge/StatusBadge';
 import PurchasePaymentsStyles from './PurchasePayments.module.scss';
 
 const getToday = () => {
@@ -88,6 +92,8 @@ export default function PurchasePaymentsForm() {
       paymentDate: getToday(),
       checkNumber: '',
       withholdingTaxPercentage: 0,
+      description: '',
+      status: 'Draft',
     }),
     [],
   );
@@ -299,6 +305,60 @@ export default function PurchasePaymentsForm() {
     balance: Number(item.balance) || 0,
   });
 
+  const handleSubmitPayment = async () => {
+    confirmModal.show(
+      'Submit Payment',
+      'Are you sure you want to submit this payment?',
+      'Submit',
+      'primary',
+      () => async () => {
+        const res = await submitPayment(paymentId);
+        if (res?.error) {
+          toast.error('Failed to submit payment.');
+        } else {
+          toast.success('Payment has been submitted.');
+          router.push('/purchase/payments');
+        }
+      },
+    );
+  };
+
+  const handleCancelPayment = async () => {
+    confirmModal.show(
+      'Cancel Payment',
+      'Are you sure you want to cancel this payment?',
+      'Cancel',
+      'danger',
+      () => async () => {
+        const res = await cancelPayment(paymentId);
+        if (res?.error) {
+          toast.error('Failed to cancel payment.');
+        } else {
+          toast.success('Payment has been cancelled.');
+          router.push('/purchase/payments');
+        }
+      },
+    );
+  };
+
+  const handleArchivePayment = async () => {
+    confirmModal.show(
+      'Archive Payment',
+      'Are you sure you want to archive this payment?',
+      'Archive',
+      'primary',
+      () => async () => {
+        const res = await archivePayment(paymentId);
+        if (res?.error) {
+          toast.error('Failed to archive payment.');
+        } else {
+          toast.success('Payment has been archived.');
+          router.push('/purchase/payments');
+        }
+      },
+    );
+  };
+
   const savePayment = async (values) => {
     const supplier = suppliers.find(
       (s) => Number(s.id) === Number(values.supplierId),
@@ -316,6 +376,7 @@ export default function PurchasePaymentsForm() {
       email: supplier?.email || values.email || '',
       paymentDate: ensureISODate(values.paymentDate),
       checkNumber: values.checkNumber || '',
+      description: values.description || '',
       amount: computedAmount,
       withholdingTax: computedWithholdingTax,
       withholdingTaxPercentage: Number(values.withholdingTaxPercentage) || 0,
@@ -363,7 +424,12 @@ export default function PurchasePaymentsForm() {
   return (
     <EntityForm
       key={formKey}
-      title="New Purchase Payment"
+      title={
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          <span>{paymentId ? 'Purchase Payment' : 'New Purchase Payment'}</span>
+          <StatusBadge status={payment?.status || 'Draft'} />
+        </div>
+      }
       breadcrumbLabel="Purchase Payment"
       icon={<FiPocket />}
       fields={paymentFields}
@@ -374,7 +440,7 @@ export default function PurchasePaymentsForm() {
             itemModalHeader="Payment Details"
             parentId={paymentId}
             columns={PurchasePaymentDetailsColumns}
-            editable={true}
+            editable={mode !== 'view'}
             itemFields={paymentItemFields}
             data={tableData}
             onChange={detailsUpdated}
@@ -428,11 +494,38 @@ export default function PurchasePaymentsForm() {
       showSubmitButton={false}
       headerActions={
         <div style={{ display: 'flex', gap: 8 }}>
-          {mode === 'view' && isAllowed(PageName, 'w') && (
-            <Button variant="primary" onClick={() => setMode('edit')}>
-              Edit
-            </Button>
-          )}
+          {mode === 'view' &&
+            payment?.status === 'Draft' &&
+            isAllowed(PageName, 'w') && (
+              <Button variant="primary" onClick={() => setMode('edit')}>
+                Edit
+              </Button>
+            )}
+
+          {mode === 'view' &&
+            payment?.status === 'Draft' &&
+            isAllowed(PageName, 'w') && (
+              <Button variant="primary" onClick={handleSubmitPayment}>
+                Submit Payment
+              </Button>
+            )}
+
+          {mode === 'view' &&
+            (payment?.status === 'PartiallyPaid' ||
+              payment?.status === 'Paid') &&
+            isAllowed(PageName, 'w') && (
+              <Button variant="outlineDanger" onClick={handleCancelPayment}>
+                Cancel Payment
+              </Button>
+            )}
+
+          {mode === 'view' &&
+            payment?.status === 'Cancelled' &&
+            isAllowed(PageName, 'w') && (
+              <Button variant="primary" onClick={handleArchivePayment}>
+                Archive
+              </Button>
+            )}
 
           {mode !== 'view' && (
             <>
