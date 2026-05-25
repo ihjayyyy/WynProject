@@ -53,7 +53,7 @@ export default function MaterialTransferForm() {
   const [formData, setForm] = useState({});
   const [validForm, setValidForm] = useState(false);
   const [tableData, setTableData] = useState({ items: [], deletedItems: [] });
-  const [childFields, setChildFields] = useState(ItemsFields([]));
+  const [childFields, setChildFields] = useState(ItemsFields([], false, false));
 
   // Dedicated primitives so effects always have the latest values
   const [transferFromType, setTransferFromType] = useState('');
@@ -205,6 +205,7 @@ export default function MaterialTransferForm() {
                   code: child.code || '',
                   name: child.name || '',
                   uom: child.uom || '',
+                  availableQuantity: Number(child.quantity || child.initialQuantity || 0),
                   scopeId: child.scopeId ?? 0,
                 });
               }
@@ -213,10 +214,10 @@ export default function MaterialTransferForm() {
         }
       }
 
-      if (mounted) {
-        setMaterialRequestOptions(opts);
-        setBalanceMap(newBalanceMap);
-      }
+        if (mounted) {
+          setMaterialRequestOptions(opts);
+          setBalanceMap(newBalanceMap);
+        }
     })();
 
     return () => { mounted = false; };
@@ -225,8 +226,10 @@ export default function MaterialTransferForm() {
   // ── Rebuild child fields ─────────────────────────────────────────────────────
 
   useEffect(() => {
-    setChildFields(ItemsFields(materialRequestOptions));
-  }, [materialRequestOptions]);
+    const isWarehouseToProject = transferFromType === 'Warehouse' && transferToType === 'Project';
+    const isProjectToWarehouse = transferFromType === 'Project' && transferToType === 'Warehouse';
+    setChildFields(ItemsFields(materialRequestOptions, isWarehouseToProject, isProjectToWarehouse));
+  }, [materialRequestOptions, transferFromType, transferToType]);
 
   // ── Form fields ──────────────────────────────────────────────────────────────
 
@@ -279,11 +282,14 @@ export default function MaterialTransferForm() {
     const payload = {
       ...formData,
       ...entity,
-      children: (formData.children || []).map((child) => ({
-        ...child,
-        quantity: Number(child.quantity || 0),
-        scopeId: child.scopeId ?? 0,
-      })),
+      children: (formData.children || []).map((child) => {
+          const { rackQuantity, ...rest } = child || {};
+          return {
+            ...rest,
+            quantity: Number(child.quantity || 0),
+            scopeId: child.scopeId ?? 0,
+          };
+        }),
       deletedChildren: (formData.deletedChildren || []).map((child) => ({
         ...child,
         scopeId: child.scopeId ?? 0,

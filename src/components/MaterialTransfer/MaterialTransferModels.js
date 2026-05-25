@@ -1,4 +1,5 @@
 import * as Yup from "yup";
+import { getRacksByMaterialId } from '@/services/MaterialInventory';
 
 export const INITIAL_MATERIAL_TRANSFER = {
   name: '',
@@ -150,7 +151,7 @@ export const TableColumns = [
   { header: 'Remarks', key: 'remarks', width: '220px', render: (it) => it.remarks || '' },
 ];
 
-export const ItemsFields = (materialOptions = []) => ([
+export const ItemsFields = (materialOptions = [], isWarehouseToProject = false, isProjectToWarehouse = false) => ([
   { name: 'id', label: 'id', type: 'number', hidden: true, initialvalue: 0 },
   { name: 'parentId', label: 'parentId', type: 'number', hidden: true, initialvalue: 0 },
   { name: 'scopeId', label: 'scopeId', type: 'number', hidden: true, initialvalue: 0 },
@@ -160,7 +161,7 @@ export const ItemsFields = (materialOptions = []) => ([
     type: 'select',
     options: Array.isArray(materialOptions) ? materialOptions : [],
     validator: Yup.string().required('Material is required'),
-    onChange: (item, updateField) => {
+    onChange: async (item, updateField, fields, nextValue) => {
       const material = Array.isArray(materialOptions)
         ? materialOptions.find((m) => String(m.value) === String(item.value))
         : null;
@@ -170,16 +171,57 @@ export const ItemsFields = (materialOptions = []) => ([
         updateField('name', '');
         updateField('uom', '');
         updateField('scopeId', 0);
+        // clear rack-related fields/options
+        const rackField = (fields || []).find((f) => f.name === 'rackId');
+        if (rackField) {
+          rackField.options = [];
+          updateField('rackId', '');
+          updateField('rackQuantity', 0);
+        }
         return;
       }
+
       updateField('code', material.code || '');
       updateField('name', material.name || material.label || '');
       updateField('uom', material.uom || '');
       updateField('scopeId', material.scopeId ?? 0);
+
+      // fetch racks for selected material and populate rack options
+      try {
+        const res = await getRacksByMaterialId(material.value ?? material.id ?? item.value);
+        const list = (res?.data || [])
+          .map((entry) => ({
+            value: entry.rack?.id || entry.id || 0,
+            label: entry.rack ? `${entry.rack.code || ''} - ${entry.rack.name || ''}`.trim() : String(entry.id || ''),
+            quantity: Number(entry.quantity || entry.stockLevel || 0),
+            warehouseId: entry.rack?.warehouseId ?? 0,
+          }));
+
+        const rackField = (fields || []).find((f) => f.name === 'rackId');
+        if (rackField) {
+          rackField.options = list;
+          // reset selected rack
+          updateField('rackId', '');
+          updateField('rackQuantity', 0);
+        }
+      } catch (e) {
+        // ignore
+      }
+        // also set project quantity if material option contains available/project quantity
+        const projectQty = material.availableQuantity ?? material.totalBalance ?? material.quantity ?? 0;
+        updateField('projectQuantity', Number(projectQty || 0));
     },
   },
   { name: 'code', label: 'Code', type: 'text', hidden: true },
   { name: 'name', label: 'Name', type: 'text', hidden: true },
+    // Rack selection and display-only fields
+  { name: 'rackId', label: 'Rack', span: 'span2', type: 'select', options: [], searchable: true,
+    onChange: (item, updateField, fields) => {
+      const rackField = (fields || []).find((f) => f.name === 'rackId');
+      const selected = rackField && Array.isArray(rackField.options) ? rackField.options.find(o => String(o.value) === String(item.value)) : null;
+      updateField('rackQuantity', selected ? Number(selected.quantity || 0) : 0);
+    }
+  },
   {
     name: 'quantity',
     label: 'Quantity',
@@ -190,9 +232,45 @@ export const ItemsFields = (materialOptions = []) => ([
       .required('Quantity is required')
       .typeError('Quantity must be a number')
       .positive('Quantity must be greater than 0.')
-      .min(1, 'Quantity must be greater than 0.'),
-    onChange: () => {},
+      .min(1, 'Quantity must be greater than 0.')
+      .test('max-available', 'Quantity must not exceed available quantity', function (value) {
+        const v = Number(value || 0);
+        if (isWarehouseToProject) {
+          const rackQty = Number(this.parent?.rackQuantity || 0);
+          if (!rackQty) return true;
+          return v <= rackQty;
+        }
+        if (isProjectToWarehouse) {
+          const projQty = Number(this.parent?.projectQuantity || 0);
+          if (!projQty) return true;
+          return v <= projQty;
+        }
+        return true;
+      }),
+    onChange: (item, updateField, fields) => {
+      const qty = Number(item.value || 0);
+      if (isWarehouseToProject) {
+        const rackField = (fields || []).find((f) => f.name === 'rackQuantity');
+        const max = Number(rackField?.value || 0);
+        if (max && qty > max) {
+          updateField('quantity', max);
+          return;
+        }
+      }
+      if (isProjectToWarehouse) {
+        const projField = (fields || []).find((f) => f.name === 'projectQuantity');
+        const max = Number(projField?.value || 0);
+        if (max && qty > max) {
+          updateField('quantity', max);
+          return;
+        }
+      }
+      updateField('quantity', qty);
+    },
   },
+
+  { name: 'rackQuantity', label: 'Rack Qty', type: 'number', readonly: true, initialvalue: 0 },
+    { name: 'projectQuantity', label: 'Project Qty', type: 'number', readonly: true, initialvalue: 0 },
   { name: 'uom', label: 'Unit of Measure', type: 'text', readonly: true },
   { name: 'remarks', label: 'Remarks', type: 'text' },
 ]);

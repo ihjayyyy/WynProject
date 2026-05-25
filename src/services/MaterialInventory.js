@@ -127,10 +127,34 @@ async function getDocumentPDF() {
   }
 }
 
+async function getRacksByMaterialId(materialId) {
+  try {
+    const url = `${API_BASE_URL}/Racks/ByMaterialId/${materialId}`;
+
+    const res = await fetch(url, {
+      method: 'GET',
+      headers: { Accept: '*/*' },
+    });
+
+    const json = await res.json();
+
+    return {
+      data: json && json.value ? json.value : json,
+      error: null,
+    };
+  } catch (error) {
+    return {
+      data: null,
+      error: error?.message || error,
+    };
+  }
+}
+
 export {
   getMaterialInventories,
   getMaterialInventory,
   getMaterialInventoryByMaterialId,
+  getRacksByMaterialId,
   createMaterialInventory,
   updateMaterialInventory,
   generateMaterialInventoryReport,
@@ -141,6 +165,7 @@ export default {
   getMaterialInventories,
   getMaterialInventory,
   getMaterialInventoryByMaterialId,
+  getRacksByMaterialId,
   createMaterialInventory,
   updateMaterialInventory,
   generateMaterialInventoryReport,
