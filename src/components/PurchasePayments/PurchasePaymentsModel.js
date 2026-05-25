@@ -28,7 +28,13 @@ export const PurchasePaymentFields = (suppliers = [], onFieldChanged) => [
     label: 'Supplier Receipt Number',
     span: 'span2',
   },
-  { name: 'spacer-3', type: 'spacer', span: 'span6' },
+  {
+    name: 'description',
+    label: 'Description',
+    type: 'textarea',
+    span: 'span5',
+  },
+  { name: 'spacer-3', type: 'spacer', span: 'span1' },
   { name: 'checkNumber', label: 'Check Number', span: 'span2' },
 
   { name: 'supplierName', hidden: true },
@@ -55,7 +61,7 @@ export const PurchasePaymentDetailsColumns = [
     render: (it) => Number(it.invoiceAmount || 0).toFixed(2),
   },
   {
-    header: 'Paid Amount',
+    header: 'Amount Paid',
     key: 'paidAmount',
     align: 'right',
     width: '120px',

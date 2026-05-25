@@ -56,8 +56,10 @@ export default function PurchasePaymentsForm() {
   const [invoices, setInvoices] = useState([]);
   const [tableData, setTableData] = useState({ items: [], deletedItems: [] });
   const [computedAmount, setComputedAmount] = useState(0);
+  const [computedAmountPaid, setComputedAmountPaid] = useState(0);
   const [computedWithholdingTax, setComputedWithholdingTax] = useState(0);
   const [computedNetAmount, setComputedNetAmount] = useState(0);
+  const [computedBalance, setComputedBalance] = useState(0);
   const [withholdingTaxPercentage, setWithholdingTaxPercentage] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
   const searchParams = useSearchParams();
@@ -243,6 +245,11 @@ export default function PurchasePaymentsForm() {
         .reduce((sum, it) => sum + (Number(it.invoiceAmount) || 0), 0)
         .toFixed(2),
     );
+    const paid = parseFloat(
+      items
+        .reduce((sum, it) => sum + (Number(it.paidAmount) || 0), 0)
+        .toFixed(2),
+    );
     const withholding = parseFloat(
       items
         .reduce((sum, it) => sum + (Number(it.withholdingTax) || 0), 0)
@@ -253,10 +260,15 @@ export default function PurchasePaymentsForm() {
         .reduce((sum, it) => sum + (Number(it.totalAmountPaid) || 0), 0)
         .toFixed(2),
     );
+    const balance = parseFloat(
+      items.reduce((sum, it) => sum + (Number(it.balance) || 0), 0).toFixed(2),
+    );
 
     setComputedAmount(amount);
+    setComputedAmountPaid(Number(paid));
     setComputedWithholdingTax(Number(withholding));
     setComputedNetAmount(Number(net));
+    setComputedBalance(Number(balance));
   }, [tableData.items, withholdingTaxPercentage]);
 
   const paymentFields = useMemo(
@@ -370,24 +382,41 @@ export default function PurchasePaymentsForm() {
           <div className={PurchasePaymentsStyles.summaryContainer}>
             <div className={PurchasePaymentsStyles.notesContainer} />
             <div className={PurchasePaymentsStyles.totalContainer}>
-              <div className={PurchasePaymentsStyles.totalLabel}>Amount:</div>
-              <div className={PurchasePaymentsStyles.totalValue}>
-                {computedAmount.toFixed(2)}
+              <div className={PurchasePaymentsStyles.totalLabel}>
+                Total Net Amount:
+              </div>
+              <div
+                className={`${PurchasePaymentsStyles.totalValue} ${PurchasePaymentsStyles.highlight}`}>
+                {computedNetAmount.toFixed(2)}
               </div>
 
               <div className={PurchasePaymentsStyles.totalLabel}>
-                Withholding Tax:
+                Total Withholding Tax:
               </div>
               <div className={PurchasePaymentsStyles.totalValue}>
                 {computedWithholdingTax.toFixed(2)}
               </div>
 
               <div className={PurchasePaymentsStyles.totalLabel}>
-                Net Amount:
+                Total Amount Paid:
+              </div>
+              <div className={PurchasePaymentsStyles.totalValue}>
+                {computedAmountPaid.toFixed(2)}
+              </div>
+
+              <div className={PurchasePaymentsStyles.totalLabel}>
+                Total Invoice Amount:
+              </div>
+              <div className={PurchasePaymentsStyles.totalValue}>
+                {computedAmount.toFixed(2)}
+              </div>
+
+              <div className={PurchasePaymentsStyles.totalLabel}>
+                Total Remaining Balance:
               </div>
               <div
                 className={`${PurchasePaymentsStyles.totalValue} ${PurchasePaymentsStyles.highlight}`}>
-                {computedNetAmount.toFixed(2)}
+                {computedBalance.toFixed(2)}
               </div>
             </div>
           </div>
