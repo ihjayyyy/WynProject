@@ -3,6 +3,7 @@
 import React, { useMemo, useState, useEffect } from 'react';
 // no router needed for view-only landing
 import Landing from '../../ui/Landing/Landing';
+import StatusBadge from '../../ui/StatusBadge/StatusBadge';
 // no action icons or dropdown needed
 import { getMaterialRequests } from '../../../services/MaterialRequest';
 
@@ -13,7 +14,7 @@ const baseColumns = [
   { header: 'Material', key: 'materialId' },
   { header: 'Project', key: 'projectId' },
   { header: 'Requested By', key: 'requestedBy' },
-  { header: 'Status', key: 'status' },
+  { header: 'Status', key: 'status', render: (item) => <StatusBadge status={item.status} /> },
   { header: 'Request Date', key: 'requestDate', render: (item) => (item.requestDate ? new Date(item.requestDate).toLocaleString() : '') },
 ];
 

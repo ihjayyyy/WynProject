@@ -4,6 +4,8 @@ import React, { useEffect, useState, useMemo } from 'react';
 import { useSearchParams } from 'next/navigation';
 import * as Yup from 'yup';
 import EntityForm from '../EntityForm/EntityForm';
+import EntityStyle from '../EntityForm/EntityContainer.module.scss';
+import Button from '../ui/Button/Button';
 import DetailsTable from '../ItemDetails/DetailsTable';
 import { getTransferredMaterialTransfers, getMaterialTransfer, receiveMaterialTransfer } from '@/services/MaterialTransfer';
 import { useConfirmModal } from '@/app/contextProviders/confirmModalContext';
@@ -16,19 +18,26 @@ export default function MaterialReceivedForm() {
   const toast = useToast();
 
   const [transfers, setTransfers] = useState([]);
-  const [selectedTransferId, setSelectedTransferId] = useState(0);
+  const searchParams = useSearchParams();
+  const initialId = Number(searchParams.get('id') || 0);
+  const [selectedTransferId, setSelectedTransferId] = useState(initialId);
+  const initialMode = searchParams.get('mode') || (initialId ? 'view' : 'edit');
+  const [mode, setMode] = useState(initialMode);
   const [transferData, setTransferData] = useState(null);
   const [tableData, setTableData] = useState({ items: [], deletedItems: [] });
   const [itemFields, setItemFields] = useState([]);
   const confirmModal = useConfirmModal();
   const [actionLoading, setActionLoading] = useState(false);
-  const searchParams = useSearchParams();
+  // (selectedTransferId is initialized from URL `id` param)
 
-  // sync URL id param when opening via landing edit/view
   useEffect(() => {
-    const id = Number(searchParams.get('id') || 0);
-    if (id) setSelectedTransferId(id);
-  }, [searchParams]);
+    if (!selectedTransferId) {
+      setMode('new');
+    } else {
+      const spMode = searchParams.get('mode');
+      setMode(spMode || 'view');
+    }
+  }, [selectedTransferId, searchParams]);
 
   useEffect(() => {
     (async () => {
@@ -58,6 +67,17 @@ export default function MaterialReceivedForm() {
 
       const data = res.data || null;
       setTransferData(data);
+
+      // Ensure the transfers options include the currently loaded transfer
+      setTransfers((prev) => {
+        try {
+          if (!data || !data.id) return prev || [];
+          if (Array.isArray(prev) && prev.find((p) => String(p.id) === String(data.id))) return prev;
+          return [data].concat(prev || []);
+        } catch (err) {
+          return prev || [];
+        }
+      });
 
 
       const children = Array.isArray(data?.children) ? data.children : [];
@@ -102,6 +122,11 @@ export default function MaterialReceivedForm() {
       setItemFields(nextFields);
     })();
   }, [selectedTransferId, toast]);
+
+  const isReadOnly = useMemo(() => {
+    if (transferData) return mode === 'view';
+    return mode !== 'edit' && mode !== 'new' ? true : false;
+  }, [transferData, mode]);
 
   const formFields = useMemo(() => (
     [
@@ -186,7 +211,7 @@ export default function MaterialReceivedForm() {
             itemModalHeader="Receive Items"
             parentId={selectedTransferId}
             columns={TransferTableColumns.concat([{ header: 'Received', key: 'receivedQuantity', align: 'right', render: (it) => (Number(it.receivedQuantity) || 0) }])}
-            editable={!!selectedTransferId}
+            editable={!!selectedTransferId && !isReadOnly}
             allowAdd={false}
             itemFields={itemFields}
             data={tableData}
@@ -195,7 +220,20 @@ export default function MaterialReceivedForm() {
           />
         </div>
       )}
-      showSubmitButton={true}
+      showSubmitButton={false}
+      readOnly={isReadOnly}
+      headerActions={(
+        <div className={EntityStyle.buttonsContainer}>
+          {isReadOnly ? (
+            <Button variant="outline" onClick={() => setMode('edit')}>Edit</Button>
+          ) : (
+            <>
+              <Button variant="outlineDanger" onClick={() => { setMode(transferData ? 'view' : 'new'); }}>Cancel</Button>
+              <Button type="submit" variant="save" disabled={actionLoading || !selectedTransferId}>Save</Button>
+            </>
+          )}
+        </div>
+      )}
     />
   );
 }

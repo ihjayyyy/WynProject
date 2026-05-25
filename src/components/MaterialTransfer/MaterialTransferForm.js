@@ -48,6 +48,8 @@ export default function MaterialTransferForm() {
   const [warehouses, setWarehouses] = useState([]);
   const [projects, setProjects] = useState([]);
   const [materialRequestOptions, setMaterialRequestOptions] = useState([]);
+  // balanceMap: { [materialId]: number } — total balance across all requests for that material
+  const [balanceMap, setBalanceMap] = useState({});
   const [formData, setForm] = useState({});
   const [validForm, setValidForm] = useState(false);
   const [tableData, setTableData] = useState({ items: [], deletedItems: [] });
@@ -153,24 +155,38 @@ export default function MaterialTransferForm() {
 
     if (!shouldFetch) {
       setMaterialRequestOptions([]);
+      setBalanceMap({});
       return;
     }
 
     (async () => {
       let opts = [];
+      let newBalanceMap = {};
 
       if (isWarehouseToProject && transferToId) {
         const res = await getMaterialRequestsByProjectId(transferToId);
         if (!mounted) return;
         if (!res?.error && Array.isArray(res.data)) {
-          opts = res.data.map((r) => ({
-            value: r.materialId ?? r.id,
-            label: r.name || r.code || String(r.materialId ?? r.id),
-            code: r.code || '',
-            name: r.name || '',
-            uom: r.uom || r.purchaseUnitOfMeasure || r.unitOfMeasure || '',
-            scopeId: r.scopeId ?? 0,
-          }));
+          // Deduplicate by materialId — sum up balance across all requests
+          const byMaterialId = {};
+          res.data.forEach((r) => {
+            const mid = r.materialId ?? r.id;
+            if (!byMaterialId[mid]) {
+              byMaterialId[mid] = {
+                value: mid,
+                label: r.name || r.code || String(mid),
+                code: r.code || '',
+                name: r.name || '',
+                uom: r.uom || r.purchaseUnitOfMeasure || r.unitOfMeasure || '',
+                scopeId: r.scopeId ?? 0,
+                totalBalance: 0,
+              };
+            }
+            byMaterialId[mid].totalBalance += Number(r.balance) || 0;
+          });
+
+          opts = Object.values(byMaterialId);
+          opts.forEach((o) => { newBalanceMap[o.value] = o.totalBalance; });
         }
       } else if (isProjectToWarehouse && transferFromId) {
         const res = await getByProjectId(transferFromId);
@@ -197,7 +213,10 @@ export default function MaterialTransferForm() {
         }
       }
 
-      if (mounted) setMaterialRequestOptions(opts);
+      if (mounted) {
+        setMaterialRequestOptions(opts);
+        setBalanceMap(newBalanceMap);
+      }
     })();
 
     return () => { mounted = false; };
@@ -321,6 +340,58 @@ export default function MaterialTransferForm() {
       </div>
     ) : null;
 
+  // ── Balance summary panel (shown when Warehouse → Project and options loaded) ─
+
+  const BalanceSummary = () => {
+    if (transferFromType !== 'Warehouse' || transferToType !== 'Project') return null;
+    if (!materialRequestOptions.length) return null;
+
+    return (
+      <div style={{
+        marginBottom: '16px',
+        padding: '12px 16px',
+        background: 'var(--color-surface, #f8f9fa)',
+        border: '1px solid var(--color-border, #e2e8f0)',
+        borderRadius: '8px',
+      }}>
+        <p style={{
+          margin: '0 0 10px 0',
+          fontWeight: 600,
+          fontSize: '13px',
+          color: 'var(--color-text-secondary, #64748b)',
+          textTransform: 'uppercase',
+          letterSpacing: '0.04em',
+        }}>
+          Available Balances
+        </p>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+          {materialRequestOptions.map((opt) => (
+            <div key={opt.value} style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              fontSize: '13px',
+            }}>
+              <span style={{ color: 'var(--color-text, #1e293b)' }}>
+                {opt.code ? `${opt.code} - ${opt.name}` : opt.name}
+              </span>
+              <span style={{
+                fontWeight: 600,
+                color: (balanceMap[opt.value] || 0) > 0
+                  ? 'var(--color-success, #16a34a)'
+                  : 'var(--color-danger, #dc2626)',
+                minWidth: '60px',
+                textAlign: 'right',
+              }}>
+                {balanceMap[opt.value] ?? 0} {opt.uom}
+              </span>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  };
+
   // ── Render ───────────────────────────────────────────────────────────────────
 
   return isAllowed(PageName, 'r') ? (
@@ -333,6 +404,7 @@ export default function MaterialTransferForm() {
         initialValues={formData}
         extraContent={
           <div className={EntityStyle.extraContentContainer}>
+            <BalanceSummary />
             <DetailsTable
               itemModalHeader="Transfer Items"
               parentId={formId}
