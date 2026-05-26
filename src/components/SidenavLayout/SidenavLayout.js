@@ -19,6 +19,8 @@ import {
 } from 'react-icons/fi';
 import DropdownAction from '../ui/DropdownAction/DropdownAction';
 
+import Logo from '@/assets/logo.jpg';
+
 export default function SidenavLayout({ children }) {
   const router = useRouter();
   const { user, getAccess } = useContext(AccessContext);
@@ -363,8 +365,8 @@ export default function SidenavLayout({ children }) {
               onMouseLeave={() => setIsLogoHovered(false)}
               title={isCollapsed ? 'Expand sidebar' : ''}>
               <Image
-                src="/ODR-Logo.png"
-                alt="ODR Logo"
+                src={Logo}
+                alt="Wyn Logo"
                 className={`${styles.brandLogo} ${
                   isLogoHovered && isCollapsed ? styles.logoHovered : ''
                 }`}
@@ -419,7 +421,7 @@ export default function SidenavLayout({ children }) {
             }}
             style={{ cursor: isCollapsed ? 'default' : 'pointer' }}>
             <Image
-              src="/ODR-Logo.png"
+              src={Logo}
               alt="User Avatar"
               className={styles.userAvatar}
               width={28}
