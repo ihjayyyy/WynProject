@@ -2,10 +2,10 @@
 
 import React, { useMemo, useState ,useEffect} from 'react';
 import { useRouter } from 'next/navigation';
-import { FiEdit2, FiEye } from 'react-icons/fi';
+import { FiEdit2, FiEye, FiFileText } from 'react-icons/fi';
 import DropdownAction from '../ui/DropdownAction/DropdownAction';
 import Landing from '../ui/Landing/Landing';
-import { GetAll } from '@/services/PurchaseInvoice';
+import { GetAll, getPurchaseInvoicePDFById } from '@/services/PurchaseInvoice';
 
 const baseColumns = [
   { header: 'Id', key: 'id' },
@@ -55,6 +55,7 @@ export default function InvoicesLanding() {
     () => [
       { key: 'view', label: 'View', icon: <FiEye size={14} />, onClick: (item) => router.push(`/purchase/invoices/invoiceform?id=${item.id}`) },
       { key: 'edit', label: 'Edit', icon: <FiEdit2 size={14} />, onClick: (item) => router.push(`/purchase/invoices/invoiceform?id=${item.id}&mode=edit`) },
+      { key: 'viewpdf', label: 'Generate Invoice', icon: <FiFileText size={14} />, onClick: (item) => getPurchaseInvoicePDFById(item.id) },
     ],
     [router]
   );
