@@ -1,3 +1,5 @@
+import { handleOpenPdf } from "./Helper";
+
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL + "/SalesCollection";
 
 export const INITIAL_COLLECTION = {
@@ -115,6 +117,25 @@ async function closeCollection(salesCollectionId) {
     return { data: null, error: error?.message || error };
   }
 }
+async function getSalesCollectionPDFById(id) {
+  if (!id) return { data: null, error: 'Missing id' };
+
+  try {
+    const url = `${API_BASE_URL}/pdf/${id}`;
+
+    const res = await fetch(url, {
+      method: 'GET',
+      headers: { Accept: '*/*' },
+    });
+
+    handleOpenPdf(res);
+  } catch (error) {
+    return {
+      data: null,
+      error: error?.message || error,
+    };
+  }
+}
 
 export {
   getCollections,
@@ -123,6 +144,7 @@ export {
   updateCollection,
   cancelCollection,
   closeCollection,
+  getSalesCollectionPDFById,
 };
 
 export default {
@@ -133,4 +155,5 @@ export default {
   cancelCollection,
   closeCollection,
   INITIAL_COLLECTION,
+  getSalesCollectionPDFById,
 };

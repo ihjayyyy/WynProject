@@ -1,9 +1,9 @@
 'use client';
 
 import React, { useMemo, useState, useEffect, useCallback } from 'react';
-import CollectionService from '@/services/Collection';
+import CollectionService, { getSalesCollectionPDFById } from '@/services/Collection';
 import { useRouter } from 'next/navigation';
-import { FiEdit2, FiEye, FiXCircle, FiArchive } from 'react-icons/fi';
+import { FiEdit2, FiEye, FiXCircle, FiArchive, FiFileText } from 'react-icons/fi';
 import DropdownAction from '../ui/DropdownAction/DropdownAction';
 import Landing from '../ui/Landing/Landing';
 import { useConfirmModal } from '@/app/contextProviders/confirmModalContext';
@@ -87,6 +87,7 @@ export default function CollectionLanding() {
         const s = (item.status || '').toString().toLowerCase();
         return s === 'billed' || s === 'cancelled' || s === 'closed';
       } },
+      { key: 'viewpdf', label: 'Generate Invoice', icon: <FiFileText size={14} />, onClick: (item) => getSalesCollectionPDFById(item.id) },
       { key: 'cancel', label: 'Cancel Collection', icon: <FiXCircle size={14} />, onClick: handleCancel, hidden: (item) => (item.status || '').toString().toLowerCase() === 'cancelled' },
       { key: 'close', label: 'Close Collection', icon: <FiArchive size={14} />, onClick: handleClose, hidden: (item) => {
         const s = (item.status || '').toString().toLowerCase();
