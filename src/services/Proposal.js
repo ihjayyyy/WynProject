@@ -81,7 +81,7 @@ async function getProposalPDFById(id) {
 async function getProposalBreakdownPDFById(id) {
     if (!id) return { data: null, error: 'Missing id' };
     try {
-        const url = `${API_BASE_URL}/pdf/withmaterials/${id}`;
+        const url = `${API_BASE_URL}/pdf/breakdown/${id}`;
         const res = await fetch(url, {
             method: 'GET',
             headers: { Accept: '*/*' },

@@ -79,8 +79,8 @@ export default function ProposalLanding() {
           return !(ps === 'draft' || as === 'for approval' || ps === 'approved' || ps === 'won' || ps === 'win');
         }
       }] : []),
-      ...(isAllowed(PageName, 'r') ? [{ key: 'viewpdf', label: 'Generate PDF', icon: <FiFileText size={14} />, onClick: (item) => (getProposalPDFById(item.id))}] : []),
-      ...(isAllowed(PageName, 'r') ? [{ key: 'viewpdf2', label: 'Generate Breakdown PDF', icon: <FiFileText size={14} />, onClick: (item) => (getProposalBreakdownPDFById(item.id))}] : []),
+      ...(isAllowed(PageName, 'r') ? [{ key: 'viewpdf', label: 'Generate Document', icon: <FiFileText size={14} />, onClick: (item) => (getProposalPDFById(item.id))}] : []),
+      ...(isAllowed(PageName, 'r') ? [{ key: 'viewpdf2', label: 'Generate Breakdown', icon: <FiFileText size={14} />, onClick: (item) => (getProposalBreakdownPDFById(item.id))}] : []),
       ...(isAllowed(PageName, 'w') ? [{ key: 'edit', label: 'Edit', icon: <FiEdit2 size={14} />, onClick: (item) => router.push(`/projects/proposal/proposalform?id=${item.id}&mode=edit`), hidden: (item) => { const s = String(item.proposalStatus || '').toLowerCase(); return s !== 'draft'; } }] : []),
     ],
     [isAllowed, router]
@@ -113,8 +113,6 @@ export default function ProposalLanding() {
         ...it,
         hidden: it.key === 'edit' ? !isDraft : it.hidden,
       }));
-
-     // itemsFor.push({ key: 'viewpdf', label: 'Generate Proposal Document', icon: <FiFileText size={14} />, onClick: (item) => (getProposalPDF(item.id))});
 
       if (isDraft && isAllowed(PageName, 'w')) {
         itemsFor.push({ key: 'submit', label: 'Submit', icon: <FiSend size={14} />, onClick: (it) => {
