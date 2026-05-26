@@ -14,6 +14,7 @@ import {
   updateUser,
   deactivateActivateUser,
 } from '@/services/User';
+import { getAllRoles } from '@/services/Role';
 
 // Utility to generate a random password (12 alphanumeric characters)
 const generatePassword = () => {
@@ -36,7 +37,17 @@ export default function UsersForm() {
   const isViewMode = !isEditMode && userId;
 
   const [user, setUser] = useState(null);
+  const [roles, setRoles] = useState([]); // <-- new
   const [showDeactivateModal, setShowDeactivateModal] = useState(false);
+
+  useEffect(() => {
+    // Fetch roles once on mount
+    getAllRoles().then((res) => {
+      if (!res.error && Array.isArray(res.data)) {
+        setRoles(res.data);
+      }
+    });
+  }, []);
 
   useEffect(() => {
     let mounted = true;
@@ -49,10 +60,8 @@ export default function UsersForm() {
     return () => (mounted = false);
   }, [userId]);
 
-  // Auto-generate password on mount for create mode
   const initialValues = useMemo(() => {
     if (userId && user) {
-      // Map userId to id for EntityForm compatibility
       return { ...user, id: user.userId };
     }
     return {
@@ -69,36 +78,46 @@ export default function UsersForm() {
 
   const formTitle = useMemo(() => {
     if (!userId) return 'Users Form';
-    const titleText = user
+    return user
       ? `${user.firstName} ${user.lastName}`
       : isEditMode
         ? 'Edit User'
         : 'View User';
-    return titleText;
   }, [userId, isEditMode, user]);
+
+  // Build role options from fetched roles
+  const roleOptions = useMemo(
+    () => roles.map((r) => ({ value: r.id, label: r.name })),
+    [roles],
+  );
 
   const fields = [
     { name: 'employeeNumber', label: 'Employee No.', span: 'span2' },
     { name: 'firstName', label: 'First Name', span: 'span2' },
     { name: 'lastName', label: 'Last Name', span: 'span2' },
     { name: 'email', label: 'Email', type: 'email', span: 'span2' },
-    { name: 'role', label: 'Role', type: 'number', span: 'span2' },
+    {
+      name: 'role',
+      label: 'Role',
+      type: 'select', // <-- changed from 'number' to 'select'
+      span: 'span2',
+      options: roleOptions,
+      searchable: true,
+    },
     {
       name: 'password',
       label: 'Password',
       span: 'span2',
-      readOnly: true, // Always readonly - auto-generated for create, hidden for edit
-      hidden: userId ? true : false, // Hide password field when editing existing user
+      readOnly: true,
+      hidden: !!userId,
     },
   ];
 
   const handleSubmit = async (values) => {
-    // Send all required fields to API
     const { employeeNumber, email, firstName, lastName, password, role } =
       values || {};
 
     if (!userId) {
-      // Create new user
       const payload = {
         employeeNumber,
         email,
@@ -117,12 +136,9 @@ export default function UsersForm() {
       toast.success('User created successfully');
       try {
         router.push('/maintainance/users');
-      } catch (err) {
-        // ignore navigation errors
-      }
+      } catch (_) {}
       return '/maintainance/users';
     } else {
-      // Update existing user
       const payload = {
         employeeNumber,
         email,
@@ -140,9 +156,7 @@ export default function UsersForm() {
       toast.success('User updated successfully');
       try {
         router.push('/maintainance/users');
-      } catch (err) {
-        // ignore navigation errors
-      }
+      } catch (_) {}
       return '/maintainance/users';
     }
   };
@@ -163,14 +177,12 @@ export default function UsersForm() {
       return;
     }
 
-    const action = user.isActive ? 'deactivated' : 'activated';
-    toast.success(`User ${action} successfully`);
+    toast.success(
+      `User ${user.isActive ? 'deactivated' : 'activated'} successfully`,
+    );
 
-    // Refresh user data
     const updatedRes = await getUserByGuid(userId);
-    if (!updatedRes.error) {
-      setUser(updatedRes.data || {});
-    }
+    if (!updatedRes.error) setUser(updatedRes.data || {});
 
     setShowDeactivateModal(false);
   };
