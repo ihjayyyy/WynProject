@@ -84,7 +84,7 @@ async function getSalesBillingPDFById(id) {
 
     const res = await fetch(url, {
       method: 'GET',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { Accept: '*/*' },
     });
 
     handleOpenPdf(res);
