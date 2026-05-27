@@ -85,6 +85,10 @@ export default function StatusBadge({ status, className = '' }) {
       case 'PARTIALLY PAID':
       case 'PARTIALLY_PAID':
         return styles.partiallyPaid;
+      case 'PARTIALLYRECEIVED':
+      case 'PARTIALLY RECEIVED':
+      case 'PARTIALLY_RECEIVED':
+        return styles.partiallyPaid;
       default:
         return styles.default;
     }

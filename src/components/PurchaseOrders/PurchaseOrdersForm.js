@@ -1,20 +1,22 @@
 'use client';
 
-import React, { useMemo, useState, useEffect,useContext } from 'react';
+import React, { useMemo, useState, useEffect, useContext } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { FiClipboard } from 'react-icons/fi';
-import {  POFields, PODetailsColumns, POItemsFields } from './PurchaseOrdersModels';
+import { POFields, PODetailsColumns, POItemsFields } from './PurchaseOrdersModels';
 import DetailsTable from '../ItemDetails/DetailsTable';
 import EntityForm from '../EntityForm/EntityForm';
 import Button from '../ui/Button/Button';
 import { getSuppliers } from '@/services/Supplier';
 import { getMaterials } from '@/services/Materials';
-import POStyles from './PurchaseOrders.module.scss'
+import POStyles from './PurchaseOrders.module.scss';
 import { InitialData, Create, Get, Update, SubmitForApproval, Approve, Reject, SetStatus } from '@/services/PurchaseOrder';
 import { useToast } from '../ui/Toast/Toast';
 import InvalidPage from '@/components/InvalidPage/page';
 import { AccessContext } from '@/app/contextProviders/accessContext';
 import { useConfirmModal } from '@/app/contextProviders/confirmModalContext';
+import RichTextEditor from '../ui/RichTextEditor/RichTextEditor';
+import { getParameter } from '@/services/Parameter';
 
 
 export default function PurchaseOrdersForm() {
@@ -29,14 +31,17 @@ export default function PurchaseOrdersForm() {
   const [backPath, setBackPath] = useState('/purchase/orders');
   const [orderId, setOrderId] = useState(initialOrderId);
   const [mode, setMode] = useState(initialMode);
-  const [suppliers, setSuppliers] = useState([]); 
-  const [materials, setMaterials] = useState([]); 
+  const [suppliers, setSuppliers] = useState([]);
+  const [materials, setMaterials] = useState([]);
   const [po, setPO] = useState({});
-  const [validPO, setvalidPO] = useState(false); 
-  const [tableData, setTableData] = useState([]); 
+  const [validPO, setvalidPO] = useState(false);
+  const [tableData, setTableData] = useState([]);
   const [totalExcluded, setTotalExcluded] = useState(0);
   const [totalVAT, setTotalVAT] = useState(0);
   const [totalIncluded, setTotalIncludedd] = useState(0);
+  const [richText, setRichText] = useState({
+    termsAndConditions: '',
+  });
 
   useEffect(() => {
     const nextOrderId = Number(searchParams.get('id') || 0);
@@ -46,171 +51,179 @@ export default function PurchaseOrdersForm() {
   }, [searchParams]);
 
   // set PO Fields
-  const onPOChange = (fieldname,value, formData)=>{
-      const poChildren = po.children.map(d => {
-          let vat = 0;
-          const unitCost = Number(d.unitCost || 0);
-          const quantity = Number(d.quantity || 0);
-          const discount = Number(d.discount || 0);
-          let subamount = (unitCost * quantity) - discount;
-          let amount = subamount;
+  const onPOChange = (fieldname, value, formData) => {
+    const poChildren = po.children.map((d) => {
+      let vat = 0;
+      const unitCost = Number(d.unitCost || 0);
+      const quantity = Number(d.quantity || 0);
+      const discount = Number(d.discount || 0);
+      let subamount = unitCost * quantity - discount;
+      let amount = subamount;
 
-                  switch(formData.vatType){
-                     case "included":
-                        vat = Math.round((subamount - (subamount / 1.12)) * 100) / 100;
-                        break;
-                     case "notincluded":
-                        vat = Math.round(subamount * 0.12 * 100) / 100;
-                        amount = subamount + vat;
-                        console.log(vat,amount)
-                        break;
-                     case "nonvat":
-                        vat = 0;
-                        break;
-                     default:
-                        vat = 0;
-                        break;
-                  }
-            return {...d, vat:vat,amount:amount}
+      switch (formData.vatType) {
+        case 'included':
+          vat = Math.round((subamount - subamount / 1.12) * 100) / 100;
+          break;
+        case 'notincluded':
+          vat = Math.round(subamount * 0.12 * 100) / 100;
+          amount = subamount + vat;
+          console.log(vat, amount);
+          break;
+        case 'nonvat':
+          vat = 0;
+          break;
+        default:
+          vat = 0;
+          break;
       }
-      );
-      setPO({...po,...formData, children:poChildren})
-      setTableData({...tableData,items:poChildren})
-  }
-
-  const poFields = POFields(suppliers,onPOChange); 
-  const poDetailsColumns = PODetailsColumns;
-  const [poItemFields,setPOItemFields] = useState(POItemsFields(materials,po)) 
-
- //load Supplier and Materials 
-  useEffect(() => {
-     const fetchSupplier = async() => {
-
-         const res = await getSuppliers();
-         console.log(res)
-        if(res && !res.error){
-          setSuppliers(res.data);          
-        }
-
+      return { ...d, vat: vat, amount: amount };
+    });
+    setPO({ ...po, ...formData, children: poChildren });
+    setTableData({ ...tableData, items: poChildren });
   };
 
-  const fetchMaterials = async() => {
-    const res = await getMaterials();
-     if(res && !res.error){
-          setMaterials(res.data);
-    }
-  }
-   fetchSupplier();
-   fetchMaterials();
-  },[]); 
-  
- //set PO Data 
- useEffect(() => {
-  GetPO();
-}, [orderId]);
+  const poFields = POFields(suppliers, onPOChange);
+  const poDetailsColumns = PODetailsColumns;
+  const [poItemFields, setPOItemFields] = useState(POItemsFields(materials, po));
 
-const GetPO = async () => {
-  let initPO = { ...InitialData };
+  // load Supplier and Materials
+  useEffect(() => {
+    const fetchSupplier = async () => {
+      const res = await getSuppliers();
+      console.log(res);
+      if (res && !res.error) {
+        setSuppliers(res.data);
+      }
+    };
 
-  const today = new Date();
-  const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+    const fetchMaterials = async () => {
+      const res = await getMaterials();
+      if (res && !res.error) {
+        setMaterials(res.data);
+      }
+    };
+    fetchSupplier();
+    fetchMaterials();
+  }, []);
 
-  if (orderId !== 0) {
-    const getpo = await Get(orderId);
-    initPO = getpo.data;
+  // set PO Data
+  useEffect(() => {
+    GetPO();
+  }, [orderId]);
 
-    // Normalize orderDate — default to today if null/invalid
-    if (initPO.orderDate) {
-      const d = new Date(initPO.orderDate);
-      initPO.orderDate = !isNaN(d)
-        ? `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
-        : todayStr;
+  const GetPO = async () => {
+    let initPO = { ...InitialData };
+
+    const today = new Date();
+    const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+
+    if (orderId !== 0) {
+      const getpo = await Get(orderId);
+      initPO = getpo.data;
+
+      // Normalize orderDate — default to today if null/invalid
+      if (initPO.orderDate) {
+        const d = new Date(initPO.orderDate);
+        initPO.orderDate = !isNaN(d)
+          ? `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+          : todayStr;
+      } else {
+        initPO.orderDate = todayStr;
+      }
+
+      // Normalize estimatedDeliveryDate — default to today if null/invalid
+      if (initPO.estimatedDeliveryDate) {
+        const d = new Date(initPO.estimatedDeliveryDate);
+        initPO.estimatedDeliveryDate = !isNaN(d)
+          ? `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+          : todayStr;
+      } else {
+        initPO.estimatedDeliveryDate = todayStr;
+      }
+
+      // Populate richText from saved PO data
+      setRichText({
+        termsAndConditions: initPO.termsAndConditions || '',
+      });
     } else {
+      setMode('new');
+      // Default both dates to today for new records
       initPO.orderDate = todayStr;
-    }
-
-    // Normalize estimatedDeliveryDate — default to today if null/invalid
-    if (initPO.estimatedDeliveryDate) {
-      const d = new Date(initPO.estimatedDeliveryDate);
-      initPO.estimatedDeliveryDate = !isNaN(d)
-        ? `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
-        : todayStr;
-    } else {
       initPO.estimatedDeliveryDate = todayStr;
+
+      // Load default Terms & Conditions from PurchaseOrder parameters
+      const paramRes = await getParameter('PurchaseOrder');
+      if (paramRes?.data && Array.isArray(paramRes.data)) {
+        const paramMap = {};
+        paramRes.data.forEach((item) => { paramMap[item.name] = item.value; });
+        setRichText({
+          termsAndConditions: paramMap.TermsAndConditions || '',
+        });
+      }
     }
 
-  } else {
-    setMode("new");
-    // Default both dates to today for new records
-    initPO.orderDate = todayStr;
-    initPO.estimatedDeliveryDate = todayStr;
-  }
+    setPO(initPO);
+    setvalidPO(Object.keys(initPO).length === 0 ? false : true);
+    setTableData({ items: initPO.children, deletedItems: initPO.deletedChildren });
+  };
 
-  setPO(initPO);
-  setvalidPO(Object.keys(initPO).length === 0 ? false : true);
-  setTableData({ items: initPO.children, deletedItems: initPO.deletedChildren });
-};
-
-//Set Form View
-const isReadOnly  = useMemo(() => {
-  if(validPO)
-    return mode === 'view';
-  else
-    return true;
+  // Set Form View
+  const isReadOnly = useMemo(() => {
+    if (validPO) return mode === 'view';
+    else return true;
   }, [po, mode]);
 
-//Set Form Title
-const formTitle = useMemo(() => {
-    const title =  po &&  po.status ? po.orderNumber : 'New Purchase Order';
-   return <div className={POStyles.formTitle}><span>{title}</span>{po.status && <span className={POStyles.status}>{po.status}</span>}</div>
-}, [po]);
+  // Set Form Title
+  const formTitle = useMemo(() => {
+    const title = po && po.status ? po.orderNumber : 'New Purchase Order';
+    return (
+      <div className={POStyles.formTitle}>
+        <span>{title}</span>
+        {po.status && <span className={POStyles.status}>{po.status}</span>}
+      </div>
+    );
+  }, [po]);
 
+  // Events : When Details Changed
+  const detailsUpdated = (items, deletedItems) => {
+    const totalVAT = items.reduce((total, item) => total + Number(item.vat || 0), 0);
+    const totalIncluded = items.reduce((total, item) => total + Number(item.amount || 0), 0);
+    const totalexcluded = totalIncluded - totalVAT;
+    setTotalExcluded(totalexcluded);
+    setTotalVAT(totalVAT);
+    setTotalIncludedd(totalIncluded);
 
-//Events : When Details Changed
-const detailsUpdated = (items, deletedItems) =>{
-      const totalVAT = items.reduce((total, item) => total + Number(item.vat || 0), 0);
-      const totalIncluded = items.reduce((total, item) => total + Number(item.amount || 0), 0);
-      const totalexcluded = totalIncluded - totalVAT;
-      //calculate VAT
-      setTotalExcluded(totalexcluded);
-      setTotalVAT(totalVAT);
-      setTotalIncludedd(totalIncluded);
+    const poCopy = { ...po };
+    poCopy.children = items;
+    poCopy.deletedChildren = deletedItems;
+    poCopy.vat = totalVAT;
+    poCopy.amount = totalIncluded;
 
-        const poCopy = {...po};
-        poCopy.children = items;
-        poCopy.deletedChildren = deletedItems;
-        poCopy.vat = totalVAT;
-        poCopy.amount = totalIncluded;
-        
     setPO(poCopy);
+  };
 
-  }
+  // Set Item Details data
+  useEffect(() => {
+    updatePOItemFields();
+  }, [materials, po]);
 
-//Set Item Details data
-useEffect(() => {
-      updatePOItemFields();
-}, [materials,po]);
-
-const updatePOItemFields = ()=>{
-    var poitems = POItemsFields(materials,po);
+  const updatePOItemFields = () => {
+    var poitems = POItemsFields(materials, po);
     setPOItemFields(poitems);
-}
+  };
 
-const handleSaveConfirm =(entity)=>{
-  console.log(entity)
-      const title = "Save PO";
-      const message = "Are you sure you want to save this PO?";
-      const confirmText = "Save";
-      const variant="primary";
-      const action =()=>async ()=>await save(entity);
-      confirmModal.show(title,message,confirmText,variant, action);
-}
-//Events: Save Form
-  const save = async(entity)=>{
+  const handleSaveConfirm = (entity) => {
+    console.log(entity);
+    const title = 'Save PO';
+    const message = 'Are you sure you want to save this PO?';
+    const confirmText = 'Save';
+    const variant = 'primary';
+    const action = () => async () => await save(entity);
+    confirmModal.show(title, message, confirmText, variant, action);
+  };
 
-    //final validate entity
-    // call entity form validator
-    
+  // Events: Save Form
+  const save = async (entity) => {
     entity.children = (po.children || []).map((child) => ({
       ...child,
       quantity: Number(child.quantity || 0),
@@ -220,282 +233,352 @@ const handleSaveConfirm =(entity)=>{
       amount: Number(child.amount || 0),
     }));
     entity.deletedChildren = po.deletedChildren;
-    const updatedPO = {...po, ...entity, vat:po.vat, amount:po.amount}
-    
+
+    const updatedPO = {
+      ...po,
+      ...entity,
+      vat: po.vat,
+      amount: po.amount,
+      termsAndConditions: richText.termsAndConditions,
+    };
+
     let res = {};
     updatedPO.id = updatedPO.id === null ?? 0;
 
-    updatedPO.id == 0 ? res =  await Create(updatedPO) : res = await Update(updatedPO.id,updatedPO);
+    updatedPO.id == 0
+      ? (res = await Create(updatedPO))
+      : (res = await Update(updatedPO.id, updatedPO));
+
     if (res?.error) {
       toast.error('Failed to save purchase order.');
       return null;
-    }
-    else {
+    } else {
       toast.success('Purchase Order has been saved.');
-      router.push(backPath);  
+      router.push(backPath);
     }
+  };
 
+  const handleCancelPOConfirm = () => {
+    const title = 'Cancel PO';
+    const message = 'Are you sure you want to cancel this PO?';
+    const confirmText = 'Cancel PO';
+    const variant = 'primary';
+    const action = () => async () => await CancelPO();
+    confirmModal.show(title, message, confirmText, variant, action);
+  };
 
-  }
-
-    const handleCancelPOConfirm =()=>{
-      const title = "Cancel PO";
-      const message = "Are you sure you want to cancel this PO?";
-      const confirmText = "Cancel PO";
-      const variant="primary";
-      const action = ()=> async ()=>await CancelPO();
-      confirmModal.show(title,message,confirmText,variant, action);
-}
-
-  const CancelPO = async()=>{
-    setMode("view");
+  const CancelPO = async () => {
+    setMode('view');
     const res = await SetStatus('Cancel', po.id);
 
     if (res?.error) {
-      toast.error('Failed to submit purchase order.' );
-      return null;
-    }
-    else {
-      toast.success('Purchase Order has been cancelled.');
-      router.push(backPath);  
-    }
-
-  }
-
-const handleSubmitConfirm =()=>{
-      const title = "Submit for approval";
-      const message = "Are you sure you want to this PO for approval?";
-      const confirmText = "Submit";
-      const variant="primary";
-      const action = ()=> async ()=>await submitForApproval();
-      confirmModal.show(title,message,confirmText,variant, action);
-}
-
-const submitForApproval = async()=>{
-    //setMode("edit");
-    const res = await SubmitForApproval(po.id);
-   if (res?.error) {
       toast.error('Failed to submit purchase order.');
       return null;
+    } else {
+      toast.success('Purchase Order has been cancelled.');
+      router.push(backPath);
     }
-    else {
+  };
+
+  const handleSubmitConfirm = () => {
+    const title = 'Submit for approval';
+    const message = 'Are you sure you want to this PO for approval?';
+    const confirmText = 'Submit';
+    const variant = 'primary';
+    const action = () => async () => await submitForApproval();
+    confirmModal.show(title, message, confirmText, variant, action);
+  };
+
+  const submitForApproval = async () => {
+    const res = await SubmitForApproval(po.id);
+    if (res?.error) {
+      toast.error('Failed to submit purchase order.');
+      return null;
+    } else {
       toast.success('Purchase Order has been submitted for approval.');
-      router.push(backPath);  
+      router.push(backPath);
     }
+  };
 
+  const handleCanceEditConfirm = () => {
+    const title = 'Cancel Edit';
+    const message = 'Are you sure you want to cancel editing of this PO?';
+    const confirmText = 'Cancel Edit';
+    const variant = 'dangaer';
+    const action = () => () => CancelEdit();
+    confirmModal.show(title, message, confirmText, variant, action);
+  };
 
-}
-  const handleCanceEditConfirm =()=>{
-      const title = "Cancel Edit";
-      const message = "Are you sure you want to cancel editing of this PO?";
-      const confirmText = "Cancel Edit";
-      const variant="dangaer";
-      const action = ()=> ()=>CancelEdit();
-      confirmModal.show(title,message,confirmText,variant, action);
-}
-
-  const CancelEdit = () =>{
+  const CancelEdit = () => {
     setMode('view');
-  }
+  };
 
-    const handleApproveConfirm =()=>{
-      const title = "Approve";
-      const message = "Are you sure you want to approve this PO?";
-      const confirmText = "Approve PO";
-      const variant="primary";
-      const action = ()=> async ()=>await approvePO();
-      confirmModal.show(title,message,confirmText,variant, action);
-}
+  const handleApproveConfirm = () => {
+    const title = 'Approve';
+    const message = 'Are you sure you want to approve this PO?';
+    const confirmText = 'Approve PO';
+    const variant = 'primary';
+    const action = () => async () => await approvePO();
+    confirmModal.show(title, message, confirmText, variant, action);
+  };
 
-  const approvePO = async () =>{
+  const approvePO = async () => {
     setMode('view');
-    const res = await Approve(po.id)
+    const res = await Approve(po.id);
 
     if (res?.error) {
       toast.error('Failed to approve purchase order.');
       return null;
-    }
-    else {
+    } else {
       toast.success('Purchase Order has been approved.');
-      router.push(backPath);  
+      router.push(backPath);
     }
+  };
 
-  }
+  const handleOrderConfirm = () => {
+    const title = 'Order';
+    const message = 'Are you sure you want to confirm this PO?';
+    const confirmText = 'Confirm PO';
+    const variant = 'primary';
+    const action = () => async () => await orderPO();
+    confirmModal.show(title, message, confirmText, variant, action);
+  };
 
-      const handleOrderConfirm =()=>{
-      const title = "Order";
-      const message = "Are you sure you want to confirm this PO?";
-      const confirmText = "Confirm PO";
-      const variant="primary";
-      const action = ()=> async ()=>await orderPO();
-      confirmModal.show(title,message,confirmText,variant, action);
-}
-
-  const orderPO = async () =>{
+  const orderPO = async () => {
     setMode('view');
-    const res = await SetStatus('Order',po.id)
+    const res = await SetStatus('Order', po.id);
 
     if (res?.error) {
       toast.error('Failed to confirm purchase order.');
       return null;
-    }
-    else {
+    } else {
       toast.success('Purchase Order has been confirmed.');
-      router.push(backPath);  
+      router.push(backPath);
     }
+  };
 
-  }
+  const handleRejectConfirm = () => {
+    const title = 'Reject';
+    const message = 'Are you sure you want to reject this PO?';
+    const confirmText = 'Reject PO';
+    const variant = 'primary';
+    const action = () => async () => await rejectPO();
+    confirmModal.show(title, message, confirmText, variant, action);
+  };
 
-  const handleRejectConfirm =()=>{
-      const title = "Reject";
-      const message = "Are you sure you want to reject this PO?";
-      const confirmText = "Reject PO";
-      const variant="primary";
-      const action = ()=> async ()=>await rejectPO();
-      confirmModal.show(title,message,confirmText,variant, action);
-}
-
-  const rejectPO = async () =>{
+  const rejectPO = async () => {
     setMode('view');
-    const res = await Reject(po.id)
+    const res = await Reject(po.id);
 
     if (res?.error) {
       toast.error('Failed to reject purchase order.');
       return null;
-    }
-    else {
+    } else {
       toast.success('Purchase Order has been rejected.');
-      router.push(backPath);  
+      router.push(backPath);
     }
+  };
 
-  }
+  const handleArchiveConfirm = () => {
+    const title = 'Archive';
+    const message = 'Are you sure you want to archive this PO?';
+    const confirmText = 'Archive';
+    const variant = 'primary';
+    const action = () => async () => await archivePO();
+    confirmModal.show(title, message, confirmText, variant, action);
+  };
 
-    const handleArchiveConfirm =()=>{
-      const title = "Archive";
-      const message = "Are you sure you want to archive this PO?";
-      const confirmText = "Archive";
-      const variant="primary";
-      const action = ()=> async ()=>await archivePO();
-      confirmModal.show(title,message,confirmText,variant, action);
-}
-
-  const archivePO = async () =>{
+  const archivePO = async () => {
     setMode('view');
     const res = await SetStatus('Archive', po.id);
 
-        if (res?.error) {
+    if (res?.error) {
       toast.error('Failed to archive purchase order.');
       return null;
-    }
-    else {
+    } else {
       toast.success('Purchase Order has been archived.');
-      router.push(backPath);  
+      router.push(backPath);
     }
+  };
 
-  }
-  //buttons
-  const CreateButton = () =>{
-    return isAllowed(PageName, 'w') && !orderId ? <Button type="submit" variant="save">Save</Button> : null;
-  }
+  // buttons
+  const CreateButton = () => {
+    return isAllowed(PageName, 'w') && !orderId ? (
+      <Button type="submit" variant="save">
+        Save
+      </Button>
+    ) : null;
+  };
 
-  const ViewButton = () =>{
-    return isAllowed(PageName, 'w') && orderId && mode === 'view' ?
-    <div  className={POStyles.buttonsContainer}>
-        {po && po.status && (po.status.toLowerCase() === 'draft' || po.status.toLowerCase() === 'rejected') 
-              && <Button onClick={()=>setMode("edit")} variant="save">Edit</Button>}
-        {po && po.status && po.status.toLowerCase() === 'draft'  && <Button onClick={handleSubmitConfirm} variant="save">Submit For Approval</Button>}  
-    </div> : null;
-  }
+  const ViewButton = () => {
+    return isAllowed(PageName, 'w') && orderId && mode === 'view' ? (
+      <div className={POStyles.buttonsContainer}>
+        {po &&
+          po.status &&
+          (po.status.toLowerCase() === 'draft' || po.status.toLowerCase() === 'rejected') && (
+            <Button onClick={() => setMode('edit')} variant="save">
+              Edit
+            </Button>
+          )}
+        {po && po.status && po.status.toLowerCase() === 'draft' && (
+          <Button onClick={handleSubmitConfirm} variant="save">
+            Submit For Approval
+          </Button>
+        )}
+      </div>
+    ) : null;
+  };
 
-    const CancePOButton = () =>{
-    return isAllowed(PageName, 'w') && orderId && mode === 'view' ?
-    <div  className={POStyles.buttonsContainer}>
-        {po && po.status && (po.status.toLowerCase() !== 'ordered' && po.status.toLowerCase() !== 'cancelled' && po.status.toLowerCase() !== 'archived')  
-        && <Button onClick={handleCancelPOConfirm} variant="danger">Cancel PO</Button>}
-    </div> : null;
-  }
+  const CancePOButton = () => {
+    return isAllowed(PageName, 'w') && orderId && mode === 'view' ? (
+      <div className={POStyles.buttonsContainer}>
+        {po &&
+          po.status &&
+          po.status.toLowerCase() !== 'ordered' &&
+          po.status.toLowerCase() !== 'cancelled' &&
+          po.status.toLowerCase() !== 'archived' && (
+            <Button onClick={handleCancelPOConfirm} variant="danger">
+              Cancel PO
+            </Button>
+          )}
+      </div>
+    ) : null;
+  };
 
-  const CRUDButton = () =>{
-    return isAllowed(PageName, 'w') && orderId && mode === 'edit' ?
-    <div  className={POStyles.buttonsContainer}>
-      <Button  variant="outlineDanger" onClick={handleCanceEditConfirm}>Cancel</Button>
-       <Button type="submit" variant="save">Save</Button>
-    </div>   : null
-  }
-  
+  const CRUDButton = () => {
+    return isAllowed(PageName, 'w') && orderId && mode === 'edit' ? (
+      <div className={POStyles.buttonsContainer}>
+        <Button variant="outlineDanger" onClick={handleCanceEditConfirm}>
+          Cancel
+        </Button>
+        <Button type="submit" variant="save">
+          Save
+        </Button>
+      </div>
+    ) : null;
+  };
 
-  const ApprovalButton = () =>{
-    return isAllowed(PageName, 'a') && orderId && po.status && po.status.toLowerCase() === "submitted"  ?
-    <div  className={POStyles.buttonsContainer}>
-      {po && po.status && (po.status.toLowerCase() === 'submitted') && mode==='view' && <Button onClick={()=>setMode("edit")} variant="save">Edit</Button>}
-       {mode==='view' && <Button  variant="outlineDanger" onClick={handleRejectConfirm}>Reject</Button>}
-        {mode==='view' && <Button variant="save" onClick={handleApproveConfirm}>Approve</Button>}
-    </div> : null
-  }
+  const ApprovalButton = () => {
+    return isAllowed(PageName, 'a') &&
+      orderId &&
+      po.status &&
+      po.status.toLowerCase() === 'submitted' ? (
+      <div className={POStyles.buttonsContainer}>
+        {po && po.status && po.status.toLowerCase() === 'submitted' && mode === 'view' && (
+          <Button onClick={() => setMode('edit')} variant="save">
+            Edit
+          </Button>
+        )}
+        {mode === 'view' && (
+          <Button variant="outlineDanger" onClick={handleRejectConfirm}>
+            Reject
+          </Button>
+        )}
+        {mode === 'view' && (
+          <Button variant="save" onClick={handleApproveConfirm}>
+            Approve
+          </Button>
+        )}
+      </div>
+    ) : null;
+  };
 
-    const OrderButton = () =>{
-    return isAllowed(PageName, 'ww') && orderId && po.status && po.status.toLowerCase() === "approved"  ?
-    <div  className={POStyles.buttonsContainer}>
-       <Button variant="save" onClick={handleOrderConfirm}>Order</Button>
-    </div> : null
-  }
+  const OrderButton = () => {
+    return isAllowed(PageName, 'ww') &&
+      orderId &&
+      po.status &&
+      po.status.toLowerCase() === 'approved' ? (
+      <div className={POStyles.buttonsContainer}>
+        <Button variant="save" onClick={handleOrderConfirm}>
+          Order
+        </Button>
+      </div>
+    ) : null;
+  };
 
-    const ArchiveButton = () =>{
-    return isAllowed(PageName, 'w') && mode === 'view'  && orderId && po.status && (po.status.toLowerCase() === "ordered" || po.status.toLowerCase() === "approved" || po.status.toLowerCase() === "rejected" || po.status.toLowerCase() === "cancelled") ?
-    <div  className={POStyles.buttonsContainer}>
-       <Button variant="primary" onClick={handleArchiveConfirm}>Archive</Button>
-    </div> : null
-  }
+  const ArchiveButton = () => {
+    return isAllowed(PageName, 'w') &&
+      mode === 'view' &&
+      orderId &&
+      po.status &&
+      (po.status.toLowerCase() === 'ordered' ||
+        po.status.toLowerCase() === 'approved' ||
+        po.status.toLowerCase() === 'rejected' ||
+        po.status.toLowerCase() === 'cancelled') ? (
+      <div className={POStyles.buttonsContainer}>
+        <Button variant="primary" onClick={handleArchiveConfirm}>
+          Archive
+        </Button>
+      </div>
+    ) : null;
+  };
 
-  return isAllowed(PageName, 'r') ? 
-  validPO ? 
-        <EntityForm
-          title={formTitle}
-          breadcrumbLabel="Purchase Order"
-          icon={<FiClipboard />}
-          fields={poFields}
-          initialValues={po}
-
-          extraContent={<div className={POStyles.extraContentContainer}>
-                          <DetailsTable itemModalHeader="Order Details"  parentId={orderId} 
-                                  columns={poDetailsColumns} editable={isAllowed(PageName, 'w') && !isReadOnly} 
-                                  itemFields={poItemFields} data={tableData} onChange={detailsUpdated} />
-                          <div className={POStyles.summaryContainer}>
-                              <div className={POStyles.notesContainer}>
-
-                              </div>
-                              <div className={POStyles.totalContainer}>
-                                <div className={POStyles.totalLabel}>Total Excluding VAT:</div>
-                                <div className={POStyles.totalValue}>{totalExcluded.toFixed(2)}</div>
-                                <div className={POStyles.totalLabel}>Total  VAT:</div>
-                                <div className={POStyles.totalValue}>{totalVAT.toFixed(2)}</div>
-                                <div className={POStyles.totalLabel}>Total  Including VAT:</div>
-                                <div className={`${POStyles.totalValue} ${POStyles.highlight}`}>{totalIncluded.toFixed(2)}</div>
-                              </div>
-                          </div>
+  return isAllowed(PageName, 'r') ? (
+    validPO ? (
+      <EntityForm
+        title={formTitle}
+        breadcrumbLabel="Purchase Order"
+        icon={<FiClipboard />}
+        fields={poFields}
+        initialValues={po}
+        extraContent={
+          <div className={POStyles.extraContentContainer}>
+            <DetailsTable
+              itemModalHeader="Order Details"
+              parentId={orderId}
+              columns={poDetailsColumns}
+              editable={isAllowed(PageName, 'w') && !isReadOnly}
+              itemFields={poItemFields}
+              data={tableData}
+              onChange={detailsUpdated}
+            />
+            <div className={POStyles.summaryContainer}>
+              <div className={POStyles.notesContainer}></div>
+              <div className={POStyles.totalContainer}>
+                <div className={POStyles.totalLabel}>Total Excluding VAT:</div>
+                <div className={POStyles.totalValue}>{totalExcluded.toFixed(2)}</div>
+                <div className={POStyles.totalLabel}>Total VAT:</div>
+                <div className={POStyles.totalValue}>{totalVAT.toFixed(2)}</div>
+                <div className={POStyles.totalLabel}>Total Including VAT:</div>
+                <div className={`${POStyles.totalValue} ${POStyles.highlight}`}>
+                  {totalIncluded.toFixed(2)}
+                </div>
+              </div>
+            </div>
+            <div className={POStyles.extraSection}>
+              <RichTextEditor
+                label="Terms and Conditions"
+                value={richText.termsAndConditions}
+                onChange={(val) =>
+                  setRichText((prev) => ({ ...prev, termsAndConditions: val }))
+                }
+                readOnly={isReadOnly}
+                placeholder="Enter terms and conditions..."
+              />
+            </div>
           </div>
-                
-              }
-          onSubmit={handleSaveConfirm}
-          backPath={backPath}
-          width="100%"
-          showSubmitButton={false}
-          readOnly={isReadOnly}
-
-          headerActions={
-            <div className={POStyles.buttonsContainer}>
-              <CreateButton/>
-              <CancePOButton/>
-              <ViewButton/>
-              <CRUDButton/>
-              <ApprovalButton/>
-              <OrderButton/>
-              <ArchiveButton/>
-            </div>  
-          }
-        />
-        :
-        <InvalidPage message='Purchase order not found.'/>
-  :
-  <InvalidPage/>
+        }
+        onSubmit={handleSaveConfirm}
+        backPath={backPath}
+        width="100%"
+        showSubmitButton={false}
+        readOnly={isReadOnly}
+        headerActions={
+          <div className={POStyles.buttonsContainer}>
+            <CreateButton />
+            <CancePOButton />
+            <ViewButton />
+            <CRUDButton />
+            <ApprovalButton />
+            <OrderButton />
+            <ArchiveButton />
+          </div>
+        }
+      />
+    ) : (
+      <InvalidPage message="Purchase order not found." />
+    )
+  ) : (
+    <InvalidPage />
+  );
 }

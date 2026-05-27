@@ -269,8 +269,8 @@ export const ItemsFields = (materialOptions = [], isWarehouseToProject = false, 
     },
   },
 
-  { name: 'rackQuantity', label: 'Rack Qty', type: 'number', readonly: true, initialvalue: 0 },
-    { name: 'projectQuantity', label: 'Project Qty', type: 'number', readonly: true, initialvalue: 0 },
+  { name: 'rackQuantity', label: 'Rack Qty', type: 'number', readonly: true, initialvalue: 0, hidden: isProjectToWarehouse },
+  { name: 'projectQuantity', label: 'Project Qty', type: 'number', readonly: true, initialvalue: 0, hidden: isWarehouseToProject },
   { name: 'uom', label: 'Unit of Measure', type: 'text', readonly: true },
   { name: 'remarks', label: 'Remarks', type: 'text' },
 ]);

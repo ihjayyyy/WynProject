@@ -62,3 +62,25 @@
         }
     }
 }
+
+.extraSection {
+  padding: 24px 0 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.inlineFields {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+.richTextGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+.fullRow {
+  width: 100%;
+}

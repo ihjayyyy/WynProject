@@ -4,17 +4,29 @@ import React, { useMemo, useState ,useEffect} from 'react';
 import { useRouter } from 'next/navigation';
 import { FiEdit2, FiEye } from 'react-icons/fi';
 import DropdownAction from '../ui/DropdownAction/DropdownAction';
+import StatusBadge from '../ui/StatusBadge/StatusBadge';
 import Landing from '../ui/Landing/Landing';
 import { GetAll } from '@/services/PurchaseInvoice';
 
 const baseColumns = [
   { header: 'Id', key: 'id' },
-  { header: 'Invoice Date', key: 'invoiceDate' },
+  {
+    header: 'Invoice Date',
+    key: 'invoiceDate',
+    render: (item) =>
+      item.invoiceDate
+        ? new Date(item.invoiceDate).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: '2-digit' })
+        : '—',
+  },
   { header: 'Code', key: 'code' },
   { header: 'Name', key: 'name' },
   {
     header: 'Due Date',
     key: 'dueDate',
+    render: (item) =>
+      item.dueDate
+        ? new Date(item.dueDate).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: '2-digit' })
+        : '—',
   },
   {
     header: 'Invoice Amount',
@@ -27,10 +39,12 @@ const baseColumns = [
   {
     header: 'Status',
     key: 'status',
+    render: (item) => <StatusBadge status={item.status} />,
   },
-    {
+  {
     header: 'Payment Status',
     key: 'paymentStatus',
+    render: (item) => <StatusBadge status={item.paymentStatus} />,
   },
 ];
 
