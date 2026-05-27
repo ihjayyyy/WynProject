@@ -22,7 +22,7 @@ export default function UserProfile() {
         firstName: storedAuth.firstName ?? '',
         lastName: storedAuth.lastName ?? '',
         email: storedAuth.email ?? '',
-        role: storedAuth.role ?? '',
+        role: storedAuth.role?.name ?? '',
         userId: storedAuth.userId ?? '',
       });
     }

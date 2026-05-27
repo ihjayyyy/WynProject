@@ -3,12 +3,12 @@
 import { useEffect, useMemo, useState } from 'react';
 import Landing from '../ui/Landing/Landing';
 import { getAllUsers } from '@/services/User';
+import { getAllRoles } from '@/services/Role';
 import { useRouter } from 'next/navigation';
 import { FiCheckCircle, FiEdit2, FiEye, FiXCircle } from 'react-icons/fi';
 import DropdownAction from '../ui/DropdownAction/DropdownAction';
 
 const baseColumns = [
-  // { header: 'User Id', key: 'userId' },
   { header: 'Employee No.', key: 'employeeNumber' },
   { header: 'First Name', key: 'firstName' },
   { header: 'Last Name', key: 'lastName' },
@@ -23,15 +23,15 @@ const baseColumns = [
           <FiCheckCircle
             size={16}
             color="#16a34a"
-            title="Project created"
-            aria-label="Project created"
+            title="Confirmed"
+            aria-label="Confirmed"
           />
         ) : (
           <FiXCircle
             size={16}
             color="#dc2626"
-            title="Project not created"
-            aria-label="Project not created"
+            title="Not confirmed"
+            aria-label="Not confirmed"
           />
         )}
       </div>
@@ -47,40 +47,50 @@ const baseColumns = [
           <FiCheckCircle
             size={16}
             color="#16a34a"
-            title="Project created"
-            aria-label="Project created"
+            title="Active"
+            aria-label="Active"
           />
         ) : (
           <FiXCircle
             size={16}
             color="#dc2626"
-            title="Project not created"
-            aria-label="Project not created"
+            title="Inactive"
+            aria-label="Inactive"
           />
         )}
       </div>
     ),
   },
-  { header: 'Role', key: 'role' },
 ];
 
 export default function UsersLanding() {
   const [users, setUsers] = useState([]);
+  const [roleMap, setRoleMap] = useState({});
   const [isLoading, setIsLoading] = useState(true);
   const router = useRouter();
 
   useEffect(() => {
-    const fetchUsers = async () => {
-      const res = await getAllUsers();
-      if (res.error) {
-        setUsers([]);
-      } else {
-        setUsers(res.data || []);
+    const fetchData = async () => {
+      const [usersRes, rolesRes] = await Promise.all([
+        getAllUsers(),
+        getAllRoles(),
+      ]);
+
+      if (!usersRes.error) {
+        setUsers(usersRes.data || []);
       }
+
+      if (!rolesRes.error && Array.isArray(rolesRes.data)) {
+        const map = Object.fromEntries(
+          rolesRes.data.map((r) => [r.id, r.name]),
+        );
+        setRoleMap(map);
+      }
+
       setIsLoading(false);
     };
 
-    fetchUsers();
+    fetchData();
   }, []);
 
   const actionItems = useMemo(
@@ -109,13 +119,18 @@ export default function UsersLanding() {
     () => [
       ...baseColumns,
       {
+        header: 'Role',
+        key: 'role',
+        render: (item) => roleMap[item.role] ?? item.role,
+      },
+      {
         header: 'Action',
         key: 'actions',
         align: 'right',
         render: (item) => <DropdownAction item={item} items={actionItems} />,
       },
     ],
-    [actionItems],
+    [actionItems, roleMap],
   );
 
   const userStats = useMemo(() => {
@@ -148,13 +163,7 @@ export default function UsersLanding() {
   }, [users]);
 
   const filterFn = (item, keyword) => {
-    return [
-      // item.userId,
-      item.employeeNumber,
-      item.firstName,
-      item.lastName,
-      item.email,
-    ]
+    return [item.employeeNumber, item.firstName, item.lastName, item.email]
       .filter(Boolean)
       .some((value) => String(value).toLowerCase().includes(keyword));
   };
@@ -170,6 +179,7 @@ export default function UsersLanding() {
       onNew={() => router.push('/maintainance/users/usersform')}
       emptyMessage="No users found"
       filterFn={filterFn}
+      isLoading={isLoading}
     />
   );
 }

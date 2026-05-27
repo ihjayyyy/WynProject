@@ -511,7 +511,8 @@ export default function PurchasePaymentsForm() {
             )}
 
           {mode === 'view' &&
-            (payment?.status === 'PartiallyPaid' ||
+            (payment?.status === 'Draft' ||
+              payment?.status === 'PartiallyPaid' ||
               payment?.status === 'Paid') &&
             isAllowed(PageName, 'w') && (
               <Button variant="outlineDanger" onClick={handleCancelPayment}>

@@ -6,6 +6,8 @@ import Button from '../ui/Button/Button';
 import Input from '../ui/Input/Input';
 import { FiMail, FiLock } from 'react-icons/fi';
 
+import Logo from '@/assets/logo.jpg';
+
 export default function LoginForm({ onLogin, errorMessage, isLoading }) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -27,7 +29,7 @@ export default function LoginForm({ onLogin, errorMessage, isLoading }) {
   return (
     <form className={styles.loginForm} onSubmit={handleSubmit}>
       <div className={styles.logoWrap}>
-        <Image src="/ODR-Logo.png" alt="ODR-Logo" width={200} height={100} />
+        <Image src={Logo} alt="Wyn Logo" width={200} height={100} />
       </div>
       <h2 className={styles.title}>Welcome back</h2>
       <div className={styles.subtitle}>Please sign in to your account</div>
