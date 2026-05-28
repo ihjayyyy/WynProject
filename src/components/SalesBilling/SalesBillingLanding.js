@@ -105,7 +105,7 @@ export default function SalesBillingLanding() {
   const actionItems = useMemo(
     () => [
       { key: 'view', label: 'View', icon: <FiEye size={14} />, onClick: (item) => router.push(`/finance/billings/form?id=${item.id}`) },
-      { key: 'viewpdf', label: 'Generate Billing Document', icon: <FiFileText size={14} />, onClick: (item) => (getPDF(item.id))},
+      { key: 'viewpdf', label: 'Print Request Letter', icon: <FiFileText size={14} />, onClick: async (item) => (await SalesBillingService.printSalesBilling_byId(id))},
       { key: 'edit', label: 'Edit', icon: <FiEdit2 size={14} />, onClick: (item) => router.push(`/finance/billings/form?id=${item.id}&mode=edit`), hidden: (item) => {
         const s = (item.status || '').toString().toLowerCase();
         return s === 'billed' || s === 'cancelled' || s === 'closed';
@@ -121,11 +121,6 @@ export default function SalesBillingLanding() {
     ],
     [router, handleMarkAsBilled]
   );
-
-    const getPDF = async (id) =>{
-      console.log("billing",id);
-      await SalesBillingService.getSalesBillingPDFById(id);
-  }
 
   const columns = useMemo(() => [...baseColumns, { header: 'Action', key: 'actions', align: 'right', render: (item) => <DropdownAction item={item} items={actionItems} /> }], [actionItems]);
 

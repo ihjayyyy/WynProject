@@ -63,7 +63,7 @@ async function getProposalById(id) {
     }
 }
 
-async function getProposalPDFById(id) {
+async function printProposal_byId(id) {
     if (!id) return { data: null, error: 'Missing id' };
     try {
         const url = `${API_BASE_URL}/pdf/${id}`;
@@ -78,7 +78,7 @@ async function getProposalPDFById(id) {
         return { data: null, error: error?.message || error };
     }
 }
-async function getProposalBreakdownPDFById(id) {
+async function printProposalBreakdown_byId(id) {
     if (!id) return { data: null, error: 'Missing id' };
     try {
         const url = `${API_BASE_URL}/pdf/breakdown/${id}`;
@@ -264,8 +264,8 @@ export {
     submitProposal,
     approveProposal,
     rejectProposal,
-    getProposalPDFById,
-    getProposalBreakdownPDFById,
+    printProposal_byId,
+    printProposalBreakdown_byId,
     winProposal,
     loseProposal,
     cancelProposal,
@@ -281,8 +281,8 @@ const ProposalService = {
     submitProposal,
     approveProposal,
     rejectProposal,
-    getProposalPDFById,
-    getProposalBreakdownPDFById,
+    printProposal_byId,
+    printProposalBreakdown_byId,
     winProposal,
     loseProposal,
     cancelProposal,

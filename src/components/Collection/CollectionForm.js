@@ -2,14 +2,14 @@
 
 import React, { useMemo, useState, useEffect, useContext } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { FiList, FiEdit2, FiXCircle, FiArchive } from 'react-icons/fi';
+import { FiList, FiEdit2, FiXCircle, FiArchive, FiPrinter } from 'react-icons/fi';
 import DetailsTable from '../ItemDetails/DetailsTable';
 import EntityForm from '../EntityForm/EntityForm';
 import { useToast } from '../ui/Toast/Toast';
 import InvalidPage from '@/components/InvalidPage/page';
 import { AccessContext } from '@/app/contextProviders/accessContext';
 import { useConfirmModal } from '@/app/contextProviders/confirmModalContext';
-import CollectionService from '@/services/Collection';
+import CollectionService, { printSalesCollection_byId } from '@/services/Collection';
 import { CollectionFields, CollectionDetailsColumns, CollectionItemFields } from './CollectionModels';
 import CustomerService from '@/services/Customer';
 import SalesBillingService from '@/services/SalesBilling';
@@ -257,6 +257,18 @@ export default function CollectionForm() {
       <Button type="submit" variant="save">{collection.id ? 'Save' : 'Create'}</Button>
     ) : null;
 
+  const PrintButton = () => {
+    return isAllowed(PageName, 'r') && isReadOnly && collectionId ? 
+    <>
+    <Button variant="primary" icon={<FiPrinter size={14} />} /*disabled={actionLoading}*/ onClick={async () => {
+      // setActionLoading(true);
+      await printSalesCollection_byId(collectionId);
+      // setActionLoading(false);
+      }}>Print Invoice</Button>
+    </>
+    : null
+    }
+
   return (
     <EntityForm
       title={formTitle}
@@ -311,6 +323,7 @@ export default function CollectionForm() {
             <Button variant="outlineDanger" onClick={() => setMode('view')}>Cancel</Button>
           )}
           <SaveButton />
+          <PrintButton />
         </div>
       }
     />

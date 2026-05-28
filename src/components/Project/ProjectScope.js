@@ -3,13 +3,14 @@ import DataTable from '../ui/DataTable/DataTable';
 import SearchBar from '../ui/SearchBar/SearchBar';
 import styles from './ProjectScope.module.scss';
 import Button from '../ui/Button/Button';
-import { FiPlus, FiEdit2, FiTrash2, FiCheckCircle } from 'react-icons/fi';
+import { FiPlus, FiEdit2, FiTrash2, FiCheckCircle, FiPrinter } from 'react-icons/fi';
 import Input from '../ui/Input/Input';
 import ProjectScopeModal from './ProjectScopeModal';
 import ProjectMaterialModal from './ProjectMaterialModal';
 import ConfirmModal from '../ui/ConfirmModal/ConfirmModal';
 import { getByProjectId, createProjectScope, updateProjectScope } from '../../services/ProjectScope';
 import { updateCompletedQuantity } from '../../services/ProjectMaterial';
+import { printCompletion_byId } from '@/services/Project';
 
 function formatDate(v) {
   if (!v) return '';
@@ -222,6 +223,18 @@ export default function ProjectScope({ projectId = 0, editable = true, onComplet
     { header: 'Completed Qty', key: 'completedQuantity', align: 'right', width: '120px', render: (it) => (it && it.completedQuantity != null ? Number(it.completedQuantity).toLocaleString() : '') },
     { header: 'Total', key: 'totalCost', align: 'right', width: '140px', render: (it) => Number(it.totalPrice || it.totalAmount || 0).toLocaleString() },
   ];
+  
+  const PrintCompletionButton = () => {
+    return projectId ? 
+    <>
+    <Button variant="primary" icon={<FiPrinter size={14} />} /*disabled={actionLoading}*/ onClick={async () => {
+      // setActionLoading(true);
+      await printCompletion_byId(projectId);
+      // setActionLoading(false);
+      }}>Print Accomplishment Report</Button>
+    </>
+    : null
+    }
 
   if (editable) {
     columns.push({
@@ -322,6 +335,8 @@ export default function ProjectScope({ projectId = 0, editable = true, onComplet
         <h2 className={styles.title}>Scope of Work</h2>
         <div className={styles.headerActions}>
           <SearchBar placeholder="Search scope of work" value={searchTerm} onChange={setSearchTerm} showFilter={false} showButton={editable} buttonLabel="Add Scope" handleOnClick={() => { setScopeEditing(null); setIsScopeModalOpen(true); }} width="320px" />
+            
+            <PrintCompletionButton/>
         </div>
       </div>
 

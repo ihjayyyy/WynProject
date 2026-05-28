@@ -10,7 +10,7 @@ import inputStyles from '../ui/Input/Input.module.scss';
 import ProposalMaterialsTable from './ProposalMaterialsTable';
 import Button from '../ui/Button/Button';
 import { useToast } from '../ui/Toast/Toast';
-import { INITIAL_PROPOSAL, getProposalById, createProposal, updateProposal, submitProposal, approveProposal, rejectProposal, winProposal, loseProposal, cancelProposal, closeProposal, reviseProposal, createRevisedProposal, getProposalPDFById, getProposalBreakdownPDFById } from '../../services/Proposal';
+import { INITIAL_PROPOSAL, getProposalById, createProposal, updateProposal, submitProposal, approveProposal, rejectProposal, winProposal, loseProposal, cancelProposal, closeProposal, reviseProposal, createRevisedProposal, printProposal_byId, printProposalBreakdown_byId } from '../../services/Proposal';
 import { getParameter } from '../../services/Parameter';
 import { convertProposal } from '../../services/Project';
 import ConfirmModal from '../ui/ConfirmModal/ConfirmModal';
@@ -859,12 +859,12 @@ export default function ProposalForm() {
                   <>
                   <Button variant="primary" icon={<FiPrinter size={14} />} disabled={actionLoading} onClick={async () => {
                     setActionLoading(true);
-                    await getProposalPDFById(proposalId);
+                    await printProposal_byId(proposalId);
                     setActionLoading(false);
                     }}>Print</Button>
                   <Button variant="primary" icon={<FiPrinter size={14} />} disabled={actionLoading} onClick={async () => {
                     setActionLoading(true);
-                    await getProposalBreakdownPDFById(proposalId);
+                    await printProposalBreakdown_byId(proposalId);
                     setActionLoading(false);
                     }}>Print Breakdown</Button>
                   </>

@@ -129,7 +129,7 @@ async function getTransferredMaterialTransfers() {
   }
 }
 
-async function getDocumentPDFById(transferId) {
+async function printMaterialTransfer_byId(transferId) {
     console.log(transferId);
   if (!transferId) return { data: null, error: 'Missing id' };
   try {
@@ -153,7 +153,7 @@ export {
   updateMaterialTransfer,
   transferMaterialTransfer,
   receiveMaterialTransfer,
-  getDocumentPDFById
+  printMaterialTransfer_byId
 };
 
 export default {
@@ -165,5 +165,5 @@ export default {
   updateMaterialTransfer,
   transferMaterialTransfer,
   receiveMaterialTransfer,
-  getDocumentPDFById
+  printMaterialTransfer_byId
 };

@@ -2,7 +2,7 @@
 
 import React, { useMemo, useState, useEffect, useContext } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { FiDollarSign, FiCheckCircle, FiXCircle, FiArchive } from 'react-icons/fi';
+import { FiDollarSign, FiCheckCircle, FiXCircle, FiArchive, FiPrinter } from 'react-icons/fi';
 import DetailsTable from '../ItemDetails/DetailsTable';
 import EntityForm from '../EntityForm/EntityForm';
 import { useToast } from '../ui/Toast/Toast';
@@ -322,6 +322,19 @@ export default function SalesBillingForm() {
       <Button type="submit" variant="save">{billing.id ? 'Save' : 'Create'}</Button>
     ) : null;
 
+  const PrintRequestPaymentButton = () => {
+    // Sales Billings
+    return isAllowed(PageName, 'r') && isReadOnly && billing.id ? 
+    <>
+    <Button variant="primary" icon={<FiPrinter size={14} />} /*disabled={actionLoading}*/ onClick={async () => {
+      // setActionLoading(true);
+      await SalesBillingService.printSalesBilling_byId(billing.id);
+      // setActionLoading(false);
+      }}>Print Request Letter</Button>
+    </>
+    : null
+    }
+
   return (
     <EntityForm
       title={formTitle}
@@ -379,6 +392,7 @@ export default function SalesBillingForm() {
             <Button variant="outlineDanger" onClick={() => setMode('view')}>Cancel</Button>
           )}
           <SaveButton />
+          <PrintRequestPaymentButton />
         </div>
       }
     />

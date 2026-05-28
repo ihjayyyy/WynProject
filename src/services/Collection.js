@@ -117,7 +117,7 @@ async function closeCollection(salesCollectionId) {
     return { data: null, error: error?.message || error };
   }
 }
-async function getSalesCollectionPDFById(id) {
+async function printSalesCollection_byId(id) {
   if (!id) return { data: null, error: 'Missing id' };
 
   try {
@@ -144,7 +144,7 @@ export {
   updateCollection,
   cancelCollection,
   closeCollection,
-  getSalesCollectionPDFById,
+  printSalesCollection_byId,
 };
 
 export default {
@@ -155,5 +155,5 @@ export default {
   cancelCollection,
   closeCollection,
   INITIAL_COLLECTION,
-  getSalesCollectionPDFById,
+  printSalesCollection_byId,
 };

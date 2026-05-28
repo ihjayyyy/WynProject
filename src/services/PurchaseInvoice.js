@@ -148,7 +148,7 @@ async function SetStatus(status, id) {
     return { data: null, error: error?.message || error };
   }
 }
-async function getPurchaseInvoicePDFById(id) {
+async function printPurchaseInvoice_byId(id) {
   if (!id) return { data: null, error: 'Missing id' };
 
   try {
@@ -180,7 +180,7 @@ export {
   ConfirmInvoice,
   Approve,
   Reject,
-  getPurchaseInvoicePDFById,
+  printPurchaseInvoice_byId,
 };
 
 export default {
@@ -195,5 +195,5 @@ export default {
   ConfirmInvoice,
   Approve,
   Reject,
-  getPurchaseInvoicePDFById,
+  printPurchaseInvoice_byId,
 };

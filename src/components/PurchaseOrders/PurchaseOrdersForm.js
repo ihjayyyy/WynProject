@@ -2,7 +2,7 @@
 
 import React, { useMemo, useState, useEffect, useContext } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { FiClipboard } from 'react-icons/fi';
+import { FiClipboard, FiPrinter } from 'react-icons/fi';
 import { POFields, PODetailsColumns, POItemsFields } from './PurchaseOrdersModels';
 import DetailsTable from '../ItemDetails/DetailsTable';
 import EntityForm from '../EntityForm/EntityForm';
@@ -10,7 +10,7 @@ import Button from '../ui/Button/Button';
 import { getSuppliers } from '@/services/Supplier';
 import { getMaterials } from '@/services/Materials';
 import POStyles from './PurchaseOrders.module.scss';
-import { InitialData, Create, Get, Update, SubmitForApproval, Approve, Reject, SetStatus } from '@/services/PurchaseOrder';
+import { InitialData, Create, Get, Update, SubmitForApproval, Approve, Reject, SetStatus, printPurchaseOrder_byId } from '@/services/PurchaseOrder';
 import { useToast } from '../ui/Toast/Toast';
 import InvalidPage from '@/components/InvalidPage/page';
 import { AccessContext } from '@/app/contextProviders/accessContext';
@@ -513,6 +513,19 @@ export default function PurchaseOrdersForm() {
     ) : null;
   };
 
+  const PrintButton = () => {
+    return isAllowed(PageName, 'r') && isReadOnly && orderId &&
+      (po.status.toLowerCase() === 'ordered' || po.status.toLowerCase() === 'approved') ? 
+    <>
+    <Button variant="primary" icon={<FiPrinter size={14} />} /*disabled={actionLoading}*/ onClick={async () => {
+      // setActionLoading(true);
+      await printPurchaseOrder_byId(orderId);
+      // setActionLoading(false);
+      }}>Print</Button>
+    </>
+    : null
+    }
+
   return isAllowed(PageName, 'r') ? (
     validPO ? (
       <EntityForm
@@ -572,6 +585,7 @@ export default function PurchaseOrdersForm() {
             <ApprovalButton />
             <OrderButton />
             <ArchiveButton />
+            <PrintButton />
           </div>
         }
       />

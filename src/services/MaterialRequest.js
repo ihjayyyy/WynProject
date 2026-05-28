@@ -43,7 +43,7 @@ async function createMaterialRequest(payload) {
     }
 }
 
-async function getMaterialRequestsByProjectId(projectId) {
+async function printMaterialRequests_byProject(projectId) {
     try {
         const url = `${API_BASE_URL}/GetByProjectId/${projectId}`;
         const res = await fetch(url, {
@@ -72,7 +72,7 @@ async function updateMaterialRequest(id, payload) {
     }
 }
 
-async function getDocumentPDFById(projectId) {
+async function printMaterialRequest_byId(projectId) {
     console.log(projectId);
   if (!projectId) return { data: null, error: 'Missing id' };
   try {
@@ -87,7 +87,7 @@ async function getDocumentPDFById(projectId) {
   }
 }
 
-async function getDocumentPDFByRivNumber(item) {
+async function printMaterialRequest_byRivNumber(item) {
     console.log(item);
   if (!item.projectId) return { data: null, error: 'Missing id' };
   if (!item.rivNumber) return { data: null, error: 'Missing RIV Number' };
@@ -103,5 +103,5 @@ async function getDocumentPDFByRivNumber(item) {
   }
 }
 
-export { getMaterialRequests, createMaterialRequest, updateMaterialRequest, getMaterialRequestsByProjectId, getDocumentPDFById, getDocumentPDFByRivNumber };
-export default { getMaterialRequests, createMaterialRequest, updateMaterialRequest, getMaterialRequestsByProjectId, getDocumentPDFById, getDocumentPDFByRivNumber };
+export { getMaterialRequests, createMaterialRequest, updateMaterialRequest, printMaterialRequests_byProject, printMaterialRequest_byId, printMaterialRequest_byRivNumber };
+export default { getMaterialRequests, createMaterialRequest, updateMaterialRequest, printMaterialRequests_byProject, printMaterialRequest_byId, printMaterialRequest_byRivNumber };

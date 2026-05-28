@@ -128,7 +128,7 @@ async function SetStatus(status, id) {
     }
 }
 
-async function getDocumentPDFById(projectId) {
+async function printDelivery_byId(projectId) {
     console.log(projectId);
   if (!projectId) return { data: null, error: 'Missing id' };
   try {
@@ -154,7 +154,7 @@ export {
     ConfirmDelivery,
     Approve,
     Reject,
-    getDocumentPDFById,
+    printDelivery_byId,
 }
 
 export default{
@@ -168,5 +168,5 @@ export default{
     ConfirmDelivery,
     Approve,
     Reject,
-    getDocumentPDFById,
+    printDelivery_byId,
 }

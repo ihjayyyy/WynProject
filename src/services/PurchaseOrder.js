@@ -150,7 +150,7 @@ async function SetStatus(status, id) {
     }
 }
 
-async function getDocumentPDFById(projectId) {
+async function printPurchaseOrder_byId(projectId) {
     console.log(projectId);
   if (!projectId) return { data: null, error: 'Missing id' };
   try {
@@ -176,7 +176,7 @@ export {
     SubmitForApproval,
     Approve,
     Reject,
-    getDocumentPDFById,
+    printPurchaseOrder_byId,
 }
 
 export default{
@@ -190,5 +190,5 @@ export default{
     SubmitForApproval,
     Approve,
     Reject,
-    getDocumentPDFById,
+    printPurchaseOrder_byId,
 }

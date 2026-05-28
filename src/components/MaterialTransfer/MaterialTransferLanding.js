@@ -8,7 +8,7 @@ import StatusBadge from '../ui/StatusBadge/StatusBadge';
 import Landing from '../ui/Landing/Landing';
 import ConfirmModal from '../ui/ConfirmModal/ConfirmModal';
 import { AccessContext } from '@/app/contextProviders/accessContext';
-import { getMaterialTransfers, transferMaterialTransfer, getDocumentPDFById } from '@/services/MaterialTransfer';
+import { getMaterialTransfers, transferMaterialTransfer, printMaterialTransfer_byId } from '@/services/MaterialTransfer';
 import { useToast } from '../ui/Toast/Toast';
 
 const baseColumns = [
@@ -115,9 +115,15 @@ export default function MaterialTransferLanding() {
               setIsConfirmOpen(true);
             }});
           }
+
+          
+
           if (isTransferred && isAllowed(PageName, 'r')) {
+            var lbl = (item.transferFromType === 'Warehouse' && item.transferToType === 'Project') ? "Print MRT" :
+                      (item.transferFromType === 'Project' && item.transferToType === 'Warehouse') ? "Print RIV" :
+                      "Print Document"; 
             itemsFor.push(
-              { key: 'viewpdf', label: 'Generate RV', icon: <FiFileText size={14} />, onClick: () => getDocumentPDFById(item.id) }
+              { key: 'viewpdf', label: lbl, icon: <FiFileText size={14} />, onClick: () => printMaterialTransfer_byId(item.id) }
             );
           }
 

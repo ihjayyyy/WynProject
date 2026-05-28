@@ -2,7 +2,7 @@
 
 import React, { useMemo, useState, useEffect, useRef, useContext } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { FiRepeat, FiSend } from 'react-icons/fi';
+import { FiPrinter, FiRepeat, FiSend } from 'react-icons/fi';
 import {
   FormFields,
   TableColumns,
@@ -16,9 +16,9 @@ import Button from '../ui/Button/Button';
 import StatusBadge from '../ui/StatusBadge/StatusBadge';
 import { getWarehouses } from '@/services/Warehouse';
 import { getProjects } from '@/services/Project';
-import { getMaterialRequestsByProjectId } from '@/services/MaterialRequest';
+import { printMaterialRequests_byProject } from '@/services/MaterialRequest';
 import { getByProjectId } from '@/services/ProjectScope';
-import { getMaterialTransfer, createMaterialTransfer, updateMaterialTransfer, transferMaterialTransfer } from '@/services/MaterialTransfer';
+import { getMaterialTransfer, createMaterialTransfer, updateMaterialTransfer, transferMaterialTransfer, printMaterialTransfer_byId } from '@/services/MaterialTransfer';
 import { useToast } from '../ui/Toast/Toast';
 import InvalidPage from '@/components/InvalidPage/page';
 import { AccessContext } from '@/app/contextProviders/accessContext';
@@ -164,7 +164,7 @@ export default function MaterialTransferForm() {
       let newBalanceMap = {};
 
       if (isWarehouseToProject && transferToId) {
-        const res = await getMaterialRequestsByProjectId(transferToId);
+        const res = await printMaterialRequests_byProject(transferToId);
         if (!mounted) return;
         if (!res?.error && Array.isArray(res.data)) {
           // Deduplicate by materialId — sum up balance across all requests
@@ -346,6 +346,22 @@ export default function MaterialTransferForm() {
       </div>
     ) : null;
 
+  const PrintButton = () => {
+    var lbl = (transferFromType === 'Warehouse' && transferToType === 'Project') ? "Print MRT" :
+                      (transferFromType === 'Project' && transferToType === 'Warehouse') ? "Print RIV" :
+                      "Print Document"; 
+
+    return isAllowed(PageName, 'r') && isReadOnly && formId ? 
+    <>
+    <Button variant="primary" icon={<FiPrinter size={14} />} /*disabled={actionLoading}*/ onClick={async () => {
+      // setActionLoading(true);
+      await printMaterialTransfer_byId(formId);
+      // setActionLoading(false);
+      }}>{lbl}</Button>
+    </>
+    : null
+    }
+
   // ── Balance summary panel (shown when Warehouse → Project and options loaded) ─
 
   const BalanceSummary = () => {
@@ -432,6 +448,7 @@ export default function MaterialTransferForm() {
             <CreateButton />
             <ViewButton />
             <CRUDButton />
+            <PrintButton />
             {isAllowed(PageName, 'w') && formData?.id && String(formData?.status || '').toLowerCase() === 'draft' && (
               <Button
                 variant="primary"

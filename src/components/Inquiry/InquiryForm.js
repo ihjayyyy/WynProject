@@ -2,12 +2,12 @@
 
 import React, { useMemo, useState, useCallback } from 'react';
 import { useRouter, useSearchParams} from 'next/navigation';
-import { FiMessageSquare, FiXCircle, FiArchive } from 'react-icons/fi';
+import { FiMessageSquare, FiXCircle, FiArchive, FiPrinter } from 'react-icons/fi';
 import { useConfirmModal } from '@/app/contextProviders/confirmModalContext';
 import EntityForm from '../EntityForm/EntityForm';
 import Button from '../ui/Button/Button';
 import { useToast } from '../ui/Toast/Toast';
-import { INITIAL_INQUIRY, getInquiries, createInquiry, updateInquiry, acknowledgeInquiry, cancelInquiry, closeInquiry } from '../../services/Inquiry';
+import { INITIAL_INQUIRY, getInquiries, createInquiry, updateInquiry, acknowledgeInquiry, cancelInquiry, closeInquiry, printInquirySlip_byId } from '../../services/Inquiry';
 import StatusBadge from '../ui/StatusBadge/StatusBadge';
 import { getCustomers } from '../../services/Customer';
 import { getStaffs } from '../../services/Staff';
@@ -227,6 +227,18 @@ export default function InquiryForm() {
     { name: 'details', label: 'Details', multiline: true, rows: 4, span: 'span3' },
   ];
 
+  const PrintButton = () => {
+    return isReadOnly && inquiryId ? 
+    <>
+    <Button variant="primary" icon={<FiPrinter size={14} />} /*disabled={actionLoading}*/ onClick={async () => {
+      // setActionLoading(true);
+      await printInquirySlip_byId(inquiryId);
+      // setActionLoading(false);
+      }}>Print Inquiry Slip</Button>
+    </>
+    : null
+    }
+    
   return (
     <EntityForm
       key={formKey}          // remounts form with fresh initialValues on customer change
@@ -320,7 +332,9 @@ export default function InquiryForm() {
                 </Button>
                 <Button type="submit" variant="save">Save</Button>
               </>
-            )}
+            )
+            }
+            {<PrintButton/>}
           </>
         )
       }

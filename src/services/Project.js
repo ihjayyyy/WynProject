@@ -65,7 +65,7 @@ async function updateProject(id, payload) {
     }
 }
 
-async function getCompletionPDFById(id) {
+async function printCompletion_byId(id) {
     if (!id) return { data: null, error: 'Missing id' };
 
     try {
@@ -176,7 +176,7 @@ export {
     getProjectById,
     getProjects,
     updateProject,
-    getCompletionPDFById,
+    printCompletion_byId,
     startProject,
     completeProject,
     cancelProject,

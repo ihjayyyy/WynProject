@@ -2,7 +2,7 @@
 
 import React, { useMemo, useState, useEffect, useContext } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { FiList } from 'react-icons/fi';
+import { FiList, FiPrinter } from 'react-icons/fi';
 import {
   FormFields,
   TableColumns,
@@ -22,6 +22,7 @@ import {
   Update,
   ConfirmInvoice,
   Reject,
+  printPurchaseInvoice_byId,
 } from '@/services/PurchaseInvoice';
 import { useToast } from '../ui/Toast/Toast';
 import InvalidPage from '@/components/InvalidPage/page';
@@ -555,6 +556,18 @@ const save = async (entity) => {
     ) : null;
   };
 
+  const PrintButton = () => {
+    return isAllowed(PageName, 'r') && isReadOnly && formId ? 
+    <>
+    <Button variant="primary" icon={<FiPrinter size={14} />} /*disabled={actionLoading}*/ onClick={async () => {
+      // setActionLoading(true);
+      await printPurchaseInvoice_byId(formId);
+      // setActionLoading(false);
+      }}>Print</Button>
+    </>
+    : null
+    }
+
   return isAllowed(PageName, 'r') ? (
     validForm ? (
       <EntityForm
@@ -612,6 +625,7 @@ const save = async (entity) => {
             <ConfirmButton />
             <ArchiveButton />
             <ApprovalButton />
+            <PrintButton />
           </div>
         }
       />

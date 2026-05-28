@@ -137,6 +137,25 @@ async function closeInquiry(inquiryId) {
   }
 }
 
+async function printInquirySlip_byId(id) {
+  if (!id) return { data: null, error: 'Missing id' };
+
+  try {
+    const url = `${API_BASE_URL}/pdf/${id}`;
+
+    const res = await fetch(url, {
+      method: 'GET',
+      headers: { Accept: '*/*' },
+    });
+
+    handleOpenPdf(res);
+  } catch (error) {
+    return {
+      data: null,
+      error: error?.message || error,
+    };
+  }
+}
 export {
   getInquiries,
   createInquiry,
@@ -144,6 +163,7 @@ export {
   acknowledgeInquiry,
   cancelInquiry,
   closeInquiry,
+  printInquirySlip_byId,
 };
 
 const InquiryService = {
@@ -153,6 +173,7 @@ const InquiryService = {
   acknowledgeInquiry,
   cancelInquiry,
   closeInquiry,
+  printInquirySlip_byId,
 };
 
 export default InquiryService;

@@ -114,7 +114,7 @@ async function generateMaterialInventoryReport() {
     };
   }
 }
-async function getDocumentPDF() {
+async function printMaterialReport_byId() {
   try {
     const url = `${API_BASE_URL}/GenerateReport/pdf`;
     const res = await fetch(url, {
@@ -158,7 +158,7 @@ export {
   createMaterialInventory,
   updateMaterialInventory,
   generateMaterialInventoryReport,
-  getDocumentPDF
+  printMaterialReport_byId
 };
 
 export default {
@@ -169,5 +169,5 @@ export default {
   createMaterialInventory,
   updateMaterialInventory,
   generateMaterialInventoryReport,
-  getDocumentPDF
+  printMaterialReport_byId
 };

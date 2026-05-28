@@ -76,7 +76,7 @@ async function editSalesBilling(id, payload) {
   }
 }
 
-async function getSalesBillingPDFById(id) {
+async function printSalesBilling_byId(id) {
   if (!id) return { data: null, error: 'Missing id' };
 
   try {
@@ -276,7 +276,7 @@ const SalesBillingService = {
   cancelSalesBilling,
   closeSalesBilling,
   getSalesBillingByCustomerId,
-  getSalesBillingPDFById,
+  printSalesBilling_byId,
   INITIAL_SALES_BILLING,
 };
 

@@ -2,7 +2,7 @@
 
 import React, { useMemo, useState, useEffect,useContext, useCallback } from 'react';
 import { useRouter,useSearchParams } from 'next/navigation';
-import { FiInbox } from 'react-icons/fi';
+import { FiInbox, FiPrinter } from 'react-icons/fi';
 import { FormFields,TableColumns,ItemsFields } from './PRModels';
 import DetailsTable from '../ItemDetails/DetailsTable';
 import EntityForm from '../EntityForm/EntityForm';
@@ -10,7 +10,7 @@ import Button from '../ui/Button/Button';
 import { getProjects} from '@/services/Project';
 import { getMaterials } from '@/services/Materials';
 import EntityStyle from '../EntityForm/EntityContainer.module.scss'
-import { InitialData, Create, Get, Update, SubmitForApproval, Approve, Reject, SetStatus } from '@/services/PurchaseRequest';
+import { InitialData, Create, Get, Update, SubmitForApproval, Approve, Reject, SetStatus, printPurchaseRequest_byId } from '@/services/PurchaseRequest';
 import { useToast } from '../ui/Toast/Toast';
 import InvalidPage from '@/components/InvalidPage/page';
 import { AccessContext } from '@/app/contextProviders/accessContext';
@@ -372,6 +372,18 @@ const submitForApproval = async()=>{
     </div> : null
   }
 
+  const PrintButton = () => {
+    return isAllowed(PageName, 'r') && isReadOnly && formId ? 
+    <>
+    <Button variant="primary" icon={<FiPrinter size={14} />} /*disabled={actionLoading}*/ onClick={async () => {
+      // setActionLoading(true);
+      await printPurchaseRequest_byId(formId);
+      // setActionLoading(false);
+      }}>Print</Button>
+    </>
+    : null
+    }
+
   return isAllowed(PageName, 'r') ? 
   formValid ? 
         <EntityForm
@@ -416,6 +428,7 @@ const submitForApproval = async()=>{
               <ApprovalButton/>
               <OrderButton/>
               <ArchiveButton/>
+              <PrintButton/>
             </div>  
           }
         />

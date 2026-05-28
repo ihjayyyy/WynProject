@@ -2,7 +2,7 @@
 
 import React, { useMemo, useState, useEffect, useContext } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { FiList } from 'react-icons/fi';
+import { FiList, FiPrinter } from 'react-icons/fi';
 import { FormFields, TableColumns, ItemsFields } from '././DeliveryModels';
 import DetailsTable from '../ItemDetails/DetailsTable';
 import EntityForm from '../EntityForm/EntityForm';
@@ -11,7 +11,7 @@ import Button from '../ui/Button/Button';
 import { getSuppliers } from '@/services/Supplier';
 import { getMaterials } from '@/services/Materials';
 import { Get as GetPO, GetOrdersBySupplier } from '@/services/PurchaseOrder';
-import { InitialData, Create, Get, Update, ConfirmDelivery } from '@/services/PurchaseDelivery';
+import { InitialData, Create, Get, Update, ConfirmDelivery, printDelivery_byId } from '@/services/PurchaseDelivery';
 import { useToast } from '../ui/Toast/Toast';
 import InvalidPage from '@/components/InvalidPage/page';
 import { AccessContext } from '@/app/contextProviders/accessContext';
@@ -341,6 +341,18 @@ export default function PurchaseDeliveryForm() {
       </div>
     ) : null;
   };
+  
+  const PrintButton = () => {
+    return isAllowed(PageName, 'r') && isReadOnly && formId ? 
+    <>
+    <Button variant="primary" icon={<FiPrinter size={14} />} /*disabled={actionLoading}*/ onClick={async () => {
+      // setActionLoading(true);
+      await printDelivery_byId(formId);
+      // setActionLoading(false);
+      }}>Print</Button>
+    </>
+    : null
+    }
 
   return isAllowed(PageName, 'r') ? (
     validForm ? (
@@ -374,6 +386,7 @@ export default function PurchaseDeliveryForm() {
             <CanceButton />
             <ViewButton />
             <CRUDButton />
+            <PrintButton />
           </div>
         }
       />

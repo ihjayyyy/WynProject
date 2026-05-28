@@ -2,13 +2,13 @@
 
 import React, { useCallback, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { FiCheckCircle, FiEdit2, FiEye, FiXCircle } from 'react-icons/fi';
+import { FiCheckCircle, FiEdit2, FiEye, FiFileText, FiXCircle } from 'react-icons/fi';
 import Landing from '../ui/Landing/Landing';
 import StatusBadge from '../ui/StatusBadge/StatusBadge';
 import DropdownAction from '../ui/DropdownAction/DropdownAction';
 import ConfirmModal from '../ui/ConfirmModal/ConfirmModal';
 import StatsCard from '../ui/StatsCard/StatsCard';
-import { getInquiries, updateInquiry, acknowledgeInquiry } from '../../services/Inquiry';
+import { getInquiries, updateInquiry, acknowledgeInquiry, printInquirySlip_byId } from '../../services/Inquiry';
 import { useToast } from '../ui/Toast/Toast';
 
 const baseColumns = [
@@ -99,6 +99,12 @@ export default function InquiryLanding() {
           confirmText: 'Acknowledge',
           confirmVariant: 'primary',
         }),
+      },
+      { 
+        key: 'viewpdf',
+        label: 'Print Inquiry Slip',
+        icon: <FiFileText size={14} />,
+        onClick: (item) => (printInquirySlip_byId(item.id))
       },
     ],
     [router]

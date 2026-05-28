@@ -6,7 +6,7 @@ import { FiCheck, FiCheckCircle, FiEdit2, FiEye, FiFileText, FiSend, FiX, FiXCir
 import DropdownAction from '../ui/DropdownAction/DropdownAction';
 import Landing from '../ui/Landing/Landing';
 import StatusBadge from '../ui/StatusBadge/StatusBadge';
-import { getProposals, submitProposal, approveProposal, rejectProposal, winProposal, loseProposal, getProposalPDFById, cancelProposal, closeProposal, getProposalBreakdownPDFById } from '../../services/Proposal';
+import { getProposals, submitProposal, approveProposal, rejectProposal, winProposal, loseProposal, printProposal_byId as printProposal_byId, cancelProposal, closeProposal, printProposalBreakdown_byId as printProposalBreakdown_byId } from '../../services/Proposal';
 import { convertProposal } from '../../services/Project';
 import { useToast } from '../ui/Toast/Toast';
 import ConfirmModal from '../ui/ConfirmModal/ConfirmModal';
@@ -79,8 +79,8 @@ export default function ProposalLanding() {
           return !(ps === 'draft' || as === 'for approval' || ps === 'approved' || ps === 'won' || ps === 'win');
         }
       }] : []),
-      ...(isAllowed(PageName, 'r') ? [{ key: 'viewpdf', label: 'Generate Document', icon: <FiFileText size={14} />, onClick: (item) => (getProposalPDFById(item.id))}] : []),
-      ...(isAllowed(PageName, 'r') ? [{ key: 'viewpdf2', label: 'Generate Breakdown', icon: <FiFileText size={14} />, onClick: (item) => (getProposalBreakdownPDFById(item.id))}] : []),
+      ...(isAllowed(PageName, 'r') ? [{ key: 'viewpdf', label: 'Print Document', icon: <FiFileText size={14} />, onClick: (item) => (printProposal_byId(item.id))}] : []),
+      ...(isAllowed(PageName, 'r') ? [{ key: 'viewpdf2', label: 'Print Breakdown', icon: <FiFileText size={14} />, onClick: (item) => (printProposalBreakdown_byId(item.id))}] : []),
       ...(isAllowed(PageName, 'w') ? [{ key: 'edit', label: 'Edit', icon: <FiEdit2 size={14} />, onClick: (item) => router.push(`/projects/proposal/proposalform?id=${item.id}&mode=edit`), hidden: (item) => { const s = String(item.proposalStatus || '').toLowerCase(); return s !== 'draft'; } }] : []),
     ],
     [isAllowed, router]

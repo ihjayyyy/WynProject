@@ -4,7 +4,7 @@ import ItemModal from '../ItemDetails/itemModal';
 import SearchBar from '../ui/SearchBar/SearchBar';
 import Button from '../ui/Button/Button';
 import styles from './ProjectScope.module.scss';
-import { getMaterialRequestsByProjectId, createMaterialRequest, updateMaterialRequest, INITIAL_MATERIAL_REQUEST, getDocumentPDFById, getDocumentPDFByRivNumber } from '../../services/MaterialRequest';
+import { printMaterialRequests_byProject, createMaterialRequest, updateMaterialRequest, INITIAL_MATERIAL_REQUEST, printMaterialRequest_byId, printMaterialRequest_byRivNumber } from '../../services/MaterialRequest';
 import { getByProjectId as getScopesByProjectId } from '../../services/ProjectScope';
 import * as Yup from 'yup';
 import { getAuthData } from '../../services/Auth';
@@ -25,7 +25,7 @@ export default function MaterialRequestsTab({ projectId, editable = true }) {
 
   const loadData = useCallback(async () => {
     if (!projectId) return;
-    const res = await getMaterialRequestsByProjectId(projectId);
+    const res = await printMaterialRequests_byProject(projectId);
     setItems(Array.isArray(res.data) ? res.data : (res.data ? [res.data] : []));
   }, [projectId]);
 
@@ -248,8 +248,8 @@ export default function MaterialRequestsTab({ projectId, editable = true }) {
               size="sm"
               variant="outlinedPrimary"
               icon={<FiPrinter size={14} />}
-              title="Print RIV"
-              onClick={() => { getDocumentPDFByRivNumber(item); }}
+              title="Print Request Voucher"
+              onClick={() => { printMaterialRequest_byRivNumber(item); }}
               style={{ marginLeft: '6px' }}
             />
           )}
@@ -272,11 +272,11 @@ export default function MaterialRequestsTab({ projectId, editable = true }) {
           />
           {isAllowed(PageName, 'w') && filtered.find(itm => (itm.status || '').toLowerCase().includes("draft")) && (
             <Button onClick={async () => {
-              await getDocumentPDFById(projectId).then(async _ => {
-                const res = await getMaterialRequestsByProjectId(projectId);
+              await printMaterialRequest_byId(projectId).then(async _ => {
+                const res = await printMaterialRequests_byProject(projectId);
                 setItems(Array.isArray(res.data) ? res.data : (res.data ? [res.data] : []));
               });
-            }}>Generate RIV</Button>
+            }}>Submit Drafts + Print RV</Button>
           )}
           {isAllowed(PageName, 'w') && editable && (
             <Button onClick={() => { setEditing(null); setIsModalOpen(true); }}>Add Material Request</Button>

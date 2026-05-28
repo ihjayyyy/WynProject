@@ -6,7 +6,7 @@ import { FiEdit2, FiEye, FiFileText, FiPlay, FiCheckSquare, FiXCircle, FiArchive
 import DropdownAction from '../ui/DropdownAction/DropdownAction';
 import Landing from '../ui/Landing/Landing';
 import StatusBadge from '../ui/StatusBadge/StatusBadge';
-import { getProjects, getCompletionPDFById, startProject, completeProject, cancelProject, closeProject } from '../../services/Project';
+import { getProjects, printCompletion_byId, startProject, completeProject, cancelProject, closeProject } from '../../services/Project';
 import { useToast } from '../ui/Toast/Toast';
 import ConfirmModal from '../ui/ConfirmModal/ConfirmModal';
 import { AccessContext } from '@/app/contextProviders/accessContext';
@@ -40,11 +40,6 @@ export default function ProjectLanding() {
   const [confirmMessage, setConfirmMessage] = useState('');
   const [confirmAction, setConfirmAction] = useState(null);
   const [confirmTarget, setConfirmTarget] = useState(null);
-
-  const getPDF = async (id) => {
-    console.log('project pdf', id);
-    await getCompletionPDFById(id);
-  };
 
   const loadProjects = React.useCallback(async () => {
     setLoading(true);
@@ -92,7 +87,7 @@ export default function ProjectLanding() {
             //   ? [{ key: 'edit', label: 'Edit', icon: <FiEdit2 size={14} />, onClick: () => router.push(`/projects/project/projectdetails?id=${item.id}&mode=edit`) }]
             //   : []),
             ...(isAllowed(PageName, 'r')
-              ? [{ key: 'viewpdf', label: 'Generate Accomplishment Report', icon: <FiFileText size={14} />, onClick: () => getPDF(item.id) }]
+              ? [{ key: 'viewpdf', label: 'Print Accomplishment Report', icon: <FiFileText size={14} />, onClick: () => printCompletion_byId(item.id) }]
               : []),
 
             // Start Project — only shown when status is NotStarted
