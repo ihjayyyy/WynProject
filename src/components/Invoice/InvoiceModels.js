@@ -1,7 +1,7 @@
 import * as Yup from "yup";
 
  export const FormFields =(suppliers,orders, onFieldhanged) =>([
-    { name: 'supplierId', label: 'Suppliers', type: 'select', options: suppliers.map((s) => ({ label: s.name, value: s.id })), searchable: true, span: 'span4', 
+   { name: 'supplierId', label: 'Suppliers', type: 'select',validator: Yup.number().typeError('Supplier is required').required('Supplier is required') , options: suppliers.map((s) => ({ label: s.name, value: s.id })), searchable: true, span: 'span4', 
         onChange: (val, values, setValues) => {
           const found = suppliers.find((s) => s.id === val);
                if (!found) {
@@ -32,9 +32,10 @@ import * as Yup from "yup";
          };
           if (found) setValues(valuesCopy);
          onFieldhanged("supplierId", val, valuesCopy); 
-    }},
+      }
+   },
     { name: 'spacer-1', type: 'spacer', span: 'span2' },
-    { name:'invoiceDate', label:'Invoice Date', type:'date', span:'span2'},
+   { name:'invoiceDate', label:'Invoice Date', type:'date', span:'span2', validator: Yup.date().typeError('Invalid date').required('Invoice Date is required')},
     { name:'address', label:'Address', span:'span4'},  
     { name: 'spacer-2', type: 'spacer', span: 'span2' },
     { name:'purchaseOrderId', label:'PO Number', type:'select', options: orders.map((s) => ({ label: s.orderNumber, value: s.id })), searchable: true, span:'span2',

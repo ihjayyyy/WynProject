@@ -3,6 +3,7 @@
 import React, { useMemo, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { FiUsers } from 'react-icons/fi';
+import * as Yup from 'yup';
 import EntityForm from '../EntityForm/EntityForm';
 import Button from '../ui/Button/Button';
 import { useToast } from '../ui/Toast/Toast';
@@ -44,7 +45,13 @@ export default function CustomersForm() {
 
   const formTitle = useMemo(() => {
     if (!customerId) return 'Customers Form';
-    const titleText = (initialValues && (initialValues.customerNo || initialValues.code || initialValues.name || initialValues.customerName)) || (isEditMode ? 'Edit Customer' : 'View Customer');
+    const titleText =
+      (initialValues &&
+        (initialValues.customerNo ||
+          initialValues.code ||
+          initialValues.name ||
+          initialValues.customerName)) ||
+      (isEditMode ? 'Edit Customer' : 'View Customer');
     return (
       <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
         <span>{titleText}</span>
@@ -53,13 +60,42 @@ export default function CustomersForm() {
   }, [customerId, isEditMode, initialValues]);
 
   const fields = [
-    { name: 'code', label: 'Code', span: 'span2' },
-    { name: 'name', label: 'Company Name', span: 'span2' },
-    { name: 'customerName', label: 'Contact Person', span: 'span2' },
-    { name: 'contactNumber', label: 'Contact Number', type: 'tel', span: 'span2' },
-    { name: 'email', label: 'Email', type: 'email', span: 'span2' },
-    // { name: 'companyName', label: 'Company Name', span: 'span2', isHidden: true }, // Hidden field to store company name if needed for auto-fill or other logic
-    // VAT Type select
+    {
+      name: 'code',
+      label: 'Code',
+      span: 'span2',
+      validator: Yup.string().required('Code is required'),
+    },
+    {
+      name: 'name',
+      label: 'Company Name',
+      span: 'span2',
+      validator: Yup.string().required('Company name is required'),
+    },
+    {
+      name: 'customerName',
+      label: 'Contact Person',
+      span: 'span2',
+      validator: Yup.string().required('Contact person is required'),
+    },
+    {
+      name: 'contactNumber',
+      label: 'Contact Number',
+      type: 'tel',
+      span: 'span2',
+      validator: Yup.string()
+        .required('Contact number is required')
+        .matches(/^[0-9+\-\s()]+$/, 'Enter a valid contact number'),
+    },
+    {
+      name: 'email',
+      label: 'Email',
+      type: 'email',
+      span: 'span2',
+      validator: Yup.string()
+        .required('Email is required')
+        .email('Enter a valid email address'),
+    },
     {
       name: 'vatType',
       label: 'VAT Type',
@@ -70,35 +106,46 @@ export default function CustomersForm() {
         { label: 'Not Included', value: 'Not Included' },
         { label: 'NON-VAT', value: 'NON-VAT' },
       ],
+      validator: Yup.string().required('VAT type is required'),
     },
-    // Address on its own full row
-    { name: 'address', label: 'Address', span: 'span3', multiline: true, rows: 3 },
+    {
+      name: 'address',
+      label: 'Address',
+      span: 'span3',
+      multiline: true,
+      rows: 3,
+      validator: Yup.string().required('Address is required'),
+    },
   ];
 
   return (
     <EntityForm
       title={formTitle}
-      breadcrumbLabel='Customer'
+      breadcrumbLabel="Customer"
       icon={<FiUsers />}
       fields={fields}
       initialValues={initialValues}
       onSubmit={async (values) => {
-        // Only send fields expected by the API
-        const { name, code, customerName, contactNumber, address, companyName, email, vatType } = values || {};
+        const { name, code, customerName, contactNumber, address, companyName, email, vatType } =
+          values || {};
         const payload = { name, code, customerName, contactNumber, address, companyName, email, vatType };
 
         if (!customerId) {
           const res = await createCustomer(payload);
           if (res?.error) toast.error('Failed to create customer');
           else toast.success('Customer created');
-          try { router.push('/customers'); } catch (err) { }
+          try {
+            router.push('/customers');
+          } catch (err) {}
           return '/customers';
         }
 
         const res = await updateCustomer(customerId, payload);
         if (res?.error) toast.error('Failed to save customer');
         else toast.success('Customer saved');
-        try { router.push('/customers'); } catch (err) { }
+        try {
+          router.push('/customers');
+        } catch (err) {}
         return '/customers';
       }}
       backPath="/customers"
@@ -108,12 +155,16 @@ export default function CustomersForm() {
       readOnly={isReadOnly}
       headerActions={
         !customerId ? (
-          <Button type="submit" variant="save">Create</Button>
+          <Button type="submit" variant="save">
+            Create
+          </Button>
         ) : (
           <>
             {isReadOnly ? (
               canEnterEditMode ? (
-                <Button variant="outlinedPrimary" onClick={() => setIsEditModeLocal(true)}>Edit</Button>
+                <Button variant="outlinedPrimary" onClick={() => setIsEditModeLocal(true)}>
+                  Edit
+                </Button>
               ) : null
             ) : (
               <>
@@ -128,7 +179,9 @@ export default function CustomersForm() {
                   }}>
                   Cancel
                 </Button>
-                <Button type="submit" variant="save">Save</Button>
+                <Button type="submit" variant="save">
+                  Save
+                </Button>
               </>
             )}
           </>

@@ -54,7 +54,8 @@ export default function PurchaseInvoiceForm() {
 
   const [formData, setForm] = useState({});
   const [validForm, setvalidForm] = useState(false);
-  const [tableData, setTableData] = useState([]);
+  const [tableData, setTableData] = useState({ items: [], deletedItems: [] });
+  const [tableError, setTableError] = useState('');
   const [totalExcluded, setTotalExcluded] = useState(0);
   const [totalVAT, setTotalVAT] = useState(0);
   const [totalIncluded, setTotalIncluded] = useState(0);
@@ -236,6 +237,7 @@ export default function PurchaseInvoiceForm() {
     formDataCopy.amount = totalIncluded;
 
     setForm(formDataCopy);
+    if (Array.isArray(items) && items.length > 0) setTableError('');
   };
 
   // Set Item Details data
@@ -588,6 +590,16 @@ export default function PurchaseInvoiceForm() {
         breadcrumbLabel="Purchase Invoice"
         icon={<FiList />}
         fields={formFields}
+        onValidate={async (values) => {
+          const errors = {};
+          if (!tableData.items || (Array.isArray(tableData.items) && tableData.items.length === 0)) {
+            errors.supplierId = 'At least one invoice detail is required';
+            setTableError(errors.supplierId);
+          } else {
+            setTableError('');
+          }
+          return errors;
+        }}
         initialValues={formData}
         extraContent={
           <div className={EntityStyle.extraContentContainer}>
@@ -600,6 +612,7 @@ export default function PurchaseInvoiceForm() {
               data={tableData}
               onChange={detailsUpdated}
             />
+            {tableError ? <div style={{ color: 'red', marginTop: 8 }}>{tableError}</div> : null}
             <div className={EntityStyle.summaryContainer}>
               <div className={EntityStyle.notesContainer}></div>
               <div className={EntityStyle.totalContainer}>

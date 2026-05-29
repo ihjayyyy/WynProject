@@ -26,6 +26,7 @@ export default function MaterialReceivedForm() {
   const [transferData, setTransferData] = useState(null);
   const [tableData, setTableData] = useState({ items: [], deletedItems: [] });
   const [itemFields, setItemFields] = useState([]);
+  const [tableError, setTableError] = useState('');
   const confirmModal = useConfirmModal();
   const [actionLoading, setActionLoading] = useState(false);
   // (selectedTransferId is initialized from URL `id` param)
@@ -139,12 +140,14 @@ export default function MaterialReceivedForm() {
         onChange: (val) => {
           setSelectedTransferId(Number(val) || 0);
         },
+        validator: Yup.number().typeError('Material Transfer is required').required('Material Transfer is required'),
       }
     ]
   ), [transfers]);
 
   const detailsUpdated = (items, deletedItems) => {
     setTableData({ items, deletedItems });
+    if (Array.isArray(items) && items.length > 0) setTableError('');
   };
 
   const handleSave = async (values) => {
@@ -218,8 +221,22 @@ export default function MaterialReceivedForm() {
             onChange={detailsUpdated}
             emptyMessage={selectedTransferId ? 'No items received yet' : 'Select a material transfer first'}
           />
+          {tableError ? <div style={{ color: 'red', marginTop: 8 }}>{tableError}</div> : null}
         </div>
       )}
+      onValidate={async (values) => {
+        const errors = {};
+        if (!values.transferId && !selectedTransferId) {
+          errors.transferId = 'Material Transfer is required';
+          setTableError(errors.transferId);
+        } else if (!tableData.items || (Array.isArray(tableData.items) && tableData.items.length === 0)) {
+          errors.transferId = 'At least one receive item is required';
+          setTableError(errors.transferId);
+        } else {
+          setTableError('');
+        }
+        return errors;
+      }}
       showSubmitButton={false}
       readOnly={isReadOnly}
       headerActions={(

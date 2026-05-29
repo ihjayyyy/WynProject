@@ -32,7 +32,8 @@ export default function PRForm() {
       const [projects, setProjects] = useState([]); 
       const [formData, setFormData] = useState({});
       const [formValid, setformValid] = useState(false); 
-      const [tableData, setTableData] = useState([]); 
+      const [tableData, setTableData] = useState({ items: [], deletedItems: [] }); 
+      const [tableError, setTableError] = useState('');
     
         useEffect(() => {
           const paramId = Number(searchParams.get('id') || 0);
@@ -126,6 +127,8 @@ const detailsUpdated = useCallback((items, deletedItems) => {
   dataCopy.children = items;
   dataCopy.deletedChildren = deletedItems;
   setFormData(dataCopy);
+  // clear table-level error when user modifies details
+  if (Array.isArray(items) && items.length > 0) setTableError('');
 }, [formData]);
 
 //Set Item Details data
@@ -375,10 +378,8 @@ const submitForApproval = async()=>{
   const PrintButton = () => {
     return isAllowed(PageName, 'r') && isReadOnly && formId ? 
     <>
-    <Button variant="primary" icon={<FiPrinter size={14} />} /*disabled={actionLoading}*/ onClick={async () => {
-      // setActionLoading(true);
+    <Button variant="primary" icon={<FiPrinter size={14} />} onClick={async () => {
       await printPurchaseRequest_byId(formId);
-      // setActionLoading(false);
       }}>Print</Button>
     </>
     : null
@@ -391,25 +392,26 @@ const submitForApproval = async()=>{
           breadcrumbLabel="Purchase Request"
           icon={<FiInbox />}
           fields={formFields}
+          onValidate={async (values) => {
+            const errors = {};
+            if (!tableData.items || (Array.isArray(tableData.items) && tableData.items.length === 0)) {
+              errors.projectId = 'At least one request detail is required';
+              setTableError(errors.projectId);
+            } else {
+              setTableError('');
+            }
+            return errors;
+          }}
           initialValues={formData}
 
           extraContent={<div className={EntityStyle.extraContentContainer}>
                           <DetailsTable itemModalHeader="Request Details"  parentId={formId} 
                                   columns={tableColumns} editable={isAllowed(PageName, 'w') && !isReadOnly} 
                                   itemFields={itemFields} data={tableData} onChange={detailsUpdated} />
-                          {/* <div className={EntityStyle.summaryContainer}>
+                          {tableError ? <div style={{ color: 'red', marginTop: 8 }}>{tableError}</div> : null}
                               <div className={EntityStyle.notesContainer}>
 
                               </div>
-                              <div className={EntityStyle.totalContainer}>
-                                <div className={EntityStyle.totalLabel}>Total Excluding VAT:</div>
-                                <div className={EntityStyle.totalValue}>{totalExcluded.toFixed(2)}</div>
-                                <div className={EntityStyle.totalLabel}>Total  VAT:</div>
-                                <div className={EntityStyle.totalValue}>{totalVAT.toFixed(2)}</div>
-                                <div className={EntityStyle.totalLabel}>Total  Including VAT:</div>
-                                <div className={`${EntityStyle.totalValue} ${EntityStyle.highlight}`}>{totalIncluded.toFixed(2)}</div>
-                              </div>
-                          </div> */}
           </div>
                 
               }

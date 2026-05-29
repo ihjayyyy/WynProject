@@ -8,10 +8,13 @@ export default function Input({
   type = 'text',
   value,
   onChange,
+  onBlur,
   icon,
   readOnly = false,
   multiline = false,
   rows = 3,
+  className,        // applied to the field wrapper div, not the input
+  inputClassName,   // applied directly to the input/textarea element
   ...props
 }) {
   const today = new Date().toISOString().split('T')[0];
@@ -29,18 +32,20 @@ export default function Input({
     }
     if (onChange) onChange(e);
   };
+
   return (
-    <div className={styles.field}>
+    <div className={`${styles.field} ${className || ''}`}>
       {label && <label htmlFor={id}>{label}</label>}
       <div className={styles.inputIconWrap}>
         {icon && <span className={styles.inputIcon}>{icon}</span>}
         {multiline ? (
           <textarea
-            className={styles.input}
+            className={`${styles.input} ${inputClassName || ''}`}
             id={id}
             name={props.name}
             value={value}
             onChange={onChange}
+            onBlur={onBlur}
             rows={rows}
             readOnly={readOnly}
             {...props}
@@ -62,34 +67,36 @@ export default function Input({
             </span>
             <input
               ref={inputRef}
-              className={styles.inputFile}
+              className={`${styles.inputFile} ${inputClassName || ''}`}
               id={id}
               type="file"
               onChange={handleFileChange}
+              onBlur={onBlur}
               readOnly={readOnly}
               {...props}
             />
           </div>
         ) : (
           <input
-            className={styles.input}
+            className={`${styles.input} ${inputClassName || ''}`}
             id={id}
             type={type}
-            min="1"
-            max="10"
             // For date inputs, prefer the provided value; fall back to today only when value is empty
             value={type === 'date' ? value || today : value}
             onChange={onChange}
-            onFocus={type === 'number' ? (e) => {
-              if (Number(e.target.value) === 0) {
-                onChange && onChange({ target: { name: e.target.name, value: '' } });
-              }
-            } : undefined}
-            onBlur={type === 'number' ? (e) => {
-              if (e.target.value === '') {
-                onChange && onChange({ target: { name: e.target.name, value: '0' } });
-              }
-            } : undefined}
+            onBlur={onBlur}
+            onFocus={
+              type === 'number'
+                ? (e) => {
+                    if (Number(e.target.value) === 0) {
+                      onChange &&
+                        onChange({
+                          target: { name: e.target.name, value: '' },
+                        });
+                    }
+                  }
+                : undefined
+            }
             readOnly={readOnly}
             {...props}
           />

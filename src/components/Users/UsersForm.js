@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useEffect, useMemo, useState } from 'react';
+import * as Yup from 'yup';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { FiCompass } from 'react-icons/fi';
 import EntityForm from '../EntityForm/EntityForm';
@@ -92,10 +93,10 @@ export default function UsersForm() {
   );
 
   const fields = [
-    { name: 'employeeNumber', label: 'Employee No.', span: 'span2' },
-    { name: 'firstName', label: 'First Name', span: 'span2' },
-    { name: 'lastName', label: 'Last Name', span: 'span2' },
-    { name: 'email', label: 'Email', type: 'email', span: 'span2' },
+    { name: 'employeeNumber', label: 'Employee No.', span: 'span2', validator: Yup.string().required('Employee number is required') },
+    { name: 'firstName', label: 'First Name', span: 'span2', validator: Yup.string().required('First name is required') },
+    { name: 'lastName', label: 'Last Name', span: 'span2', validator: Yup.string().required('Last name is required') },
+    { name: 'email', label: 'Email', type: 'email', span: 'span2', validator: Yup.string().email('Invalid email').required('Email is required') },
     {
       name: 'role',
       label: 'Role',
@@ -103,6 +104,7 @@ export default function UsersForm() {
       span: 'span2',
       options: roleOptions,
       searchable: true,
+      validator: Yup.mixed().required('Role is required'),
     },
     {
       name: 'password',

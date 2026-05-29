@@ -1,3 +1,5 @@
+import * as Yup from 'yup';
+
 export const CollectionFields = (customers = [], onFieldChanged) => [
   { name: 'code', label: 'Collection Code', span: 'span1', readOnly: true, hidden: true },
   {
@@ -12,9 +14,12 @@ export const CollectionFields = (customers = [], onFieldChanged) => [
       setValues(valuesCopy);
       if (onFieldChanged) onFieldChanged('customerId', val, valuesCopy);
     },
+    validator: Yup.number()
+      .typeError('Customer is required')
+      .required('Customer is required'),
   },
   { name: 'spacer-1', type: 'spacer', span: 'span4' },
-  { name: 'date', label: 'Date', type: 'date', span: 'span2' },
+  { name: 'date', label: 'Date', type: 'date', span: 'span2', validator: Yup.date().typeError('Invalid date').required('Date is required') },
 
   {
     name: 'withholdingTaxPercent',
@@ -26,6 +31,11 @@ export const CollectionFields = (customers = [], onFieldChanged) => [
       setValues(valuesCopy);
       if (onFieldChanged) onFieldChanged('withholdingTaxPercent', val, valuesCopy);
     },
+    validator: Yup.number()
+      .typeError('Withholding Tax % must be a number')
+      .min(0, 'Withholding Tax % cannot be less than 0')
+      .max(100, 'Withholding Tax % cannot be greater than 100')
+      .nullable(),
   },
   { name: 'spacer-2', type: 'spacer', span: 'span4' },
 
@@ -113,9 +123,10 @@ export const CollectionItemFields = (billings = [], withholdingTaxPercent = 0) =
         updateField('balance', round(amount - total));
       }
     },
+    validator: Yup.number().typeError('Billing is required').required('Billing is required'),
   },
   // { name: 'collectionNumber', label: 'Collection Number', type: 'text' },
-  { name: 'amount', label: 'Amount to Collect', type: 'number', initialvalue: 0 },
+  { name: 'amount', label: 'Amount to Collect', type: 'number', initialvalue: 0, validator: Yup.number().typeError('Amount must be a number').min(0, 'Amount cannot be negative').required('Amount is required') },
   {
     name: 'amountPaid',
     label: 'Amount Paid',
@@ -131,8 +142,12 @@ export const CollectionItemFields = (billings = [], withholdingTaxPercent = 0) =
       updateField('totalAmountPaid', total);
       updateField('balance', parseFloat((amount - total).toFixed(2)));
     },
+    validator: Yup.number()
+      .typeError('Amount Paid must be a number')
+      .min(0, 'Amount Paid cannot be negative')
+      .required('Amount Paid is required'),
   },
-  { name: 'withholdingTax', label: 'Withholding Tax', type: 'number', initialvalue: 0 },
-  { name: 'totalAmountPaid', label: 'Total Amount Paid', type: 'number', initialvalue: 0, readonly: true },
-  { name: 'balance', label: 'Balance', type: 'number', initialvalue: 0, readonly: true },
+  { name: 'withholdingTax', label: 'Withholding Tax', type: 'number', initialvalue: 0, validator: Yup.number().typeError('Withholding Tax must be a number').min(0, 'Withholding Tax cannot be negative').nullable() },
+  { name: 'totalAmountPaid', label: 'Total Amount Paid', type: 'number', initialvalue: 0, readonly: true, validator: Yup.number().typeError('Total Amount Paid must be a number').min(0, 'Total Amount Paid cannot be negative').nullable() },
+  { name: 'balance', label: 'Balance', type: 'number', initialvalue: 0, readonly: true, validator: Yup.number().typeError('Balance must be a number').nullable() },
 ];

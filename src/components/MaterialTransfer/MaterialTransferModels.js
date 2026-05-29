@@ -53,6 +53,7 @@ export const FormFields = (warehouses = [], projects = [], onFieldChanged) => ([
         code: '',
       });
     },
+    validator: Yup.string().typeError('From Type is required').required('From Type is required'),
   },
 
   {
@@ -78,11 +79,12 @@ export const FormFields = (warehouses = [], projects = [], onFieldChanged) => ([
       }
       onFieldChanged?.('transferFrom', val, values);
     },
+    validator: Yup.number().typeError('From is required').required('From is required'),
   },
 
   { name: 'spacer-1', type: 'spacer', span: 'span2' },
 
-  { name: 'date', label: 'Date', type: 'date', span: 'span2' },
+  { name: 'date', label: 'Date', type: 'date', span: 'span2', validator: Yup.date().typeError('Invalid date').required('Date is required') },
 
   {
     name: 'transferToType',
@@ -138,6 +140,7 @@ export const FormFields = (warehouses = [], projects = [], onFieldChanged) => ([
         name: fromName && toName ? `${fromName} to ${toName}` : (selectedTo?.name || values.name || ''),
       });
     },
+    validator: Yup.number().typeError('To is required').required('To is required'),
   },
 
   { name: 'spacer-2', type: 'spacer', span: 'span2' },

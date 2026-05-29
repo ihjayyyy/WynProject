@@ -2,7 +2,7 @@ import * as Yup from "yup";
 
  export const FormFields =(projects,onFieldhanged) =>([
     { name:'projectCode', label:'Project Code', span:'span1', readOnly:true },
-    { name: 'projectId', label: 'Project', type: 'select', options: projects.map((s) => ({ label: s.name, value: s.id })), searchable: true, span: 'span3', 
+   { name: 'projectId', label: 'Project', type: 'select', options: projects.map((s) => ({ label: s.name, value: s.id })), searchable: true, span: 'span3', 
         onChange: (val, values, setValues) => {
           const found = projects.find((s) => s.id === val);
                if (!found) {
@@ -19,16 +19,18 @@ import * as Yup from "yup";
             code:found.code,
             name:found.name
          };
-          if (found) setValues(valuesCopy);
-         onFieldhanged("projectId", val, valuesCopy); 
-      }},
+         if (found) setValues(valuesCopy);
+            onFieldhanged("projectId", val, valuesCopy); 
+         },
+       validator: Yup.number().typeError('Project is required').required('Project is required'),
+      },
     { name: 'code', hidden:true },
     { name: 'name', hidden:true },
  { name: 'spacer-1', type: 'spacer', span: 'span2' },
-    { name:'requestDate', label:'Request Date', type:'date', span:'span2'},
+    { name:'requestDate', label:'Request Date', type:'date', span:'span2', validator: Yup.date().typeError('Invalid date').required('Request Date is required')},
     { name:'jobOrder', label:'Job Order', type:'textbox', span:'span4'},
     { name: 'spacer-4', type: 'spacer', span: 'span2' },
-    { name:'requestedBy', label:'Requested By', type:'textbox', span:'span2'},
+    { name:'requestedBy', label:'Requested By', type:'textbox', span:'span2', validator: Yup.string().required('Requested By is required')},
 
  ]);
 

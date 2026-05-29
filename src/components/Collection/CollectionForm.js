@@ -29,6 +29,7 @@ export default function CollectionForm() {
   const [collection, setCollection] = useState(null);
   const [validCollection, setValidCollection] = useState(false);
   const [tableData, setTableData] = useState({ items: [], deletedItems: [] });
+  const [tableError, setTableError] = useState('');
   const [customers, setCustomers] = useState([]);
   const [billings, setBillings] = useState([]);
   const [computedAmount, setComputedAmount] = useState(0);
@@ -144,6 +145,8 @@ export default function CollectionForm() {
 
   const detailsUpdated = (items, deletedItems) => {
     setTableData({ items, deletedItems });
+    // clear table-level error when user modifies details
+    if (Array.isArray(items) && items.length > 0) setTableError('');
     const totalWithholdingTax = items.reduce((sum, it) => sum + (Number(it.withholdingTax) || 0), 0);
     const amount = items.reduce((sum, it) => sum + (Number(it.amount) || 0), 0);
     setCollection((prev) => ({
@@ -275,6 +278,16 @@ export default function CollectionForm() {
       breadcrumbLabel="Collection"
       icon={<FiList />}
       fields={collectionFields}
+      onValidate={async (values) => {
+        const errors = {};
+        if (!tableData.items || (Array.isArray(tableData.items) && tableData.items.length === 0)) {
+          errors.customerId = 'At least one collection detail is required';
+          setTableError(errors.customerId);
+        } else {
+          setTableError('');
+        }
+        return errors;
+      }}
       initialValues={collection}
       extraContent={
         <div className={CollectionStyles.extraContentContainer}>
@@ -287,6 +300,7 @@ export default function CollectionForm() {
             data={tableData}
             onChange={detailsUpdated}
           />
+          {tableError ? <div style={{ color: 'red', marginTop: 8 }}>{tableError}</div> : null}
           <div className={CollectionStyles.summaryContainer}>
             <div className={CollectionStyles.notesContainer} />
             <div className={CollectionStyles.totalContainer}>

@@ -59,6 +59,7 @@ export default function PurchasePaymentsForm() {
   const [suppliers, setSuppliers] = useState([]);
   const [invoices, setInvoices] = useState([]);
   const [tableData, setTableData] = useState({ items: [], deletedItems: [] });
+  const [tableError, setTableError] = useState('');
   const [computedAmount, setComputedAmount] = useState(0);
   const [computedAmountPaid, setComputedAmountPaid] = useState(0);
   const [computedWithholdingTax, setComputedWithholdingTax] = useState(0);
@@ -289,6 +290,8 @@ export default function PurchasePaymentsForm() {
 
   const detailsUpdated = (items, deletedItems) => {
     setTableData({ items, deletedItems });
+    // clear table-level error when user modifies details
+    if (Array.isArray(items) && items.length > 0) setTableError('');
   };
 
   const normalizeChild = (item) => ({
@@ -433,6 +436,16 @@ export default function PurchasePaymentsForm() {
       breadcrumbLabel="Purchase Payment"
       icon={<FiPocket />}
       fields={paymentFields}
+      onValidate={async (values) => {
+        const errors = {};
+        if (!tableData.items || (Array.isArray(tableData.items) && tableData.items.length === 0)) {
+          errors.supplierId = 'At least one payment detail is required';
+          setTableError(errors.supplierId);
+        } else {
+          setTableError('');
+        }
+        return errors;
+      }}
       initialValues={payment || initialPayment}
       extraContent={
         <div className={PurchasePaymentsStyles.extraContentContainer}>
@@ -445,6 +458,7 @@ export default function PurchasePaymentsForm() {
             data={tableData}
             onChange={detailsUpdated}
           />
+          {tableError ? <div style={{ color: 'red', marginTop: 8 }}>{tableError}</div> : null}
           <div className={PurchasePaymentsStyles.summaryContainer}>
             <div className={PurchasePaymentsStyles.notesContainer} />
             <div className={PurchasePaymentsStyles.totalContainer}>

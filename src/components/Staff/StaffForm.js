@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useMemo, useState } from 'react';
+import * as Yup from 'yup';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { FiUserCheck } from 'react-icons/fi';
 import EntityForm from '../EntityForm/EntityForm';
@@ -49,11 +50,11 @@ export default function StaffForm() {
   }, [staffId, isEditMode]);
 
   const fields = [
-    { name: 'code', label: 'Code', span: 'span2' },
-    { name: 'name', label: 'Name', span: 'span2' },
-    { name: 'job', label: 'Job', span: 'span2' },
-    { name: 'department', label: 'Department', span: 'span2' },
-    { name: 'ratePerHour', label: 'Rate Per Hour', type: 'number', span: 'span2' },
+    { name: 'code', label: 'Code', span: 'span2', validator: Yup.string().required('Code is required') },
+    { name: 'name', label: 'Name', span: 'span2', validator: Yup.string().required('Name is required') },
+    { name: 'job', label: 'Job', span: 'span2', validator: Yup.string().required('Job is required') },
+    { name: 'department', label: 'Department', span: 'span2', validator: Yup.string().required('Department is required') },
+    { name: 'ratePerHour', label: 'Rate Per Hour', type: 'number', span: 'span2', validator: Yup.number().min(0, 'Rate per hour must be 0 or more') },
   ];
 
   return (

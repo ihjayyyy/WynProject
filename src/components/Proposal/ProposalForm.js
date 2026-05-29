@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useContext, useMemo, useState, version } from 'react';
+import * as Yup from 'yup';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { FiCheck, FiSend, FiX, FiXCircle, FiArchive, FiFileText, FiPrinter } from 'react-icons/fi';
 import StatusBadge from '../ui/StatusBadge/StatusBadge';
@@ -40,6 +41,7 @@ export default function ProposalForm() {
   const [inquiries, setInquiries] = useState([]);
   const [childrenState, setChildrenState] = useState([]);
   const [deletedChildrenState, setDeletedChildrenState] = useState([]);
+  const [childrenError, setChildrenError] = useState('');
   const [isAdminView, setIsAdminView] = useState(false);
   const [actionLoading, setActionLoading] = useState(false);
   const confirmModal = useConfirmModal();
@@ -294,10 +296,10 @@ export default function ProposalForm() {
     },
     { name: 'spacer-1', type: 'spacer', span: 'span1' },
     { name: 'proposalNo', label: 'Proposal Number', span: 'span1', readOnly: true },
-    { name: 'name', label: 'Proposal Name', span: 'span1', readOnly: isReviseMode },
+    { name: 'name', label: 'Proposal Name', span: 'span1', readOnly: isReviseMode, validator: Yup.string().typeError('Proposal Name is required').required('Proposal Name is required') },
     { name: 'spacer-2', type: 'spacer', span: 'span1' },
     { name: 'customerReferenceNumber', label: 'Customer Reference No.', span: 'span1', hidden: true },
-    { name: 'requestDate', label: 'Proposal Date', type: 'date', span: 'span1' },
+    { name: 'requestDate', label: 'Proposal Date', type: 'date', span: 'span1', validator: Yup.date().typeError('Invalid date').required('Proposal Date is required') },
     {
       name: 'customerId', label: 'Company Name', type: 'select', options: customerOptions,
       searchable: true, placeholder: 'Select customer', span: 'span1',
@@ -321,17 +323,18 @@ export default function ProposalForm() {
           setValues({ ...values, customerId: null, customerCode: '', customerName: '', contactNumber: '', address: '', email: '' });
         }
       },
+      validator: Yup.number().typeError('Customer is required').required('Customer is required'),
     },
     { name: 'spacer-3', type: 'spacer', span: 'span1' },
-    { name: 'forecastedStartDate', label: 'Forecast Start', type: 'date', span: 'span1' },
+    { name: 'forecastedStartDate', label: 'Forecast Start', type: 'date', span: 'span1', validator: Yup.date().typeError('Invalid date').nullable() },
 
     { name: 'customerCode', label: 'Customer Code', span: 'span1', readOnly: isReviseMode },
     { name: 'spacer-4', type: 'spacer', span: 'span1' },
-    { name: 'forecastedEndDate', label: 'Forecast End', type: 'date', span: 'span1' },
+    { name: 'forecastedEndDate', label: 'Forecast End', type: 'date', span: 'span1', validator: Yup.date().typeError('Invalid date').nullable() },
 
     { name: 'contactPerson', label: 'Contact Person', span: 'span1', readOnly: isReviseMode },
     { name: 'spacer-5', type: 'spacer', span: 'span1' },
-    { name: 'expirationDate', label: 'Expiration Date', type: 'date', span: 'span1' },
+    { name: 'expirationDate', label: 'Expiration Date', type: 'date', span: 'span1', validator: Yup.date().typeError('Invalid date').nullable() },
 
     
     { name: 'contactNumber', label: 'Contact Number', span: 'span1', readOnly: isReviseMode },
@@ -369,6 +372,7 @@ export default function ProposalForm() {
           )}
         </div>
       ),
+      validator: Yup.number().typeError('Labor % must be a number').min(0, 'Labor % cannot be less than 0').max(100, 'Labor % cannot be greater than 100').nullable(),
     },
     { name: 'address', label: 'Address', span: 'span1', readOnly: isReviseMode },
     { name: 'spacer-7', type: 'spacer', span: 'span1' },
@@ -385,7 +389,7 @@ export default function ProposalForm() {
         );
       },
     } : { name: 'spacer-proposalTotal', type: 'spacer', span: 'span1' }),
-    { name: 'email', label: 'Email', type: 'email', span: 'span1', readOnly: isReviseMode },
+    { name: 'email', label: 'Email', type: 'email', span: 'span1', readOnly: isReviseMode, validator: Yup.string().email('Invalid email').nullable() },
     { name: 'spacer-11', type: 'spacer', span: 'span1' },
         (isReadOnly ? {
       name: 'laborCostTotal', label: 'Labor Cost Total', type: 'custom', span: 'span1',
@@ -415,7 +419,7 @@ export default function ProposalForm() {
         );
       },
     } : { name: 'spacer-materialCostTotal', type: 'spacer', span: 'span1' }),
-    { name: 'margin', label: 'Margin (%)', type: 'number', span: 'span1', readOnly: (values) => (isReadOnly && !isAdminView), hidden: true },
+    { name: 'margin', label: 'Margin (%)', type: 'number', span: 'span1', readOnly: (values) => (isReadOnly && !isAdminView), hidden: true, validator: Yup.number().typeError('Margin must be a number').min(0, 'Margin cannot be less than 0').max(100, 'Margin cannot be greater than 100').nullable() },
     { name: 'description', label: 'Description', type: 'textarea', span: 'span2', readOnly: isReviseMode },
   ];
 
@@ -545,6 +549,39 @@ export default function ProposalForm() {
         icon={<FiSend />}
         fields={fields}
         initialValues={normalizedInitialValues}
+        onValidate={async (values) => {
+          const errors = {};
+          const materials = (childrenState || []).filter((c) => !c || !c.__isScope);
+          if (!materials || materials.length === 0) {
+            errors.customerId = 'At least one scope of work or material item is required';
+            setChildrenError(errors.customerId);
+          } else {
+            setChildrenError('');
+          }
+
+          // Cross-field date validations
+          try {
+            const start = values.forecastedStartDate ? new Date(values.forecastedStartDate) : null;
+            const end = values.forecastedEndDate ? new Date(values.forecastedEndDate) : null;
+            if (start && end && !isNaN(start.getTime()) && !isNaN(end.getTime())) {
+              if (end < start) {
+                errors.forecastedEndDate = 'Forecast End must be the same or after Forecast Start';
+              }
+            }
+          } catch (err) {}
+
+          try {
+            const req = values.requestDate ? new Date(values.requestDate) : null;
+            const exp = values.expirationDate ? new Date(values.expirationDate) : null;
+            if (req && exp && !isNaN(req.getTime()) && !isNaN(exp.getTime())) {
+              if (exp < req) {
+                errors.expirationDate = 'Expiration Date must be on or after Proposal Date';
+              }
+            }
+          } catch (err) {}
+
+          return errors;
+        }}
         extraContent={
           <>
             <ProposalMaterialsTable
@@ -556,6 +593,9 @@ export default function ProposalForm() {
               parentLaborPercentage={Number(initialValues?.laborPercentage) || 0}
               onChange={(updated, deleted) => {
                 setChildrenState(updated || []);
+                // clear table-level error when user modifies children
+                const materialsUpdated = (updated || []).filter((c) => !c || !c.__isScope);
+                if (materialsUpdated.length > 0) setChildrenError('');
                 if (deleted) setDeletedChildrenState((prev) => dedupeDeleted(deleted || []));
                 try {
                   const filteredChildren = (updated || []).filter((c) => !c || !c.__isScope);
@@ -569,6 +609,7 @@ export default function ProposalForm() {
                 }
               }}
             />
+            {childrenError ? <div style={{ color: 'red', marginTop: 8 }}>{childrenError}</div> : null}
             <div className={formStyles.extraSection}>
               <div className={`${inputStyles.field} ${formStyles.fullRow}`}>
                 <label>Attachment URL</label>

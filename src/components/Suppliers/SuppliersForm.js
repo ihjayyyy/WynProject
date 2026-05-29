@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useMemo, useState, useEffect } from 'react';
+import * as Yup from 'yup';
 import { useRouter, useSearchParams} from 'next/navigation';
 import { FiUser } from 'react-icons/fi';
 import EntityForm from '../EntityForm/EntityForm';
@@ -85,26 +86,27 @@ export default function SuppliersForm() {
   }, [supplierId, isEditMode, initialValues]);
 
   const fields = [
-    { name: 'code', label: 'Code', span: 'span2' },
-    { name: 'name', label: 'Company Name', span: 'span2' },
+    { name: 'code', label: 'Code', span: 'span2',  validator: Yup.string().required('Code is required') },
+    { name: 'name', label: 'Company Name', span: 'span2', validator: Yup.string().required('Company Name is required') },
     // Contact Person as normal input
-    { name: 'contactPerson', label: 'Contact Person', span: 'span2' },
-    { name: 'contactNumber', label: 'Contact Number', span: 'span2' },
-    { name: 'email', label: 'Email', span: 'span2' },
+    { name: 'contactPerson', label: 'Contact Person', span: 'span2', validator: Yup.string().required('Contact person is required') },
+    { name: 'contactNumber', label: 'Contact Number', span: 'span2', validator: Yup.string().required('Contact number is required').matches(/^\+?[0-9\s\-()]{7,}$/, 'Invalid contact number') },
+    { name: 'email', label: 'Email', span: 'span2', validator: Yup.string().email('Invalid email').required('Email is required') },
     // VAT Type select
     {
       name: 'vatType',
       label: 'VAT Type',
       type: 'select',
       span: 'span2',
+      validator: Yup.mixed().required('VAT Type is required'),
       options: [
         { label: 'Included', value: 'Included' },
         { label: 'Not Included', value: 'Not Included' },
         { label: 'NON-VAT', value: 'NON-VAT' },
       ],
     },
-    { name: 'terms', label: 'Terms', type: 'number', span: 'span2' },
-    { name: 'address', label: 'Address', span: 'span3' },
+    { name: 'terms', label: 'Terms', type: 'number', span: 'span2', validator: Yup.number().min(0, 'Terms must be 0 or more') },
+    { name: 'address', label: 'Address', span: 'span3', validator: Yup.string().required('Address is required') },
   ];
   // Handler for form submit
   const handleSubmit = async (values) => {

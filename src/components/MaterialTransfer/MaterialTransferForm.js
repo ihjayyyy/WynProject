@@ -54,6 +54,7 @@ export default function MaterialTransferForm() {
   const [validForm, setValidForm] = useState(false);
   const [tableData, setTableData] = useState({ items: [], deletedItems: [] });
   const [childFields, setChildFields] = useState(ItemsFields([], false, false));
+  const [tableError, setTableError] = useState('');
 
   // Dedicated primitives so effects always have the latest values
   const [transferFromType, setTransferFromType] = useState('');
@@ -264,6 +265,7 @@ export default function MaterialTransferForm() {
       deletedChildren: deletedItems,
     }));
     setTableData({ items, deletedItems });
+    if (Array.isArray(items) && items.length > 0) setTableError('');
   };
 
   // ── Save ─────────────────────────────────────────────────────────────────────
@@ -423,7 +425,17 @@ export default function MaterialTransferForm() {
         breadcrumbLabel="Material Transfer"
         icon={<FiRepeat />}
         fields={formFields}
-        initialValues={formData}
+          onValidate={async (values) => {
+            const errors = {};
+            if (!tableData.items || (Array.isArray(tableData.items) && tableData.items.length === 0)) {
+              errors.transferFrom = 'At least one transfer item is required';
+              setTableError(errors.transferFrom);
+            } else {
+              setTableError('');
+            }
+            return errors;
+          }}
+          initialValues={formData}
         extraContent={
           <div className={EntityStyle.extraContentContainer}>
             <BalanceSummary />
@@ -436,6 +448,7 @@ export default function MaterialTransferForm() {
               data={tableData}
               onChange={detailsUpdated}
             />
+              {tableError ? <div style={{ color: 'red', marginTop: 8 }}>{tableError}</div> : null}
           </div>
         }
         onSubmit={handleSaveConfirm}

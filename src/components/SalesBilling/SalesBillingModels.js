@@ -25,6 +25,7 @@ export const SalesBillingFields = (
       setValues(valuesCopy);
       if (onFieldChanged) onFieldChanged('customerName', val, valuesCopy);
     },
+    validator: Yup.string().typeError('Customer is required').required('Customer is required'),
   },
   {
     name: 'projectId',
@@ -42,10 +43,11 @@ export const SalesBillingFields = (
       setValues(valuesCopy);
       if (onFieldChanged) onFieldChanged('projectId', val, valuesCopy);
     },
+    validator: Yup.number().nullable(),
   },
   { name: 'name', hidden: true, span: 'span1' },
   { name: 'spacer-2', type: 'spacer', span: 'span2' },
-  { name: 'billingDate', label: 'Billing Date', type: 'date', span: 'span2' },
+  { name: 'billingDate', label: 'Billing Date', type: 'date', span: 'span2', validator: Yup.date().typeError('Invalid date').required('Billing Date is required') },
   { name: 'customerNumber', label: 'Customer Number', span: 'span2' },
   { name: 'contactPerson', label: 'Contact Person', span: 'span2' },
  
@@ -139,6 +141,7 @@ export const SalesBillingItemsFields = (billing = {}) => [
     label: 'Amount',
     type: 'currency',
     initialvalue: 0,
+      validator: Yup.number().typeError('Amount must be a number').min(0, 'Amount cannot be negative').required('Amount is required'),
     onChange: (item, updateField, fields) => {
       const discountField = fields.find((f) => f.name === 'discount');
       const subamount = Number(item.value || 0) - Number(discountField?.value || 0);
@@ -152,6 +155,7 @@ export const SalesBillingItemsFields = (billing = {}) => [
     label: 'Discount',
     type: 'currency',
     initialvalue: 0,
+      validator: Yup.number().typeError('Discount must be a number').min(0, 'Discount cannot be negative').nullable(),
     onChange: (item, updateField, fields) => {
       const amountField = fields.find((f) => f.name === 'amount');
       const subamount = Number(amountField?.value || 0) - Number(item.value || 0);
@@ -165,6 +169,7 @@ export const SalesBillingItemsFields = (billing = {}) => [
     label: `VAT (${billing?.vatType || 'N/A'})`,
     type: 'currency',
     readonly: true,
+      validator: Yup.number().typeError('VAT must be a number').min(0, 'VAT cannot be negative').nullable(),
   },
-  { name: 'totalAmount', label: 'Total Amount', type: 'currency', readonly: true },
+    { name: 'totalAmount', label: 'Total Amount', type: 'currency', readonly: true, validator: Yup.number().typeError('Total Amount must be a number').min(0, 'Total Amount cannot be negative').nullable() },
 ];

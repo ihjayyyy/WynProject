@@ -31,6 +31,7 @@ export default function SalesBillingForm() {
   const [billing, setBilling] = useState(null);
   const [validBilling, setValidBilling] = useState(false);
   const [tableData, setTableData] = useState({ items: [], deletedItems: [] });
+  const [tableError, setTableError] = useState('');
   const [projects, setProjects] = useState([]);
   const [customers, setCustomers] = useState([]);
   const [totalExcluded, setTotalExcluded] = useState(0);
@@ -183,6 +184,7 @@ export default function SalesBillingForm() {
   const detailsUpdated = (items, deletedItems) => {
     setTableData({ items, deletedItems });
     setBilling(prev => ({ ...prev, children: items, deletedChildren: deletedItems }));
+    if (Array.isArray(items) && items.length > 0) setTableError('');
   };
 
   const save = async (entity) => {
@@ -341,6 +343,16 @@ export default function SalesBillingForm() {
       breadcrumbLabel='Billing'
       icon={<FiDollarSign />}
       fields={billingFields}
+      onValidate={async (values) => {
+        const errors = {};
+        if (!tableData.items || (Array.isArray(tableData.items) && tableData.items.length === 0)) {
+          errors.customerName = 'At least one billing detail is required';
+          setTableError(errors.customerName);
+        } else {
+          setTableError('');
+        }
+        return errors;
+      }}
       initialValues={billing}
       extraContent={
         <div className={SBStyles.extraContentContainer}>
@@ -353,6 +365,7 @@ export default function SalesBillingForm() {
             data={tableData}
             onChange={detailsUpdated}
           />
+          {tableError ? <div style={{ color: 'red', marginTop: 8 }}>{tableError}</div> : null}
           <div className={SBStyles.summaryContainer}>
             <div className={SBStyles.notesContainer}>
 

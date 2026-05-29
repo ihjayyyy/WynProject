@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useMemo, useState } from 'react';
+import * as Yup from 'yup';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { FiTag } from 'react-icons/fi';
 import EntityForm from '../EntityForm/EntityForm';
@@ -49,8 +50,8 @@ export default function UnitOfMeasureForm() {
   }, [unitId, isEditMode]);
 
   const fields = [
-    { name: 'code', label: 'Code', span: 'span2' },
-    { name: 'name', label: 'Name', span: 'span2' },
+    { name: 'code', label: 'Code', span: 'span2', validator: Yup.string().required('Code is required') },
+    { name: 'name', label: 'Name', span: 'span2', validator: Yup.string().required('Name is required') },
   ];
 
   return (

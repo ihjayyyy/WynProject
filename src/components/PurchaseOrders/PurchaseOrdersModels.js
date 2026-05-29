@@ -3,7 +3,8 @@ import * as Yup from "yup";
  export const POFields =(suppliers,onFieldhanged) =>([
     { name:'code', label:'Supplier Code', span:'span1', readOnly:true },
     { name: 'supplierId', label: 'Supplier', type: 'select', options: suppliers.map((s) => ({ label: s.name, value: s.id })), searchable: true, span: 'span3', 
-        onChange: (val, values, setValues) => {
+      validator: Yup.number().typeError('Supplier is required').required('Supplier is required'),
+      onChange: (val, values, setValues) => {
           const found = suppliers.find((s) => s.id === val);
                if (!found) {
                   const clearedValues = {
@@ -42,7 +43,7 @@ import * as Yup from "yup";
       { name: 'code', hidden:true },
       { name: 'name', hidden:true },
       { name: 'spacer-2', type: 'spacer', span: 'span2' },
-      { name:'orderDate', label:'Order Date', type:'date', span:'span2'},
+      { name:'orderDate', label:'Order Date', type:'date', span:'span2', validator: Yup.date().typeError('Order Date is required').required('Order Date is required') },
       { name:'address', label:'Address', span:'span4'},
         { name: 'spacer-3', type: 'spacer', span: 'span2' },
       { name:'supplierReferenceNo', label:'Supplier PO', span:'span2'},
@@ -56,7 +57,7 @@ import * as Yup from "yup";
                onFieldhanged("vatType", val, values); 
              }
       }, 
-      { name:'estimatedDeliveryDate', label:'Estimated Delivery', type:'date', span:'span2'}, 
+         { name:'estimatedDeliveryDate', label:'Estimated Delivery', type:'date', span:'span2', validator: Yup.date().typeError('Estimated Delivery is required').required('Estimated Delivery is required')}, 
      ,]);
 
 

@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useMemo, useState, useEffect } from 'react';
+import * as Yup from 'yup';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { FiHardDrive } from 'react-icons/fi';
 import EntityForm from '../EntityForm/EntityForm';
@@ -88,13 +89,13 @@ export default function ToolsInventoryForm() {
   }, [racks]);
 
   const fields = [
-    { name: 'rackId', label: 'Rack', span: 'span1', type: 'select', options: rackOptions, searchable: true },
+    { name: 'rackId', label: 'Rack', span: 'span1', type: 'select', options: rackOptions, searchable: true, validator: Yup.mixed().required('Rack is required') },
     { name: 'spacer-1', type: 'spacer', span: 'span2' },
-    { name: 'materialId', label: 'Tool', span: 'span1', type: 'select', options: toolOptions, searchable: true },
+    { name: 'materialId', label: 'Tool', span: 'span1', type: 'select', options: toolOptions, searchable: true, validator: Yup.mixed().required('Tool is required') },
     { name: 'spacer-2', type: 'spacer', span: 'span1' },
-    { name: 'name', label: 'Name', span: 'span2' },
-    { name: 'quantity', label: 'Quantity', type: 'number', span: 'span2' },
-    { name: 'stockLevel', label: 'Stock Level', type: 'number', span: 'span2' },
+    { name: 'name', label: 'Name', span: 'span2', validator: Yup.string().required('Name is required') },
+    { name: 'quantity', label: 'Quantity', type: 'number', span: 'span2', validator: Yup.number().min(0, 'Quantity must be 0 or more').required('Quantity is required') },
+    { name: 'stockLevel', label: 'Stock Level', type: 'number', span: 'span2', validator: Yup.number().min(0, 'Stock level must be 0 or more') },
   ];
 
   return (

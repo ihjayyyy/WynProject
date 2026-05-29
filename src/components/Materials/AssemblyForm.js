@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useMemo, useState, useEffect } from 'react';
+import * as Yup from 'yup';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { FiShare2 } from 'react-icons/fi';
 import EntityForm from '../EntityForm/EntityForm';
@@ -102,9 +103,9 @@ export default function AssemblyForm() {
   }, [materialId, isEditMode]);
 
   const fields = [
-    { name: 'code', label: 'Code', span: 'span2' },
-    { name: 'name', label: 'Name', span: 'span2' },
-        { name: 'sellingPrice', label: 'Selling Price', type: 'number', span: 'span2' },
+    { name: 'code', label: 'Code', span: 'span2', validator: Yup.string().required('Code is required') },
+    { name: 'name', label: 'Name', span: 'span2', validator: Yup.string().required('Name is required') },
+      { name: 'sellingPrice', label: 'Selling Price', type: 'number', span: 'span2', validator: Yup.number().min(0, 'Selling price must be 0 or more') },
 
     {
       name: 'unitOfMeasure',
@@ -115,6 +116,7 @@ export default function AssemblyForm() {
       onChange: (selected, values, setValues) => {
         setValues({ ...values, unitOfMeasure: selected, purchaseUnitOfMeasure: selected });
       },
+      validator: Yup.string().required('UOM is required'),
     },
     // { name: 'purchaseUnitOfMeasure', label: 'Default Purchase UOM', span: 'span2' },
   ];

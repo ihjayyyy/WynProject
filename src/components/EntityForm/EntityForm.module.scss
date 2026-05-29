@@ -183,3 +183,11 @@
   word-break: break-word;
   min-height: 3rem;
 }
+
+.fieldError {
+  color: #e53e3e;
+  font-size: $font-size-xs;
+  margin-top: 4px;
+  margin-bottom: 0;
+  line-height: 1.4;
+}

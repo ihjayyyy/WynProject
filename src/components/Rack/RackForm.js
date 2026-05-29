@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useMemo, useState } from 'react';
+import * as Yup from 'yup';
 import { useRouter, useSearchParams} from 'next/navigation';
 import { FiAlignLeft } from 'react-icons/fi';
 import EntityForm from '../EntityForm/EntityForm';
@@ -57,11 +58,11 @@ export default function RackForm() {
   const warehouseOptions = (warehouses || []).map((w) => ({ label: w.name, value: w.id }));
 
   const fields = [
-    { name: 'code', label: 'Code', span: 'span2' },
-    { name: 'name', label: 'Name', span: 'span2' },
+    { name: 'code', label: 'Code', span: 'span2', validator: Yup.string().required('Code is required') },
+    { name: 'name', label: 'Name', span: 'span2', validator: Yup.string().required('Name is required') },
     
     { name: 'spacer-1', type: 'spacer', span: 'span1' },
-    { name: 'warehouseId', label: 'Warehouse', type: 'select', options: warehouseOptions, searchable: true, span: 'span1' },
+    { name: 'warehouseId', label: 'Warehouse', type: 'select', options: warehouseOptions, searchable: true, span: 'span1', validator: Yup.mixed().required('Warehouse is required') },
   ];
 
   return (

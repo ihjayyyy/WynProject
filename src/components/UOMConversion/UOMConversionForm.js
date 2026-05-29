@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useMemo, useState, useEffect } from 'react';
+import * as Yup from 'yup';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { FiToggleLeft } from 'react-icons/fi';
 import EntityForm from '../EntityForm/EntityForm';
@@ -70,6 +71,7 @@ export default function UOMConversionForm() {
       span: 'span2',
       type: 'select',
       options: unitOptions,
+      validator: Yup.mixed().required('Convert From is required'),
       onChange: (selected, values, setValues) => {
         // If convertTo is the same as convertFrom, clear convertTo
         if (selected === values.convertTo) {
@@ -85,6 +87,7 @@ export default function UOMConversionForm() {
       span: 'span2',
       type: 'select',
       options: (unitOptions || []).filter(opt => opt.value !== initialValues.convertFrom),
+      validator: Yup.mixed().required('Convert To is required'),
       onChange: (selected, values, setValues) => {
         // If convertFrom is the same as convertTo, clear convertFrom
         if (selected === values.convertFrom) {
@@ -94,7 +97,7 @@ export default function UOMConversionForm() {
         }
       },
     },
-    { name: 'conversionFactor', label: 'Conversion Factor', span: 'span2', type: 'number' },
+    { name: 'conversionFactor', label: 'Conversion Factor', span: 'span2', type: 'number', validator: Yup.number().moreThan(0, 'Conversion factor must be greater than 0').required('Conversion factor is required') },
   ];
 
   return (

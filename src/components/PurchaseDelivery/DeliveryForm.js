@@ -43,7 +43,8 @@ export default function PurchaseDeliveryForm() {
 
   const [formData, setForm] = useState({});
   const [validForm, setvalidForm] = useState(false);
-  const [tableData, setTableData] = useState([]);
+  const [tableData, setTableData] = useState({ items: [], deletedItems: [] });
+  const [tableError, setTableError] = useState('');
 
   useEffect(() => {
     const nextOrderId = Number(searchParams.get('id') || 0);
@@ -176,6 +177,8 @@ export default function PurchaseDeliveryForm() {
     formCopy.children = items;
     formCopy.deletedChildren = deletedItems;
     setForm(formCopy);
+    setTableData({ items, deletedItems });
+    if (Array.isArray(items) && items.length > 0) setTableError('');
   };
 
   const updateItemFields = () => {
@@ -363,18 +366,29 @@ export default function PurchaseDeliveryForm() {
         fields={formFields}
         initialValues={formData}
         extraContent={
-          <div className={EntityStyle.extraContentContainer}>
-            <DetailsTable
-              itemModalHeader="Delivery Details"
-              parentId={formId}
-              columns={childTableColumns}
-              editable={isAllowed(PageName, 'w') && !isReadOnly}
-              itemFields={childFields}
-              data={tableData}
-              onChange={detailsUpdated}
-            />
-          </div>
-        }
+            <div className={EntityStyle.extraContentContainer}>
+              <DetailsTable
+                itemModalHeader="Delivery Details"
+                parentId={formId}
+                columns={childTableColumns}
+                editable={isAllowed(PageName, 'w') && !isReadOnly}
+                itemFields={childFields}
+                data={tableData}
+                onChange={detailsUpdated}
+              />
+              {tableError ? <div style={{ color: 'red', marginTop: 8 }}>{tableError}</div> : null}
+            </div>
+          }
+          onValidate={async (values) => {
+            const errors = {};
+            if (!tableData || !tableData.items || (Array.isArray(tableData.items) && tableData.items.length === 0)) {
+              errors.supplierId = 'At least one delivery detail is required';
+              setTableError(errors.supplierId);
+            } else {
+              setTableError('');
+            }
+            return errors;
+          }}
         onSubmit={handleSaveConfirm}
         backPath={backPath}
         width="100%"

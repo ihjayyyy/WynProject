@@ -50,6 +50,7 @@ export default function PurchaseOrdersForm() {
   const [po, setPO] = useState({});
   const [validPO, setvalidPO] = useState(false);
   const [tableData, setTableData] = useState([]);
+  const [tableError, setTableError] = useState('');
   const [totalExcluded, setTotalExcluded] = useState(0);
   const [totalVAT, setTotalVAT] = useState(0);
   const [totalIncluded, setTotalIncludedd] = useState(0);
@@ -171,12 +172,12 @@ export default function PurchaseOrdersForm() {
       // Load default Terms & Conditions from PurchaseOrder parameters
       const paramRes = await getParameter('PurchaseOrder');
       if (paramRes?.data && Array.isArray(paramRes.data)) {
-        const paramMap = {};
-        paramRes.data.forEach((item) => {
-          paramMap[item.name] = item.value;
-        });
+        // Prefer a parameter with the explicit code, fall back to any name containing 'term'
+        const tcParam = paramRes.data.find(
+          (item) => item.code === 'PurchaseOrder_TermsAndConditions'
+        ) || paramRes.data.find((item) => String(item.name || '').toLowerCase().includes('term'));
         setRichText({
-          termsAndConditions: paramMap.TermsAndConditions || '',
+          termsAndConditions: tcParam?.value || '',
         });
       }
     }
@@ -235,6 +236,8 @@ export default function PurchaseOrdersForm() {
     poCopy.amount = totalIncluded;
 
     setPO(poCopy);
+    // clear table error if items exist
+    if (Array.isArray(items) && items.length > 0) setTableError('');
   };
 
   // Set Item Details data
@@ -592,6 +595,9 @@ export default function PurchaseOrdersForm() {
               data={tableData}
               onChange={detailsUpdated}
             />
+            {tableError && (
+              <div className={POStyles.tableError}>{tableError}</div>
+            )}
             <div className={POStyles.summaryContainer}>
               <div className={POStyles.notesContainer}></div>
               <div className={POStyles.totalContainer}>
@@ -621,6 +627,17 @@ export default function PurchaseOrdersForm() {
           </div>
         }
         onSubmit={handleSaveConfirm}
+        onValidate={(values) => {
+          const errors = {};
+          const items = tableData?.items || [];
+          if (!Array.isArray(items) || items.length === 0) {
+            errors.supplierId = 'At least one order detail is required';
+            setTableError('At least one order detail is required');
+          } else {
+            setTableError('');
+          }
+          return errors;
+        }}
         backPath={backPath}
         width="100%"
         showSubmitButton={false}

@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useMemo, useState, useEffect } from 'react';
+import * as Yup from 'yup';
 import { useRouter,useSearchParams } from 'next/navigation';
 import { FiArchive } from 'react-icons/fi';
 import EntityForm from '../EntityForm/EntityForm';
@@ -97,15 +98,15 @@ export default function ToolsForm() {
   }, [toolId, isEditMode]);
 
   const fields = [
-    { name: 'code', label: 'Code', span: 'span2' },
-    { name: 'name', label: 'Name', span: 'span2' },
-    { name: 'purchasePrice', label: 'Purchase Price', type: 'number', span: 'span2' },
-    { name: 'sellingPrice', label: 'Selling Price', type: 'number', span: 'span2' },
+    { name: 'code', label: 'Code', span: 'span2', validator: Yup.string().required('Code is required') },
+    { name: 'name', label: 'Name', span: 'span2', validator: Yup.string().required('Name is required') },
+    { name: 'purchasePrice', label: 'Purchase Price', type: 'number', span: 'span2', validator: Yup.number().min(0, 'Purchase price must be 0 or more') },
+    { name: 'sellingPrice', label: 'Selling Price', type: 'number', span: 'span2', validator: Yup.number().min(0, 'Selling price must be 0 or more') },
     ...(!toolId
       ? [
-          { name: 'rackId', label: 'Rack', span: 'span2', type: 'select', options: rackOptions, searchable: true },
-          { name: 'initialQuantity', label: 'Initial Quantity', type: 'number', span: 'span2' },
-          { name: 'stockLevel', label: 'Stock Level', type: 'number', span: 'span2' },
+          { name: 'rackId', label: 'Rack', span: 'span2', type: 'select', options: rackOptions, searchable: true, validator: Yup.mixed().required('Rack is required') },
+          { name: 'initialQuantity', label: 'Initial Quantity', type: 'number', span: 'span2', validator: Yup.number().min(0, 'Initial quantity must be 0 or more') },
+          { name: 'stockLevel', label: 'Stock Level', type: 'number', span: 'span2', validator: Yup.number().min(0, 'Stock level must be 0 or more') },
         ]
       : []),
     { name: 'referenceNumber', label: 'Reference Number', span: 'span2' },
@@ -118,6 +119,7 @@ export default function ToolsForm() {
       onChange: (selected, values, setValues) => {
         setValues({ ...values, unitOfMeasure: selected, purchaseUnitOfMeasure: selected });
       },
+      validator: Yup.string().required('UOM is required'),
     },
     {
       name: 'purchaseUnitOfMeasure',
@@ -125,6 +127,7 @@ export default function ToolsForm() {
       type: 'select',
       options: uomOptions,
       span: 'span2',
+      validator: Yup.string().required('Default Purchase UOM is required'),
     },
   ];
 
