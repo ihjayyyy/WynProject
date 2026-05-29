@@ -10,7 +10,7 @@ import { getUOMConversions } from '../../services/UOMConversion';
 const baseColumns = [
   // { header: 'Id', key: 'id' },,
   // { header: 'Code', key: 'code' },
-  { header: 'Name', key: 'name' },
+  // { header: 'Name', key: 'name' },
   { header: 'From', key: 'convertFrom' },
   { header: 'To', key: 'convertTo' },
   { header: 'Factor', key: 'conversionFactor' },
