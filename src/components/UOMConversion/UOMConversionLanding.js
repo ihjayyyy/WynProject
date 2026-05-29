@@ -14,8 +14,8 @@ const baseColumns = [
   { header: 'From', key: 'convertFrom' },
   { header: 'To', key: 'convertTo' },
   { header: 'Factor', key: 'conversionFactor' },
-  { header: 'UpdatedBy', key: 'updatedBy' },
-  { header: 'UpdatedDate', key: 'updatedAt', render: (item) => (item.updatedAt ? new Date(item.updatedAt).toLocaleString() : '') },
+  { header: 'Updated By', key: 'updatedBy' },
+  { header: 'Updated Date', key: 'updatedAt', render: (item) => (item.updatedAt ? new Date(item.updatedAt).toLocaleString() : '') },
 ];
 
 export default function UOMConversionLanding() {

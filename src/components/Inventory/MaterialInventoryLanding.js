@@ -11,13 +11,13 @@ import { getRacks } from '../../services/Rack';
 import { getWarehouses } from '../../services/Warehouse';
 
 const baseColumns = [
-  { header: 'Id', key: 'id' },
-  { header: 'Name', key: 'name' },
+  // { header: 'Id', key: 'id' },
+  { header: 'Name', key: 'name', render: (item) => (<><b>{item.code}</b> - {item.name}</>) },
   { header: 'Rack Name', key: 'rackId' },
-  { header: 'Material Name', key: 'materialId' },
+  // { header: 'Material Name', key: 'materialId' },
   { header: 'Quantity', key: 'quantity' },
-  { header: 'UpdatedBy', key: 'updatedBy' },
-  { header: 'UpdatedDate', key: 'updatedDate' },
+  { header: 'Updated By', key: 'updatedBy' },
+  { header: 'Updated Date', key: 'updatedDate' },
 ];
 
 export default function MaterialInventoryLanding() {

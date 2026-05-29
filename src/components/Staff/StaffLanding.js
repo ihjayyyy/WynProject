@@ -14,8 +14,8 @@ const baseColumns = [
   { header: 'Job', key: 'job' },
   { header: 'Department', key: 'department' },
   { header: 'Rate Per Hour', key: 'ratePerHour', render: (item) => Number(item.ratePerHour) || 0 },
-  { header: 'UpdatedBy', key: 'updatedBy' },
-  { header: 'UpdatedDate', key: 'updatedAt', render: (item) => (item.updatedAt ? new Date(item.updatedAt).toLocaleString() : '') },
+  { header: 'Updated By', key: 'updatedBy' },
+  { header: 'Updated Date', key: 'updatedAt', render: (item) => (item.updatedAt ? new Date(item.updatedAt).toLocaleString() : '') },
 ];
 
 export default function StaffLanding() {

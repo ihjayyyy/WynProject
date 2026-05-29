@@ -16,8 +16,8 @@ const baseColumns = [
   { header: 'Email', key: 'email' },
   { header: 'VAT Type', key: 'vatType' },
   { header: 'Terms', key: 'terms' },
-  { header: 'UpdatedBy', key: 'updatedBy' },
-  { header: 'UpdatedDate', key: 'updatedAt', render: (item) => (item.updatedAt ? new Date(item.updatedAt).toLocaleString() : '') },
+  { header: 'Updated By', key: 'updatedBy' },
+  { header: 'Updated Date', key: 'updatedAt', render: (item) => (item.updatedAt ? new Date(item.updatedAt).toLocaleString() : '') },
 ];
 
 export default function SuppliersLanding() {

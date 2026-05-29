@@ -17,8 +17,8 @@ const baseColumns = [
   // Removed duplicate 'Company Name' with key 'name'
   { header: 'Email', key: 'email' },
   { header: 'VAT Type', key: 'vatType' },
-  { header: 'UpdatedBy', key: 'updatedBy' },
-  { header: 'UpdatedDate', key: 'updatedAt', render: (item) => (item.updatedAt ? new Date(item.updatedAt).toLocaleString() : '') },
+  { header: 'Updated By', key: 'updatedBy' },
+  { header: 'Updated Date', key: 'updatedAt', render: (item) => (item.updatedAt ? new Date(item.updatedAt).toLocaleString() : '') },
 ];
 
 export default function CustomersLanding() {

@@ -31,8 +31,8 @@ const baseColumns = [
     key: 'status',
     render: (item) => <StatusBadge status={item.status} />,
   },
-  { header: 'UpdatedBy', key: 'updatedBy' },
-  { header: 'UpdatedDate', key: 'updatedDate' },
+  { header: 'Updated By', key: 'updatedBy' },
+  { header: 'Updated Date', key: 'updatedDate' },
 ];
 
 export default function PRLanding() {
