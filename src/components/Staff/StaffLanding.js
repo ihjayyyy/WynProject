@@ -8,7 +8,7 @@ import Landing from '../ui/Landing/Landing';
 import { getStaffs } from '../../services/Staff';
 
 const baseColumns = [
-  { header: 'Id', key: 'id' },
+  // { header: 'Id', key: 'id' },,
   { header: 'Code', key: 'code' },
   { header: 'Name', key: 'name' },
   { header: 'Job', key: 'job' },

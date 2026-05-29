@@ -8,7 +8,7 @@ import Landing from '../ui/Landing/Landing';
 import { byTypeMaterials } from '../../services/Materials';
 
 const baseColumns = [
-  { header: 'Id', key: 'id' },
+  // { header: 'Id', key: 'id' },,
   { header: 'Code', key: 'code' },
   { header: 'Name', key: 'name' },
   { header: 'UOM', key: 'uom' },

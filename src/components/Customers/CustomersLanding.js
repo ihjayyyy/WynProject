@@ -8,7 +8,7 @@ import Landing from '../ui/Landing/Landing';
 import { getCustomers } from '../../services/Customer';
 
 const baseColumns = [
-  { header: 'Id', key: 'id' },
+  // { header: 'Id', key: 'id' },,
   { header: 'Code', key: 'code' },
   { header: 'Company Name', key: 'name' },
   { header: 'Contact Person', key: 'customerName' },

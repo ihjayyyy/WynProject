@@ -13,7 +13,7 @@ import { createMaterialInventory } from '../../services/MaterialInventory';
 import { useToast } from '../ui/Toast/Toast';
 
 const baseColumns = [
-  { header: 'Id', key: 'id' },
+  // { header: 'Id', key: 'id' },,
   { header: 'Code', key: 'code' },
   { header: 'Name', key: 'name' },
   { header: 'UOM', key: 'uom' },

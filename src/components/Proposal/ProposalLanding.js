@@ -14,7 +14,7 @@ import { AccessContext } from '@/app/contextProviders/accessContext';
 import InvalidPage from '@/components/InvalidPage/page';
 
 const baseColumns = [
-  { header: 'Id', key: 'id' },
+  // { header: 'Id', key: 'id' },,
   { header: 'Proposal No', key: 'proposalNo' },
   { header: 'Version', key: 'version' },
   { header: 'Name', key: 'name' },

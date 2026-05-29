@@ -9,7 +9,7 @@ import Landing from '../ui/Landing/Landing';
 import { GetAll, printPurchaseInvoice_byId } from '@/services/PurchaseInvoice';
 
 const baseColumns = [
-  { header: 'Id', key: 'id' },
+  // { header: 'Id', key: 'id' },,
   {
     header: 'Invoice Date',
     key: 'invoiceDate',

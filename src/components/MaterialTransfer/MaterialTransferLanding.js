@@ -12,7 +12,7 @@ import { getMaterialTransfers, transferMaterialTransfer, printMaterialTransfer_b
 import { useToast } from '../ui/Toast/Toast';
 
 const baseColumns = [
-  { header: 'Id', key: 'id' },
+  // { header: 'Id', key: 'id' },,
   {header: 'Transfer Number', key: 'transferNo'},
   // { header: 'Name', key: 'name' },
   // { header: 'Code', key: 'code' },

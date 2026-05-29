@@ -8,7 +8,7 @@ import Landing from '../ui/Landing/Landing';
 import { getUnitsOfMeasure } from '../../services/UnitOfMeasure';
 
 const baseColumns = [
-  { header: 'Id', key: 'id' },
+  // { header: 'Id', key: 'id' },,
   { header: 'Code', key: 'code' },
   { header: 'Name', key: 'name' },
   { header: 'Updated By', key: 'updatedBy' },
