@@ -5,7 +5,7 @@ import React, { useMemo, useState, useEffect } from 'react';
 import Landing from '../../ui/Landing/Landing';
 import StatusBadge from '../../ui/StatusBadge/StatusBadge';
 // no action icons or dropdown needed
-import { getMaterialRequests, printMaterialRequest_byRivNumber } from '../../../services/MaterialRequest';
+import { getMaterialRequests, printMaterialRequest_byObj } from '../../../services/MaterialRequest';
 import Button from '@/components/ui/Button/Button';
 import { FiPrinter } from 'react-icons/fi';
 
@@ -29,7 +29,7 @@ const baseColumns = [
             variant="outlinedPrimary"
             icon={<FiPrinter size={14} />}
             title="Print Request Voucher"
-            onClick={() => { printMaterialRequest_byRivNumber(item.rivNumber); }}
+            onClick={() => { printMaterialRequest_byObj(item); }}
             style={{ marginLeft: '6px' }}
           />
         )}

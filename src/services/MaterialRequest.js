@@ -87,7 +87,7 @@ async function printMaterialRequest_byId(projectId) {
   }
 }
 
-async function printMaterialRequest_byRivNumber(item) {
+async function printMaterialRequest_byObj(item) {
     console.log(item);
   if (!item.projectId) return { data: null, error: 'Missing id' };
   if (!item.rivNumber) return { data: null, error: 'Missing RIV Number' };
@@ -103,5 +103,5 @@ async function printMaterialRequest_byRivNumber(item) {
   }
 }
 
-export { getMaterialRequests, createMaterialRequest, updateMaterialRequest, printMaterialRequests_byProject, printMaterialRequest_byId, printMaterialRequest_byRivNumber };
-export default { getMaterialRequests, createMaterialRequest, updateMaterialRequest, printMaterialRequests_byProject, printMaterialRequest_byId, printMaterialRequest_byRivNumber };
+export { getMaterialRequests, createMaterialRequest, updateMaterialRequest, printMaterialRequests_byProject, printMaterialRequest_byId, printMaterialRequest_byObj };
+export default { getMaterialRequests, createMaterialRequest, updateMaterialRequest, printMaterialRequests_byProject, printMaterialRequest_byId, printMaterialRequest_byObj };

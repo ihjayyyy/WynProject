@@ -4,7 +4,7 @@ import ItemModal from '../ItemDetails/itemModal';
 import SearchBar from '../ui/SearchBar/SearchBar';
 import Button from '../ui/Button/Button';
 import styles from './ProjectScope.module.scss';
-import { printMaterialRequests_byProject, createMaterialRequest, updateMaterialRequest, INITIAL_MATERIAL_REQUEST, printMaterialRequest_byId, printMaterialRequest_byRivNumber } from '../../services/MaterialRequest';
+import { printMaterialRequests_byProject, createMaterialRequest, updateMaterialRequest, INITIAL_MATERIAL_REQUEST, printMaterialRequest_byId, printMaterialRequest_byObj } from '../../services/MaterialRequest';
 import { getByProjectId as getScopesByProjectId } from '../../services/ProjectScope';
 import * as Yup from 'yup';
 import { getAuthData } from '../../services/Auth';
@@ -249,7 +249,7 @@ export default function MaterialRequestsTab({ projectId, editable = true }) {
               variant="outlinedPrimary"
               icon={<FiPrinter size={14} />}
               title="Print Request Voucher"
-              onClick={() => { printMaterialRequest_byRivNumber(item); }}
+              onClick={() => { printMaterialRequest_byObj(item); }}
               style={{ marginLeft: '6px' }}
             />
           )}
