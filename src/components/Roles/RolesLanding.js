@@ -8,9 +8,9 @@ import DropdownAction from '../ui/DropdownAction/DropdownAction';
 import { useRouter } from 'next/navigation';
 
 const baseColumns = [
-  { header: 'ID', key: 'id' },
+  // { header: 'ID', key: 'id' },
   { header: 'Name', key: 'name' },
-  { header: 'Code', key: 'code' },
+  // { header: 'Code', key: 'code' },
 ];
 
 export default function RolesLanding() {
