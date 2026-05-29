@@ -3,21 +3,34 @@
 import React, { useMemo, useState, useEffect, useContext } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { FiClipboard, FiPrinter } from 'react-icons/fi';
-import { POFields, PODetailsColumns, POItemsFields } from './PurchaseOrdersModels';
+import {
+  POFields,
+  PODetailsColumns,
+  POItemsFields,
+} from './PurchaseOrdersModels';
 import DetailsTable from '../ItemDetails/DetailsTable';
 import EntityForm from '../EntityForm/EntityForm';
 import Button from '../ui/Button/Button';
 import { getSuppliers } from '@/services/Supplier';
 import { getMaterials } from '@/services/Materials';
 import POStyles from './PurchaseOrders.module.scss';
-import { InitialData, Create, Get, Update, SubmitForApproval, Approve, Reject, SetStatus, printPurchaseOrder_byId } from '@/services/PurchaseOrder';
+import {
+  InitialData,
+  Create,
+  Get,
+  Update,
+  SubmitForApproval,
+  Approve,
+  Reject,
+  SetStatus,
+  printPurchaseOrder_byId,
+} from '@/services/PurchaseOrder';
 import { useToast } from '../ui/Toast/Toast';
 import InvalidPage from '@/components/InvalidPage/page';
 import { AccessContext } from '@/app/contextProviders/accessContext';
 import { useConfirmModal } from '@/app/contextProviders/confirmModalContext';
 import RichTextEditor from '../ui/RichTextEditor/RichTextEditor';
 import { getParameter } from '@/services/Parameter';
-
 
 export default function PurchaseOrdersForm() {
   const PageName = 'Purchase.Orders';
@@ -27,7 +40,8 @@ export default function PurchaseOrdersForm() {
   const toast = useToast();
   const searchParams = useSearchParams();
   const initialOrderId = Number(searchParams.get('id') || 0);
-  const initialMode = searchParams.get('mode') || (initialOrderId ? 'view' : 'edit');
+  const initialMode =
+    searchParams.get('mode') || (initialOrderId ? 'view' : 'edit');
   const [backPath, setBackPath] = useState('/purchase/orders');
   const [orderId, setOrderId] = useState(initialOrderId);
   const [mode, setMode] = useState(initialMode);
@@ -45,7 +59,8 @@ export default function PurchaseOrdersForm() {
 
   useEffect(() => {
     const nextOrderId = Number(searchParams.get('id') || 0);
-    const nextMode = searchParams.get('mode') || (nextOrderId ? 'view' : 'edit');
+    const nextMode =
+      searchParams.get('mode') || (nextOrderId ? 'view' : 'edit');
     setOrderId(nextOrderId);
     setMode(nextMode);
   }, [searchParams]);
@@ -84,7 +99,9 @@ export default function PurchaseOrdersForm() {
 
   const poFields = POFields(suppliers, onPOChange);
   const poDetailsColumns = PODetailsColumns;
-  const [poItemFields, setPOItemFields] = useState(POItemsFields(materials, po));
+  const [poItemFields, setPOItemFields] = useState(
+    POItemsFields(materials, po),
+  );
 
   // load Supplier and Materials
   useEffect(() => {
@@ -155,7 +172,9 @@ export default function PurchaseOrdersForm() {
       const paramRes = await getParameter('PurchaseOrder');
       if (paramRes?.data && Array.isArray(paramRes.data)) {
         const paramMap = {};
-        paramRes.data.forEach((item) => { paramMap[item.name] = item.value; });
+        paramRes.data.forEach((item) => {
+          paramMap[item.name] = item.value;
+        });
         setRichText({
           termsAndConditions: paramMap.TermsAndConditions || '',
         });
@@ -164,7 +183,17 @@ export default function PurchaseOrdersForm() {
 
     setPO(initPO);
     setvalidPO(Object.keys(initPO).length === 0 ? false : true);
-    setTableData({ items: initPO.children, deletedItems: initPO.deletedChildren });
+    setTableData({
+      items: initPO.children,
+      deletedItems: initPO.deletedChildren,
+    });
+
+    const items = initPO.children || [];
+    const vat = items.reduce((t, i) => t + Number(i.vat || 0), 0);
+    const included = items.reduce((t, i) => t + Number(i.amount || 0), 0);
+    setTotalVAT(vat);
+    setTotalIncludedd(included);
+    setTotalExcluded(included - vat);
   };
 
   // Set Form View
@@ -186,8 +215,14 @@ export default function PurchaseOrdersForm() {
 
   // Events : When Details Changed
   const detailsUpdated = (items, deletedItems) => {
-    const totalVAT = items.reduce((total, item) => total + Number(item.vat || 0), 0);
-    const totalIncluded = items.reduce((total, item) => total + Number(item.amount || 0), 0);
+    const totalVAT = items.reduce(
+      (total, item) => total + Number(item.vat || 0),
+      0,
+    );
+    const totalIncluded = items.reduce(
+      (total, item) => total + Number(item.amount || 0),
+      0,
+    );
     const totalexcluded = totalIncluded - totalVAT;
     setTotalExcluded(totalexcluded);
     setTotalVAT(totalVAT);
@@ -415,7 +450,8 @@ export default function PurchaseOrdersForm() {
       <div className={POStyles.buttonsContainer}>
         {po &&
           po.status &&
-          (po.status.toLowerCase() === 'draft' || po.status.toLowerCase() === 'rejected') && (
+          (po.status.toLowerCase() === 'draft' ||
+            po.status.toLowerCase() === 'rejected') && (
             <Button onClick={() => setMode('edit')} variant="save">
               Edit
             </Button>
@@ -464,11 +500,14 @@ export default function PurchaseOrdersForm() {
       po.status &&
       po.status.toLowerCase() === 'submitted' ? (
       <div className={POStyles.buttonsContainer}>
-        {po && po.status && po.status.toLowerCase() === 'submitted' && mode === 'view' && (
-          <Button onClick={() => setMode('edit')} variant="save">
-            Edit
-          </Button>
-        )}
+        {po &&
+          po.status &&
+          po.status.toLowerCase() === 'submitted' &&
+          mode === 'view' && (
+            <Button onClick={() => setMode('edit')} variant="save">
+              Edit
+            </Button>
+          )}
         {mode === 'view' && (
           <Button variant="outlineDanger" onClick={handleRejectConfirm}>
             Reject
@@ -514,17 +553,25 @@ export default function PurchaseOrdersForm() {
   };
 
   const PrintButton = () => {
-    return isAllowed(PageName, 'r') && isReadOnly && orderId &&
-      (po.status.toLowerCase() === 'ordered' || po.status.toLowerCase() === 'approved') ? 
-    <>
-    <Button variant="primary" icon={<FiPrinter size={14} />} /*disabled={actionLoading}*/ onClick={async () => {
-      // setActionLoading(true);
-      await printPurchaseOrder_byId(orderId);
-      // setActionLoading(false);
-      }}>Print</Button>
-    </>
-    : null
-    }
+    return isAllowed(PageName, 'r') &&
+      isReadOnly &&
+      orderId &&
+      (po.status.toLowerCase() === 'ordered' ||
+        po.status.toLowerCase() === 'approved') ? (
+      <>
+        <Button
+          variant="primary"
+          icon={<FiPrinter size={14} />}
+          /*disabled={actionLoading}*/ onClick={async () => {
+            // setActionLoading(true);
+            await printPurchaseOrder_byId(orderId);
+            // setActionLoading(false);
+          }}>
+          Print
+        </Button>
+      </>
+    ) : null;
+  };
 
   return isAllowed(PageName, 'r') ? (
     validPO ? (
@@ -549,7 +596,9 @@ export default function PurchaseOrdersForm() {
               <div className={POStyles.notesContainer}></div>
               <div className={POStyles.totalContainer}>
                 <div className={POStyles.totalLabel}>Total Excluding VAT:</div>
-                <div className={POStyles.totalValue}>{totalExcluded.toFixed(2)}</div>
+                <div className={POStyles.totalValue}>
+                  {totalExcluded.toFixed(2)}
+                </div>
                 <div className={POStyles.totalLabel}>Total VAT:</div>
                 <div className={POStyles.totalValue}>{totalVAT.toFixed(2)}</div>
                 <div className={POStyles.totalLabel}>Total Including VAT:</div>

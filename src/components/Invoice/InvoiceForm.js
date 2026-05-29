@@ -23,6 +23,7 @@ import {
   ConfirmInvoice,
   Reject,
   printPurchaseInvoice_byId,
+  SubmitForApproval,
 } from '@/services/PurchaseInvoice';
 import { useToast } from '../ui/Toast/Toast';
 import InvalidPage from '@/components/InvalidPage/page';
@@ -106,8 +107,14 @@ export default function PurchaseInvoiceForm() {
       remarks: '',
     }));
 
-    const computedVAT = children.reduce((sum, c) => sum + Number(c.vat || 0), 0);
-    const computedAmount = children.reduce((sum, c) => sum + Number(c.amount || 0), 0);
+    const computedVAT = children.reduce(
+      (sum, c) => sum + Number(c.vat || 0),
+      0,
+    );
+    const computedAmount = children.reduce(
+      (sum, c) => sum + Number(c.amount || 0),
+      0,
+    );
     const computedExcluded = computedAmount - computedVAT;
 
     setTotalExcluded(computedExcluded);
@@ -250,48 +257,50 @@ export default function PurchaseInvoiceForm() {
     confirmModal.show(title, message, confirmText, variant, action);
   };
 
-const save = async (entity) => {
-  entity.children = (formData.children || []).map((child) => ({
-    ...child,
-    quantity: Number(child.quantity || 0),
-    unitCost: Number(child.unitCost || 0),
-    discount: Number(child.discount || 0),
-    vat: Number(child.vat || 0),
-    amount: Number(child.amount || 0),
-  }));
+  const save = async (entity) => {
+    entity.children = (formData.children || []).map((child) => ({
+      ...child,
+      quantity: Number(child.quantity || 0),
+      unitCost: Number(child.unitCost || 0),
+      discount: Number(child.discount || 0),
+      vat: Number(child.vat || 0),
+      amount: Number(child.amount || 0),
+    }));
 
-  entity.deletedChildren = formData.deletedChildren;
+    entity.deletedChildren = formData.deletedChildren;
 
-  // ✅ Compute totals directly from children instead of relying on formData.vat/amount
-  const computedVat = entity.children.reduce(
-    (sum, child) => sum + Number(child.vat || 0), 0
-  );
-  const computedAmount = entity.children.reduce(
-    (sum, child) => sum + Number(child.amount || 0), 0
-  );
+    // ✅ Compute totals directly from children instead of relying on formData.vat/amount
+    const computedVat = entity.children.reduce(
+      (sum, child) => sum + Number(child.vat || 0),
+      0,
+    );
+    const computedAmount = entity.children.reduce(
+      (sum, child) => sum + Number(child.amount || 0),
+      0,
+    );
 
-  const updatedForm = {
-    ...formData,
-    ...entity,
-    vat: computedVat,       
-    amount: computedAmount,
+    const updatedForm = {
+      ...formData,
+      ...entity,
+      vat: computedVat,
+      amount: computedAmount,
+    };
+
+    updatedForm.id = updatedForm.id ?? 0;
+
+    let res = {};
+    updatedForm.id === 0
+      ? (res = await Create(updatedForm))
+      : (res = await Update(updatedForm.id, updatedForm));
+
+    if (res?.error) {
+      toast.error('Failed to save purchase Invoice.');
+      return null;
+    } else {
+      toast.success('Purchase Invoice has been saved.');
+      router.push(backPath);
+    }
   };
-
-  updatedForm.id = updatedForm.id ?? 0;
-
-  let res = {};
-  updatedForm.id === 0
-    ? (res = await Create(updatedForm))
-    : (res = await Update(updatedForm.id, updatedForm));
-
-  if (res?.error) {
-    toast.error('Failed to save purchase Invoice.');
-    return null;
-  } else {
-    toast.success('Purchase Invoice has been saved.');
-    router.push(backPath);
-  }
-};
 
   const handleCancelConfirm = () => {
     const title = 'Cancel Invoice';
@@ -317,7 +326,8 @@ const save = async (entity) => {
 
   const handleSubmitConfirm = () => {
     const title = 'Submit for approval';
-    const message = 'Are you sure you want to submit this invoice for approval?';
+    const message =
+      'Are you sure you want to submit this invoice for approval?';
     const confirmText = 'Submit';
     const variant = 'primary';
     const action = () => async () => await submitForApproval();
@@ -435,8 +445,6 @@ const save = async (entity) => {
       router.push(backPath);
     }
   };
-
-
 
   // Buttons
   const CreateButton = () => {
@@ -557,16 +565,21 @@ const save = async (entity) => {
   };
 
   const PrintButton = () => {
-    return isAllowed(PageName, 'r') && isReadOnly && formId ? 
-    <>
-    <Button variant="primary" icon={<FiPrinter size={14} />} /*disabled={actionLoading}*/ onClick={async () => {
-      // setActionLoading(true);
-      await printPurchaseInvoice_byId(formId);
-      // setActionLoading(false);
-      }}>Print</Button>
-    </>
-    : null
-    }
+    return isAllowed(PageName, 'r') && isReadOnly && formId ? (
+      <>
+        <Button
+          variant="primary"
+          icon={<FiPrinter size={14} />}
+          /*disabled={actionLoading}*/ onClick={async () => {
+            // setActionLoading(true);
+            await printPurchaseInvoice_byId(formId);
+            // setActionLoading(false);
+          }}>
+          Print
+        </Button>
+      </>
+    ) : null;
+  };
 
   return isAllowed(PageName, 'r') ? (
     validForm ? (

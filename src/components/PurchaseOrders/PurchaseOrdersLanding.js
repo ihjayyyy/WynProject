@@ -8,44 +8,89 @@ import Landing from '../ui/Landing/Landing';
 import { GetAll, printPurchaseOrder_byId } from '@/services/PurchaseOrder';
 import InvalidPage from '@/components/InvalidPage/page';
 import { AccessContext } from '@/app/contextProviders/accessContext';
+import StatusBadge from '../ui/StatusBadge/StatusBadge';
 
 const baseColumns = [
   { header: 'Order No', key: 'orderNumber' },
-   { header: 'Date', key: 'orderDate' },
+  {
+    header: 'Date',
+    key: 'orderDate',
+    render: (item) =>
+      item.orderDate
+        ? new Date(item.orderDate).toLocaleDateString('en-US', {
+            year: 'numeric',
+            month: 'short',
+            day: '2-digit',
+          })
+        : '—',
+  },
   { header: 'Supplier', key: 'name' },
-   { header: 'Supplier PO', key: 'supplierReferenceNo' },
-  { header: 'Status', key: 'status' },
+  { header: 'Supplier PO', key: 'supplierReferenceNo' },
+  {
+    header: 'Status',
+    key: 'status',
+    render: (item) => <StatusBadge status={item.status} />,
+  },
   { header: 'Amount', key: 'amount' },
   { header: 'UpdatedBy', key: 'updatedBy' },
   { header: 'UpdatedDate', key: 'updatedDate' },
 ];
 
 export default function OrdersLanding() {
-const PageName = 'Purchase.Orders';
-const { isAllowed } = useContext(AccessContext);
+  const PageName = 'Purchase.Orders';
+  const { isAllowed } = useContext(AccessContext);
 
-const router = useRouter();
-  const[orders, setOrders] = useState([]);
+  const router = useRouter();
+  const [orders, setOrders] = useState([]);
 
-  const getPO = async()=> {
-      const pos = await GetAll();
-      setOrders(pos.data)
-  }
-  useEffect(()=>{
-      getPO();
-  },[]);
-
+  const getPO = async () => {
+    const pos = await GetAll();
+    setOrders(pos.data);
+  };
+  useEffect(() => {
+    getPO();
+  }, []);
 
   const actionItems = useMemo(
     () => [
-      ...(isAllowed(PageName,'r') ? [{ key: 'view', label: 'View', icon: <FiEye size={14} />, onClick: (item) => router.push(`/purchase/orders/ordersform?id=${item.id}`) }]: []),
-      ...(isAllowed(PageName,'r') ? [{ key: 'viewpdf', label: 'Print Document', icon: <FiFileText size={14} />, onClick: (item) => (printPurchaseOrder_byId(item.id))}]: []),
+      ...(isAllowed(PageName, 'r')
+        ? [
+            {
+              key: 'view',
+              label: 'View',
+              icon: <FiEye size={14} />,
+              onClick: (item) =>
+                router.push(`/purchase/orders/ordersform?id=${item.id}`),
+            },
+          ]
+        : []),
+      ...(isAllowed(PageName, 'r')
+        ? [
+            {
+              key: 'viewpdf',
+              label: 'Print Document',
+              icon: <FiFileText size={14} />,
+              onClick: (item) => printPurchaseOrder_byId(item.id),
+            },
+          ]
+        : []),
       // ...(isAllowed(PageName,'w')  ? [{ key: 'edit', label: 'Edit', icon: <FiEdit2 size={14} />, onClick: (item) => router.push(`/purchase/orders/ordersform?id=${item.id}&mode=edit`) }]: []),
     ],
-    [router]
+    [router],
   );
 
-  const columns = useMemo(() => [...baseColumns, { header: 'Action', key: 'actions', align: 'right', render: (item) => <DropdownAction item={item} items={actionItems} /> }], [actionItems]);
+  const columns = useMemo(
+    () => [
+      ...baseColumns,
+      {
+        header: 'Action',
+        key: 'actions',
+        align: 'right',
+        render: (item) => <DropdownAction item={item} items={actionItems} />,
+      },
+    ],
+    [actionItems],
+  );
 
   const orderStats = [];
   // const orderStats = useMemo(() => {
@@ -91,19 +136,20 @@ const router = useRouter();
     return itemText;
   };
 
-  return (
-    isAllowed(PageName,'r') ?  
-      <Landing
+  return isAllowed(PageName, 'r') ? (
+    <Landing
       title="Orders"
       data={orders}
       columns={columns}
       stats={orderStats}
       searchPlaceholder="Search orders"
-      newButtonLabel= {isAllowed(PageName,'w') ? "New Order" : ""}
+      newButtonLabel={isAllowed(PageName, 'w') ? 'New Order' : ''}
       onNew={() => router.push('/purchase/orders/ordersform?mode=edit')}
       emptyMessage="No orders found"
       width="320px"
       filterFn={filterFn}
     />
-  : <InvalidPage/>) 
+  ) : (
+    <InvalidPage />
+  );
 }

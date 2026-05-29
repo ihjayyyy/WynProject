@@ -4,24 +4,24 @@ import Image from 'next/image';
 import styles from './LoginForm.module.scss';
 import Button from '../ui/Button/Button';
 import Input from '../ui/Input/Input';
-import { FiMail, FiLock } from 'react-icons/fi';
+import { FiUser, FiLock } from 'react-icons/fi';
 
 import Logo from '@/assets/logo.jpg';
 
 export default function LoginForm({ onLogin, errorMessage, isLoading }) {
-  const [email, setEmail] = useState('');
+  const [employeeNumber, setEmployeeNumber] = useState('');
   const [password, setPassword] = useState('');
   const [remember, setRemember] = useState(false);
   const [localError, setLocalError] = useState('');
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    if (!email || !password) {
-      setLocalError('Please enter both email and password.');
+    if (!employeeNumber || !password) {
+      setLocalError('Please enter both employee number and password.');
       return;
     }
     setLocalError('');
-    onLogin?.({ email, password, remember });
+    onLogin?.({ employeeNumber, password, remember });
   };
 
   const displayError = localError || errorMessage;
@@ -35,14 +35,14 @@ export default function LoginForm({ onLogin, errorMessage, isLoading }) {
       <div className={styles.subtitle}>Please sign in to your account</div>
       {displayError && <div className={styles.error}>{displayError}</div>}
       <Input
-        id="login-email"
-        type="email"
-        label="Email address"
-        placeholder="you@example.com"
-        value={email}
-        onChange={(e) => setEmail(e.target.value)}
+        id="login-employee-number"
+        type="text"
+        label="Employee Number"
+        placeholder="e.g. EMP-001"
+        value={employeeNumber}
+        onChange={(e) => setEmployeeNumber(e.target.value)}
         autoComplete="username"
-        icon={<FiMail size={20} />}
+        icon={<FiUser size={20} />}
       />
       <Input
         id="login-password"
