@@ -5,17 +5,36 @@ import React, { useMemo, useState, useEffect } from 'react';
 import Landing from '../../ui/Landing/Landing';
 import StatusBadge from '../../ui/StatusBadge/StatusBadge';
 // no action icons or dropdown needed
-import { getMaterialRequests } from '../../../services/MaterialRequest';
+import { getMaterialRequests, printMaterialRequest_byRivNumber } from '../../../services/MaterialRequest';
+import Button from '@/components/ui/Button/Button';
+import { FiPrinter } from 'react-icons/fi';
 
 const baseColumns = [
-  { header: 'Id', key: 'id' },
-  { header: 'Name', key: 'name' },
+  { header: 'RIV No.', key: 'rivNumber' },
   { header: 'Code', key: 'code' },
-  { header: 'Material', key: 'materialId' },
-  { header: 'Project', key: 'projectId' },
+  { header: 'Name', key: 'name' },
+  { header: 'Req. Qty', key: 'requestedQty', render: (item) => (<div style={{textAlign:"end"}}>{item.requestedQty}</div>) },
+  { header: 'Request Notes', key: 'reasonOrProject' },
   { header: 'Requested By', key: 'requestedBy' },
   { header: 'Status', key: 'status', render: (item) => <StatusBadge status={item.status} /> },
   { header: 'Request Date', key: 'requestDate', render: (item) => (item.requestDate ? new Date(item.requestDate).toLocaleString() : '') },
+  {
+    header: 'Print RV',
+    key: '__actions',
+    render: (item) =>
+      <div>
+        {(item.rivNumber != "" && item.rivNumber != null) && (
+          <Button
+            size="sm"
+            variant="outlinedPrimary"
+            icon={<FiPrinter size={14} />}
+            title="Print Request Voucher"
+            onClick={() => { printMaterialRequest_byRivNumber(item.rivNumber); }}
+            style={{ marginLeft: '6px' }}
+          />
+        )}
+      </div>
+  },
 ];
 
 export default function MaterialRequestLanding() {
