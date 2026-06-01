@@ -17,7 +17,11 @@ const baseColumns = [
   { header: 'Code', key: 'code' },
   { header: 'Name', key: 'name' },
   { header: 'UOM', key: 'uom' },
-  { header: 'Purchase Price', key: 'purchasePrice' },
+  { header: 'Purchase Price', key: 'purchasePrice', render: (item) => (
+    <div style={{ textAlign: 'right' }}>
+      {item.purchasePrice != null ? Number(item.purchasePrice).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : ''}
+    </div>
+  ) },
   { header: 'Updated By', key: 'updatedBy' },
   { header: 'Updated Date', key: 'updatedAt', render: (item) => (item.updatedAt ? new Date(item.updatedAt).toLocaleString() : '') },
 ];

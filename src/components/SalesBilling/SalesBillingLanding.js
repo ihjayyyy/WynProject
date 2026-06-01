@@ -18,8 +18,16 @@ const baseColumns = [
   { header: 'Description', key: 'description' },
   { header: 'Billing Type', key: 'billingType' },
   { header: 'Status', key: 'status', render: (item) => <StatusBadge status={item.status} /> },
-  { header: 'Amount', key: 'amount' },
-  { header: 'Balance', key: 'balance' },
+  { header: 'Amount', key: 'amount', render: (item) => (
+    <div style={{ textAlign: 'right' }}>
+      {item.amount != null ? Number(item.amount).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : ''}
+    </div>
+  ) },
+  { header: 'Balance', key: 'balance', render: (item) => (
+    <div style={{ textAlign: 'right' }}>
+      {item.balance != null ? Number(item.balance).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : ''}
+    </div>
+  ) },
   { header: 'Payment Status', key: 'paymentStatus', render: (item) => <StatusBadge status={item.paymentStatus} /> },
   // { header: 'Updated By', key: 'updatedBy' },
   // { header: 'Updated Date', key: 'updatedDate' },

@@ -16,11 +16,15 @@ import InvalidPage from '@/components/InvalidPage/page';
 const baseColumns = [
   // { header: 'Id', key: 'id' },,
   { header: 'Proposal No', key: 'proposalNo' },
-  { header: 'Version', key: 'version' },
+  { header: 'Version', key: 'version', render: (item) => (
+    <div style={{ textAlign: 'right' }}>{item?.version ?? ''}</div>
+  )  },
   { header: 'Name', key: 'name' },
   { header: 'Customer', key: 'customerName' },
   { header: 'Contact', key: 'contactNumber' },
-  { header: 'Total', key: 'proposalTotal' },
+  { header: 'Total', key: 'proposalTotal', render: (item) => (
+    <div style={{ textAlign: 'right' }}>{item?.proposalTotal ?? ''}</div>
+  ) },
   { header: 'Status', key: 'proposalStatus', render: (item) => <StatusBadge status={item.proposalStatus} /> },
   {
     header: 'Project Created',

@@ -31,7 +31,11 @@ const baseColumns = [
     key: 'status',
     render: (item) => <StatusBadge status={item.status} />,
   },
-  { header: 'Amount', key: 'amount' },
+  { header: 'Amount', key: 'amount', render: (item) => (
+    <div style={{ textAlign: 'right' }}>
+      {item.amount != null ? Number(item.amount).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : ''}
+    </div>
+  ) },
   { header: 'Updated By', key: 'updatedBy' },
   { header: 'Updated Date', key: 'updatedDate' },
 ];

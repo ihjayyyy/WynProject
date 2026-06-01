@@ -23,9 +23,21 @@ const baseColumns = [
   {header: 'Collection No.', key: 'collectionNo'},
   { header: 'Customer', key: 'customerName' },
   { header: 'Description', key: 'description' },
-  { header: 'Amount', key: 'amount' },
-  { header: 'Total Received', key: 'totalAmountReceived' },
-  { header: 'Total Paid', key: 'totalAmountPaid' },
+  { header: 'Amount', key: 'amount', render: (item) => (
+    <div style={{ textAlign: 'right' }}>
+      {item.amount != null ? Number(item.amount).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : ''}
+    </div>
+  ) },
+  { header: 'Total Received', key: 'totalAmountReceived', render: (item) => (
+    <div style={{ textAlign: 'right' }}>
+      {item.totalAmountReceived != null ? Number(item.totalAmountReceived).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : ''}
+    </div>
+  ) },
+  { header: 'Total Paid', key: 'totalAmountPaid', render: (item) => (
+    <div style={{ textAlign: 'right' }}>
+      {item.totalAmountPaid != null ? Number(item.totalAmountPaid).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : ''}
+    </div>
+  ) },
 ];
 
 export default function CollectionLanding() {

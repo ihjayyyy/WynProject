@@ -24,7 +24,11 @@ const baseColumns = [
   { header: 'Supplier Receipt No.', key: 'supplierReceiptNumber' },
   { header: 'Payment No.', key: 'paymentNumber' },
   { header: 'Supplier', key: 'supplierName' },
-  { header: 'Amount', key: 'amount' },
+  { header: 'Amount', key: 'amount', render: (item) => (
+    <div style={{ textAlign: 'right' }}>
+      {item.amount != null ? Number(item.amount).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : ''}
+    </div>
+  ) },
   {
     header: 'Status',
     key: 'status',

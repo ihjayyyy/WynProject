@@ -6,7 +6,9 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { FiHardDrive } from 'react-icons/fi';
 import EntityForm from '../EntityForm/EntityForm';
 import Button from '../ui/Button/Button';
-import { INITIAL_MATERIAL_INVENTORY, getMaterialInventory, createMaterialInventory, updateMaterialInventory } from '../../services/MaterialInventory';
+import ConfirmModal from '../ui/ConfirmModal/ConfirmModal';
+import Input from '../ui/Input/Input';
+import { INITIAL_MATERIAL_INVENTORY, getMaterialInventory, createMaterialInventory, updateMaterialInventory, updateMaterialInventoryQuantity } from '../../services/MaterialInventory';
 import { useToast } from '../ui/Toast/Toast';
 import { byTypeMaterials as fetchByTypeMaterials } from '../../services/Materials';
 import { getRacks } from '../../services/Rack';
@@ -68,6 +70,48 @@ export default function ToolsInventoryForm() {
 
   const [materials, setMaterials] = useState([]);
   const toast = useToast();
+  const [isQtyModalOpen, setIsQtyModalOpen] = useState(false);
+  const [qtyChange, setQtyChange] = useState('');
+  const [qtySaving, setQtySaving] = useState(false);
+
+  const openQuantityModal = () => {
+    setQtyChange('');
+    setIsQtyModalOpen(true);
+  };
+
+  const closeQuantityModal = () => {
+    setIsQtyModalOpen(false);
+    setQtyChange('');
+  };
+
+  const handleApplyQuantityChange = async () => {
+    if (!inventoryId || qtySaving) return;
+    const parsed = Number(qtyChange);
+    if (!Number.isFinite(parsed) || parsed === 0) {
+      toast.error('Enter a non-zero number. Use positive to add, negative to deduct.');
+      return;
+    }
+
+    try {
+      setQtySaving(true);
+      const res = await updateMaterialInventoryQuantity(inventoryId, parsed);
+      if (res?.error) throw new Error(res.error);
+
+      const fresh = await getMaterialInventory(inventoryId);
+      const freshData = fresh?.data;
+      if (!fresh?.error && freshData) {
+        const item = Array.isArray(freshData) ? freshData[0] : freshData;
+        setInitialValues(item || INITIAL_MATERIAL_INVENTORY);
+      }
+
+      toast.success('Quantity updated successfully.');
+      closeQuantityModal();
+    } catch (error) {
+      toast.error('Failed to update quantity.');
+    } finally {
+      setQtySaving(false);
+    }
+  };
 
   const toolOptions = useMemo(() => {
     return (materials || []).map((m) => ({ value: m.id, label: `${m.code || m.id} — ${m.name}` }));
@@ -94,11 +138,12 @@ export default function ToolsInventoryForm() {
     { name: 'materialId', label: 'Tool', span: 'span1', type: 'select', options: toolOptions, searchable: true, validator: Yup.mixed().required('Tool is required') },
     { name: 'spacer-2', type: 'spacer', span: 'span1' },
     { name: 'name', label: 'Name', span: 'span2', validator: Yup.string().required('Name is required') },
-    { name: 'quantity', label: 'Quantity', type: 'number', span: 'span2', validator: Yup.number().min(0, 'Quantity must be 0 or more').required('Quantity is required') },
+    { name: 'quantity', label: 'Quantity', type: 'number', span: 'span2', readOnly: () => Boolean(inventoryId), validator: Yup.number().min(0, 'Quantity must be 0 or more').required('Quantity is required') },
     { name: 'stockLevel', label: 'Stock Level', type: 'number', span: 'span2', validator: Yup.number().min(0, 'Stock level must be 0 or more') },
   ];
 
   return (
+    <>
     <EntityForm
       title={formTitle}
       icon={<FiHardDrive />}
@@ -151,6 +196,7 @@ export default function ToolsInventoryForm() {
           <Button type="submit" variant="save">Create</Button>
         ) : (
           <>
+            <Button variant="outlinedPrimary" onClick={openQuantityModal} disabled={qtySaving}>Update Quantity</Button>
             {isReadOnly ? (
               canEnterEditMode ? (
                 <Button variant="outlinedPrimary" onClick={() => setIsEditModeLocal(true)}>Edit</Button>
@@ -168,5 +214,31 @@ export default function ToolsInventoryForm() {
         )
       }
     />
+    <ConfirmModal
+      open={isQtyModalOpen}
+      title="Adjust Quantity"
+      message="Use positive number to add stock and negative number to deduct stock."
+      confirmText={qtySaving ? 'Saving...' : 'Apply'}
+      confirmVariant="primary"
+      onConfirm={handleApplyQuantityChange}
+      onCancel={closeQuantityModal}>
+      <div style={{ marginBottom: '12px' }}>
+        <Input
+          type="number"
+          value={qtyChange}
+          onChange={(e) => setQtyChange(e.target.value)}
+          placeholder="e.g. 5 or -3"
+          min={-999999}
+          max={999999}
+          disabled={qtySaving}
+        />
+        {initialValues?.name ? (
+          <div style={{ marginTop: '8px', fontSize: '12px', color: '#64748b' }}>
+            Target: {initialValues.name}
+          </div>
+        ) : null}
+      </div>
+    </ConfirmModal>
+    </>
   );
 }

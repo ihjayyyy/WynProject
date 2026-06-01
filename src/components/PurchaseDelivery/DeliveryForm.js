@@ -68,6 +68,7 @@ export default function PurchaseDeliveryForm() {
       parentId: 0,
       poChildId: d.id,
       materialId: d.materialId,
+      rackId: 0,
       code: d.code,
       name: d.name,
       uom: d.uom,
@@ -204,6 +205,7 @@ export default function PurchaseDeliveryForm() {
   const save = async (entity) => {
     entity.children = (formData.children || []).map((child) => ({
       ...child,
+      rackId: Number(child.rackId || 0),
       orderQuantity: Number(child.orderQuantity || 0),
       quantity: Number(child.quantity || 0),         // ✅ sanitized
       previousBalance: Number(child.previousBalance || 0),

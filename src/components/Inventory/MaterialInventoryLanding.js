@@ -4,8 +4,11 @@ import React, { useMemo, useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import DropdownAction from '../ui/DropdownAction/DropdownAction';
 import Landing from '../ui/Landing/Landing';
-import { FiEdit2, FiEye } from 'react-icons/fi';
-import { getMaterialInventories } from '../../services/MaterialInventory';
+import { FiEdit2, FiEye, FiPlusCircle } from 'react-icons/fi';
+import ConfirmModal from '../ui/ConfirmModal/ConfirmModal';
+import Input from '../ui/Input/Input';
+import { useToast } from '../ui/Toast/Toast';
+import { getMaterialInventories, updateMaterialInventoryQuantity } from '../../services/MaterialInventory';
 import { byTypeMaterials as fetchByTypeMaterials } from '../../services/Materials';
 import { getRacks } from '../../services/Rack';
 import { getWarehouses } from '../../services/Warehouse';
@@ -22,39 +25,88 @@ const baseColumns = [
 
 export default function MaterialInventoryLanding() {
   const router = useRouter();
+  const toast = useToast();
   const [inventory, setInventory] = useState([]);
   const [materials, setMaterials] = useState([]);
   const [racks, setRacks] = useState([]);
   const [warehouses, setWarehouses] = useState([]);
+  const [isQtyModalOpen, setIsQtyModalOpen] = useState(false);
+  const [qtyTargetItem, setQtyTargetItem] = useState(null);
+  const [qtyChange, setQtyChange] = useState('');
+  const [qtySaving, setQtySaving] = useState(false);
+
+  const loadInventoryData = async (cancelled = false) => {
+    try {
+      const res = await getRacks();
+      if (!cancelled && !res?.error) setRacks(res.data || []);
+      const res2 = await getWarehouses();
+      if (!cancelled && !res2?.error) setWarehouses(res2.data || []);
+      const matRes = await fetchByTypeMaterials({ materialType: 'Material', isAssembly: false });
+      if (!cancelled && !matRes?.error) {
+        setMaterials(matRes.data || []);
+        const invRes = await getMaterialInventories({ materialType: 'Material' });
+        if (!cancelled && !invRes?.error) {
+          const invData = invRes.data || [];
+          const inv = invData.filter((it) => (matRes.data || []).some((m) => m.id === it.materialId));
+          setInventory(inv);
+        } else {
+          setInventory([]);
+        }
+      }
+    } catch (e) {}
+  };
+
   useEffect(() => {
     let cancelled = false;
     (async () => {
-      try {
-        const res = await getRacks();
-        if (!cancelled && !res?.error) setRacks(res.data || []);
-        const res2 = await getWarehouses();
-        if (!cancelled && !res2?.error) setWarehouses(res2.data || []);
-        const matRes = await fetchByTypeMaterials({ materialType: 'Material', isAssembly: false });
-        if (!cancelled && !matRes?.error) {
-          setMaterials(matRes.data || []);
-          const invRes = await getMaterialInventories({ materialType: 'Material'});
-          if (!cancelled && !invRes?.error) {
-            const invData = invRes.data || [];
-            const inv = invData.filter((it) => (matRes.data || []).some((m) => m.id === it.materialId));
-            setInventory(inv);
-          } else {
-            setInventory([]);
-          }
-        }
-      } catch (e) {}
+      await loadInventoryData(cancelled);
     })();
     return () => { cancelled = true; };
   }, []);
+
+  const openQuantityModal = (item) => {
+    setQtyTargetItem(item);
+    setQtyChange('');
+    setIsQtyModalOpen(true);
+  };
+
+  const closeQuantityModal = () => {
+    setIsQtyModalOpen(false);
+    setQtyTargetItem(null);
+    setQtyChange('');
+  };
+
+  const applyQuantityChange = async () => {
+    if (qtySaving) return;
+    const parsed = Number(qtyChange);
+    if (!Number.isFinite(parsed) || parsed === 0) {
+      toast.error('Enter a non-zero number. Use positive to add, negative to deduct.');
+      return;
+    }
+    if (!qtyTargetItem?.id) {
+      toast.error('No inventory record selected.');
+      return;
+    }
+
+    try {
+      setQtySaving(true);
+      const res = await updateMaterialInventoryQuantity(qtyTargetItem.id, parsed);
+      if (res?.error) throw new Error(res.error);
+      toast.success('Quantity updated successfully.');
+      closeQuantityModal();
+      await loadInventoryData(false);
+    } catch (error) {
+      toast.error('Failed to update quantity.');
+    } finally {
+      setQtySaving(false);
+    }
+  };
 
   const actionItems = useMemo(
     () => [
       { key: 'view', label: 'View', icon: <FiEye size={14} />, onClick: (item) => router.push(`/inventory/material-inventory/materialInventoryForm?id=${item.id}`) },
       { key: 'edit', label: 'Edit', icon: <FiEdit2 size={14} />, onClick: (item) => router.push(`/inventory/material-inventory/materialInventoryForm?id=${item.id}&mode=edit`) },
+      { key: 'adjustQuantity', label: 'Adjust Quantity', icon: <FiPlusCircle size={14} />, onClick: openQuantityModal },
     ],
     [router]
   );
@@ -101,17 +153,45 @@ export default function MaterialInventoryLanding() {
   };
 
   return (
-    <Landing
-      title="Material Inventory"
-      data={inventory}
-      columns={columns}
-      stats={stats}
-      searchPlaceholder="Search inventory"
-      newButtonLabel="New Record"
-      onNew={() => router.push('/inventory/material-inventory/materialInventoryForm')}
-      emptyMessage="No inventory records found"
-      width="320px"
-      filterFn={filterFn}
-    />
+    <>
+      <Landing
+        title="Material Inventory"
+        data={inventory}
+        columns={columns}
+        stats={stats}
+        searchPlaceholder="Search inventory"
+        newButtonLabel="New Record"
+        onNew={() => router.push('/inventory/material-inventory/materialInventoryForm')}
+        emptyMessage="No inventory records found"
+        width="320px"
+        filterFn={filterFn}
+      />
+
+      <ConfirmModal
+        open={isQtyModalOpen}
+        title="Adjust Quantity"
+        message="Use positive number to add stock and negative number to deduct stock."
+        confirmText={qtySaving ? 'Saving...' : 'Apply'}
+        confirmVariant="primary"
+        onConfirm={applyQuantityChange}
+        onCancel={closeQuantityModal}>
+        <div style={{ marginBottom: '12px' }}>
+          <Input
+            type="number"
+            value={qtyChange}
+            onChange={(e) => setQtyChange(e.target.value)}
+            placeholder="e.g. 5 or -3"
+            min={-999999}
+            max={999999}
+            disabled={qtySaving}
+          />
+          {qtyTargetItem?.name ? (
+            <div style={{ marginTop: '8px', fontSize: '12px', color: '#64748b' }}>
+              Target: {qtyTargetItem.name}
+            </div>
+          ) : null}
+        </div>
+      </ConfirmModal>
+    </>
   );
 }

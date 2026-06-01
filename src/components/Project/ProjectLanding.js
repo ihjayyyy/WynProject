@@ -19,10 +19,18 @@ const baseColumns = [
   { header: 'Status', key: 'status', render: (item) => <StatusBadge status={item.status || item.projectStatus || item.state} /> },
   { header: 'Company', key: 'companyName' },
   { header: 'Contact', key: 'contactNumber' },
-  { header: 'Contract Price', key: 'contractPrice', render: (item) => item.contractPrice ? Number(item.contractPrice).toLocaleString() : '' },
+  { header: 'Contract Price', key: 'contractPrice', render: (item) => (
+    <div style={{ textAlign: 'right' }}>
+      {item.contractPrice ? Number(item.contractPrice).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : ''}
+    </div>
+  ) },
   { header: 'Start', key: 'startDate', render: (item) => (item.startDate ? new Date(item.startDate).toLocaleDateString() : '') },
   { header: 'End', key: 'endDate', render: (item) => (item.endDate ? new Date(item.endDate).toLocaleDateString() : '') },
-  { header: 'Progress', key: 'overallProgress', render: (item) => `${item.overallProgress ?? 0}%` },
+  { header: 'Progress', key: 'overallProgress', render: (item) => (
+    <div style={{ textAlign: 'right' }}>
+      {`${(Number(item.overallProgress) || 0).toFixed(2)}%`}
+    </div>
+  ) },
   { header: 'UpdatedAt', key: 'updatedAt', render: (item) => (item.updatedAt ? new Date(item.updatedAt).toLocaleString() : '') },
 ];
 

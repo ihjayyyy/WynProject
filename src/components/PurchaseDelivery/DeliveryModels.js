@@ -1,4 +1,5 @@
 import * as Yup from "yup";
+import { getRacksByMaterialId } from '@/services/MaterialInventory';
 
  export const FormFields =(suppliers,orders, onFieldhanged) =>([
     { name: 'supplierId', label: 'Supplier', type: 'select', options: suppliers.map((s) => ({ label: s.name, value: s.id })), 
@@ -55,6 +56,7 @@ import * as Yup from "yup";
 
  export const TableColumns = [
     { header: 'Material', key: 'material', width: '200px', render: (it) =>{return(it.code + ' - ' + it.name)}},
+   //  { header: 'Rack', key: 'rack', width: '120px', render: (it) =>{return(it.rackCode || it.rackName || it.rack?.code || '')}},
     { header: 'UOM', key: 'uom', width: '60px', render: (it) =>{return(it.uom)}},
     { header: 'Order Qty', key: 'orderQuantity', align: 'right', width: '80px', render: (it) => (it.orderQuantity).toFixed(0) },
     { header: 'Previous Bal', key: 'previousBalance', align: 'right', width: '80px', render: (it) => (it.previousBalance).toFixed(0) },
@@ -69,23 +71,71 @@ import * as Yup from "yup";
             {name:'materialId', label:'Material', type:'select', options:materials.map(({ id, name }) =>  ({ value:id, name:name })), readonly:false, 
               initialvalue:"",
                validator : Yup.string().required(`Material is required`),
-               onChange : (item, updateField, fields) => {
+                      onChange : async (item, updateField, fields) => {
                   const material = materials.find(a => a.id == item.value)
                            if (!material) {
                               updateField("code", "");
                               updateField("name", "");
                               updateField("uom", "");
+                                             const rackField = (fields || []).find((f) => f.name === 'rackId');
+                                             if (rackField) {
+                                                rackField.options = [];
+                                             }
+                                             updateField("rackId", 0);
+
                               return;
                            }
                   updateField("code", material.code);
                   updateField("name", material.name);
                   updateField("uom", material.purchaseUnitOfMeasure);
-                  console.log(dr)
+                           try {
+                              const res = await getRacksByMaterialId(material.id);
+                              const rackOptions = (Array.isArray(res?.data) ? res.data : []).map((entry) => ({
+                                 value: entry?.rack?.id || 0,
+                                 name: entry?.rack?.code || entry?.rack?.name || '',
+                                 code: entry?.rack?.code || '',
+                                 rackName: entry?.rack?.name || '',
+                                 isDefault: Boolean(entry?.isDefault),
+                              })).filter((r) => Number(r.value) > 0);
 
-                  //get
+                              const rackField = (fields || []).find((f) => f.name === 'rackId');
+                              if (rackField) {
+                                 rackField.options = rackOptions;
+                              }
+
+                              const defaultRack = rackOptions.find((r) => r.isDefault) || null;
+                              if (defaultRack) {
+                                 updateField("rackId", defaultRack.value);
+
+                              } else {
+                                 updateField("rackId", 0);
+
+                              }
+                           } catch (error) {
+                              const rackField = (fields || []).find((f) => f.name === 'rackId');
+                              if (rackField) {
+                                 rackField.options = [];
+                              }
+                              updateField("rackId", 0);
+
+                           }
 
                },              
             },
+                  {name:'rackId', label:'Rack', type:'select', options:[], readonly:false,
+                     onChange : (item, updateField, fields) => {
+                        const rackField = (fields || []).find((f) => f.name === 'rackId');
+                        const selectedRack = rackField && Array.isArray(rackField.options)
+                           ? rackField.options.find((r) => String(r.value) === String(item.value))
+                           : null;
+
+                        if (!selectedRack) {
+                           updateField("rackCode", "");
+                           updateField("rackName", "");
+                           return;
+                        }
+                     }
+                  },
             {name:'code', label:'Code', type:'text',  hidden:true,},
             {name:'name', label:'Name', type:'text',  hidden:true,},
             {name:'orderQuantity', label:'id', type:'number',  hidden:true, initialvalue:0},

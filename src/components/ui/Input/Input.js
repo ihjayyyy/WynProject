@@ -20,6 +20,14 @@ export default function Input({
   const today = new Date().toISOString().split('T')[0];
   const [fileName, setFileName] = React.useState('');
   const inputRef = React.useRef(null);
+  const [isFocused, setIsFocused] = React.useState(false);
+
+  const formatNumberValue = (val) => {
+    if (val === undefined || val === null || val === '') return '';
+    const n = Number(val);
+    if (Number.isNaN(n)) return val;
+    return n.toFixed(2);
+  };
 
   const handleFileChange = (e) => {
     const files = e.target.files;
@@ -82,20 +90,39 @@ export default function Input({
             id={id}
             type={type}
             // For date inputs, prefer the provided value; fall back to today only when value is empty
-            value={type === 'date' ? value || today : value}
+            value={
+              type === 'date'
+                ? value || today
+                : type === 'number'
+                ? (isFocused ? (value ?? '') : formatNumberValue(value))
+                : value
+            }
             onChange={onChange}
-            onBlur={onBlur}
+            onBlur={
+              type === 'number'
+                ? (e) => {
+                    setIsFocused(false);
+                    const formatted = formatNumberValue(e.target.value);
+                    if (onChange) {
+                      onChange({ target: { name: e.target.name, value: formatted } });
+                    }
+                    if (onBlur) {
+                      onBlur({ target: { name: e.target.name, value: formatted } });
+                    }
+                  }
+                : onBlur
+            }
             onFocus={
               type === 'number'
                 ? (e) => {
+                    setIsFocused(true);
                     if (Number(e.target.value) === 0) {
                       onChange &&
-                        onChange({
-                          target: { name: e.target.name, value: '' },
-                        });
+                        onChange({ target: { name: e.target.name, value: '' } });
                     }
+                    if (props.onFocus) props.onFocus(e);
                   }
-                : undefined
+                : props.onFocus
             }
             readOnly={readOnly}
             {...props}

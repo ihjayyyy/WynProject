@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import * as Yup from 'yup';
 import { getProjectFinanceByProjectId, updateProjectFinance, createProjectFinance, INITIAL_PROJECT_FINANCE, generateDownpaymentBilling } from '../../services/ProjectFinance';
 import { useRouter } from 'next/navigation';
 import { useConfirmModal } from '@/app/contextProviders/confirmModalContext';
@@ -13,6 +14,7 @@ export default function ProjectFinanceTab({ projectId, project, editable }) {
   const [editing, setEditing] = useState(false);
   const [form, setForm] = useState({});
   const [loading, setLoading] = useState(true);
+  const [formErrors, setFormErrors] = useState({});
   console.log('ProjectFinanceTab rendered with projectId:', projectId, 'project:', project);
   useEffect(() => {
     let mounted = true;
@@ -60,6 +62,14 @@ export default function ProjectFinanceTab({ projectId, project, editable }) {
     return cleaned;
   };
 
+  const validationSchema = Yup.object().shape({
+    downPaymentPercent: Yup.number().typeError('Down Payment Percent must be a number').min(0, 'Down Payment Percent cannot be less than 0').max(100, 'Down Payment Percent cannot be greater than 100').nullable(),
+    downPayment: Yup.number().typeError('Down Payment must be a number').min(0, 'Down Payment cannot be negative').nullable(),
+    retentionFee: Yup.number().typeError('Retention Fee must be a number').min(0, 'Retention Fee cannot be negative').nullable(),
+    recoupmentPercentage: Yup.number().typeError('Recoupment % must be a number').min(0, 'Recoupment % cannot be less than 0').max(100, 'Recoupment % cannot be greater than 100').nullable(),
+    lastBillingDate: Yup.date().typeError('Invalid date').nullable(),
+  });
+
   const save = async () => {
     setLoading(true);
     let res;
@@ -72,8 +82,28 @@ export default function ProjectFinanceTab({ projectId, project, editable }) {
       payload.name = project.name || '';
     }
     payload = cleanPayload(payload);
-    payload.hasDownpayment = 0;
+    payload.hasDownpayment =
+      typeof payload.hasDownpayment === 'string'
+        ? payload.hasDownpayment.toLowerCase() === 'true'
+        : Boolean(payload.hasDownpayment);
     payload.recoupmentBalance = Number(payload.downPayment) || 0;
+    // Validate with Yup before submitting
+    try {
+      await validationSchema.validate(payload, { abortEarly: false });
+      setFormErrors({});
+    } catch (err) {
+      const newErrors = {};
+      if (err && err.inner && Array.isArray(err.inner)) {
+        err.inner.forEach(e => {
+          if (e.path) newErrors[e.path] = e.message;
+        });
+      } else if (err && err.path) {
+        newErrors[err.path] = err.message;
+      }
+      setFormErrors(newErrors);
+      setLoading(false);
+      return;
+    }
     if (finance && finance.id) {
       res = await updateProjectFinance(finance.id, payload);
     } else {
@@ -143,8 +173,10 @@ export default function ProjectFinanceTab({ projectId, project, editable }) {
                   const contractPrice = project?.contractPrice || 0;
                   const amt = pct !== '' ? parseFloat(((pct / 100) * contractPrice).toFixed(2)) : '';
                   setForm({ ...form, downPaymentPercent: pct, downPayment: amt, recoupmentBalance: amt });
+                  setFormErrors(prev => ({ ...prev, downPaymentPercent: undefined, downPayment: undefined }));
                 }}
               />
+              {formErrors.downPaymentPercent && <div style={{ color: 'red', fontSize: '0.75rem' }}>{formErrors.downPaymentPercent}</div>}
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', flex: 1 }}>
               <span style={{ fontSize: '0.75rem', color: '#666' }}>Amount</span>
@@ -156,8 +188,10 @@ export default function ProjectFinanceTab({ projectId, project, editable }) {
                   const contractPrice = project?.contractPrice || 0;
                   const pct = amt !== '' && contractPrice > 0 ? parseFloat(((amt / contractPrice) * 100).toFixed(4)) : '';
                   setForm({ ...form, downPayment: amt, downPaymentPercent: pct, recoupmentBalance: amt });
+                  setFormErrors(prev => ({ ...prev, downPayment: undefined, downPaymentPercent: undefined }));
                 }}
               />
+              {formErrors.downPayment && <div style={{ color: 'red', fontSize: '0.75rem' }}>{formErrors.downPayment}</div>}
             </div>
           </div>
         ) : (
@@ -172,7 +206,10 @@ export default function ProjectFinanceTab({ projectId, project, editable }) {
       <div className={styles.field}>
         <label>Retention Fee</label>
         {editing ? (
-          <Input type="number" value={form.retentionFee ?? ''} onChange={e => setForm({ ...form, retentionFee: e.target.value === '' ? '' : Number(e.target.value) })} />
+          <div style={{ display: 'flex', flexDirection: 'column' }}>
+            <Input type="number" value={form.retentionFee ?? ''} onChange={e => { setForm({ ...form, retentionFee: e.target.value === '' ? '' : Number(e.target.value) }); setFormErrors(prev => ({ ...prev, retentionFee: undefined })); }} />
+            {formErrors.retentionFee && <div style={{ color: 'red', fontSize: '0.75rem' }}>{formErrors.retentionFee}</div>}
+          </div>
         ) : (
           <div className="value">{finance?.retentionFee ?? ''}</div>
         )}
@@ -180,7 +217,10 @@ export default function ProjectFinanceTab({ projectId, project, editable }) {
       <div className={styles.field}>
         <label>Recoupment %</label>
         {editing ? (
-          <Input type="number" value={form.recoupmentPercentage ?? ''} onChange={e => setForm({ ...form, recoupmentPercentage: e.target.value === '' ? '' : Number(e.target.value) })} />
+          <div style={{ display: 'flex', flexDirection: 'column' }}>
+            <Input type="number" value={form.recoupmentPercentage ?? ''} onChange={e => { setForm({ ...form, recoupmentPercentage: e.target.value === '' ? '' : Number(e.target.value) }); setFormErrors(prev => ({ ...prev, recoupmentPercentage: undefined })); }} />
+            {formErrors.recoupmentPercentage && <div style={{ color: 'red', fontSize: '0.75rem' }}>{formErrors.recoupmentPercentage}</div>}
+          </div>
         ) : (
           <div className="value">{finance?.recoupmentPercentage ?? ''}</div>
         )}

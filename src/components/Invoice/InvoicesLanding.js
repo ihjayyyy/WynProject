@@ -31,10 +31,20 @@ const baseColumns = [
   {
     header: 'Invoice Amount',
     key: 'amount',
+    render: (item) => (
+      <div style={{ textAlign: 'right' }}>
+        {item.amount != null ? Number(item.amount).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : ''}
+      </div>
+    ),
   },
   {
     header: 'Invoice Balance',
     key: 'balance',
+    render: (item) => (
+      <div style={{ textAlign: 'right' }}>
+        {item.balance != null ? Number(item.balance).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : ''}
+      </div>
+    ),
   },
   {
     header: 'Status',

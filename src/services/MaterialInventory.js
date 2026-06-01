@@ -150,6 +150,34 @@ async function getRacksByMaterialId(materialId) {
   }
 }
 
+async function updateMaterialInventoryQuantity(id, quantityChange) {
+  try {
+    const url = `${API_BASE_URL}/UpdateQuantity/${id}`;
+
+    const res = await fetch(url, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        quantityChange,
+      }),
+    });
+
+    const json = await res.json();
+
+    return {
+      data: json,
+      error: null,
+    };
+  } catch (error) {
+    return {
+      data: null,
+      error: error?.message || error,
+    };
+  }
+}
+
 export {
   getMaterialInventories,
   getMaterialInventory,
@@ -157,6 +185,7 @@ export {
   getRacksByMaterialId,
   createMaterialInventory,
   updateMaterialInventory,
+  updateMaterialInventoryQuantity,
   generateMaterialInventoryReport,
   printMaterialReport_byId
 };
@@ -168,6 +197,7 @@ export default {
   getRacksByMaterialId,
   createMaterialInventory,
   updateMaterialInventory,
+  updateMaterialInventoryQuantity, 
   generateMaterialInventoryReport,
   printMaterialReport_byId
 };
