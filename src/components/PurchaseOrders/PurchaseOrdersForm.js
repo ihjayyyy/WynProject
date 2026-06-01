@@ -173,9 +173,15 @@ export default function PurchaseOrdersForm() {
       const paramRes = await getParameter('PurchaseOrder');
       if (paramRes?.data && Array.isArray(paramRes.data)) {
         // Prefer a parameter with the explicit code, fall back to any name containing 'term'
-        const tcParam = paramRes.data.find(
-          (item) => item.code === 'PurchaseOrder_TermsAndConditions'
-        ) || paramRes.data.find((item) => String(item.name || '').toLowerCase().includes('term'));
+        const tcParam =
+          paramRes.data.find(
+            (item) => item.code === 'PurchaseOrder_TermsAndConditions',
+          ) ||
+          paramRes.data.find((item) =>
+            String(item.name || '')
+              .toLowerCase()
+              .includes('term'),
+          );
         setRichText({
           termsAndConditions: tcParam?.value || '',
         });
@@ -627,17 +633,17 @@ export default function PurchaseOrdersForm() {
           </div>
         }
         onSubmit={handleSaveConfirm}
-        onValidate={(values) => {
-          const errors = {};
-          const items = tableData?.items || [];
-          if (!Array.isArray(items) || items.length === 0) {
-            errors.supplierId = 'At least one order detail is required';
-            setTableError('At least one order detail is required');
-          } else {
-            setTableError('');
-          }
-          return errors;
-        }}
+        // onValidate={(values) => {
+        //   const errors = {};
+        //   const items = tableData?.items || [];
+        //   if (!Array.isArray(items) || items.length === 0) {
+        //     errors.supplierId = 'At least one order detail is required';
+        //     setTableError('At least one order detail is required');
+        //   } else {
+        //     setTableError('');
+        //   }
+        //   return errors;
+        // }}
         backPath={backPath}
         width="100%"
         showSubmitButton={false}
