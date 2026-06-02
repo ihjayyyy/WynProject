@@ -155,6 +155,7 @@ export default function PRForm() {
       dataCopy.children = items;
       dataCopy.deletedChildren = deletedItems;
       setFormData(dataCopy);
+      setTableData({ items, deletedItems });
       // clear table-level error when user modifies details
       if (Array.isArray(items) && items.length > 0) setTableError('');
     },

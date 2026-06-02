@@ -355,6 +355,7 @@ export default function PurchaseOrdersForm() {
     poCopy.amount = totalIncluded;
 
     setPO(poCopy);
+    setTableData({ items, deletedItems });
     // clear table error if items exist
     if (Array.isArray(items) && items.length > 0) setTableError('');
   };
