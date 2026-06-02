@@ -28,10 +28,17 @@ const ItemModal = ({ headerLabel, mode = "new", itemIndex = -1, isOpen, onClose,
 
   const [itemFields, setFields] = useState([]);
   const [isDirty, setIsDirty] = useState(false);
+  const hasHydratedOnOpenRef = useRef(false);
 
   // Reset dirty flag each time the modal opens
   useEffect(() => {
     if (isOpen) setIsDirty(false);
+  }, [isOpen]);
+
+  useEffect(() => {
+    if (!isOpen) {
+      hasHydratedOnOpenRef.current = false;
+    }
   }, [isOpen]);
 
   // Sync itemFields from props. Refresh when fields change or modal opens so
@@ -151,6 +158,37 @@ const ItemModal = ({ headerLabel, mode = "new", itemIndex = -1, isOpen, onClose,
       return fieldcopy;
     });
   };
+
+  // Hydrate dependent fields when editing existing rows.
+  // This allows fields like rack select (dependent on material) to load options
+  // and resolve the initial selected value on modal open.
+  useEffect(() => {
+    if (!isOpen || hasHydratedOnOpenRef.current) return;
+
+    const fieldsToHydrate = (itemFields || []).filter(
+      (field) =>
+        Boolean(field?.hydrateOnOpen) &&
+        typeof field?.onChange === 'function' &&
+        field?.value !== '' &&
+        field?.value !== null &&
+        typeof field?.value !== 'undefined'
+    );
+
+    if (fieldsToHydrate.length === 0) return;
+
+    hasHydratedOnOpenRef.current = true;
+
+    fieldsToHydrate.forEach((field) => {
+      const syntheticTarget = {
+        value: field.value,
+        type: field.type === 'number' ? 'number' : 'select-one',
+      };
+
+      Promise.resolve(field.onChange(syntheticTarget, updateField, itemFields, field.value)).catch(() => {
+        // Keep modal stable even if hydration calls fail.
+      });
+    });
+  }, [isOpen, itemFields]);
 
   const content = (
     <div className={modalstyle.itemModal} onClick={handleBackdropClick}>

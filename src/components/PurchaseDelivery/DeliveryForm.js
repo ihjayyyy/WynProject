@@ -213,10 +213,15 @@ export default function PurchaseDeliveryForm() {
     }));
     entity.deletedChildren = formData.deletedChildren || [];
 
-    const updatedForm = { ...formData, ...entity };
+    // Keep deliveryDate from current form state when the submitted entity does not carry it.
+    const mergedDeliveryDate =
+      entity?.deliveryDate ?? formData?.deliveryDate ?? toDateInputValue(null);
 
-    // ✅ Ensure all date fields are never null in payload
-    updatedForm.deliveryDate = updatedForm.deliveryDate || toDateInputValue(null);
+    const updatedForm = {
+      ...formData,
+      ...entity,
+      deliveryDate: toDateInputValue(mergedDeliveryDate),
+    };
 
     // ✅ Fixed: was `=== null ?? 0` (broken logic)
     updatedForm.id = updatedForm.id ?? 0;

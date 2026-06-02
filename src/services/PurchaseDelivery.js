@@ -65,13 +65,14 @@ async function Get(id) {
 
 async function Create(payload) {
     try {
-         console.log(payload)
+        const requestBody = JSON.stringify(payload);
+        console.log('PurchaseDelivery Create payload:', requestBody);
         const res = await fetch(`${API_BASE_URL}`, {
             method: 'POST',
             headers: { 
                 'Content-Type': 'application/json' 
             },
-            body: JSON.stringify(payload),
+            body: requestBody,
         });
         console.log(res)
         const json = await res.json();
@@ -88,10 +89,12 @@ async function Create(payload) {
 async function Update(id, payload) {
     try {
         const url = `${API_BASE_URL}/${id}`;
+        const requestBody = JSON.stringify(payload);
+        console.log('PurchaseDelivery Update payload:', requestBody);
         const res = await fetch(url, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(payload),
+            body: requestBody,
         });
         const json = await res.json();
         console.log(json)

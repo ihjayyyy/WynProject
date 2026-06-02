@@ -69,6 +69,7 @@ import { getRacksByMaterialId } from '@/services/MaterialInventory';
            {name:'id', label:'id', type:'number',  hidden:true, initialvalue:0},
             {name:'parentId', label:'id', type:'number',  hidden:true, initialvalue:0},
             {name:'materialId', label:'Material', type:'select', options:materials.map(({ id, name }) =>  ({ value:id, name:name })), readonly:false, 
+                     hydrateOnOpen: true,
               initialvalue:"",
                validator : Yup.string().required(`Material is required`),
                       onChange : async (item, updateField, fields) => {
@@ -100,16 +101,22 @@ import { getRacksByMaterialId } from '@/services/MaterialInventory';
 
                               const rackField = (fields || []).find((f) => f.name === 'rackId');
                               if (rackField) {
-                                 rackField.options = rackOptions;
+                                 rackField.options = rackOptions.map((r) => ({
+                                    ...r,
+                                    label: r.label || r.name || r.code || '',
+                                 }));
                               }
 
+                              const currentRackId = Number(rackField?.value || 0);
+                              const hasCurrentRack = rackOptions.some((r) => Number(r.value) === currentRackId);
                               const defaultRack = rackOptions.find((r) => r.isDefault) || null;
-                              if (defaultRack) {
-                                 updateField("rackId", defaultRack.value);
 
+                              if (hasCurrentRack) {
+                                 updateField("rackId", currentRackId);
+                              } else if (defaultRack) {
+                                 updateField("rackId", defaultRack.value);
                               } else {
                                  updateField("rackId", 0);
-
                               }
                            } catch (error) {
                               const rackField = (fields || []).find((f) => f.name === 'rackId');
