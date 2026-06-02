@@ -40,6 +40,8 @@ export default function MaterialInventoryReportLanding() {
       { header: "Code", key: "materialCode" },
       { header: "Name", key: "materialName" },
       { header: "Stock", key: "stockQuantity", align: "right" },
+      { header: "BOM", key: "projectQuantity", align: "right" },
+      { header: "Balance", key: "balance", align: "right" },
       { header: "Requested", key: "requestedQuantity", align: "right" },
       { header: "Ordered", key: "orderedQuantity", align: "right" },
       { header: "Effective", key: "effectiveQuantity", align: "right" },

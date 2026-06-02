@@ -93,6 +93,21 @@ async function printProposalBreakdown_byId(id) {
         return { data: null, error: error?.message || error };
     }
 }
+async function printJobOrder_byProposal(id) {
+    if (!id) return { data: null, error: 'Missing id' };
+    try {
+        const url = `${API_BASE_URL}/pdf/joborder/${id}`;
+        const res = await fetch(url, {
+            method: 'GET',
+            headers: { Accept: '*/*' },
+        });
+
+       handleOpenPdf(res);
+
+    } catch (error) {
+        return { data: null, error: error?.message || error };
+    }
+}
 
 async function createProposal(payload) {
     try {
@@ -266,6 +281,7 @@ export {
     rejectProposal,
     printProposal_byId,
     printProposalBreakdown_byId,
+    printJobOrder_byProposal,
     winProposal,
     loseProposal,
     cancelProposal,
@@ -283,6 +299,7 @@ const ProposalService = {
     rejectProposal,
     printProposal_byId,
     printProposalBreakdown_byId,
+    printJobOrder_byProposal,
     winProposal,
     loseProposal,
     cancelProposal,
