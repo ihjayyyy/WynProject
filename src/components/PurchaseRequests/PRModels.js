@@ -88,6 +88,13 @@ export const ItemsFields = (materials, pr) => [
     initialvalue: 0,
   },
   {
+    name: 'materialId',
+    label: 'materialId',
+    type: 'number',
+    hidden: true,
+    initialvalue: 0,
+  },
+  {
     name: 'material',
     label: 'Material',
     type: 'select',
@@ -98,11 +105,13 @@ export const ItemsFields = (materials, pr) => [
     onChange: (item, updateField, fields) => {
       const material = materials.find((a) => a.id == item.value);
       if (!material) {
+        updateField('materialId', 0);
         updateField('code', '');
         updateField('name', '');
         updateField('uom', '');
         return;
       }
+      updateField('materialId', material.id);
       updateField('code', material.code);
       updateField('name', material.name);
       updateField('uom', material.purchaseUnitOfMeasure);

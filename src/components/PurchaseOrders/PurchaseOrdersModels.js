@@ -1,6 +1,11 @@
 import * as Yup from 'yup';
 
-export const POFields = (suppliers, onFieldhanged) => [
+export const POFields = (
+  suppliers,
+  onFieldhanged,
+  purchaseRequests = [],
+  onPRSelected,
+) => [
   { name: 'code', label: 'Supplier Code', span: 'span1', readOnly: true },
   {
     name: 'supplierId',
@@ -52,6 +57,8 @@ export const POFields = (suppliers, onFieldhanged) => [
   { name: 'supplierName', hidden: true },
   { name: 'code', hidden: true },
   { name: 'name', hidden: true },
+
+  { name: 'purchaseRequestNumber', hidden: true },
   { name: 'spacer-2', type: 'spacer', span: 'span2' },
   {
     name: 'orderDate',
@@ -63,7 +70,35 @@ export const POFields = (suppliers, onFieldhanged) => [
       .required('Order Date is required'),
   },
   { name: 'address', label: 'Address', span: 'span4' },
-  { name: 'spacer-3', type: 'spacer', span: 'span2' },
+  {
+    name: 'purchaseRequestId',
+    label: 'Purchase Request',
+    type: 'select',
+    options: purchaseRequests.map((r) => ({
+      label: r.requestNumber + (r.name ? ' - ' + r.name : ''),
+      value: r.id,
+    })),
+    searchable: true,
+    span: 'span2',
+    onChange: (val, values, setValues) => {
+      const found = purchaseRequests.find((p) => p.id === val);
+      console.log('PR: ', found);
+      if (!found) {
+        const clearedValues = { ...values, purchaseRequestNumber: '' };
+        setValues(clearedValues);
+        onFieldhanged('purchaseRequestId', val, clearedValues);
+        onPRSelected && onPRSelected(null);
+        return;
+      }
+      const valuesCopy = {
+        ...values,
+        purchaseRequestNumber: found.requestNumber,
+      };
+      setValues(valuesCopy);
+      onFieldhanged('purchaseRequestId', val, valuesCopy);
+      onPRSelected && onPRSelected(found);
+    },
+  },
   { name: 'supplierReferenceNo', label: 'Supplier PO', span: 'span2' },
   { name: 'contactPerson', label: 'Contact Person', span: 'span4' },
   { name: 'spacer-4', type: 'spacer', span: 'span2' },

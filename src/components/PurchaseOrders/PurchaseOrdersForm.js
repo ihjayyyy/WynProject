@@ -12,7 +12,8 @@ import DetailsTable from '../ItemDetails/DetailsTable';
 import EntityForm from '../EntityForm/EntityForm';
 import Button from '../ui/Button/Button';
 import { getSuppliers } from '@/services/Supplier';
-import { getMaterials } from '@/services/Materials';
+import { getMaterials, getMaterial } from '@/services/Materials';
+import { GetAll as GetAllPurchaseRequest } from '@/services/PurchaseRequest';
 import POStyles from './PurchaseOrders.module.scss';
 import {
   InitialData,
@@ -47,6 +48,7 @@ export default function PurchaseOrdersForm() {
   const [mode, setMode] = useState(initialMode);
   const [suppliers, setSuppliers] = useState([]);
   const [materials, setMaterials] = useState([]);
+  const [purchaseRequests, setPurchaseRequests] = useState([]);
   const [po, setPO] = useState({});
   const [validPO, setvalidPO] = useState(false);
   const [tableData, setTableData] = useState([]);
@@ -98,7 +100,108 @@ export default function PurchaseOrdersForm() {
     setTableData({ ...tableData, items: poChildren });
   };
 
-  const poFields = POFields(suppliers, onPOChange);
+  // Handle Purchase Request selection and populate table with its children
+  const onPRSelected = async (pr) => {
+    if (!pr || !pr.children || pr.children.length === 0) {
+      // Clear table if no PR selected or PR has no children
+      setTableData({ items: [], deletedItems: [] });
+      setPO((prevPo) => ({ ...prevPo, children: [], deletedChildren: [] }));
+      return;
+    }
+
+    try {
+      // Fetch material details for each PR child
+      const poItems = await Promise.all(
+        pr.children.map(async (child) => {
+          const materialRes = await getMaterial(child.materialId);
+          const material = materialRes?.data;
+
+          if (!material) {
+            return null;
+          }
+
+          // Transform PR child to PO item format
+          const unitCost = Number(material.purchasePrice || 0);
+          const quantity = Number(child.quantity || 0);
+          const discount = 0;
+          let subamount = unitCost * quantity - discount;
+          let amount = subamount;
+          let vat = 0;
+
+          // Calculate VAT based on current PO vatType
+          const vatType = po?.vatType || 'included';
+          switch (vatType) {
+            case 'included':
+              vat = Math.round((subamount - subamount / 1.12) * 100) / 100;
+              break;
+            case 'notincluded':
+              vat = Math.round(subamount * 0.12 * 100) / 100;
+              amount = subamount + vat;
+              break;
+            case 'nonvat':
+              vat = 0;
+              break;
+            default:
+              vat = 0;
+              break;
+          }
+
+          return {
+            id: 0, // New item, will get assigned on save
+            parentId: 0,
+            materialId: child.materialId,
+            code: child.code || material.code,
+            name: child.name || material.name,
+            quantity: quantity,
+            unitCost: unitCost,
+            uom: material.purchaseUnitOfMeasure || child.uom,
+            discount: discount,
+            vat: vat,
+            amount: amount,
+            remarks: child.remarks || '',
+          };
+        }),
+      );
+
+      // Filter out null entries
+      const validItems = poItems.filter((item) => item !== null);
+      const newTotalVAT = validItems.reduce(
+        (t, i) => t + Number(i.vat || 0),
+        0,
+      );
+      const newTotalIncluded = validItems.reduce(
+        (t, i) => t + Number(i.amount || 0),
+        0,
+      );
+      const newTotalExcluded = newTotalIncluded - newTotalVAT;
+
+      setTotalVAT(newTotalVAT);
+      setTotalIncludedd(newTotalIncluded);
+      setTotalExcluded(newTotalExcluded);
+
+      // Update table data with populated items
+      setTableData({ items: validItems, deletedItems: [] });
+
+      // Update PO with the new children
+      setPO((prevPo) => ({
+        ...prevPo,
+        children: validItems,
+        deletedChildren: [],
+        vat: newTotalVAT,
+        amount: newTotalIncluded,
+      }));
+    } catch (err) {
+      console.error('Failed to populate PO from PR:', err);
+      toast.error('Failed to load materials from purchase request');
+    }
+  };
+
+  const poFields = POFields(
+    suppliers,
+    onPOChange,
+    purchaseRequests,
+    onPRSelected,
+  );
   const poDetailsColumns = PODetailsColumns;
   const [poItemFields, setPOItemFields] = useState(
     POItemsFields(materials, po),
@@ -120,8 +223,18 @@ export default function PurchaseOrdersForm() {
         setMaterials(res.data);
       }
     };
+    const fetchPurchaseRequests = async () => {
+      const res = await GetAllPurchaseRequest();
+      if (res && !res.error) {
+        const approved = (res.data || []).filter(
+          (r) => r.status?.toLowerCase() === 'approved',
+        );
+        setPurchaseRequests(approved);
+      }
+    };
     fetchSupplier();
     fetchMaterials();
+    fetchPurchaseRequests();
   }, []);
 
   // set PO Data

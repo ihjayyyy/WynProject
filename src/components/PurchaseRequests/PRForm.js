@@ -478,19 +478,19 @@ export default function PRForm() {
         breadcrumbLabel="Purchase Request"
         icon={<FiInbox />}
         fields={formFields}
-        // onValidate={async (values) => {
-        //   const errors = {};
-        //   if (
-        //     !tableData.items ||
-        //     (Array.isArray(tableData.items) && tableData.items.length === 0)
-        //   ) {
-        //     errors.projectId = 'At least one request detail is required';
-        //     setTableError(errors.projectId);
-        //   } else {
-        //     setTableError('');
-        //   }
-        //   return errors;
-        // }}
+        onValidate={async (values) => {
+          const errors = {};
+          if (
+            !tableData.items ||
+            (Array.isArray(tableData.items) && tableData.items.length === 0)
+          ) {
+            errors.projectId = 'At least one request detail is required';
+            setTableError(errors.projectId);
+          } else {
+            setTableError('');
+          }
+          return errors;
+        }}
         initialValues={formData}
         extraContent={
           <div className={EntityStyle.extraContentContainer}>
