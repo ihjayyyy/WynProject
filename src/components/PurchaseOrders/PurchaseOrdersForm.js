@@ -746,17 +746,17 @@ export default function PurchaseOrdersForm() {
           </div>
         }
         onSubmit={handleSaveConfirm}
-        // onValidate={(values) => {
-        //   const errors = {};
-        //   const items = tableData?.items || [];
-        //   if (!Array.isArray(items) || items.length === 0) {
-        //     errors.supplierId = 'At least one order detail is required';
-        //     setTableError('At least one order detail is required');
-        //   } else {
-        //     setTableError('');
-        //   }
-        //   return errors;
-        // }}
+        onValidate={(values) => {
+          const errors = {};
+          const items = tableData?.items || [];
+          if (!Array.isArray(items) || items.length === 0) {
+            errors.supplierId = 'At least one order detail is required';
+            setTableError('At least one order detail is required');
+          } else {
+            setTableError('');
+          }
+          return errors;
+        }}
         backPath={backPath}
         width="100%"
         showSubmitButton={false}
