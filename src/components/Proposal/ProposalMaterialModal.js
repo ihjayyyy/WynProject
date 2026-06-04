@@ -2,7 +2,7 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import * as Yup from 'yup';
 import ItemModal from '../ItemDetails/itemModal';
-import { getMaterials } from '../../services/Materials';
+import { byTypeMaterials } from '../../services/Materials';
 
 const DEFAULT_FORM = {
   id: 0,
@@ -21,7 +21,7 @@ const DEFAULT_FORM = {
   laborCost: 0,
   extendedCost: 0,
   totalAmount: 0,
-  isAssembly: true,
+  isAssembly: false,
   totalPrice: 0,
   forecastedStartDate: null,
   forecastedEndDate: null,
@@ -46,29 +46,43 @@ export default function ProposalMaterialModal({ open, initial = {}, onCancel, on
 
   const [materials, setMaterials] = useState([]);
 
-  const normalizeMaterialCategory = (t) => {
+  const normalizeMaterialCategory = (t, isAssembly = false) => {
+    if (isAssembly) return 'Assembly';
     if (!t) return '';
     const lower = t.toLowerCase();
     if (lower === 'service') return 'Service';
     if (lower === 'tools' || lower === 'tool') return 'Tool';
     if (lower === 'materials' || lower === 'material') return 'Material';
+    if (lower === 'assembly' || lower === 'assemblies') return 'Assembly';
     return '';
   };
 
-  const [materialCategory, setMaterialCategory] = useState(() => normalizeMaterialCategory(initial?.materialType || ''));
+  const [materialCategory, setMaterialCategory] = useState(() => normalizeMaterialCategory(initial?.materialType || '', initial?.isAssembly));
 
   useEffect(() => {
-    setMaterialCategory(normalizeMaterialCategory(initial?.materialType || ''));
+    setMaterialCategory(normalizeMaterialCategory(initial?.materialType || '', initial?.isAssembly));
   }, [initial]);
+
+  const getMaterialFilters = useCallback((category) => {
+    if (category === 'Assembly') return { isAssembly: true };
+    if (category === 'Tool') return { materialType: 'Tool', isAssembly: false };
+    if (category === 'Material') return { materialType: 'Material', isAssembly: false };
+    if (category === 'Service') return { materialType: 'Service', isAssembly: false };
+    return {};
+  }, []);
 
   useEffect(() => {
     let mounted = true;
     if (!open) return;
+    if (materialCategory === 'Service') {
+      setMaterials([]);
+      return;
+    }
+
     (async () => {
       try {
-        const res = await getMaterials();
+        const res = await byTypeMaterials(getMaterialFilters(materialCategory));
         if (!mounted) return;
-        console.log('Loaded materials:', res.data); // Debug log
         if (!res.error && Array.isArray(res.data)) setMaterials(res.data || []);
         else setMaterials([]);
       } catch (err) {
@@ -76,7 +90,7 @@ export default function ProposalMaterialModal({ open, initial = {}, onCancel, on
       }
     })();
     return () => { mounted = false; };
-  }, [open]);
+  }, [open, materialCategory, getMaterialFilters]);
 
 
   useEffect(() => {
@@ -135,13 +149,7 @@ export default function ProposalMaterialModal({ open, initial = {}, onCancel, on
 
   const fields = useMemo(() => {
     const isService = materialCategory === 'Service';
-    const categorySelected = materialCategory === 'Tool' || materialCategory === 'Material' || materialCategory === 'Service';
-
-    const filteredMaterials = materialCategory === 'Tool'
-      ? materials.filter((m) => (m.materialType || '').toLowerCase().includes('tool'))
-      : materialCategory === 'Material'
-      ? materials.filter((m) => (m.materialType || '').toLowerCase().includes('material'))
-      : materials;
+    const categorySelected = materialCategory === 'Tool' || materialCategory === 'Material' || materialCategory === 'Service' || materialCategory === 'Assembly';
 
     return [
     { name: 'id', label: 'Id', type: 'number', value: Number(calculatedForm.id) || 0, hidden: true, validator: Yup.number().notRequired() },
@@ -154,11 +162,13 @@ export default function ProposalMaterialModal({ open, initial = {}, onCancel, on
       options: [
         { value: 'Tool', label: 'Tools' },
         { value: 'Material', label: 'Materials' },
+        { value: 'Assembly', label: 'Assembly' },
         { value: 'Service', label: 'Service' },
       ],
       validator: Yup.string().required('Material Type is required'),
       onChange: (item, updateField, itemFields, nextValue) => {
         const isNextService = nextValue === 'Service';
+        const isNextAssembly = nextValue === 'Assembly';
         setMaterialCategory(nextValue);
         setForm((f) => ({
           ...f,
@@ -169,6 +179,7 @@ export default function ProposalMaterialModal({ open, initial = {}, onCancel, on
           unitCost: 0,
           quantity: isNextService ? 1 : 0,
           materialType: nextValue,
+          isAssembly: isNextAssembly,
         }));
         updateField('materialId', '');
         updateField('name', '');
@@ -177,6 +188,7 @@ export default function ProposalMaterialModal({ open, initial = {}, onCancel, on
         updateField('unitCost', 0);
         updateField('quantity', isNextService ? 1 : 0);
         updateField('materialType', nextValue);
+        updateField('isAssembly', isNextAssembly);
       },
     },
     {
@@ -189,13 +201,13 @@ export default function ProposalMaterialModal({ open, initial = {}, onCancel, on
     },
     {
       name: 'materialId',
-      label: materialCategory === 'Tool' ? 'Tool Name' : materialCategory === 'Service' ? 'Service Name' : 'Material Name',
+      label: materialCategory === 'Tool' ? 'Tool Name' : materialCategory === 'Service' ? 'Service Name' : materialCategory === 'Assembly' ? 'Assembly Name' : 'Material Name',
       type: 'select',
       hidden: isService || !categorySelected,
       value: calculatedForm.materialId ? String(calculatedForm.materialId) : '',
-      options: filteredMaterials.length === 0
+      options: materials.length === 0
         ? [{ value: '__loading__', label: 'Loading materials...' }]
-        : filteredMaterials
+        : materials
             .filter((m) => m && m.id != null && m.id !== '')
             .map((m) => ({ value: String(m.id), label: `${m.name || m.code || ''}`.trim() })),
       validator: !isService && categorySelected ? Yup.string().required('Material is required') : Yup.string().notRequired(),
@@ -208,7 +220,7 @@ export default function ProposalMaterialModal({ open, initial = {}, onCancel, on
         updateField('name', next.name || '');
       },
     },
-    { name: 'code', label: materialCategory === 'Tool' ? 'Tool Code' : materialCategory === 'Service' ? 'Service Code' : 'Material Code', type: 'text', value: calculatedForm.code || '', readonly: true, validator: Yup.string().notRequired() },
+    { name: 'code', label: materialCategory === 'Tool' ? 'Tool Code' : materialCategory === 'Service' ? 'Service Code' : materialCategory === 'Assembly' ? 'Assembly Code' : 'Material Code', type: 'text', value: calculatedForm.code || '', readonly: true, validator: Yup.string().notRequired() },
     { name: 'materialType', label: 'Type', type: 'text', value: calculatedForm.materialType || '', hidden: true, validator: Yup.string().notRequired() },
     { name: 'uom', label: 'UoM', type: 'text', value: calculatedForm.uom || '', readonly: true, validator: Yup.string().notRequired() },
     {
@@ -287,7 +299,7 @@ export default function ProposalMaterialModal({ open, initial = {}, onCancel, on
       },
     },
     { name: 'vat', label: 'VAT', type: 'number', value: Number(calculatedForm.vat) || 0, readonly: true, validator: Yup.number().notRequired() },
-    { name: 'materialCost', label: materialCategory === 'Tool' ? 'Tool Amount' : materialCategory === 'Service' ? 'Service Amount' : 'Material Amount', type: 'number', value: Number(calculatedForm.materialCost) || 0, readonly: true, validator: Yup.number().notRequired() },
+    { name: 'materialCost', label: materialCategory === 'Tool' ? 'Tool Amount' : materialCategory === 'Service' ? 'Service Amount' : materialCategory === 'Assembly' ? 'Assembly Amount' : 'Material Amount', type: 'number', value: Number(calculatedForm.materialCost) || 0, readonly: true, validator: Yup.number().notRequired() },
     {
       name: 'laborCost',
       label: 'Labor Cost (Editable)',
