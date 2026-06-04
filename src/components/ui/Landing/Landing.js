@@ -17,6 +17,8 @@ export default function Landing({
   emptyMessage = 'No records found',
   width = '320px',
   filterFn,
+  headerAddon,
+  belowStatsAddon,
 }) {
   const [searchTerm, setSearchTerm] = useState('');
 
@@ -44,6 +46,7 @@ export default function Landing({
         <h1 className={styles.title}>{title}</h1>
 
         <div className={styles.headerActions}>
+          {headerAddon ? <div className={styles.headerAddon}>{headerAddon}</div> : null}
           <SearchBar
             placeholder={searchPlaceholder}
             value={searchTerm}
@@ -62,6 +65,8 @@ export default function Landing({
           <StatsCard key={s.key} number={s.number} label={s.label} change={s.change} isPositive={s.isPositive} />
         ))}
       </div>
+
+      {belowStatsAddon ? <div className={styles.belowStatsAddon}>{belowStatsAddon}</div> : null}
 
       <div className={styles.tableSection}>
         <DataTable columns={columns} data={filtered} showActions={false} emptyMessage={emptyMessage} />

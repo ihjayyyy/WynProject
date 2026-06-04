@@ -239,6 +239,12 @@ export const sidenavItems = [
     ],
   },
   {
+    label: 'Reports',
+    icon: FiFileText,
+    href: '/reports',
+    name: 'Reports',
+  },
+  {
     label: 'Maintenance',
     icon: FiSliders,
     name: 'Maintenance',
