@@ -1,6 +1,6 @@
-import { handleOpenPdf } from "./Helper";
+import { handleOpenPdf } from './Helper';
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL + "/MaterialInventory";
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL + '/MaterialInventory';
 
 export const INITIAL_MATERIAL_INVENTORY = {
   name: '',
@@ -13,7 +13,7 @@ export const INITIAL_MATERIAL_INVENTORY = {
 
 async function getMaterialInventories(filters) {
   try {
-    let url = API_BASE_URL + "/ByType";
+    let url = API_BASE_URL + '/ByType';
     if (filters && Object.keys(filters).length) {
       const params = new URLSearchParams();
       Object.entries(filters).forEach(([k, v]) => {
@@ -56,6 +56,21 @@ async function getMaterialInventoryByMaterialId(materialId) {
     });
     const json = await res.json();
     return { data: json && json.value ? json.value : json, error: null };
+  } catch (error) {
+    return { data: null, error: error?.message || error };
+  }
+}
+
+async function getMaterialInventoryReportByMaterialId(materialId) {
+  try {
+    const url = `${API_BASE_URL}/GenerateReport/${materialId}`;
+    const res = await fetch(url, {
+      method: 'GET',
+      headers: { Accept: '*/*' },
+    });
+    const json = await res.json();
+    const data = json && json.value ? json.value : json;
+    return { data, error: null };
   } catch (error) {
     return { data: null, error: error?.message || error };
   }
@@ -118,8 +133,8 @@ async function printMaterialReport_byId() {
   try {
     const url = `${API_BASE_URL}/GenerateReport/pdf`;
     const res = await fetch(url, {
-            method: 'GET',
-            headers: { Accept: '*/*' },
+      method: 'GET',
+      headers: { Accept: '*/*' },
     });
     handleOpenPdf(res);
   } catch (error) {
@@ -182,22 +197,26 @@ export {
   getMaterialInventories,
   getMaterialInventory,
   getMaterialInventoryByMaterialId,
+  getMaterialInventoryReportByMaterialId,
   getRacksByMaterialId,
   createMaterialInventory,
   updateMaterialInventory,
   updateMaterialInventoryQuantity,
   generateMaterialInventoryReport,
-  printMaterialReport_byId
+  printMaterialReport_byId,
 };
 
-export default {
+const MaterialInventoryService = {
   getMaterialInventories,
   getMaterialInventory,
   getMaterialInventoryByMaterialId,
+  getMaterialInventoryReportByMaterialId,
   getRacksByMaterialId,
   createMaterialInventory,
   updateMaterialInventory,
-  updateMaterialInventoryQuantity, 
+  updateMaterialInventoryQuantity,
   generateMaterialInventoryReport,
-  printMaterialReport_byId
+  printMaterialReport_byId,
 };
+
+export default MaterialInventoryService;

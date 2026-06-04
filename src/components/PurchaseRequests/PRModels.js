@@ -1,7 +1,14 @@
 import * as Yup from 'yup';
+import { getMaterialInventoryReportByMaterialId } from '@/services/MaterialInventory';
 
 export const FormFields = (projects, onFieldhanged) => [
-  { name: 'projectCode', label: 'Project Code', span: 'span1', readOnly: true },
+  {
+    name: 'projectCode',
+    label: 'Project Code',
+    span: 'span1',
+    readOnly: true,
+    hidden: true,
+  },
   {
     name: 'projectId',
     label: 'Project',
@@ -9,6 +16,7 @@ export const FormFields = (projects, onFieldhanged) => [
     options: projects.map((s) => ({ label: s.name, value: s.id })),
     searchable: true,
     span: 'span3',
+    hidden: true,
     onChange: (val, values, setValues) => {
       const found = projects.find((s) => s.id === val);
       if (!found) {
@@ -25,12 +33,9 @@ export const FormFields = (projects, onFieldhanged) => [
       if (found) setValues(valuesCopy);
       onFieldhanged('projectId', val, valuesCopy);
     },
-    validator: Yup.number()
-      .typeError('Project is required')
-      .required('Project is required'),
   },
   { name: 'code', hidden: true },
-  { name: 'name', hidden: true },
+  { name: 'name', label: 'Name', type: 'textbox', span: 'span4' },
   { name: 'spacer-1', type: 'spacer', span: 'span2' },
   {
     name: 'requestDate',
@@ -98,23 +103,43 @@ export const ItemsFields = (materials, pr) => [
     name: 'material',
     label: 'Material',
     type: 'select',
-    options: materials.map(({ id, name }) => ({ value: id, name: name })),
+    options: materials.map(({ id, name }) => ({ value: id, label: name })),
     readonly: false,
     initialvalue: '',
+    hydrateOnOpen: true,
     validator: Yup.string().required(`Material is required`),
-    onChange: (item, updateField, fields) => {
+    onChange: async (item, updateField, fields) => {
       const material = materials.find((a) => a.id == item.value);
       if (!material) {
         updateField('materialId', 0);
         updateField('code', '');
         updateField('name', '');
         updateField('uom', '');
+        updateField('stockQuantity', 0);
+        updateField('requestedQuantity', 0);
+        updateField('orderedQuantity', 0);
+        updateField('effectiveQuantity', 0);
         return;
       }
       updateField('materialId', material.id);
       updateField('code', material.code);
       updateField('name', material.name);
       updateField('uom', material.purchaseUnitOfMeasure);
+
+      const inventory = await getMaterialInventoryReportByMaterialId(
+        material.id,
+      );
+      if (inventory && !inventory.error && inventory.data) {
+        updateField('stockQuantity', inventory.data.stockQuantity ?? 0);
+        updateField('requestedQuantity', inventory.data.requestedQuantity ?? 0);
+        updateField('orderedQuantity', inventory.data.orderedQuantity ?? 0);
+        updateField('effectiveQuantity', inventory.data.effectiveQuantity ?? 0);
+      } else {
+        updateField('stockQuantity', 0);
+        updateField('requestedQuantity', 0);
+        updateField('orderedQuantity', 0);
+        updateField('effectiveQuantity', 0);
+      }
     },
   },
   { name: 'code', label: 'Code', type: 'text', hidden: true },
@@ -134,6 +159,35 @@ export const ItemsFields = (materials, pr) => [
       console.log('quantity changed:', item.quantity);
     },
   },
+  {
+    name: 'stockQuantity',
+    label: 'Stock Quantity',
+    type: 'number',
+    readonly: true,
+    initialvalue: 0,
+  },
+  {
+    name: 'requestedQuantity',
+    label: 'Requested Quantity',
+    type: 'number',
+    readonly: true,
+    initialvalue: 0,
+  },
+  {
+    name: 'orderedQuantity',
+    label: 'Ordered Quantity',
+    type: 'number',
+    readonly: true,
+    initialvalue: 0,
+  },
+  {
+    name: 'effectiveQuantity',
+    label: 'Effective Quantity',
+    type: 'number',
+    readonly: true,
+    initialvalue: 0,
+  },
+
   { name: 'uom', label: 'Unit of Measure', type: 'text', readonly: true },
   { name: 'remarks', label: 'Remarks', type: 'text' },
 ];

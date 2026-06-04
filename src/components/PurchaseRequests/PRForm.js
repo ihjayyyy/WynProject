@@ -202,6 +202,9 @@ export default function PRForm() {
     console.log('submit');
     console.log(updatedForm);
 
+    // Ensure projectID defaults to 0 when not provided
+    updatedForm.projectID = updatedForm.projectID ?? updatedForm.projectId ?? 0;
+
     let res = {};
     updatedForm.id = updatedForm.id ?? 0;
 
