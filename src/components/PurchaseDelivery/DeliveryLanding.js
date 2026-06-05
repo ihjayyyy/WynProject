@@ -6,50 +6,99 @@ import { FiEdit2, FiEye, FiFileText } from 'react-icons/fi';
 import DropdownAction from '../ui/DropdownAction/DropdownAction';
 import Landing from '../ui/Landing/Landing';
 import { GetAll, printDelivery_byId } from '@/services/PurchaseDelivery';
+import StatusBadge from '../ui/StatusBadge/StatusBadge';
 const baseColumns = [
-   { header: 'Delivery Date', key: 'deliveryDate' },
+  {
+    header: 'Delivery Date',
+    key: 'deliveryDate',
+    render: (item) =>
+      item.deliveryDate
+        ? new Date(item.deliveryDate).toLocaleDateString('en-US', {
+            year: 'numeric',
+            month: 'short',
+            day: '2-digit',
+          })
+        : '—',
+  },
   { header: 'Delivery No', key: 'deliveryNumber' },
   { header: 'Supplier', key: 'name' },
   { header: 'Order No', key: 'orderNumber' },
   { header: 'Supplier DR No', key: 'supplierDRNumber' },
   { header: 'Received By', key: 'receivedBy' },
-  { header: 'Status', key: 'status' },
-  
-
+  {
+    header: 'Status',
+    key: 'status',
+    render: (item) => <StatusBadge status={item.status} />,
+  },
 ];
 
 export default function DeliveryLanding() {
   const [deliveries, setDeliveries] = useState([]);
   const router = useRouter();
 
-  useEffect(()=>{
-    const fetchDeliveries = async() => {
+  useEffect(() => {
+    const fetchDeliveries = async () => {
+      const res = await GetAll();
+      console.log(res);
+      if (res && !res.error) {
+        setDeliveries(res.data);
+      }
+    };
 
-    const res = await GetAll();
-    console.log(res)
-     if(res && !res.error){
-          setDeliveries(res.data);
-     }
-   }
-
-   fetchDeliveries();
-  },[])
+    fetchDeliveries();
+  }, []);
 
   const actionItems = useMemo(
     () => [
-      { key: 'view', label: 'View', icon: <FiEye size={14} />, onClick: (item) => router.push(`/purchase/deliveries/deliveryform?id=${item.id}`) },
-      { key: 'edit', label: 'Edit', icon: <FiEdit2 size={14} />, onClick: (item) => router.push(`/purchase/deliveries/deliveryform?id=${item.id}&mode=edit`) },
-      { key: 'viewpdf', label: 'Print Document', icon: <FiFileText size={14} />, onClick: (item) => (printDelivery_byId(item.id))},
+      {
+        key: 'view',
+        label: 'View',
+        icon: <FiEye size={14} />,
+        onClick: (item) =>
+          router.push(`/purchase/deliveries/deliveryform?id=${item.id}`),
+      },
+      {
+        key: 'edit',
+        label: 'Edit',
+        icon: <FiEdit2 size={14} />,
+        onClick: (item) =>
+          router.push(
+            `/purchase/deliveries/deliveryform?id=${item.id}&mode=edit`,
+          ),
+      },
+      {
+        key: 'viewpdf',
+        label: 'Print Document',
+        icon: <FiFileText size={14} />,
+        onClick: (item) => printDelivery_byId(item.id),
+      },
     ],
-    [router]
+    [router],
   );
 
-  const columns = useMemo(() => [...baseColumns, { header: 'Action', key: 'actions', align: 'right', render: (item) => <DropdownAction item={item} items={actionItems} /> }], [actionItems]);
+  const columns = useMemo(
+    () => [
+      ...baseColumns,
+      {
+        header: 'Action',
+        key: 'actions',
+        align: 'right',
+        render: (item) => <DropdownAction item={item} items={actionItems} />,
+      },
+    ],
+    [actionItems],
+  );
 
   const stats = useMemo(() => {
     const total = deliveries.length;
     return [
-      { key: 'total', label: 'Total Deliveries', number: total, change: `${total} records`, isPositive: true },
+      {
+        key: 'total',
+        label: 'Total Deliveries',
+        number: total,
+        change: `${total} records`,
+        isPositive: true,
+      },
     ];
   }, [deliveries]);
 
