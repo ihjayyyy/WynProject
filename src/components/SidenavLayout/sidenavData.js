@@ -225,6 +225,12 @@ export const sidenavItems = [
         name: 'Inventory.MaterialReceived',
       },
       {
+        label: 'Inventory Movement',
+        icon: FiActivity,
+        href: '/inventory/inventory-movement',
+        name: 'Inventory.InventoryMovement',
+      },
+      {
         label: 'Deliveries',
         icon: FiTruck,
         href: '/purchase/deliveries',

@@ -12,6 +12,7 @@ import { useToast } from '../ui/Toast/Toast';
 import { AccessContext } from '@/app/contextProviders/accessContext';
 import { FiPrinter, FiEdit2 } from 'react-icons/fi';
 import StatusBadge from '../ui/StatusBadge/StatusBadge';
+import InvalidPage from '@/components/InvalidPage/page';
 
 export default function MaterialRequestsTab({ projectId, editable = true }) {
   const PageName = 'Projects.Projects';
@@ -194,7 +195,7 @@ export default function MaterialRequestsTab({ projectId, editable = true }) {
       { name: 'deadline', label: 'Deadline', type: 'date', value: fmt(record.deadline) || defaultDeadline },
       { name: 'requestDate', label: 'Request Date', type: 'date', value: fmt(record.requestDate) || today, hidden: true },
     ];
-  }, [editing, projectId, materialOptions, getTotalRequestedQty]);
+  }, [editing, projectId, materialOptions, getTotalRequestedQty, materials]);
 
   const filtered = useMemo(() => {
     const keyword = (searchTerm || '').trim().toLowerCase();
@@ -257,6 +258,8 @@ export default function MaterialRequestsTab({ projectId, editable = true }) {
       ) : null,
     },
   ], [editable, isAllowed]);
+
+  if (!isAllowed(PageName, 'r')) return <InvalidPage />;
 
   return (
     <div className={styles.landingWrap}>

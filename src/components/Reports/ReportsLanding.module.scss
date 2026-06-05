@@ -10,6 +10,14 @@
   gap: 10px;
 }
 
+.exportActions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  padding-right: 8px;
+}
+
 .moduleFilterWrap {
   display: flex;
   flex-direction: column;

@@ -4,6 +4,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import { AccessProvider } from '../contextProviders/accessContext';
 import '../globals.scss';
 import { ConfirmModalProvider } from "../contextProviders/confirmModalContext";
+import AuthGuard from '../../components/Providers/AuthGuard';
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -22,12 +23,14 @@ export const metadata = {
 
 export default function MainLayout({ children }) {
   return (
-    <AccessProvider>
-      <ConfirmModalProvider>
-        <div className={`${geistSans.variable} ${geistMono.variable}`}>
-          <SidenavLayout>{children}</SidenavLayout>
-        </div>
-      </ConfirmModalProvider>
-    </AccessProvider>
+    <AuthGuard>
+      <AccessProvider>
+        <ConfirmModalProvider>
+          <div className={`${geistSans.variable} ${geistMono.variable}`}>
+            <SidenavLayout>{children}</SidenavLayout>
+          </div>
+        </ConfirmModalProvider>
+      </AccessProvider>
+    </AuthGuard>
   );
 }

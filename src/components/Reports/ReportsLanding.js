@@ -1,9 +1,13 @@
 'use client';
 
 import React, { useEffect, useMemo, useState } from 'react';
+import { FiDownload, FiFileText } from 'react-icons/fi';
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
 import Landing from '../ui/Landing/Landing';
 import StatusBadge from '../ui/StatusBadge/StatusBadge';
 import Select from '../ui/Select/Select';
+import Button from '../ui/Button/Button';
 import { getReports } from '../../services/Reports';
 import { getSuppliers } from '../../services/Supplier';
 import { getRacks } from '../../services/Rack';
@@ -19,11 +23,12 @@ const getReferenceNo = (item) =>
   item?.orderNumber ||
   item?.requestNumber ||
   item?.invoiceNumber ||
+  item?.referenceNumber ||
   item?.deliveryNumber ||
   '-';
 
 const getPartyName = (item) =>
-  item?.customerName || item?.companyName || item?.supplierName || item?.projectName || '-';
+  item?.customerName || item?.companyName || item?.supplierName || item?.projectName || item?.materialName || '-';
 
 const getPrimaryDate = (item) =>
   item?.requestDate ||
@@ -34,10 +39,11 @@ const getPrimaryDate = (item) =>
   item?.orderDate ||
   item?.invoiceDate ||
   item?.deliveryDate ||
+  item?.createdAt ||
   null;
 
 const getAmount = (item) => {
-  const options = [item?.proposalTotal, item?.contractPrice, item?.amount, item?.totalAmountPaid];
+  const options = [item?.proposalTotal, item?.contractPrice, item?.amount, item?.totalAmountPaid, item?.balance];
   const found = options.find((value) => value !== null && value !== undefined);
   return Number(found) || 0;
 };
@@ -49,6 +55,19 @@ const formatDate = (value) => {
   return date.toLocaleDateString();
 };
 
+const formatDateTime = (value) => {
+  if (!value || value === EMPTY_DATE) return '-';
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return '-';
+  return date.toLocaleString();
+};
+
+const asText = (value, fallback = '-') => {
+  if (value === null || value === undefined) return fallback;
+  const text = String(value).trim();
+  return text ? text : fallback;
+};
+
 const formatCurrency = (value) =>
   new Intl.NumberFormat('en-PH', {
     style: 'currency',
@@ -56,6 +75,17 @@ const formatCurrency = (value) =>
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   }).format(Number(value) || 0);
+
+const formatReportCurrency = (value) =>
+  `PHP ${new Intl.NumberFormat('en-US', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(Number(value) || 0)}`;
+
+const escapeCsvValue = (value) => {
+  const text = value === null || value === undefined ? '' : String(value);
+  return `"${text.replace(/"/g, '""')}"`;
+};
 
 const pad2 = (value) => String(value).padStart(2, '0');
 
@@ -71,7 +101,6 @@ const getEndOfMonthDate = () => {
 };
 
 const MODULE_OPTIONS = [
-  { label: 'All', value: 'all' },
   { label: 'Proposal', value: 'proposal' },
   { label: 'Project', value: 'project' },
   { label: 'Sales Billing', value: 'salesbilling' },
@@ -90,7 +119,7 @@ export default function ReportsLanding() {
   const [totalCount, setTotalCount] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [selectedModule, setSelectedModule] = useState('all');
+  const [selectedModule, setSelectedModule] = useState('proposal');
   const [dateFrom, setDateFrom] = useState(getTodayDate);
   const [dateTo, setDateTo] = useState(getEndOfMonthDate);
   const [supplierId, setSupplierId] = useState('');
@@ -213,6 +242,7 @@ export default function ReportsLanding() {
             amount: getAmount(item),
             status,
             detailStatuses,
+            raw: item || {},
             searchableText: JSON.stringify(item || {}).toLowerCase(),
           };
         });
@@ -243,8 +273,198 @@ export default function ReportsLanding() {
     shouldUseRackFilter,
   ]);
 
-  const columns = useMemo(
-    () => [
+  const columns = useMemo(() => {
+    const commonStatus = {
+      header: 'Status',
+      key: 'status',
+      render: (item) => <StatusBadge status={item.status} />,
+    };
+
+    const moduleKey = String(selectedModule || 'all').toLowerCase();
+
+    if (moduleKey === 'proposal') {
+      return [
+        { header: 'Proposal No', key: 'proposalNo', render: (item) => asText(item.raw?.proposalNo) },
+        { header: 'Customer', key: 'customerName', render: (item) => asText(item.raw?.customerName) },
+        { header: 'Start Date', key: 'forecastedStartDate', render: (item) => formatDate(item.raw?.forecastedStartDate) },
+        {
+          header: 'Proposal Total',
+          key: 'proposalTotal',
+          align: 'right',
+          render: (item) => formatCurrency(item.raw?.proposalTotal),
+        },
+        commonStatus,
+        {
+          header: 'Approval',
+          key: 'approvalStatus',
+          render: (item) => <StatusBadge status={asText(item.raw?.approvalStatus)} />,
+        },
+      ];
+    }
+
+    if (moduleKey === 'project') {
+      return [
+        { header: 'Project No', key: 'projectNo', render: (item) => asText(item.raw?.projectNo) },
+        { header: 'Company', key: 'companyName', render: (item) => asText(item.raw?.companyName) },
+        { header: 'Start Date', key: 'startDate', render: (item) => formatDate(item.raw?.startDate) },
+        { header: 'End Date', key: 'endDate', render: (item) => formatDate(item.raw?.endDate) },
+        {
+          header: 'Contract Price',
+          key: 'contractPrice',
+          align: 'right',
+          render: (item) => formatCurrency(item.raw?.contractPrice),
+        },
+        {
+          header: 'Progress %',
+          key: 'overallProgress',
+          align: 'right',
+          render: (item) => `${Number(item.raw?.overallProgress || 0).toFixed(2)}%`,
+        },
+        commonStatus,
+      ];
+    }
+
+    if (moduleKey === 'salesbilling') {
+      return [
+        { header: 'Billing No', key: 'salesBillingNo', render: (item) => asText(item.raw?.salesBillingNo) },
+        { header: 'Customer', key: 'customerName', render: (item) => asText(item.raw?.customerName) },
+        { header: 'Billing Date', key: 'billingDate', render: (item) => formatDate(item.raw?.billingDate) },
+        { header: 'Due Date', key: 'dueDate', render: (item) => formatDate(item.raw?.dueDate) },
+        {
+          header: 'Amount',
+          key: 'amount',
+          align: 'right',
+          render: (item) => formatCurrency(item.raw?.amount),
+        },
+        {
+          header: 'Balance',
+          key: 'balance',
+          align: 'right',
+          render: (item) => formatCurrency(item.raw?.balance),
+        },
+        commonStatus,
+        {
+          header: 'Payment',
+          key: 'paymentStatus',
+          render: (item) => <StatusBadge status={asText(item.raw?.paymentStatus)} />,
+        },
+      ];
+    }
+
+    if (moduleKey === 'salescollection') {
+      return [
+        { header: 'Collection No', key: 'collectionNo', render: (item) => asText(item.raw?.collectionNo) },
+        { header: 'Receipt No', key: 'receiptNumber', render: (item) => asText(item.raw?.receiptNumber) },
+        { header: 'Customer', key: 'customerName', render: (item) => asText(item.raw?.customerName) },
+        { header: 'Date', key: 'date', render: (item) => formatDate(item.raw?.date) },
+        {
+          header: 'Amount',
+          key: 'amount',
+          align: 'right',
+          render: (item) => formatCurrency(item.raw?.amount),
+        },
+        {
+          header: 'Total Paid',
+          key: 'totalAmountPaid',
+          align: 'right',
+          render: (item) => formatCurrency(item.raw?.totalAmountPaid),
+        },
+        commonStatus,
+      ];
+    }
+
+    if (moduleKey === 'purchaseorder') {
+      return [
+        { header: 'Order No', key: 'orderNumber', render: (item) => asText(item.raw?.orderNumber) },
+        { header: 'Supplier', key: 'supplierName', render: (item) => asText(item.raw?.supplierName) },
+        { header: 'Order Date', key: 'orderDate', render: (item) => formatDate(item.raw?.orderDate) },
+        {
+          header: 'Est. Delivery',
+          key: 'estimatedDeliveryDate',
+          render: (item) => formatDate(item.raw?.estimatedDeliveryDate),
+        },
+        {
+          header: 'Amount',
+          key: 'amount',
+          align: 'right',
+          render: (item) => formatCurrency(item.raw?.amount),
+        },
+        commonStatus,
+        {
+          header: 'Delivery',
+          key: 'deliveryStatus',
+          render: (item) => <StatusBadge status={asText(item.raw?.deliveryStatus)} />,
+        },
+      ];
+    }
+
+    if (moduleKey === 'purchaseinvoice') {
+      return [
+        { header: 'Invoice No', key: 'invoiceNumber', render: (item) => asText(item.raw?.invoiceNumber) },
+        { header: 'PO No', key: 'purchaseOrderNumber', render: (item) => asText(item.raw?.purchaseOrderNumber) },
+        { header: 'Supplier', key: 'supplierName', render: (item) => asText(item.raw?.supplierName) },
+        { header: 'Invoice Date', key: 'invoiceDate', render: (item) => formatDate(item.raw?.invoiceDate) },
+        { header: 'Due Date', key: 'dueDate', render: (item) => formatDate(item.raw?.dueDate) },
+        {
+          header: 'Amount',
+          key: 'amount',
+          align: 'right',
+          render: (item) => formatCurrency(item.raw?.amount),
+        },
+        {
+          header: 'Balance',
+          key: 'balance',
+          align: 'right',
+          render: (item) => formatCurrency(item.raw?.balance),
+        },
+        commonStatus,
+        {
+          header: 'Payment',
+          key: 'paymentStatus',
+          render: (item) => <StatusBadge status={asText(item.raw?.paymentStatus)} />,
+        },
+      ];
+    }
+
+    if (moduleKey === 'purchasedelivery') {
+      return [
+        { header: 'Delivery No', key: 'deliveryNumber', render: (item) => asText(item.raw?.deliveryNumber) },
+        { header: 'Order No', key: 'orderNumber', render: (item) => asText(item.raw?.orderNumber) },
+        { header: 'Supplier', key: 'supplierName', render: (item) => asText(item.raw?.supplierName) },
+        { header: 'Delivery Date', key: 'deliveryDate', render: (item) => formatDate(item.raw?.deliveryDate) },
+        commonStatus,
+      ];
+    }
+
+    if (moduleKey === 'inventorymovement') {
+      return [
+        { header: 'Reference No', key: 'referenceNumber', render: (item) => asText(item.raw?.referenceNumber) },
+        { header: 'Material', key: 'materialName', render: (item) => asText(item.raw?.materialName) },
+        { header: 'Action Type', key: 'actionType', render: (item) => asText(item.raw?.actionType) },
+        { header: 'Mode', key: 'mode', render: (item) => asText(item.raw?.mode) },
+        {
+          header: 'Before',
+          key: 'quantityBefore',
+          align: 'right',
+          render: (item) => Number(item.raw?.quantityBefore || 0).toLocaleString(),
+        },
+        {
+          header: 'Change',
+          key: 'quantityChange',
+          align: 'right',
+          render: (item) => Number(item.raw?.quantityChange || 0).toLocaleString(),
+        },
+        {
+          header: 'After',
+          key: 'quantityAfter',
+          align: 'right',
+          render: (item) => Number(item.raw?.quantityAfter || 0).toLocaleString(),
+        },
+        { header: 'Created At', key: 'createdAt', render: (item) => formatDateTime(item.raw?.createdAt) },
+      ];
+    }
+
+    return [
       { header: 'Module', key: 'module' },
       { header: 'Reference No', key: 'referenceNo' },
       { header: 'Party', key: 'partyName' },
@@ -255,11 +475,7 @@ export default function ReportsLanding() {
         align: 'right',
         render: (item) => formatCurrency(item.amount),
       },
-      {
-        header: 'Status',
-        key: 'status',
-        render: (item) => <StatusBadge status={item.status} />,
-      },
+      commonStatus,
       {
         header: 'Details Status',
         key: 'details',
@@ -274,9 +490,8 @@ export default function ReportsLanding() {
             '-'
           ),
       },
-    ],
-    []
-  );
+    ];
+  }, [selectedModule]);
 
   const stats = useMemo(() => {
     const modules = new Set(rows.map((item) => item.module)).size;
@@ -334,6 +549,124 @@ export default function ReportsLanding() {
 
     return haystack.includes(keyword);
   };
+
+  const exportRows = useMemo(
+    () =>
+      rows.map((item) => ({
+        module: item.module,
+        referenceNo: item.referenceNo,
+        partyName: item.partyName,
+        primaryDate: item.primaryDate,
+        amount: Number(item.amount) || 0,
+        status: item.status,
+        details: item.detailStatuses.join(', '),
+      })),
+    [rows]
+  );
+
+  const canExport = exportRows.length > 0;
+
+  const handleGenerateCsv = () => {
+    const headers = ['Module', 'Reference No', 'Party', 'Date', 'Amount', 'Status', 'Details Status'];
+    const csvLines = [
+      headers.map(escapeCsvValue).join(','),
+      ...exportRows.map((item) =>
+        [item.module, item.referenceNo, item.partyName, item.primaryDate, formatReportCurrency(item.amount), item.status, item.details]
+          .map(escapeCsvValue)
+          .join(','),
+      ),
+    ];
+
+    const blob = new Blob(["\ufeff" + csvLines.join('\n')], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `reports-${selectedModule}-${dateFrom}-${dateTo}.csv`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
+
+  const handleGeneratePdf = () => {
+    if (!canExport) return;
+    const reportTitle = 'Reports';
+    const selectedModuleLabel = MODULE_OPTIONS.find((option) => option.value === selectedModule)?.label || 'All';
+    const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
+    const pageWidth = doc.internal.pageSize.getWidth();
+
+    doc.setFontSize(18);
+    doc.text(reportTitle, 14, 16);
+    doc.setFontSize(10);
+    doc.text(`Generated: ${new Date().toLocaleString()}`, 14, 22);
+    doc.text(`Module: ${selectedModuleLabel}`, pageWidth - 14, 16, { align: 'right' });
+    doc.text(`Date From: ${dateFrom || '-'}`, pageWidth - 14, 22, { align: 'right' });
+    doc.text(`Date To: ${dateTo || '-'}`, pageWidth - 14, 28, { align: 'right' });
+
+    const totalLoaded = rows.length;
+    const combinedAmount = rows.reduce((sum, item) => sum + (Number(item.amount) || 0), 0);
+    doc.setFontSize(9);
+    doc.text(`Total Records: ${totalCount}`, 14, 30);
+    doc.text(`Loaded Rows: ${totalLoaded}`, 14, 35);
+    doc.text(`Combined Amount: ${formatReportCurrency(combinedAmount)}`, 14, 40);
+
+    autoTable(doc, {
+      startY: 46,
+      head: [[
+        'Module',
+        'Reference No',
+        'Party',
+        'Date',
+        'Amount',
+        'Status',
+        'Details Status',
+      ]],
+      body: exportRows.map((item) => [
+        item.module,
+        item.referenceNo,
+        item.partyName,
+        item.primaryDate,
+        formatReportCurrency(item.amount),
+        item.status,
+        item.details || '-',
+      ]),
+      styles: {
+        fontSize: 8,
+        cellPadding: 2,
+        overflow: 'linebreak',
+        valign: 'top',
+      },
+      headStyles: {
+        fillColor: [243, 244, 246],
+        textColor: [17, 24, 39],
+        lineColor: [209, 213, 219],
+        lineWidth: 0.2,
+      },
+      bodyStyles: {
+        lineColor: [229, 231, 235],
+        lineWidth: 0.2,
+      },
+      columnStyles: {
+        4: { halign: 'right', cellWidth: 28 },
+      },
+      margin: { left: 14, right: 14 },
+      theme: 'grid',
+      pageBreak: 'auto',
+    });
+
+    doc.save(`reports-${selectedModule}-${dateFrom}-${dateTo}.pdf`);
+  };
+
+  const reportActions = (
+    <div className={styles.exportActions}>
+      <Button variant="secondary" onClick={handleGenerateCsv} icon={<FiDownload size={14} />} disabled={!canExport}>
+        CSV
+      </Button>
+      <Button variant="secondary" onClick={handleGeneratePdf} icon={<FiFileText size={14} />} disabled={!canExport}>
+        PDF
+      </Button>
+    </div>
+  );
 
   const reportFilters = (
     <div className={styles.filtersWrap}>
@@ -425,6 +758,7 @@ export default function ReportsLanding() {
       emptyMessage={error ? `Error: ${error}` : 'No report records found'}
       width='420px'
       filterFn={filterFn}
+      headerAddon={reportActions}
       belowStatsAddon={reportFilters}
     />
   );

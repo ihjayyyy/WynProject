@@ -10,6 +10,7 @@ import ConfirmModal from '../ui/ConfirmModal/ConfirmModal';
 import { AccessContext } from '@/app/contextProviders/accessContext';
 import { getReceivedMaterialTransfers, transferMaterialTransfer } from '@/services/MaterialTransfer';
 import { useToast } from '../ui/Toast/Toast';
+import InvalidPage from '@/components/InvalidPage/page';
 
 const baseColumns = [
   // { header: 'Id', key: 'id' },,
@@ -163,6 +164,8 @@ return [
       item.transferFromName, item.transferToName, item.status, item.receivedBy]
       .filter(Boolean)
       .some((v) => String(v).toLowerCase().includes(keyword));
+
+  if (!isAllowed(PageName, 'r')) return <InvalidPage />;
 
   return (
     <>

@@ -14,6 +14,7 @@ import { getByProjectId } from '../../services/ProjectScope';
 import { useToast } from '../ui/Toast/Toast';
 import * as Yup from 'yup';
 import { AccessContext } from '@/app/contextProviders/accessContext';
+import InvalidPage from '@/components/InvalidPage/page';
 
 const BASE_COLUMNS = [
   { header: 'Name', key: 'name' },
@@ -242,6 +243,8 @@ export default function ProjectStaffTab({ projectId = 0, editable = true }) {
       ) : null,
     },
   ], [scopeOptions, editable, isAllowed]);
+
+  if (!isAllowed(PageName, 'r')) return <InvalidPage />;
 
   return (
     <div className={styles.landingWrap}>

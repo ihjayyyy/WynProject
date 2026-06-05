@@ -12,6 +12,7 @@ import { getProjectStaffsByProjectId } from '../../services/ProjectStaff';
 import { useToast } from '../ui/Toast/Toast';
 import { useConfirmModal } from '@/app/contextProviders/confirmModalContext';
 import { AccessContext } from '@/app/contextProviders/accessContext';
+import InvalidPage from '@/components/InvalidPage/page';
 import * as Yup from 'yup';
 
 function toDateInputValue(date) {
@@ -442,6 +443,8 @@ export default function AttendanceTab({ projectId = 0, editable = true }) {
       ) : null,
     },
   ], [confirmModal, handleDelete, editable, isAllowed]);
+
+  if (!isAllowed(PageName, 'r')) return <InvalidPage />;
 
   return (
     <div className={styles.landingWrap}>
