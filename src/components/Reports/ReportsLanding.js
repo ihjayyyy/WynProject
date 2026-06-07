@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useContext, useEffect, useMemo, useState } from 'react';
 import { FiDownload, FiFileText } from 'react-icons/fi';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
@@ -8,6 +8,17 @@ import Landing from '../ui/Landing/Landing';
 import StatusBadge from '../ui/StatusBadge/StatusBadge';
 import Select from '../ui/Select/Select';
 import Button from '../ui/Button/Button';
+import { AccessContext } from '@/app/contextProviders/accessContext';
+import {
+  DEFAULT_MODULE_OPTIONS,
+  MODULE_ACCESS_REQUIREMENTS,
+  SUPPLIER_FILTER_MODULES,
+  RACK_FILTER_MODULE,
+  normalizeModuleValue,
+  toModuleLabel,
+  getStatusOptionsForModule,
+  getReportColumns,
+} from './ReportsModels';
 import { getReports } from '../../services/Reports';
 import { getSuppliers } from '../../services/Supplier';
 import { getRacks } from '../../services/Rack';
@@ -100,26 +111,21 @@ const getEndOfMonthDate = () => {
   return toDateInputValue(endOfMonth);
 };
 
-const MODULE_OPTIONS = [
-  { label: 'Proposal', value: 'proposal' },
-  { label: 'Project', value: 'project' },
-  { label: 'Sales Billing', value: 'salesbilling' },
-  { label: 'Sales Collection', value: 'salescollection' },
-  { label: 'Purchase Order', value: 'purchaseorder' },
-  { label: 'Purchase Invoice', value: 'purchaseinvoice' },
-  { label: 'Purchase Delivery', value: 'purchasedelivery' },
-  { label: 'Inventory Movement', value: 'inventoryMovement' },
-];
-
-const SUPPLIER_FILTER_MODULES = ['purchaseorder', 'purchaseinvoice', 'purchasedelivery'];
-const RACK_FILTER_MODULE = 'inventoryMovement';
+const getReportItems = (payload) => {
+  if (Array.isArray(payload)) return payload;
+  if (Array.isArray(payload?.items)) return payload.items;
+  return [];
+};
 
 export default function ReportsLanding() {
+  const { isAllowed } = useContext(AccessContext);
   const [rows, setRows] = useState([]);
   const [totalCount, setTotalCount] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [selectedModule, setSelectedModule] = useState('proposal');
+  const [status, setStatus] = useState('');
+  const [moduleOptions, setModuleOptions] = useState(DEFAULT_MODULE_OPTIONS);
   const [dateFrom, setDateFrom] = useState(getTodayDate);
   const [dateTo, setDateTo] = useState(getEndOfMonthDate);
   const [supplierId, setSupplierId] = useState('');
@@ -127,8 +133,22 @@ export default function ReportsLanding() {
   const [rackId, setRackId] = useState('');
   const [rackOptions, setRackOptions] = useState([{ label: 'All Racks', value: '' }]);
 
+  const accessibleModuleOptions = useMemo(
+    () =>
+      moduleOptions.filter((option) => {
+        const optionValue = normalizeModuleValue(option.value);
+        const requiredAccessNames = MODULE_ACCESS_REQUIREMENTS[optionValue] || [];
+        if (!requiredAccessNames.length) return true;
+        return requiredAccessNames.some((accessName) => isAllowed(accessName, 'r'));
+      }),
+    [moduleOptions, isAllowed]
+  );
+
+  const hasAccessibleModule = accessibleModuleOptions.length > 0;
+
   const shouldUseSupplierFilter = SUPPLIER_FILTER_MODULES.includes(selectedModule);
   const shouldUseRackFilter = selectedModule === RACK_FILTER_MODULE;
+  const statusOptions = useMemo(() => getStatusOptionsForModule(selectedModule), [selectedModule]);
 
   useEffect(() => {
     let mounted = true;
@@ -194,10 +214,85 @@ export default function ReportsLanding() {
 
   useEffect(() => {
     let mounted = true;
+
+    (async () => {
+      const res = await getReports({ modules: 'all', dateFrom, dateTo });
+      if (!mounted) return;
+
+      if (res?.error) {
+        setModuleOptions(DEFAULT_MODULE_OPTIONS);
+        return;
+      }
+
+      const items = getReportItems(res?.data);
+      const discovered = new Map();
+
+      items.forEach((item) => {
+        const value = normalizeModuleValue(item?.module);
+        if (!value) return;
+        discovered.set(value, toModuleLabel(item?.module || value));
+      });
+
+      const defaultValues = new Set(DEFAULT_MODULE_OPTIONS.map((option) => normalizeModuleValue(option.value)));
+      const dynamicExtras = Array.from(discovered.entries())
+        .filter(([value]) => !defaultValues.has(value))
+        .map(([value, label]) => ({ value, label }))
+        .sort((a, b) => a.label.localeCompare(b.label));
+
+      const mergedOptions = [
+        ...DEFAULT_MODULE_OPTIONS.map((option) => ({
+          ...option,
+          label: discovered.get(normalizeModuleValue(option.value)) || option.label,
+        })),
+        ...dynamicExtras,
+      ];
+
+      setModuleOptions(mergedOptions);
+      setSelectedModule((current) =>
+        mergedOptions.some((option) => normalizeModuleValue(option.value) === normalizeModuleValue(current))
+          ? current
+          : mergedOptions[0]?.value || 'proposal'
+      );
+    })();
+
+    return () => {
+      mounted = false;
+    };
+  }, [dateFrom, dateTo]);
+
+  useEffect(() => {
+    if (!hasAccessibleModule) {
+      if (selectedModule) setSelectedModule('');
+      return;
+    }
+
+    if (!accessibleModuleOptions.some((option) => option.value === selectedModule)) {
+      setSelectedModule(accessibleModuleOptions[0]?.value || '');
+    }
+  }, [accessibleModuleOptions, hasAccessibleModule, selectedModule]);
+
+  useEffect(() => {
+    if (status && !statusOptions.some((option) => option.value === status)) {
+      setStatus('');
+    }
+  }, [status, statusOptions]);
+
+  useEffect(() => {
+    let mounted = true;
     const effectiveSupplierId = shouldUseSupplierFilter ? supplierId : '';
     const effectiveRackId = shouldUseRackFilter ? rackId : '';
 
     (async () => {
+      if (!selectedModule) {
+        if (mounted) {
+          setRows([]);
+          setTotalCount(0);
+          setError(hasAccessibleModule ? null : 'No report modules available for your role access');
+          setLoading(false);
+        }
+        return;
+      }
+
       if (mounted) {
         setLoading(true);
       }
@@ -207,6 +302,7 @@ export default function ReportsLanding() {
           modules: selectedModule,
           dateFrom,
           dateTo,
+          status,
           supplierId: effectiveSupplierId,
           rackId: effectiveRackId,
         });
@@ -220,11 +316,7 @@ export default function ReportsLanding() {
         }
 
         const payload = res?.data;
-        const items = Array.isArray(payload)
-          ? payload
-          : Array.isArray(payload?.items)
-            ? payload.items
-            : [];
+        const items = getReportItems(payload);
 
         const normalized = items.map((item, index) => {
           const status = item?.status || item?.proposalStatus || '-';
@@ -265,8 +357,10 @@ export default function ReportsLanding() {
     };
   }, [
     selectedModule,
+    hasAccessibleModule,
     dateFrom,
     dateTo,
+    status,
     supplierId,
     shouldUseSupplierFilter,
     rackId,
@@ -274,223 +368,16 @@ export default function ReportsLanding() {
   ]);
 
   const columns = useMemo(() => {
-    const commonStatus = {
-      header: 'Status',
-      key: 'status',
-      render: (item) => <StatusBadge status={item.status} />,
-    };
-
     const moduleKey = String(selectedModule || 'all').toLowerCase();
-
-    if (moduleKey === 'proposal') {
-      return [
-        { header: 'Proposal No', key: 'proposalNo', render: (item) => asText(item.raw?.proposalNo) },
-        { header: 'Customer', key: 'customerName', render: (item) => asText(item.raw?.customerName) },
-        { header: 'Start Date', key: 'forecastedStartDate', render: (item) => formatDate(item.raw?.forecastedStartDate) },
-        {
-          header: 'Proposal Total',
-          key: 'proposalTotal',
-          align: 'right',
-          render: (item) => formatCurrency(item.raw?.proposalTotal),
-        },
-        commonStatus,
-        {
-          header: 'Approval',
-          key: 'approvalStatus',
-          render: (item) => <StatusBadge status={asText(item.raw?.approvalStatus)} />,
-        },
-      ];
-    }
-
-    if (moduleKey === 'project') {
-      return [
-        { header: 'Project No', key: 'projectNo', render: (item) => asText(item.raw?.projectNo) },
-        { header: 'Company', key: 'companyName', render: (item) => asText(item.raw?.companyName) },
-        { header: 'Start Date', key: 'startDate', render: (item) => formatDate(item.raw?.startDate) },
-        { header: 'End Date', key: 'endDate', render: (item) => formatDate(item.raw?.endDate) },
-        {
-          header: 'Contract Price',
-          key: 'contractPrice',
-          align: 'right',
-          render: (item) => formatCurrency(item.raw?.contractPrice),
-        },
-        {
-          header: 'Progress %',
-          key: 'overallProgress',
-          align: 'right',
-          render: (item) => `${Number(item.raw?.overallProgress || 0).toFixed(2)}%`,
-        },
-        commonStatus,
-      ];
-    }
-
-    if (moduleKey === 'salesbilling') {
-      return [
-        { header: 'Billing No', key: 'salesBillingNo', render: (item) => asText(item.raw?.salesBillingNo) },
-        { header: 'Customer', key: 'customerName', render: (item) => asText(item.raw?.customerName) },
-        { header: 'Billing Date', key: 'billingDate', render: (item) => formatDate(item.raw?.billingDate) },
-        { header: 'Due Date', key: 'dueDate', render: (item) => formatDate(item.raw?.dueDate) },
-        {
-          header: 'Amount',
-          key: 'amount',
-          align: 'right',
-          render: (item) => formatCurrency(item.raw?.amount),
-        },
-        {
-          header: 'Balance',
-          key: 'balance',
-          align: 'right',
-          render: (item) => formatCurrency(item.raw?.balance),
-        },
-        commonStatus,
-        {
-          header: 'Payment',
-          key: 'paymentStatus',
-          render: (item) => <StatusBadge status={asText(item.raw?.paymentStatus)} />,
-        },
-      ];
-    }
-
-    if (moduleKey === 'salescollection') {
-      return [
-        { header: 'Collection No', key: 'collectionNo', render: (item) => asText(item.raw?.collectionNo) },
-        { header: 'Receipt No', key: 'receiptNumber', render: (item) => asText(item.raw?.receiptNumber) },
-        { header: 'Customer', key: 'customerName', render: (item) => asText(item.raw?.customerName) },
-        { header: 'Date', key: 'date', render: (item) => formatDate(item.raw?.date) },
-        {
-          header: 'Amount',
-          key: 'amount',
-          align: 'right',
-          render: (item) => formatCurrency(item.raw?.amount),
-        },
-        {
-          header: 'Total Paid',
-          key: 'totalAmountPaid',
-          align: 'right',
-          render: (item) => formatCurrency(item.raw?.totalAmountPaid),
-        },
-        commonStatus,
-      ];
-    }
-
-    if (moduleKey === 'purchaseorder') {
-      return [
-        { header: 'Order No', key: 'orderNumber', render: (item) => asText(item.raw?.orderNumber) },
-        { header: 'Supplier', key: 'supplierName', render: (item) => asText(item.raw?.supplierName) },
-        { header: 'Order Date', key: 'orderDate', render: (item) => formatDate(item.raw?.orderDate) },
-        {
-          header: 'Est. Delivery',
-          key: 'estimatedDeliveryDate',
-          render: (item) => formatDate(item.raw?.estimatedDeliveryDate),
-        },
-        {
-          header: 'Amount',
-          key: 'amount',
-          align: 'right',
-          render: (item) => formatCurrency(item.raw?.amount),
-        },
-        commonStatus,
-        {
-          header: 'Delivery',
-          key: 'deliveryStatus',
-          render: (item) => <StatusBadge status={asText(item.raw?.deliveryStatus)} />,
-        },
-      ];
-    }
-
-    if (moduleKey === 'purchaseinvoice') {
-      return [
-        { header: 'Invoice No', key: 'invoiceNumber', render: (item) => asText(item.raw?.invoiceNumber) },
-        { header: 'PO No', key: 'purchaseOrderNumber', render: (item) => asText(item.raw?.purchaseOrderNumber) },
-        { header: 'Supplier', key: 'supplierName', render: (item) => asText(item.raw?.supplierName) },
-        { header: 'Invoice Date', key: 'invoiceDate', render: (item) => formatDate(item.raw?.invoiceDate) },
-        { header: 'Due Date', key: 'dueDate', render: (item) => formatDate(item.raw?.dueDate) },
-        {
-          header: 'Amount',
-          key: 'amount',
-          align: 'right',
-          render: (item) => formatCurrency(item.raw?.amount),
-        },
-        {
-          header: 'Balance',
-          key: 'balance',
-          align: 'right',
-          render: (item) => formatCurrency(item.raw?.balance),
-        },
-        commonStatus,
-        {
-          header: 'Payment',
-          key: 'paymentStatus',
-          render: (item) => <StatusBadge status={asText(item.raw?.paymentStatus)} />,
-        },
-      ];
-    }
-
-    if (moduleKey === 'purchasedelivery') {
-      return [
-        { header: 'Delivery No', key: 'deliveryNumber', render: (item) => asText(item.raw?.deliveryNumber) },
-        { header: 'Order No', key: 'orderNumber', render: (item) => asText(item.raw?.orderNumber) },
-        { header: 'Supplier', key: 'supplierName', render: (item) => asText(item.raw?.supplierName) },
-        { header: 'Delivery Date', key: 'deliveryDate', render: (item) => formatDate(item.raw?.deliveryDate) },
-        commonStatus,
-      ];
-    }
-
-    if (moduleKey === 'inventorymovement') {
-      return [
-        { header: 'Reference No', key: 'referenceNumber', render: (item) => asText(item.raw?.referenceNumber) },
-        { header: 'Material', key: 'materialName', render: (item) => asText(item.raw?.materialName) },
-        { header: 'Action Type', key: 'actionType', render: (item) => asText(item.raw?.actionType) },
-        { header: 'Mode', key: 'mode', render: (item) => asText(item.raw?.mode) },
-        {
-          header: 'Before',
-          key: 'quantityBefore',
-          align: 'right',
-          render: (item) => Number(item.raw?.quantityBefore || 0).toLocaleString(),
-        },
-        {
-          header: 'Change',
-          key: 'quantityChange',
-          align: 'right',
-          render: (item) => Number(item.raw?.quantityChange || 0).toLocaleString(),
-        },
-        {
-          header: 'After',
-          key: 'quantityAfter',
-          align: 'right',
-          render: (item) => Number(item.raw?.quantityAfter || 0).toLocaleString(),
-        },
-        { header: 'Created At', key: 'createdAt', render: (item) => formatDateTime(item.raw?.createdAt) },
-      ];
-    }
-
-    return [
-      { header: 'Module', key: 'module' },
-      { header: 'Reference No', key: 'referenceNo' },
-      { header: 'Party', key: 'partyName' },
-      { header: 'Date', key: 'primaryDate' },
-      {
-        header: 'Amount',
-        key: 'amount',
-        align: 'right',
-        render: (item) => formatCurrency(item.amount),
-      },
-      commonStatus,
-      {
-        header: 'Details Status',
-        key: 'details',
-        render: (item) =>
-          item.detailStatuses.length ? (
-            <div className={styles.detailsWrap}>
-              {item.detailStatuses.map((entry) => (
-                <StatusBadge key={`${item.key}-${entry}`} status={entry} className={styles.detailBadge} />
-              ))}
-            </div>
-          ) : (
-            '-'
-          ),
-      },
-    ];
+    return getReportColumns({
+      moduleKey,
+      asText,
+      formatDate,
+      formatDateTime,
+      formatCurrency,
+      StatusBadge,
+      styles,
+    });
   }, [selectedModule]);
 
   const stats = useMemo(() => {
@@ -566,6 +453,11 @@ export default function ReportsLanding() {
 
   const canExport = exportRows.length > 0;
 
+  const selectedModuleLabel = useMemo(
+    () => accessibleModuleOptions.find((option) => option.value === selectedModule)?.label || 'All',
+    [accessibleModuleOptions, selectedModule]
+  );
+
   const handleGenerateCsv = () => {
     const headers = ['Module', 'Reference No', 'Party', 'Date', 'Amount', 'Status', 'Details Status'];
     const csvLines = [
@@ -591,7 +483,6 @@ export default function ReportsLanding() {
   const handleGeneratePdf = () => {
     if (!canExport) return;
     const reportTitle = 'Reports';
-    const selectedModuleLabel = MODULE_OPTIONS.find((option) => option.value === selectedModule)?.label || 'All';
     const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
     const pageWidth = doc.internal.pageSize.getWidth();
 
@@ -678,8 +569,22 @@ export default function ReportsLanding() {
           id='reports-module-filter'
           value={selectedModule}
           onChange={(event) => setSelectedModule(event.target.value)}
-          options={MODULE_OPTIONS}
+          options={accessibleModuleOptions}
           placeholder='Select module'
+          className={styles.moduleSelect}
+        />
+      </div>
+
+      <div className={styles.dateFilterWrap}>
+        <label htmlFor='reports-status-filter' className={styles.moduleLabel}>
+          Status
+        </label>
+        <Select
+          id='reports-status-filter'
+          value={status}
+          onChange={(event) => setStatus(event.target.value)}
+          options={statusOptions}
+          placeholder='All Status'
           className={styles.moduleSelect}
         />
       </div>
