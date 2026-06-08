@@ -24,6 +24,8 @@ import {
   Reject,
   printPurchaseInvoice_byId,
   SubmitForApproval,
+  Approve,
+  SetStatus,
 } from '@/services/PurchaseInvoice';
 import { useToast } from '../ui/Toast/Toast';
 import InvalidPage from '@/components/InvalidPage/page';
@@ -104,7 +106,7 @@ export default function PurchaseInvoiceForm() {
       unitCost: Number(d.unitCost || 0),
       discount: Number(d.discount || 0),
       vat: Number(d.vat || 0),
-      amount: Number(d.amount || 0),
+      totalAmount: Number(d.totalAmount ?? d.amount ?? 0),
       remarks: '',
     }));
 
@@ -113,7 +115,7 @@ export default function PurchaseInvoiceForm() {
       0,
     );
     const computedAmount = children.reduce(
-      (sum, c) => sum + Number(c.amount || 0),
+      (sum, c) => sum + Number(c.totalAmount ?? c.amount ?? 0),
       0,
     );
     const computedExcluded = computedAmount - computedVAT;
@@ -177,9 +179,24 @@ export default function PurchaseInvoiceForm() {
       if (initData.dueDate) {
         initData.dueDate = toDateInputValue(initData.dueDate);
       }
+      if (initData.supplierId) {
+        await fetchOrders(initData.supplierId);
+      }
     } else {
       setMode('new');
       initData.invoiceDate = toDateInputValue(null);
+    }
+
+    const normalizeChild = (item) => ({
+      ...item,
+      totalAmount: Number(item.totalAmount ?? item.amount ?? 0),
+    });
+
+    if (Array.isArray(initData.children)) {
+      initData.children = initData.children.map(normalizeChild);
+    }
+    if (Array.isArray(initData.deletedChildren)) {
+      initData.deletedChildren = initData.deletedChildren.map(normalizeChild);
     }
 
     setForm(initData);
@@ -221,7 +238,7 @@ export default function PurchaseInvoiceForm() {
       0,
     );
     const totalIncluded = items.reduce(
-      (total, item) => total + Number(item.amount || 0),
+      (total, item) => total + Number(item.totalAmount ?? item.amount ?? 0),
       0,
     );
     const totalexcluded = totalIncluded - totalVAT;
@@ -260,16 +277,25 @@ export default function PurchaseInvoiceForm() {
   };
 
   const save = async (entity) => {
-    entity.children = (formData.children || []).map((child) => ({
-      ...child,
-      quantity: Number(child.quantity || 0),
-      unitCost: Number(child.unitCost || 0),
-      discount: Number(child.discount || 0),
-      vat: Number(child.vat || 0),
-      amount: Number(child.amount || 0),
-    }));
+    entity.children = (formData.children || []).map((child) => {
+      const { amount, ...rest } = child;
+      return {
+        ...rest,
+        quantity: Number(child.quantity || 0),
+        unitCost: Number(child.unitCost || 0),
+        discount: Number(child.discount || 0),
+        vat: Number(child.vat || 0),
+        totalAmount: Number(child.totalAmount ?? child.amount ?? 0),
+      };
+    });
 
-    entity.deletedChildren = formData.deletedChildren;
+    entity.deletedChildren = (formData.deletedChildren || []).map((child) => {
+      const { amount, ...rest } = child;
+      return {
+        ...rest,
+        totalAmount: Number(child.totalAmount ?? child.amount ?? 0),
+      };
+    });
 
     // ✅ Compute totals directly from children instead of relying on formData.vat/amount
     const computedVat = entity.children.reduce(
@@ -277,7 +303,7 @@ export default function PurchaseInvoiceForm() {
       0,
     );
     const computedAmount = entity.children.reduce(
-      (sum, child) => sum + Number(child.amount || 0),
+      (sum, child) => sum + Number(child.totalAmount ?? child.amount ?? 0),
       0,
     );
 
@@ -540,7 +566,7 @@ export default function PurchaseInvoiceForm() {
     return isAllowed(PageName, 'ww') &&
       formId &&
       formData.status &&
-      formData.status.toLowerCase() === 'draft' ? (
+      formData.status.toLowerCase() === 'approved' ? (
       <div className={EntityStyle.buttonsContainer}>
         <Button variant="save" onClick={handleInvoiceConfirm}>
           Confirm Invoice
@@ -554,9 +580,7 @@ export default function PurchaseInvoiceForm() {
       mode === 'view' &&
       formId &&
       formData.status &&
-      (formData.status.toLowerCase() === 'ordered' ||
-        formData.status.toLowerCase() === 'approved' ||
-        formData.status.toLowerCase() === 'rejected' ||
+      (formData.status.toLowerCase() === 'rejected' ||
         formData.status.toLowerCase() === 'cancelled') ? (
       <div className={EntityStyle.buttonsContainer}>
         <Button variant="primary" onClick={handleArchiveConfirm}>
@@ -592,7 +616,10 @@ export default function PurchaseInvoiceForm() {
         fields={formFields}
         onValidate={async (values) => {
           const errors = {};
-          if (!tableData.items || (Array.isArray(tableData.items) && tableData.items.length === 0)) {
+          if (
+            !tableData.items ||
+            (Array.isArray(tableData.items) && tableData.items.length === 0)
+          ) {
             errors.supplierId = 'At least one invoice detail is required';
             setTableError(errors.supplierId);
           } else {
@@ -612,7 +639,9 @@ export default function PurchaseInvoiceForm() {
               data={tableData}
               onChange={detailsUpdated}
             />
-            {tableError ? <div style={{ color: 'red', marginTop: 8 }}>{tableError}</div> : null}
+            {tableError ? (
+              <div style={{ color: 'red', marginTop: 8 }}>{tableError}</div>
+            ) : null}
             <div className={EntityStyle.summaryContainer}>
               <div className={EntityStyle.notesContainer}></div>
               <div className={EntityStyle.totalContainer}>
