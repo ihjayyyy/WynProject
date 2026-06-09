@@ -91,6 +91,10 @@ export default function DeliveryLanding() {
 
   const stats = useMemo(() => {
     const total = deliveries.length;
+    const attentionCount = deliveries.filter((item) => {
+      const status = String(item?.status || '').toLowerCase();
+      return status === 'draft' || status === 'pending' || status === 'for approval' || status === 'created';
+    }).length;
     return [
       {
         key: 'total',
@@ -98,6 +102,13 @@ export default function DeliveryLanding() {
         number: total,
         change: `${total} records`,
         isPositive: true,
+      },
+      {
+        key: 'attention',
+        label: 'Needs Attention',
+        number: attentionCount,
+        change: `${attentionCount} draft/pending`,
+        isPositive: attentionCount === 0,
       },
     ];
   }, [deliveries]);

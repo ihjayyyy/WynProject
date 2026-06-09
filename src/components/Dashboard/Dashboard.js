@@ -1,74 +1,95 @@
 import React from 'react';
+import { useRouter } from 'next/navigation';
 import StatsCard from '../ui/StatsCard/StatsCard';
 import DataTable from '../ui/DataTable/DataTable';
 import styles from './Dashboard.module.scss';
-import StatusBadge from '../ui/StatusBadge/StatusBadge';
-
-const stats = [
-  { number: '₱12,500', label: 'Total Sales', change: '+5%', isPositive: true },
-  {
-    number: '₱8,200',
-    label: 'Total Purchases',
-    change: '-2%',
-    isPositive: false,
-  },
-  { number: '15', label: 'Suppliers', change: '+1', isPositive: true },
-];
-
-const columns = [
-  { header: 'Date', key: 'date' },
-  { header: 'Type', key: 'type' },
-  { header: 'Amount', key: 'amount', align: 'right' },
-  {
-    header: 'Status',
-    key: 'status',
-    render: (item) => <StatusBadge status={item.status} />,
-  },
-];
-
-const data = [
-  {
-    id: 1,
-    date: '2025-09-15',
-    type: 'Sale',
-    amount: '₱1,200',
-    status: 'Completed',
-  },
-  {
-    id: 2,
-    date: '2025-09-14',
-    type: 'Purchase',
-    amount: '₱800',
-    status: 'Pending',
-  },
-  {
-    id: 3,
-    date: '2025-09-13',
-    type: 'Sale',
-    amount: '₱2,500',
-    status: 'Completed',
-  },
-];
+import { AccessContext } from '@/app/contextProviders/accessContext';
+import {
+  DASHBOARD_MODULES,
+  getDashboardPreviewItems,
+} from './DashboardModels';
 
 export default function Dashboard() {
+  const router = useRouter();
+  const { isAllowed } = React.useContext(AccessContext);
+  const [moduleData, setModuleData] = React.useState(() =>
+    DASHBOARD_MODULES.reduce((acc, module) => {
+      acc[module.key] = [];
+      return acc;
+    }, {})
+  );
+
+  const visibleModules = React.useMemo(
+    () =>
+      DASHBOARD_MODULES.filter(
+        (module) => !module.accessCode || isAllowed(module.accessCode, 'r')
+      ),
+    [isAllowed]
+  );
+
+  const loadDashboardData = React.useCallback(async () => {
+    const results = await Promise.all(
+      visibleModules.map(async (module) => {
+        const res = await module.fetcher();
+        const items = Array.isArray(res?.data) ? res.data : [];
+        return [module.key, items];
+      })
+    );
+
+    setModuleData((prev) => ({ ...prev, ...Object.fromEntries(results) }));
+  }, [visibleModules]);
+
+  React.useEffect(() => {
+    if (!visibleModules.length) return;
+    loadDashboardData();
+  }, [loadDashboardData, visibleModules]);
+
   return (
     <div className={styles.dashboardWrap}>
       <h1 className={styles.title}>Dashboard</h1>
-      <div className={styles.statsGrid}>
-        {stats.map((stat, idx) => (
-          <StatsCard
-            key={idx}
-            number={stat.number}
-            label={stat.label}
-            change={stat.change}
-            isPositive={stat.isPositive}
-          />
-        ))}
-      </div>
-      <div className={styles.tableSection}>
-        <h1 className={styles.title}>Recent Transactions</h1>
-        <DataTable data={data} columns={columns} />
-      </div>
+
+      {visibleModules.map((module) => {
+        const items = moduleData[module.key] || [];
+        const stats = module.buildStats(items);
+        const previewItems = getDashboardPreviewItems(items);
+
+        return (
+          <section className={styles.sectionBlock} key={module.key}>
+            <div className={styles.sectionHeader}>
+              <h2 className={styles.sectionTitle}>{module.title}</h2>
+              <button
+                type="button"
+                className={styles.redirectBtn}
+                onClick={() => router.push(module.redirectPath)}
+              >
+                {module.redirectLabel}
+              </button>
+            </div>
+
+            <div className={styles.statsGrid}>
+              {stats.map((stat, idx) => (
+                <StatsCard
+                  key={`${module.key}-stat-${idx}`}
+                  number={stat.number}
+                  label={stat.label}
+                  change={stat.change}
+                  isPositive={stat.isPositive}
+                />
+              ))}
+            </div>
+
+            <div className={styles.tableSection}>
+              <DataTable
+                data={previewItems}
+                columns={module.columns}
+                showActions={false}
+                pagination={false}
+                emptyMessage={module.emptyMessage}
+              />
+            </div>
+          </section>
+        );
+      })}
     </div>
   );
 }

@@ -127,7 +127,7 @@ export default function SalesBillingLanding() {
         return s !== 'cancelled';
       } },
     ],
-    [router, handleMarkAsBilled]
+    [router, handleMarkAsBilled, handleCancel, handleClose]
   );
 
   const columns = useMemo(() => [...baseColumns, { header: 'Action', key: 'actions', align: 'right', render: (item) => <DropdownAction item={item} items={actionItems} /> }], [actionItems]);
@@ -135,9 +135,17 @@ export default function SalesBillingLanding() {
   const stats = useMemo(() => {
     const total = billings.length;
     const totalAmount = billings.reduce((s, b) => s + (b.amount || 0), 0);
+    const attentionCount = billings.filter((b) => {
+      const status = String(b?.status || '').toLowerCase();
+      const paymentStatus = String(b?.paymentStatus || '').toLowerCase();
+      const hasBalance = Number(b?.balance) > 0;
+      const isTerminal = status === 'cancelled' || status === 'closed';
+      return !isTerminal && (status === 'draft' || paymentStatus === 'unpaid' || paymentStatus === 'partial' || hasBalance);
+    }).length;
     return [
       { key: 'total', label: 'Total Billings', number: total, change: `${total} records`, isPositive: true },
       { key: 'amount', label: 'Total Amount', number: totalAmount, change: `${totalAmount} total`, isPositive: true },
+      { key: 'attention', label: 'Needs Attention', number: attentionCount, change: `${attentionCount} draft/unpaid/with balance`, isPositive: attentionCount === 0 },
     ];
   }, [billings]);
 

@@ -92,11 +92,19 @@ export default function InvoicesLanding() {
     const totalQty = invoices.reduce((s, d) => s + (d.items || []).reduce((ss, it) => ss + (it.qty || 0), 0), 0);
     const totalAmount = invoices.reduce((s, d) => s + (d.items || []).reduce((ss, it) => ss + ((it.qty || 0) * (it.price || 0)), 0), 0);
     const orders = new Set(invoices.map((d) => d.orderId).filter(Boolean)).size;
+    const attentionCount = invoices.filter((d) => {
+      const status = String(d?.status || '').toLowerCase();
+      const paymentStatus = String(d?.paymentStatus || '').toLowerCase();
+      const hasBalance = Number(d?.balance) > 0;
+      const isTerminal = status === 'closed' || status === 'cancelled';
+      return !isTerminal && (paymentStatus === 'unpaid' || paymentStatus === 'partial' || paymentStatus === 'overdue' || hasBalance);
+    }).length;
     return [
       { key: 'total', label: 'Total Invoices', number: total, change: `${total} records`, isPositive: true },
       { key: 'items', label: 'Items', number: totalItems, change: `${totalItems} items`, isPositive: true },
       { key: 'qty', label: 'Total Qty', number: totalQty, change: `${totalQty} units`, isPositive: true },
       { key: 'amount', label: 'Total Amount', number: totalAmount, change: `$${totalAmount}`, isPositive: true },
+      { key: 'attention', label: 'Needs Attention', number: attentionCount, change: `${attentionCount} unpaid/with balance`, isPositive: attentionCount === 0 },
     ];
   }, [invoices]);
 

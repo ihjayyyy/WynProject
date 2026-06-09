@@ -80,7 +80,7 @@ export default function OrdersLanding() {
         : []),
       // ...(isAllowed(PageName,'w')  ? [{ key: 'edit', label: 'Edit', icon: <FiEdit2 size={14} />, onClick: (item) => router.push(`/purchase/orders/ordersform?id=${item.id}&mode=edit`) }]: []),
     ],
-    [router],
+    [isAllowed, router],
   );
 
   const columns = useMemo(
@@ -96,29 +96,30 @@ export default function OrdersLanding() {
     [actionItems],
   );
 
-  const orderStats = [];
-  // const orderStats = useMemo(() => {
-  //   const total = orders.length;
-  //   const totalItems = orders.reduce((s, o) => s + (o.itemsRequested ?? (o.items || []).length), 0);
-  //   const totalQty = orders.reduce((s, o) => s + (o.items || []).reduce((ss, it) => ss + (it.qty || 0), 0), 0);
-  //   const suppliers = new Set(
-  //     orders
-  //       .map((o) => {
-  //         const supplierId = o.supplier?.id || (o.items && o.items[0] && o.items[0].supplierId);
-  //         const found = sampleSuppliers.find(
-  //           (s) => s.id === supplierId || s.code === supplierId || s.name === supplierId
-  //         );
-  //         return found ? found.name : o.supplier?.name ?? supplierId;
-  //       })
-  //       .filter(Boolean)
-  //   ).size;
-  //   return [
-  //     { key: 'total', label: 'Total Orders', number: total, change: `${total} records`, isPositive: true },
-  //     { key: 'items', label: 'Items Requested', number: totalItems, change: `${totalItems} items`, isPositive: true },
-  //     { key: 'qty', label: 'Total Qty', number: totalQty, change: `${totalQty} units`, isPositive: true },
-  //     { key: 'suppliers', label: 'Suppliers', number: suppliers, change: `${suppliers} unique`, isPositive: true },
-  //   ];
-  // }, [orders]);
+  const orderStats = useMemo(() => {
+    const total = orders.length;
+    const totalItems = orders.reduce((sum, item) => sum + ((item.items || []).length || 0), 0);
+    const totalAmount = orders.reduce((sum, item) => sum + (Number(item.amount) || 0), 0);
+    const suppliers = new Set(orders.map((item) => item?.name).filter(Boolean)).size;
+    const attentionCount = orders.filter((item) => {
+      const status = String(item?.status || '').toLowerCase();
+      return status === 'draft' || status === 'pending' || status === 'for approval' || status === 'created';
+    }).length;
+
+    return [
+      { key: 'total', label: 'Total Orders', number: total, change: `${total} records`, isPositive: true },
+      { key: 'items', label: 'Items', number: totalItems, change: `${totalItems} lines`, isPositive: true },
+      { key: 'amount', label: 'Total Amount', number: totalAmount, change: `PHP ${totalAmount.toFixed(2)}`, isPositive: true },
+      { key: 'suppliers', label: 'Suppliers', number: suppliers, change: `${suppliers} unique`, isPositive: true },
+      {
+        key: 'attention',
+        label: 'Needs Attention',
+        number: attentionCount,
+        change: `${attentionCount} draft/pending`,
+        isPositive: attentionCount === 0,
+      },
+    ];
+  }, [orders]);
 
   const filterFn = (item, keyword) => {
     const itemText = [

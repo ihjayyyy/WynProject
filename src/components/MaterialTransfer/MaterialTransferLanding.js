@@ -155,12 +155,14 @@ export default function MaterialTransferLanding() {
       (d) =>
         d.transferFromType === 'Project' && d.transferToType === 'Warehouse'
     ).length;
+    const attentionCount = list.filter((d) => String(d?.status || '').toLowerCase() === 'draft').length;
 
     return [
       { key: 'total', label: 'Total Transfers', number: total, change: `${total} records`, isPositive: true },
       { key: 'qty', label: 'Total Qty', number: totalQty, change: `${totalQty} units`, isPositive: true },
       { key: 'w2p', label: 'Warehouse → Project', number: warehouseToProject, change: `${warehouseToProject} transfers`, isPositive: true },
       { key: 'p2w', label: 'Project → Warehouse', number: projectToWarehouse, change: `${projectToWarehouse} transfers`, isPositive: true },
+      { key: 'attention', label: 'Needs Attention', number: attentionCount, change: `${attentionCount} draft transfers`, isPositive: attentionCount === 0 },
     ];
   }, [transfers]);
 

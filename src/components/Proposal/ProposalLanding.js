@@ -282,11 +282,24 @@ export default function ProposalLanding() {
   const stats = useMemo(() => {
     const total = items.length;
     const totalValue = items.reduce((s, it) => s + (Number(it.proposalTotal) || 0), 0);
-    const pending = items.filter((it) => it.approvalStatus === 'For Approval').length;
+    const attentionCount = items.filter((it) => {
+      const approvalStatus = String(it?.approvalStatus || '').toLowerCase();
+      const proposalStatus = String(it?.proposalStatus || '').toLowerCase();
+      const isDraft = proposalStatus === 'draft';
+      const forApproval = approvalStatus === 'for approval';
+      const needsProjectGeneration = (proposalStatus === 'won' || proposalStatus === 'win') && it?.isProjectCreated === false;
+      return isDraft || forApproval || needsProjectGeneration;
+    }).length;
     return [
       { key: 'total', label: 'Total Proposals', number: total, change: `${total} records`, isPositive: true },
       { key: 'value', label: 'Total Value', number: totalValue, change: `PHP ${totalValue.toFixed(2)}`, isPositive: true },
-      { key: 'pending', label: 'Pending', number: pending, change: `${pending} pending`, isPositive: false },
+      {
+        key: 'attention',
+        label: 'Needs Attention',
+        number: attentionCount,
+        change: `${attentionCount} draft/for approval/generate project`,
+        isPositive: attentionCount === 0,
+      },
     ];
   }, [items]);
 

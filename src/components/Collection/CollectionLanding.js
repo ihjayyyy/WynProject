@@ -117,9 +117,18 @@ export default function CollectionLanding() {
   const stats = useMemo(() => {
     const total = collections.length;
     const totalAmount = collections.reduce((s, c) => s + (c.amount || 0), 0);
+    const attentionCount = collections.filter((c) => {
+      const status = String(c?.status || '').toLowerCase();
+      const amount = Number(c?.amount) || 0;
+      const totalPaid = Number(c?.totalAmountPaid) || 0;
+      const hasRemaining = amount > totalPaid;
+      const isTerminal = status === 'cancelled' || status === 'closed';
+      return !isTerminal && (status === 'draft' || hasRemaining);
+    }).length;
     return [
       { key: 'total', label: 'Total Collections', number: total, change: `${total} records`, isPositive: true },
       { key: 'amount', label: 'Total Amount', number: totalAmount, change: `${totalAmount} total`, isPositive: true },
+      { key: 'attention', label: 'Needs Attention', number: attentionCount, change: `${attentionCount} draft/with remaining`, isPositive: attentionCount === 0 },
     ];
   }, [collections]);
 

@@ -92,7 +92,31 @@ export default function PRLanding() {
     [actionItems],
   );
 
-  const orderStats = [];
+  const orderStats = useMemo(() => {
+    const total = prList.length;
+    const totalItems = prList.reduce((sum, item) => sum + ((item.items || []).length || 0), 0);
+    const totalQty = prList.reduce(
+      (sum, item) => sum + (item.items || []).reduce((sub, row) => sub + (Number(row.qty) || 0), 0),
+      0,
+    );
+    const attentionCount = prList.filter((item) => {
+      const status = String(item?.status || '').toLowerCase();
+      return status === 'draft' || status === 'pending' || status === 'for approval' || status === 'created';
+    }).length;
+
+    return [
+      { key: 'total', label: 'Total Requests', number: total, change: `${total} records`, isPositive: true },
+      { key: 'items', label: 'Items Requested', number: totalItems, change: `${totalItems} items`, isPositive: true },
+      { key: 'qty', label: 'Total Qty', number: totalQty, change: `${totalQty} units`, isPositive: true },
+      {
+        key: 'attention',
+        label: 'Needs Attention',
+        number: attentionCount,
+        change: `${attentionCount} draft/pending`,
+        isPositive: attentionCount === 0,
+      },
+    ];
+  }, [prList]);
 
   const filterFn = (item, keyword) => {
     const itemText = [
