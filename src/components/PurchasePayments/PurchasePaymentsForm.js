@@ -17,6 +17,7 @@ import { AccessContext } from '@/app/contextProviders/accessContext';
 import { useConfirmModal } from '@/app/contextProviders/confirmModalContext';
 import { getSuppliers } from '@/services/Supplier';
 import { GetInvoicedBySupplier as getInvoicesBySupplier } from '@/services/PurchaseInvoice';
+import { getParameter } from '@/services/Parameter';
 import {
   createPayment,
   getPaymentById,
@@ -66,6 +67,7 @@ export default function PurchasePaymentsForm() {
   const [computedNetAmount, setComputedNetAmount] = useState(0);
   const [computedBalance, setComputedBalance] = useState(0);
   const [withholdingTaxPercentage, setWithholdingTaxPercentage] = useState(0);
+  const [defaultWithholdingTaxPercentage, setDefaultWithholdingTaxPercentage] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
   const searchParams = useSearchParams();
   const [paymentId, setPaymentId] = useState(
@@ -107,6 +109,31 @@ export default function PurchasePaymentsForm() {
     };
     loadSuppliers();
   }, []);
+
+  useEffect(() => {
+    const loadDefaultWithholdingTax = async () => {
+      if (paymentId) return;
+
+      const res = await getParameter('payment/withholdingtax');
+      const rawValue =
+        res?.data?.value?.value ??
+        res?.data?.value ??
+        res?.data ??
+        null;
+      const parsedValue = Number(rawValue);
+      if (!Number.isNaN(parsedValue)) {
+        const percentageValue =
+          parsedValue > 0 && parsedValue <= 1
+            ? parsedValue * 100
+            : parsedValue;
+        setDefaultWithholdingTaxPercentage(percentageValue);
+        setWithholdingTaxPercentage(percentageValue);
+        setFormKey((key) => key + 1);
+      }
+    };
+
+    loadDefaultWithholdingTax();
+  }, [paymentId]);
 
   const toDateString = (val) => {
     if (!val) {
@@ -446,7 +473,12 @@ export default function PurchasePaymentsForm() {
         }
         return errors;
       }}
-      initialValues={payment || initialPayment}
+      initialValues={
+        payment || {
+          ...initialPayment,
+          withholdingTaxPercentage: defaultWithholdingTaxPercentage,
+        }
+      }
       extraContent={
         <div className={PurchasePaymentsStyles.extraContentContainer}>
           <DetailsTable
