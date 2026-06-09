@@ -67,7 +67,8 @@ export default function PurchasePaymentsForm() {
   const [computedNetAmount, setComputedNetAmount] = useState(0);
   const [computedBalance, setComputedBalance] = useState(0);
   const [withholdingTaxPercentage, setWithholdingTaxPercentage] = useState(0);
-  const [defaultWithholdingTaxPercentage, setDefaultWithholdingTaxPercentage] = useState(0);
+  const [defaultWithholdingTaxPercentage, setDefaultWithholdingTaxPercentage] =
+    useState(0);
   const [isLoading, setIsLoading] = useState(true);
   const searchParams = useSearchParams();
   const [paymentId, setPaymentId] = useState(
@@ -116,16 +117,11 @@ export default function PurchasePaymentsForm() {
 
       const res = await getParameter('payment/withholdingtax');
       const rawValue =
-        res?.data?.value?.value ??
-        res?.data?.value ??
-        res?.data ??
-        null;
+        res?.data?.value?.value ?? res?.data?.value ?? res?.data ?? null;
       const parsedValue = Number(rawValue);
       if (!Number.isNaN(parsedValue)) {
         const percentageValue =
-          parsedValue > 0 && parsedValue <= 1
-            ? parsedValue * 100
-            : parsedValue;
+          parsedValue > 0 && parsedValue <= 1 ? parsedValue * 100 : parsedValue;
         setDefaultWithholdingTaxPercentage(percentageValue);
         setWithholdingTaxPercentage(percentageValue);
         setFormKey((key) => key + 1);
@@ -465,7 +461,10 @@ export default function PurchasePaymentsForm() {
       fields={paymentFields}
       onValidate={async (values) => {
         const errors = {};
-        if (!tableData.items || (Array.isArray(tableData.items) && tableData.items.length === 0)) {
+        if (
+          !tableData.items ||
+          (Array.isArray(tableData.items) && tableData.items.length === 0)
+        ) {
           errors.supplierId = 'At least one payment detail is required';
           setTableError(errors.supplierId);
         } else {
@@ -490,7 +489,9 @@ export default function PurchasePaymentsForm() {
             data={tableData}
             onChange={detailsUpdated}
           />
-          {tableError ? <div style={{ color: 'red', marginTop: 8 }}>{tableError}</div> : null}
+          {tableError ? (
+            <div style={{ color: 'red', marginTop: 8 }}>{tableError}</div>
+          ) : null}
           <div className={PurchasePaymentsStyles.summaryContainer}>
             <div className={PurchasePaymentsStyles.notesContainer} />
             <div className={PurchasePaymentsStyles.totalContainer}>
