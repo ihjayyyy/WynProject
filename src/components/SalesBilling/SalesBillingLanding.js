@@ -134,7 +134,35 @@ export default function SalesBillingLanding() {
 
   const stats = useMemo(() => {
     const total = billings.length;
+    const billedCount = billings.filter((item) => String(item?.status || '').toLowerCase() === 'billed').length;
     const totalAmount = billings.reduce((s, b) => s + (b.amount || 0), 0);
+    const billedAmount = billings.reduce((sum, item) => {
+      const status = String(item?.status || '').toLowerCase();
+      return status === 'billed' ? sum + (Number(item.amount) || 0) : sum;
+    }, 0);
+    const draftCount = billings.filter((b) => {
+      const status = String(b?.status || '').toLowerCase();
+      const isTerminal = status === 'cancelled' || status === 'closed';
+      return !isTerminal && status === 'draft';
+    }).length;
+    const unpaidCount = billings.filter((b) => {
+      const status = String(b?.status || '').toLowerCase();
+      const paymentStatus = String(b?.paymentStatus || '').toLowerCase();
+      const isTerminal = status === 'cancelled' || status === 'closed';
+      return !isTerminal && paymentStatus === 'unpaid';
+    }).length;
+    const partialCount = billings.filter((b) => {
+      const status = String(b?.status || '').toLowerCase();
+      const paymentStatus = String(b?.paymentStatus || '').toLowerCase();
+      const isTerminal = status === 'cancelled' || status === 'closed';
+      return !isTerminal && paymentStatus === 'partial';
+    }).length;
+    const balanceCount = billings.filter((b) => {
+      const status = String(b?.status || '').toLowerCase();
+      const hasBalance = Number(b?.balance) > 0;
+      const isTerminal = status === 'cancelled' || status === 'closed';
+      return !isTerminal && hasBalance;
+    }).length;
     const attentionCount = billings.filter((b) => {
       const status = String(b?.status || '').toLowerCase();
       const paymentStatus = String(b?.paymentStatus || '').toLowerCase();
@@ -143,9 +171,15 @@ export default function SalesBillingLanding() {
       return !isTerminal && (status === 'draft' || paymentStatus === 'unpaid' || paymentStatus === 'partial' || hasBalance);
     }).length;
     return [
-      { key: 'total', label: 'Total Billings', number: total, change: `${total} records`, isPositive: true },
-      { key: 'amount', label: 'Total Amount', number: totalAmount, change: `${totalAmount} total`, isPositive: true },
-      { key: 'attention', label: 'Needs Attention', number: attentionCount, change: `${attentionCount} draft/unpaid/with balance`, isPositive: attentionCount === 0 },
+      { key: 'total', label: 'Total Billings', number: total, change: `${billedCount} billed`, isPositive: true },
+      {
+        key: 'amount',
+        label: 'Total Amount',
+        number: `PHP ${totalAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
+        change: `PHP ${billedAmount.toFixed(2)} billed`,
+        isPositive: true,
+      },
+      { key: 'attention', label: 'Needs Attention', number: attentionCount, change: `${draftCount} draft, ${unpaidCount} unpaid, ${partialCount} partial, ${balanceCount} with balance`, isPositive: attentionCount === 0 },
     ];
   }, [billings]);
 

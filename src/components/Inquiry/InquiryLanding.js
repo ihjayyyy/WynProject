@@ -125,13 +125,14 @@ export default function InquiryLanding() {
     const companies = new Set(inquiries.map((i) => i.companyName).filter(Boolean)).size;
     const withEmail = inquiries.filter((i) => i.email).length;
     const withContact = inquiries.filter((i) => i.contactNumber).length;
-    const attentionCount = inquiries.filter((i) => String(i?.status || '').toLowerCase() === 'created').length;
+    const createdCount = inquiries.filter((i) => String(i?.status || '').toLowerCase() === 'created').length;
+    const attentionCount = createdCount;
     return [
       { key: 'total', label: 'Total Inquiries', number: total, change: `${total} records`, isPositive: true },
       { key: 'companies', label: 'Companies', number: companies, change: `${companies} unique`, isPositive: true },
-      { key: 'email', label: 'With Email', number: withEmail, change: `${withEmail}/${total || 0}`, isPositive: true },
+      // { key: 'email', label: 'With Email', number: withEmail, change: `${withEmail}/${total || 0}`, isPositive: true },
       { key: 'contact', label: 'With Contact', number: withContact, change: `${withContact}/${total || 0}`, isPositive: true },
-      { key: 'attention', label: 'Needs Attention', number: attentionCount, change: `${attentionCount} awaiting acknowledgement`, isPositive: attentionCount === 0 },
+      { key: 'attention', label: 'Needs Attention', number: attentionCount, change: `${createdCount} created`, isPositive: attentionCount === 0 },
     ];
   }, [inquiries]);
 

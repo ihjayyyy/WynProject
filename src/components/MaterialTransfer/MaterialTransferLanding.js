@@ -138,6 +138,7 @@ export default function MaterialTransferLanding() {
   const stats = useMemo(() => {
     const list = Array.isArray(transfers) ? transfers : [];
     const total = list.length;
+    const transferredCount = list.filter((d) => String(d?.status || '').toLowerCase() === 'transferred').length;
     const totalItems = list.reduce(
       (s, d) => s + (d.children || []).length,
       0
@@ -155,14 +156,15 @@ export default function MaterialTransferLanding() {
       (d) =>
         d.transferFromType === 'Project' && d.transferToType === 'Warehouse'
     ).length;
-    const attentionCount = list.filter((d) => String(d?.status || '').toLowerCase() === 'draft').length;
+    const draftCount = list.filter((d) => String(d?.status || '').toLowerCase() === 'draft').length;
+    const attentionCount = draftCount;
 
     return [
-      { key: 'total', label: 'Total Transfers', number: total, change: `${total} records`, isPositive: true },
+      { key: 'total', label: 'Total Transfers', number: total, change: `${transferredCount} transferred`, isPositive: true },
       { key: 'qty', label: 'Total Qty', number: totalQty, change: `${totalQty} units`, isPositive: true },
       { key: 'w2p', label: 'Warehouse → Project', number: warehouseToProject, change: `${warehouseToProject} transfers`, isPositive: true },
       { key: 'p2w', label: 'Project → Warehouse', number: projectToWarehouse, change: `${projectToWarehouse} transfers`, isPositive: true },
-      { key: 'attention', label: 'Needs Attention', number: attentionCount, change: `${attentionCount} draft transfers`, isPositive: attentionCount === 0 },
+      { key: 'attention', label: 'Needs Attention', number: attentionCount, change: `${draftCount} draft`, isPositive: attentionCount === 0 },
     ];
   }, [transfers]);
 

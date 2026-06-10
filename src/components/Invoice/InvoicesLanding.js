@@ -88,10 +88,38 @@ export default function InvoicesLanding() {
 
   const stats = useMemo(() => {
     const total = invoices.length;
-    const totalItems = invoices.reduce((s, d) => s + (d.items || []).length, 0);
+    const closedCount = invoices.filter((item) => String(item?.status || '').toLowerCase() === 'closed').length;
     const totalQty = invoices.reduce((s, d) => s + (d.items || []).reduce((ss, it) => ss + (it.qty || 0), 0), 0);
     const totalAmount = invoices.reduce((s, d) => s + (d.items || []).reduce((ss, it) => ss + ((it.qty || 0) * (it.price || 0)), 0), 0);
-    const orders = new Set(invoices.map((d) => d.orderId).filter(Boolean)).size;
+    const closedAmount = invoices.reduce((sum, item) => {
+      const status = String(item?.status || '').toLowerCase();
+      const invoiceAmount = (item.items || []).reduce((sub, it) => sub + ((it.qty || 0) * (it.price || 0)), 0);
+      return status === 'closed' ? sum + invoiceAmount : sum;
+    }, 0);
+    const unpaidCount = invoices.filter((d) => {
+      const status = String(d?.status || '').toLowerCase();
+      const paymentStatus = String(d?.paymentStatus || '').toLowerCase();
+      const isTerminal = status === 'closed' || status === 'cancelled';
+      return !isTerminal && paymentStatus === 'unpaid';
+    }).length;
+    const partialCount = invoices.filter((d) => {
+      const status = String(d?.status || '').toLowerCase();
+      const paymentStatus = String(d?.paymentStatus || '').toLowerCase();
+      const isTerminal = status === 'closed' || status === 'cancelled';
+      return !isTerminal && paymentStatus === 'partial';
+    }).length;
+    const overdueCount = invoices.filter((d) => {
+      const status = String(d?.status || '').toLowerCase();
+      const paymentStatus = String(d?.paymentStatus || '').toLowerCase();
+      const isTerminal = status === 'closed' || status === 'cancelled';
+      return !isTerminal && paymentStatus === 'overdue';
+    }).length;
+    const balanceCount = invoices.filter((d) => {
+      const status = String(d?.status || '').toLowerCase();
+      const hasBalance = Number(d?.balance) > 0;
+      const isTerminal = status === 'closed' || status === 'cancelled';
+      return !isTerminal && hasBalance;
+    }).length;
     const attentionCount = invoices.filter((d) => {
       const status = String(d?.status || '').toLowerCase();
       const paymentStatus = String(d?.paymentStatus || '').toLowerCase();
@@ -100,11 +128,16 @@ export default function InvoicesLanding() {
       return !isTerminal && (paymentStatus === 'unpaid' || paymentStatus === 'partial' || paymentStatus === 'overdue' || hasBalance);
     }).length;
     return [
-      { key: 'total', label: 'Total Invoices', number: total, change: `${total} records`, isPositive: true },
-      { key: 'items', label: 'Items', number: totalItems, change: `${totalItems} items`, isPositive: true },
+      { key: 'total', label: 'Total Invoices', number: total, change: `${closedCount} closed`, isPositive: true },
       { key: 'qty', label: 'Total Qty', number: totalQty, change: `${totalQty} units`, isPositive: true },
-      { key: 'amount', label: 'Total Amount', number: totalAmount, change: `$${totalAmount}`, isPositive: true },
-      { key: 'attention', label: 'Needs Attention', number: attentionCount, change: `${attentionCount} unpaid/with balance`, isPositive: attentionCount === 0 },
+      {
+        key: 'amount',
+        label: 'Total Amount',
+        number: `PHP ${totalAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
+        change: `PHP ${closedAmount.toFixed(2)} closed`,
+        isPositive: true,
+      },
+      { key: 'attention', label: 'Needs Attention', number: attentionCount, change: `${unpaidCount} unpaid, ${partialCount} partial, ${overdueCount} overdue, ${balanceCount} with balance`, isPositive: attentionCount === 0 },
     ];
   }, [invoices]);
 

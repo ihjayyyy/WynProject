@@ -98,24 +98,36 @@ export default function OrdersLanding() {
 
   const orderStats = useMemo(() => {
     const total = orders.length;
-    const totalItems = orders.reduce((sum, item) => sum + ((item.items || []).length || 0), 0);
+    const orderedCount = orders.filter((item) => String(item?.status || '').toLowerCase() === 'ordered').length;
     const totalAmount = orders.reduce((sum, item) => sum + (Number(item.amount) || 0), 0);
-    const suppliers = new Set(orders.map((item) => item?.name).filter(Boolean)).size;
-    const attentionCount = orders.filter((item) => {
+    const orderedAmount = orders.reduce((sum, item) => {
       const status = String(item?.status || '').toLowerCase();
-      return status === 'draft' || status === 'pending' || status === 'for approval' || status === 'created';
+      return status === 'ordered' ? sum + (Number(item.amount) || 0) : sum;
+    }, 0);
+    const draftCount = orders.filter((item) => {
+      const status = String(item?.status || '').toLowerCase();
+      return status === 'draft';
     }).length;
+    const pendingCount = orders.filter((item) => {
+      const status = String(item?.status || '').toLowerCase();
+      return status === 'pending' || status === 'for approval' || status === 'created';
+    }).length;
+    const attentionCount = draftCount + pendingCount;
 
     return [
-      { key: 'total', label: 'Total Orders', number: total, change: `${total} records`, isPositive: true },
-      { key: 'items', label: 'Items', number: totalItems, change: `${totalItems} lines`, isPositive: true },
-      { key: 'amount', label: 'Total Amount', number: totalAmount, change: `PHP ${totalAmount.toFixed(2)}`, isPositive: true },
-      { key: 'suppliers', label: 'Suppliers', number: suppliers, change: `${suppliers} unique`, isPositive: true },
+      { key: 'total', label: 'Total Orders', number: total, change: `${orderedCount} ordered`, isPositive: true },
+      {
+        key: 'amount',
+        label: 'Total Amount',
+        number: `PHP ${totalAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
+        change: `PHP ${orderedAmount.toFixed(2)} ordered`,
+        isPositive: true,
+      },
       {
         key: 'attention',
         label: 'Needs Attention',
         number: attentionCount,
-        change: `${attentionCount} draft/pending`,
+        change: `${draftCount} draft, ${pendingCount} pending`,
         isPositive: attentionCount === 0,
       },
     ];

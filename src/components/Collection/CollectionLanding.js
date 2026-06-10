@@ -116,7 +116,25 @@ export default function CollectionLanding() {
 
   const stats = useMemo(() => {
     const total = collections.length;
+    const closedCount = collections.filter((item) => String(item?.status || '').toLowerCase() === 'closed').length;
     const totalAmount = collections.reduce((s, c) => s + (c.amount || 0), 0);
+    const closedAmount = collections.reduce((sum, item) => {
+      const status = String(item?.status || '').toLowerCase();
+      return status === 'closed' ? sum + (Number(item.amount) || 0) : sum;
+    }, 0);
+    const draftCount = collections.filter((c) => {
+      const status = String(c?.status || '').toLowerCase();
+      const isTerminal = status === 'cancelled' || status === 'closed';
+      return !isTerminal && status === 'draft';
+    }).length;
+    const remainingCount = collections.filter((c) => {
+      const status = String(c?.status || '').toLowerCase();
+      const amount = Number(c?.amount) || 0;
+      const totalPaid = Number(c?.totalAmountPaid) || 0;
+      const hasRemaining = amount > totalPaid;
+      const isTerminal = status === 'cancelled' || status === 'closed';
+      return !isTerminal && hasRemaining;
+    }).length;
     const attentionCount = collections.filter((c) => {
       const status = String(c?.status || '').toLowerCase();
       const amount = Number(c?.amount) || 0;
@@ -126,9 +144,15 @@ export default function CollectionLanding() {
       return !isTerminal && (status === 'draft' || hasRemaining);
     }).length;
     return [
-      { key: 'total', label: 'Total Collections', number: total, change: `${total} records`, isPositive: true },
-      { key: 'amount', label: 'Total Amount', number: totalAmount, change: `${totalAmount} total`, isPositive: true },
-      { key: 'attention', label: 'Needs Attention', number: attentionCount, change: `${attentionCount} draft/with remaining`, isPositive: attentionCount === 0 },
+      { key: 'total', label: 'Total Collections', number: total, change: `${closedCount} closed`, isPositive: true },
+      {
+        key: 'amount',
+        label: 'Total Amount',
+        number: `PHP ${totalAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
+        change: `PHP ${closedAmount.toFixed(2)} closed`,
+        isPositive: true,
+      },
+      { key: 'attention', label: 'Needs Attention', number: attentionCount, change: `${draftCount} draft, ${remainingCount} with remaining`, isPositive: attentionCount === 0 },
     ];
   }, [collections]);
 

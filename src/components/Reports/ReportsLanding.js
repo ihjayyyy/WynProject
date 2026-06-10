@@ -383,7 +383,31 @@ export default function ReportsLanding() {
   const stats = useMemo(() => {
     const modules = new Set(rows.map((item) => item.module)).size;
     const totalAmount = rows.reduce((sum, item) => sum + (Number(item.amount) || 0), 0);
+    const normalizedStatus = String(status || '').toLowerCase();
+    const statusLabel = normalizedStatus || 'all statuses';
+    const statusCount = rows.filter((item) => {
+      const statusText = `${item.status} ${item.detailStatuses.join(' ')}`.toLowerCase();
+      if (!normalizedStatus) return true;
+      return statusText.includes(normalizedStatus);
+    }).length;
+    const statusAmount = rows.reduce((sum, item) => {
+      const statusText = `${item.status} ${item.detailStatuses.join(' ')}`.toLowerCase();
+      if (!normalizedStatus) return sum + (Number(item.amount) || 0);
+      return statusText.includes(normalizedStatus) ? sum + (Number(item.amount) || 0) : sum;
+    }, 0);
+    const draftCount = rows.filter((item) => {
+      const statusText = `${item.status} ${item.detailStatuses.join(' ')}`.toLowerCase();
+      return statusText.includes('draft');
+    }).length;
     const pendingCount = rows.filter((item) => {
+      const statusText = `${item.status} ${item.detailStatuses.join(' ')}`.toLowerCase();
+      return statusText.includes('pending');
+    }).length;
+    const unpaidCount = rows.filter((item) => {
+      const statusText = `${item.status} ${item.detailStatuses.join(' ')}`.toLowerCase();
+      return statusText.includes('unpaid');
+    }).length;
+    const attentionCount = rows.filter((item) => {
       const statusText = `${item.status} ${item.detailStatuses.join(' ')}`.toLowerCase();
       return statusText.includes('pending') || statusText.includes('draft') || statusText.includes('unpaid');
     }).length;
@@ -393,7 +417,7 @@ export default function ReportsLanding() {
         key: 'total',
         label: 'Total Records',
         number: totalCount,
-        change: `${rows.length} loaded`,
+        change: `${statusCount} ${statusLabel}`,
         isPositive: true,
       },
       {
@@ -407,18 +431,18 @@ export default function ReportsLanding() {
         key: 'amount',
         label: 'Combined Amount',
         number: formatCurrency(totalAmount),
-        change: 'Across all modules',
+        change: `${formatCurrency(statusAmount)} ${statusLabel}`,
         isPositive: true,
       },
       {
         key: 'pending',
         label: 'Needs Attention',
-        number: pendingCount,
-        change: 'Pending, draft, unpaid',
-        isPositive: pendingCount === 0,
+        number: attentionCount,
+        change: `${draftCount} draft, ${pendingCount} pending, ${unpaidCount} unpaid`,
+        isPositive: attentionCount === 0,
       },
     ];
-  }, [rows, totalCount]);
+  }, [rows, totalCount, status]);
 
   const filterFn = (item, keyword) => {
     const haystack = [

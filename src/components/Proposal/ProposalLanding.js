@@ -281,7 +281,27 @@ export default function ProposalLanding() {
 
   const stats = useMemo(() => {
     const total = items.length;
+    const wonCount = items.filter((it) => {
+      const proposalStatus = String(it?.proposalStatus || '').toLowerCase();
+      return proposalStatus === 'won' || proposalStatus === 'win';
+    }).length;
     const totalValue = items.reduce((s, it) => s + (Number(it.proposalTotal) || 0), 0);
+    const draftCount = items.filter((it) => {
+      const approvalStatus = String(it?.approvalStatus || '').toLowerCase();
+      const proposalStatus = String(it?.proposalStatus || '').toLowerCase();
+      const isDraft = proposalStatus === 'draft';
+      return isDraft;
+    }).length;
+    const forApprovalCount = items.filter((it) => {
+      const approvalStatus = String(it?.approvalStatus || '').toLowerCase();
+      const forApproval = approvalStatus === 'for approval';
+      return forApproval;
+    }).length;
+    const generateProjectCount = items.filter((it) => {
+      const proposalStatus = String(it?.proposalStatus || '').toLowerCase();
+      const needsProjectGeneration = (proposalStatus === 'won' || proposalStatus === 'win') && it?.isProjectCreated === false;
+      return needsProjectGeneration;
+    }).length;
     const attentionCount = items.filter((it) => {
       const approvalStatus = String(it?.approvalStatus || '').toLowerCase();
       const proposalStatus = String(it?.proposalStatus || '').toLowerCase();
@@ -291,13 +311,13 @@ export default function ProposalLanding() {
       return isDraft || forApproval || needsProjectGeneration;
     }).length;
     return [
-      { key: 'total', label: 'Total Proposals', number: total, change: `${total} records`, isPositive: true },
+      { key: 'total', label: 'Total Proposals', number: total, change: `${wonCount} won`, isPositive: true },
       { key: 'value', label: 'Total Value', number: totalValue, change: `PHP ${totalValue.toFixed(2)}`, isPositive: true },
       {
         key: 'attention',
         label: 'Needs Attention',
         number: attentionCount,
-        change: `${attentionCount} draft/for approval/generate project`,
+        change: `${draftCount} draft, ${forApprovalCount} for approval, ${generateProjectCount} generate project`,
         isPositive: attentionCount === 0,
       },
     ];
