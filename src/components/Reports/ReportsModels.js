@@ -1,12 +1,16 @@
 const DEFAULT_MODULE_OPTIONS = [
+  { label: 'Inquiry', value: 'inquiry' },
   { label: 'Proposal', value: 'proposal' },
   { label: 'Project', value: 'project' },
   { label: 'Sales Billing', value: 'salesbilling' },
   { label: 'Sales Collection', value: 'salescollection' },
+  { label: 'Purchase Request', value: 'purchaserequest' },
   { label: 'Purchase Order', value: 'purchaseorder' },
   { label: 'Purchase Invoice', value: 'purchaseinvoice' },
   { label: 'Purchase Delivery', value: 'purchasedelivery' },
   { label: 'Inventory Movement', value: 'inventoryMovement' },
+  { label: 'Customer', value: 'customer' },
+  { label: 'Supplier', value: 'supplier' },
 ];
 
 const DEFAULT_MODULE_OPTION_BY_VALUE = new Map(
@@ -17,6 +21,7 @@ const SUPPLIER_FILTER_MODULES = ['purchaseorder', 'purchaseinvoice', 'purchasede
 const RACK_FILTER_MODULE = 'inventoryMovement';
 
 const MODULE_ACCESS_REQUIREMENTS = {
+  inquiry: ['Inquiry', 'Inquiries'],
   proposal: ['Projects.Proposal'],
   project: ['Projects.Projects'],
   salesbilling: ['Finance.SalesBilling', 'Finance.Billings'],
@@ -26,9 +31,17 @@ const MODULE_ACCESS_REQUIREMENTS = {
   purchaseinvoice: ['Purchase.Invoices'],
   purchasedelivery: ['Purchase.Deliveries'],
   inventorymovement: ['Inventory.InventoryMovement', 'Inventory.Report'],
+  customer: ['Customers', 'Customer'],
+  supplier: ['Suppliers', 'Supplier'],
 };
 
 const MODULE_STATUS_FILTERS = {
+  inquiry: [
+    { label: 'New', value: 'New' },
+    { label: 'In Progress', value: 'InProgress' },
+    { label: 'Closed', value: 'Closed' },
+    { label: 'Cancelled', value: 'Cancelled' },
+  ],
   proposal: [
     { label: 'Draft', value: 'Draft' },
     { label: 'Submitted', value: 'Submitted' },
@@ -64,6 +77,15 @@ const MODULE_STATUS_FILTERS = {
     { label: 'Cancelled', value: 'Cancelled' },
     { label: 'Closed', value: 'Closed' },
   ],
+  purchaserequest: [
+    { label: 'Draft', value: 'Draft' },
+    { label: 'Submitted', value: 'Submitted' },
+    { label: 'Approved', value: 'Approved' },
+    { label: 'Rejected', value: 'Rejected' },
+    { label: 'Ordered', value: 'Ordered' },
+    { label: 'Archived', value: 'Archived' },
+    { label: 'Cancelled', value: 'Cancelled' },
+  ],
   purchaseorder: [
     { label: 'Draft', value: 'Draft' },
     { label: 'Submitted', value: 'Submitted' },
@@ -75,15 +97,6 @@ const MODULE_STATUS_FILTERS = {
     { label: 'Pending', value: 'Pending' },
     { label: 'Partial', value: 'Partial' },
     { label: 'Delivered', value: 'Delivered' },
-  ],
-  purchaserequest: [
-    { label: 'Draft', value: 'Draft' },
-    { label: 'Submitted', value: 'Submitted' },
-    { label: 'Approved', value: 'Approved' },
-    { label: 'Rejected', value: 'Rejected' },
-    { label: 'Ordered', value: 'Ordered' },
-    { label: 'Archived', value: 'Archived' },
-    { label: 'Cancelled', value: 'Cancelled' },
   ],
   purchaseinvoice: [
     { label: 'Draft', value: 'Draft' },
@@ -113,8 +126,11 @@ const MODULE_STATUS_FILTERS = {
     { label: 'Delivery', value: 'Delivery' },
     { label: 'TransferToProject', value: 'TransferToProject' },
     { label: 'TransferToWarehouse', value: 'TransferToWarehouse' },
-    { label: 'ManualAdjustmen', value: 'ManualAdjustmen' },
+    { label: 'ManualAdjustment', value: 'ManualAdjustment' },
   ],
+  // Customer and Supplier are reference/master data — no workflow statuses
+  customer: [],
+  supplier: [],
 };
 
 const getStatusOptionsForModule = (moduleValue) => {
@@ -143,6 +159,20 @@ const getReportColumns = ({ moduleKey, asText, formatDate, formatDateTime, forma
     render: (item) => <StatusBadge status={item.status} />,
   };
 
+  // ── Inquiry ──────────────────────────────────────────────────────────────
+  if (moduleKey === 'inquiry') {
+    return [
+      { header: 'Inquiry No', key: 'inquiryNo', render: (item) => asText(item.raw?.inquiryNo) },
+      { header: 'Customer', key: 'customerName', render: (item) => asText(item.raw?.customerName) },
+      { header: 'Company', key: 'companyName', render: (item) => asText(item.raw?.companyName) },
+      { header: 'Contact Person', key: 'contactPerson', render: (item) => asText(item.raw?.contactPerson) },
+      { header: 'Email', key: 'email', render: (item) => asText(item.raw?.email) },
+      { header: 'Date', key: 'date', render: (item) => formatDate(item.raw?.date) },
+      commonStatus,
+    ];
+  }
+
+  // ── Proposal ─────────────────────────────────────────────────────────────
   if (moduleKey === 'proposal') {
     return [
       { header: 'Proposal No', key: 'proposalNo', render: (item) => asText(item.raw?.proposalNo) },
@@ -163,6 +193,7 @@ const getReportColumns = ({ moduleKey, asText, formatDate, formatDateTime, forma
     ];
   }
 
+  // ── Project ───────────────────────────────────────────────────────────────
   if (moduleKey === 'project') {
     return [
       { header: 'Project No', key: 'projectNo', render: (item) => asText(item.raw?.projectNo) },
@@ -185,6 +216,7 @@ const getReportColumns = ({ moduleKey, asText, formatDate, formatDateTime, forma
     ];
   }
 
+  // ── Sales Billing ─────────────────────────────────────────────────────────
   if (moduleKey === 'salesbilling') {
     return [
       { header: 'Billing No', key: 'salesBillingNo', render: (item) => asText(item.raw?.salesBillingNo) },
@@ -212,6 +244,7 @@ const getReportColumns = ({ moduleKey, asText, formatDate, formatDateTime, forma
     ];
   }
 
+  // ── Sales Collection ──────────────────────────────────────────────────────
   if (moduleKey === 'salescollection') {
     return [
       { header: 'Collection No', key: 'collectionNo', render: (item) => asText(item.raw?.collectionNo) },
@@ -234,6 +267,18 @@ const getReportColumns = ({ moduleKey, asText, formatDate, formatDateTime, forma
     ];
   }
 
+  // ── Purchase Request ──────────────────────────────────────────────────────
+  if (moduleKey === 'purchaserequest') {
+    return [
+      { header: 'Request No', key: 'requestNumber', render: (item) => asText(item.raw?.requestNumber) },
+      { header: 'Project', key: 'projectName', render: (item) => asText(item.raw?.projectName) },
+      { header: 'Requested By', key: 'requestedBy', render: (item) => asText(item.raw?.requestedBy) },
+      { header: 'Request Date', key: 'requestDate', render: (item) => formatDate(item.raw?.requestDate) },
+      commonStatus,
+    ];
+  }
+
+  // ── Purchase Order ────────────────────────────────────────────────────────
   if (moduleKey === 'purchaseorder') {
     return [
       { header: 'Order No', key: 'orderNumber', render: (item) => asText(item.raw?.orderNumber) },
@@ -259,6 +304,7 @@ const getReportColumns = ({ moduleKey, asText, formatDate, formatDateTime, forma
     ];
   }
 
+  // ── Purchase Invoice ──────────────────────────────────────────────────────
   if (moduleKey === 'purchaseinvoice') {
     return [
       { header: 'Invoice No', key: 'invoiceNumber', render: (item) => asText(item.raw?.invoiceNumber) },
@@ -287,6 +333,7 @@ const getReportColumns = ({ moduleKey, asText, formatDate, formatDateTime, forma
     ];
   }
 
+  // ── Purchase Delivery ─────────────────────────────────────────────────────
   if (moduleKey === 'purchasedelivery') {
     return [
       { header: 'Delivery No', key: 'deliveryNumber', render: (item) => asText(item.raw?.deliveryNumber) },
@@ -297,6 +344,7 @@ const getReportColumns = ({ moduleKey, asText, formatDate, formatDateTime, forma
     ];
   }
 
+  // ── Inventory Movement ────────────────────────────────────────────────────
   if (moduleKey === 'inventorymovement') {
     return [
       { header: 'Reference No', key: 'referenceNumber', render: (item) => asText(item.raw?.referenceNumber) },
@@ -325,6 +373,44 @@ const getReportColumns = ({ moduleKey, asText, formatDate, formatDateTime, forma
     ];
   }
 
+  // ── Customer ──────────────────────────────────────────────────────────────
+  if (moduleKey === 'customer') {
+    return [
+      { header: 'Code', key: 'code', render: (item) => asText(item.raw?.code) },
+      { header: 'Customer Name', key: 'customerName', render: (item) => asText(item.raw?.customerName) },
+      { header: 'Contact No', key: 'contactNumber', render: (item) => asText(item.raw?.contactNumber) },
+      { header: 'Email', key: 'email', render: (item) => asText(item.raw?.email) },
+      { header: 'Address', key: 'address', render: (item) => asText(item.raw?.address) },
+      { header: 'VAT Type', key: 'vatType', render: (item) => asText(item.raw?.vatType) },
+      {
+        header: 'Terms (days)',
+        key: 'terms',
+        align: 'right',
+        render: (item) => asText(item.raw?.terms ?? '-'),
+      },
+    ];
+  }
+
+  // ── Supplier ──────────────────────────────────────────────────────────────
+  if (moduleKey === 'supplier') {
+    return [
+      { header: 'Code', key: 'code', render: (item) => asText(item.raw?.code) },
+      { header: 'Supplier Name', key: 'supplierName', render: (item) => asText(item.raw?.supplierName) },
+      { header: 'Contact Person', key: 'contactPerson', render: (item) => asText(item.raw?.contactPerson) },
+      { header: 'Contact No', key: 'contactNumber', render: (item) => asText(item.raw?.contactNumber) },
+      { header: 'Email', key: 'email', render: (item) => asText(item.raw?.email) },
+      { header: 'Address', key: 'address', render: (item) => asText(item.raw?.address) },
+      { header: 'VAT Type', key: 'vatType', render: (item) => asText(item.raw?.vatType) },
+      {
+        header: 'Terms (days)',
+        key: 'terms',
+        align: 'right',
+        render: (item) => asText(item.raw?.terms ?? '-'),
+      },
+    ];
+  }
+
+  // ── Fallback (all/unknown module) ─────────────────────────────────────────
   return [
     { header: 'Module', key: 'module' },
     { header: 'Reference No', key: 'referenceNo' },

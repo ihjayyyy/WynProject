@@ -24,7 +24,42 @@ function moduleDisplayName(moduleName) {
   return parts[parts.length - 1];
 }
 
-function ModuleBlock({ moduleName, items, loading, error }) {
+// Skeleton for the entire listsGrid (both panels)
+function SkeletonListsGrid() {
+  return (
+    <div className={styles.listsGrid}>
+      {['For Approval', 'Needs Attention'].map((title) => (
+        <div key={title} className={styles.listPanel}>
+          <h3 className={styles.listPanelTitle}>{title}</h3>
+          <div className={styles.skeletonModuleBlock}>
+            <div className={styles.skeletonModuleHeader} />
+            {Array.from({ length: 6 }).map((_, i) => (
+              <div key={i} className={styles.skeletonRow} />
+            ))}
+          </div>
+          <div className={styles.skeletonModuleBlock}>
+            <div className={styles.skeletonModuleHeader} />
+            {Array.from({ length: 4 }).map((_, i) => (
+              <div key={i} className={styles.skeletonRow} />
+            ))}
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function SkeletonCards({ count = 4 }) {
+  return (
+    <div className={styles.statsGrid}>
+      {Array.from({ length: count }).map((_, i) => (
+        <div key={i} className={styles.skeletonCard} />
+      ))}
+    </div>
+  );
+}
+
+function ModuleBlock({ moduleName, items, error }) {
   const columns = getColumnsForModule(moduleName, items);
   const viewPath = moduleToPath(moduleName);
 
@@ -38,13 +73,10 @@ function ModuleBlock({ moduleName, items, loading, error }) {
           View ↗
         </Link>
       </div>
-
       <div className={styles.moduleTableWrap}>
-        {loading && <p className={styles.tableMessage}>Loading...</p>}
-        {!loading && error && (
+        {error ? (
           <p className={styles.tableError}>{error}</p>
-        )}
-        {!loading && !error && (
+        ) : (
           <DataTable
             columns={columns}
             data={items}
@@ -59,42 +91,26 @@ function ModuleBlock({ moduleName, items, loading, error }) {
   );
 }
 
-function ListPanel({ title, moduleMap, loadingModules }) {
-  if (loadingModules) {
-    return (
-      <div className={styles.listPanel}>
-        <h3 className={styles.listPanelTitle}>{title}</h3>
-        <p className={styles.message}>Loading...</p>
-      </div>
-    );
-  }
-
-  // Only render modules that are still loading or have at least 1 record
+function ListPanel({ title, moduleMap }) {
   const visibleEntries = Object.entries(moduleMap).filter(
-    ([, { data, loading }]) => loading || data.length > 0
+    ([, { data }]) => data.length > 0
   );
-
-  if (visibleEntries.length === 0) {
-    return (
-      <div className={styles.listPanel}>
-        <h3 className={styles.listPanelTitle}>{title}</h3>
-        <p className={styles.message}>No records found.</p>
-      </div>
-    );
-  }
 
   return (
     <div className={styles.listPanel}>
       <h3 className={styles.listPanelTitle}>{title}</h3>
-      {visibleEntries.map(([moduleName, { data, loading, error }]) => (
-        <ModuleBlock
-          key={moduleName}
-          moduleName={moduleName}
-          items={data}
-          loading={loading}
-          error={error}
-        />
-      ))}
+      {visibleEntries.length === 0 ? (
+        <p className={styles.message}>No records found.</p>
+      ) : (
+        visibleEntries.map(([moduleName, { data, error }]) => (
+          <ModuleBlock
+            key={moduleName}
+            moduleName={moduleName}
+            items={data}
+            error={error}
+          />
+        ))
+      )}
     </div>
   );
 }
@@ -107,8 +123,9 @@ export default function Dashboard() {
   const [stats, setStats] = React.useState([]);
   const [statsLoading, setStatsLoading] = React.useState(true);
 
-  const [forApprovalMap, setForApprovalMap] = React.useState({});
-  const [needsAttentionMap, setNeedsAttentionMap] = React.useState({});
+  const [forApprovalMap, setForApprovalMap] = React.useState(null);
+  const [needsAttentionMap, setNeedsAttentionMap] = React.useState(null);
+  const [listsReady, setListsReady] = React.useState(false);
 
   // ── Step 1: load modules ──────────────────────────────────────────────────
   React.useEffect(() => {
@@ -123,18 +140,7 @@ export default function Dashboard() {
     return () => { mounted = false; };
   }, []);
 
-  // ── Step 2: seed loading placeholders once allModules is known ────────────
-  React.useEffect(() => {
-    if (loadingModules || allModules.length === 0) return;
-
-    const seed = Object.fromEntries(
-      allModules.map((m) => [m, { data: [], loading: true, error: '' }])
-    );
-    setForApprovalMap(seed);
-    setNeedsAttentionMap(seed);
-  }, [loadingModules, allModules]);
-
-  // ── Step 3: fetch all data in parallel ────────────────────────────────────
+  // ── Step 2: fetch all data in parallel once modules are known ─────────────
   React.useEffect(() => {
     if (loadingModules || allModules.length === 0) return;
 
@@ -142,14 +148,13 @@ export default function Dashboard() {
 
     (async () => {
       const [statsRes, approvalRes, attentionRes] = await Promise.all([
-        getAllDashboardCards(modules),      // leaf modules only
-        getAllForApproval(allModules),      // full list
-        getAllNeedsAttention(allModules),   // full list
+        getAllDashboardCards(modules),
+        getAllForApproval(allModules),
+        getAllNeedsAttention(allModules),
       ]);
 
       if (!mounted) return;
 
-      // Flatten all cards from all modules into one list
       const allCards = Object.values(statsRes).flatMap((m) => m.data ?? []);
       setStats(allCards);
       setStatsLoading(false);
@@ -179,19 +184,20 @@ export default function Dashboard() {
           ])
         )
       );
+
+      setListsReady(true);
     })();
 
     return () => { mounted = false; };
   }, [loadingModules, allModules]);
 
-  // ── Render ────────────────────────────────────────────────────────────────
   return (
     <div className={styles.dashboardWrap}>
       <h1 className={styles.title}>Dashboard</h1>
 
       {/* STATS */}
       {statsLoading ? (
-        <p className={styles.message}>Loading...</p>
+        <SkeletonCards count={4} />
       ) : (
         <div className={styles.statsGrid}>
           {stats.map((item) => (
@@ -201,18 +207,14 @@ export default function Dashboard() {
       )}
 
       {/* TABLES */}
-      <div className={styles.listsGrid}>
-        <ListPanel
-          title="For Approval"
-          moduleMap={forApprovalMap}
-          loadingModules={loadingModules}
-        />
-        <ListPanel
-          title="Needs Attention"
-          moduleMap={needsAttentionMap}
-          loadingModules={loadingModules}
-        />
-      </div>
+      {!listsReady ? (
+        <SkeletonListsGrid />
+      ) : (
+        <div className={styles.listsGrid}>
+          <ListPanel title="For Approval" moduleMap={forApprovalMap} />
+          <ListPanel title="Needs Attention" moduleMap={needsAttentionMap} />
+        </div>
+      )}
     </div>
   );
 }
