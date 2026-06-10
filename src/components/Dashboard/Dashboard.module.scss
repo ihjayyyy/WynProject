@@ -1,95 +1,182 @@
 @use '../../styles/variables' as *;
+
+// IMPORTANT: For height: 100% to work, every ancestor up to <html> must also
+// have height: 100% (or a fixed height). Typically:
+//   html, body { height: 100%; }
+//   #root / your app shell / content area { height: 100%; overflow: hidden; }
+// Without this chain, dashboardWrap falls back to auto height and the page scrolls.
+
 .dashboardWrap {
   background: var(--color-background-light);
-  color: var(--color-text-primary-light);
   padding: $spacing-lg;
+  box-sizing: border-box;
   display: flex;
   flex-direction: column;
-  gap: $spacing-md;
-  box-shadow: 0 2px 16px rgba(0, 0, 0, 0.08);
-  height: calc(100vh - 3rem);
-  overflow-y: auto;
+  gap: 16px;
+  height: 100%;    // fill whatever the app shell gives — not 100vh
+  overflow: hidden; // page itself never scrolls
 }
 
 .title {
   font-size: $font-size-lg;
   margin: 0;
   font-weight: $font-weight-bold;
+  flex-shrink: 0;
 }
+
+// ── Stats row ───────────────────────────────────────────────────
 
 .statsGrid {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 1rem;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 12px;
+  flex-shrink: 0; // never compress the stats row
 }
 
-.sectionBlock {
+.message {
+  margin: 0;
+  color: #4b5563;
+  font-size: 14px;
+  flex-shrink: 0;
+}
+
+.error {
+  margin: 0;
+  color: #b91c1c;
+  font-size: 14px;
+  flex-shrink: 0;
+}
+
+// ── Two-column layout — fills remaining height ──────────────────
+
+.listsGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  min-height: 0; // allows flex children to shrink below content size
+  overflow: hidden;
+}
+
+// ── Each column panel — scrolls independently ──────────────────
+
+.listPanel {
   display: flex;
   flex-direction: column;
-  gap: $spacing-sm;
-  background: var(--color-background-light);
-  border: 1px solid var(--color-secondary-light);
-  border-radius: 12px;
-  padding: $spacing-md;
+  gap: 10px;
+  background: var(--color-background-light, #fff);
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  padding: 14px;
+  min-height: 0;
+  overflow-x: hidden; // never scroll horizontally
+  overflow-y: auto;   // only vertical scroll inside the panel
 }
 
-.tableSection {
-  :global(.tableContainer) {
-    height: auto;
-  }
+.listPanelTitle {
+  margin: 0;
+  font-size: 14px;
+  font-weight: $font-weight-bold;
+  color: #111827;
+  flex-shrink: 0;
 }
 
-.sectionHeader {
+// ── Module block ────────────────────────────────────────────────
+
+.moduleBlock {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  overflow: hidden;
+  flex: 1;
+  min-height: 0;
+}
+
+.moduleBlockHeader {
+  border-top: 1px solid $color-secondary-light;
+  border-left: 1px solid $color-secondary-light;
+  border-right: 1px solid $color-secondary-light;
+
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: $spacing-sm;
-}
-
-.sectionTitle {
-  margin: 0;
-  font-size: $font-size-md;
-  font-weight: $font-weight-medium;
-}
-
-.redirectBtn {
-  border: 1px solid var(--color-secondary-light);
-  background: var(--color-background-alt-light);
-  color: var(--color-text-primary-light);
-  border-radius: 8px;
   padding: 8px 12px;
-  font-size: $font-size-xs;
-  font-weight: $font-weight-medium;
-  cursor: pointer;
-  transition: background-color 0.2s ease, border-color 0.2s ease;
+  background: #f9fafb;
+  flex-shrink: 0;
+}
+
+.moduleLabel {
+  font-size: 12px;
+  font-weight: 600;
+  color: #374151;
+  letter-spacing: 0.02em;
+}
+
+.viewBtn {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--color-primary, #2563eb);
+  text-decoration: none;
+  padding: 3px 8px;
+  border: 1px solid var(--color-primary, #2563eb);
+  border-radius: 5px;
+  transition: background 0.15s, color 0.15s;
+  white-space: nowrap;
 
   &:hover {
-    background: var(--color-background-light);
-    border-color: var(--color-secondary-light);
+    background: var(--color-primary, #2563eb);
+    color: #fff;
   }
 }
 
-// RESPONSIVE DESIGN
-@media (max-width: 1024px) {
-  .statsGrid {
-    grid-template-columns: repeat(2, 1fr);
-    gap: 1rem;
+.moduleTableWrap {
+  overflow: hidden; // no horizontal scroll; panel handles vertical
+  flex: 1;
+  min-height: 0;
+}
+
+// ── DataTable overrides inside dashboard ────────────────────────
+
+// Strip the box-shadow the DataTable container normally carries
+// and let the moduleBlock border handle the visual boundary.
+.dashboardDataTable {
+  box-shadow: none;
+
+  // Suppress DataTable's own horizontal scroll wrapper
+  :global(.tableScroll),
+  [class*='tableScroll'] {
+    overflow-x: hidden;
+  }
+
+  table {
+    font-size: 13px;
   }
 }
 
-@media (max-width: 768px) {
-  .dashboardWrap {
-    height: auto;
-  }
+// ── Proposal-specific cell styles ──────────────────────────────
 
-  .statsGrid {
-    grid-template-columns: 1fr;
-    gap: 1rem;
-  }
+.proposalNo {
+  font-weight: 500;
+  white-space: nowrap;
+  color: var(--color-primary, #2563eb);
+}
 
-  .sectionHeader {
-    flex-direction: column;
-    align-items: flex-start;
-  }
+.amount {
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
 
+// ── Inline state messages ───────────────────────────────────────
+
+.tableMessage {
+  margin: 0;
+  padding: 12px;
+  color: #6b7280;
+  font-size: 13px;
+}
+
+.tableError {
+  margin: 0;
+  padding: 12px;
+  color: #b91c1c;
+  font-size: 13px;
 }
