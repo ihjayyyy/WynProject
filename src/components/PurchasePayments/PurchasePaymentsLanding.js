@@ -24,11 +24,20 @@ const baseColumns = [
   { header: 'Supplier Receipt No.', key: 'supplierReceiptNumber' },
   { header: 'Payment No.', key: 'paymentNumber' },
   { header: 'Supplier', key: 'supplierName' },
-  { header: 'Amount', key: 'amount', render: (item) => (
-    <div style={{ textAlign: 'right' }}>
-      {item.amount != null ? Number(item.amount).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : ''}
-    </div>
-  ) },
+  {
+    header: 'Amount',
+    key: 'amount',
+    render: (item) => (
+      <div style={{ textAlign: 'right' }}>
+        {item.amount != null
+          ? Number(item.amount).toLocaleString(undefined, {
+              minimumFractionDigits: 2,
+              maximumFractionDigits: 2,
+            })
+          : ''}
+      </div>
+    ),
+  },
   {
     header: 'Status',
     key: 'status',
@@ -89,6 +98,67 @@ export default function PurchasePaymentsLanding() {
     [actionItems],
   );
 
+  const paymentStats = useMemo(() => {
+    const total = payments.length;
+    const draftCount = payments.filter(
+      (item) => String(item?.status || '').toLowerCase() === 'draft',
+    ).length;
+    const partialCount = payments.filter(
+      (item) => String(item?.status || '').toLowerCase() === 'partiallypaid',
+    ).length;
+    const cancelledCount = payments.filter(
+      (item) => String(item?.status || '').toLowerCase() === 'cancelled',
+    ).length;
+    const totalInvoiceAllocations = payments.reduce(
+      (sum, item) => sum + (item.children || []).length,
+      0,
+    );
+    const totalAmount = payments.reduce(
+      (sum, item) => sum + Number(item?.amount || 0),
+      0,
+    );
+    const totalNetAmount = payments.reduce(
+      (sum, item) => sum + Number(item?.netAmount || 0),
+      0,
+    );
+    const attentionCount = payments.filter((item) => {
+      const status = String(item?.status || '').toLowerCase();
+      const isTerminal = status === 'cancelled';
+      return (
+        !isTerminal &&
+        (status === 'draft' ||
+          status === 'partiallypaid' ||
+          (item.children || []).some(
+            (child) => Number(child?.balance || 0) > 0,
+          ))
+      );
+    }).length;
+
+    return [
+      {
+        key: 'total',
+        label: 'Total Payments',
+        number: total,
+        change: `${draftCount} draft`,
+        isPositive: true,
+      },
+      {
+        key: 'amount',
+        label: 'Total Amount',
+        number: `PHP ${totalAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
+        change: `PHP ${totalNetAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} net`,
+        isPositive: true,
+      },
+      {
+        key: 'attention',
+        label: 'Needs Attention',
+        number: attentionCount,
+        change: `${draftCount} draft, ${partialCount} partial`,
+        isPositive: attentionCount === 0,
+      },
+    ];
+  }, [payments]);
+
   const filterFn = (item, keyword) => {
     return [item.name, item.code]
       .filter(Boolean)
@@ -100,6 +170,7 @@ export default function PurchasePaymentsLanding() {
       title="Payments"
       data={payments}
       columns={columns}
+      stats={paymentStats}
       searchPlaceholder="Search payment"
       newButtonLabel="New payment"
       onNew={() => router.push('/purchase/payments/paymentsform')}
