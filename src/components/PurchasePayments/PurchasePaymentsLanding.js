@@ -103,6 +103,9 @@ export default function PurchasePaymentsLanding() {
     const draftCount = payments.filter(
       (item) => String(item?.status || '').toLowerCase() === 'draft',
     ).length;
+    const paidCount = payments.filter(
+      (item) => String(item?.status || '').toLowerCase() === 'paid',
+    ).length;
     const partialCount = payments.filter(
       (item) => String(item?.status || '').toLowerCase() === 'partiallypaid',
     ).length;
@@ -139,7 +142,7 @@ export default function PurchasePaymentsLanding() {
         key: 'total',
         label: 'Total Payments',
         number: total,
-        change: `${draftCount} draft`,
+        change: `${paidCount} paid`,
         isPositive: true,
       },
       {

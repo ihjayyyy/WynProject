@@ -249,7 +249,7 @@ export default function PurchasePaymentsForm() {
         ...item,
         withholdingTax: tax,
         totalAmountPaid: total,
-        balance: parseFloat((invoiceAmount - total).toFixed(2)),
+        balance: parseFloat((invoiceAmount - paid).toFixed(2)),
       };
     });
 
@@ -496,7 +496,7 @@ export default function PurchasePaymentsForm() {
             <div className={PurchasePaymentsStyles.notesContainer} />
             <div className={PurchasePaymentsStyles.totalContainer}>
               <div className={PurchasePaymentsStyles.totalLabel}>
-                Total Net Amount:
+                Total Amount Paid:
               </div>
               <div
                 className={`${PurchasePaymentsStyles.totalValue} ${PurchasePaymentsStyles.highlight}`}>
@@ -504,14 +504,14 @@ export default function PurchasePaymentsForm() {
               </div>
 
               <div className={PurchasePaymentsStyles.totalLabel}>
-                Total Withholding Tax:
+                Less: Withholding Tax:
               </div>
               <div className={PurchasePaymentsStyles.totalValue}>
                 {computedWithholdingTax.toFixed(2)}
               </div>
 
               <div className={PurchasePaymentsStyles.totalLabel}>
-                Total Amount Paid:
+                Total Invoice Paid:
               </div>
               <div className={PurchasePaymentsStyles.totalValue}>
                 {computedAmountPaid.toFixed(2)}
@@ -524,13 +524,13 @@ export default function PurchasePaymentsForm() {
                 {computedAmount.toFixed(2)}
               </div>
 
-              <div className={PurchasePaymentsStyles.totalLabel}>
+              {/* <div className={PurchasePaymentsStyles.totalLabel}>
                 Total Remaining Balance:
               </div>
               <div
                 className={`${PurchasePaymentsStyles.totalValue} ${PurchasePaymentsStyles.highlight}`}>
                 {computedBalance.toFixed(2)}
-              </div>
+              </div> */}
             </div>
           </div>
         </div>

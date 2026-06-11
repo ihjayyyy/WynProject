@@ -12,10 +12,20 @@ export const PurchasePaymentFields = (suppliers = [], onFieldChanged) => [
     onChange: (value, allValues, setValues) =>
       typeof onFieldChanged === 'function' &&
       onFieldChanged('supplierId', value, allValues, setValues),
-    validator: Yup.number().typeError('Supplier is required').required('Supplier is required'),
+    validator: Yup.number()
+      .typeError('Supplier is required')
+      .required('Supplier is required'),
   },
   { name: 'spacer-1', type: 'spacer', span: 'span4' },
-  { name: 'paymentDate', label: 'Payment Date', type: 'date', span: 'span2', validator: Yup.date().typeError('Invalid date').required('Payment Date is required') },
+  {
+    name: 'paymentDate',
+    label: 'Payment Date',
+    type: 'date',
+    span: 'span2',
+    validator: Yup.date()
+      .typeError('Invalid date')
+      .required('Payment Date is required'),
+  },
   {
     name: 'withholdingTaxPercentage',
     label: 'Withholding Tax %',
@@ -69,7 +79,7 @@ export const PurchasePaymentDetailsColumns = [
     render: (it) => Number(it.invoiceAmount || 0).toFixed(2),
   },
   {
-    header: 'Amount Paid',
+    header: 'Invoice Paid',
     key: 'paidAmount',
     align: 'right',
     width: '120px',
@@ -83,14 +93,14 @@ export const PurchasePaymentDetailsColumns = [
     render: (it) => Number(it.withholdingTax || 0).toFixed(2),
   },
   {
-    header: 'Net Amount',
+    header: 'Amount Paid',
     key: 'totalAmountPaid',
     align: 'right',
     width: '120px',
     render: (it) => Number(it.totalAmountPaid || 0).toFixed(2),
   },
   {
-    header: 'Remaining Balance',
+    header: 'Invoice Balance',
     key: 'balance',
     align: 'right',
     width: '140px',
@@ -138,7 +148,9 @@ export const PurchasePaymentItemFields = (
       updateField('totalAmountPaid', 0);
       updateField('balance', round(invoiceAmount));
     },
-    validator: Yup.number().typeError('Invoice is required').required('Invoice is required'),
+    validator: Yup.number()
+      .typeError('Invoice is required')
+      .required('Invoice is required'),
   },
   {
     name: 'invoiceAmount',
@@ -147,7 +159,10 @@ export const PurchasePaymentItemFields = (
     readonly: true,
     initialvalue: 0,
     span: 'span2',
-    validator: Yup.number().typeError('Invoice Amount must be a number').min(0, 'Invoice Amount cannot be negative').nullable(),
+    validator: Yup.number()
+      .typeError('Invoice Amount must be a number')
+      .min(0, 'Invoice Amount cannot be negative')
+      .nullable(),
   },
   {
     name: 'paidAmount',
@@ -165,9 +180,12 @@ export const PurchasePaymentItemFields = (
       const total = parseFloat((paid - tax).toFixed(2));
       updateField('withholdingTax', tax);
       updateField('totalAmountPaid', total);
-      updateField('balance', parseFloat((invoiceAmount - total).toFixed(2)));
+      updateField('balance', parseFloat((invoiceAmount - paid).toFixed(2)));
     },
-    validator: Yup.number().typeError('Paid Amount must be a number').min(0, 'Paid Amount cannot be negative').required('Paid Amount is required'),
+    validator: Yup.number()
+      .typeError('Paid Amount must be a number')
+      .min(0, 'Paid Amount cannot be negative')
+      .required('Paid Amount is required'),
   },
   {
     name: 'withholdingTax',
@@ -175,7 +193,10 @@ export const PurchasePaymentItemFields = (
     type: 'number',
     initialvalue: 0,
     readonly: true,
-    validator: Yup.number().typeError('Withholding Tax must be a number').min(0, 'Withholding Tax cannot be negative').nullable(),
+    validator: Yup.number()
+      .typeError('Withholding Tax must be a number')
+      .min(0, 'Withholding Tax cannot be negative')
+      .nullable(),
   },
   {
     name: 'totalAmountPaid',
@@ -183,7 +204,10 @@ export const PurchasePaymentItemFields = (
     type: 'number',
     initialvalue: 0,
     readonly: true,
-    validator: Yup.number().typeError('Net Amount must be a number').min(0, 'Net Amount cannot be negative').nullable(),
+    validator: Yup.number()
+      .typeError('Net Amount must be a number')
+      .min(0, 'Net Amount cannot be negative')
+      .nullable(),
   },
   {
     name: 'balance',
