@@ -166,7 +166,7 @@ export const PurchasePaymentItemFields = (
   },
   {
     name: 'paidAmount',
-    label: 'Paid Amount',
+    label: 'Invoice Paid',
     type: 'number',
     initialvalue: 0,
     span: 'span2',
@@ -200,7 +200,7 @@ export const PurchasePaymentItemFields = (
   },
   {
     name: 'totalAmountPaid',
-    label: 'Net Amount',
+    label: 'Amount Paid',
     type: 'number',
     initialvalue: 0,
     readonly: true,
@@ -211,7 +211,7 @@ export const PurchasePaymentItemFields = (
   },
   {
     name: 'balance',
-    label: 'Remaining Balance',
+    label: 'Invoice Balance',
     type: 'number',
     readonly: true,
     initialvalue: 0,
