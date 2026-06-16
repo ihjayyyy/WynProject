@@ -18,6 +18,10 @@ function formatDate(iso) {
   });
 }
 
+function formatPercent(value) {
+  return `${Number(value).toFixed(1)}%`;
+}
+
 const EXCLUDED_AUTO_KEYS = new Set([
   'id', 'isDeleted', 'createdAt', 'updatedAt', 'createdBy', 'updatedBy',
   'children', 'deletedChildren', 'description', 'attachmentUrl',
@@ -75,6 +79,7 @@ export function autoGenerateColumns(data) {
 }
 
 const COLUMN_REGISTRY = {
+  // ── Proposal ────────────────────────────────────────────────────
   'Projects.Proposal': [
     {
       key: 'proposalNo',
@@ -98,10 +103,87 @@ const COLUMN_REGISTRY = {
       render: (item) => formatDate(item.expirationDate),
     },
   ],
+
+  // ── Projects ────────────────────────────────────────────────────
+  'Projects.Projects': [
+    {
+      key: 'projectNo',
+      header: 'Project No.',
+      render: (item) => (
+        <span className={styles.proposalNo}>{item.projectNo}</span>
+      ),
+    },
+    {
+      key: 'projectName',
+      header: 'Project',
+      render: (item) => item.projectName || '—',
+    },
+    { key: 'companyName', header: 'Company' },
+    {
+      key: 'contractPrice',
+      header: 'Contract Price',
+      render: (item) => formatCurrency(item.contractPrice ?? 0),
+    },
+    {
+      key: 'overallProgress',
+      header: 'Progress',
+      render: (item) => formatPercent(item.overallProgress ?? 0),
+    },
+    {
+      key: 'status',
+      header: 'Status',
+      render: (item) => <StatusBadge status={item.status} />,
+    },
+  ],
+
+  // ── Inventory — Material Transfer ───────────────────────────────
+  'Inventory.MaterialTransfer': [
+    {
+      key: 'projectNo',
+      header: 'Project No.',
+      render: (item) => (
+        <span className={styles.proposalNo}>{item.projectNo}</span>
+      ),
+    },
+    {
+      key: 'projectName',
+      header: 'Project',
+      render: (item) => item.projectName || '—',
+    },
+    {
+      key: 'companyName',
+      header: 'Company',
+    },
+    {
+      key: 'contractPrice',
+      header: 'Contract Price',
+      render: (item) => formatCurrency(item.contractPrice ?? 0),
+    },
+    {
+      key: 'overallProgress',
+      header: 'Progress',
+      render: (item) => formatPercent(item.overallProgress ?? 0),
+    },
+    {
+      key: 'status',
+      header: 'Status',
+      render: (item) => <StatusBadge status={item.status} />,
+    },
+  ],
 };
 
 export function getColumnsForModule(moduleName, data = []) {
-  return COLUMN_REGISTRY[moduleName] ?? autoGenerateColumns(data);
+  // exact match first
+  if (COLUMN_REGISTRY[moduleName]) return COLUMN_REGISTRY[moduleName];
+
+  // prefix match — e.g. "Projects.Test" falls back to "Projects"
+  const prefix = Object.keys(COLUMN_REGISTRY).find((key) =>
+    moduleName.startsWith(key)
+  );
+  if (prefix) return COLUMN_REGISTRY[prefix];
+
+  // auto-generate from data shape as last resort
+  return autoGenerateColumns(data);
 }
 
 export default COLUMN_REGISTRY;

@@ -1,11 +1,5 @@
 @use '../../styles/variables' as *;
 
-// IMPORTANT: For height: 100% to work, every ancestor up to <html> must also
-// have height: 100% (or a fixed height). Typically:
-//   html, body { height: 100%; }
-//   #root / your app shell / content area { height: 100%; overflow: hidden; }
-// Without this chain, dashboardWrap falls back to auto height and the page scrolls.
-
 .dashboardWrap {
   background: var(--color-background-light);
   padding: $spacing-lg;
@@ -13,8 +7,8 @@
   display: flex;
   flex-direction: column;
   gap: 16px;
-  height: 100%;    // fill whatever the app shell gives — not 100vh
-  overflow: hidden; // page itself never scrolls
+  height: 100%;
+  overflow: hidden;
 }
 
 .title {
@@ -28,9 +22,13 @@
 
 .statsGrid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
   gap: 12px;
-  flex-shrink: 0; // never compress the stats row
+  flex-shrink: 0;
+
+  @media (min-width: 1024px) {
+    grid-template-columns: repeat(5, 1fr);
+  }
 }
 
 .message {
@@ -47,17 +45,18 @@
   flex-shrink: 0;
 }
 
-// ── Two-column layout — fills remaining height ──────────────────
+// ── Two-column layout ───────────────────────────────────────────
 
 .listsGrid {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 12px;
-  min-height: 0; // allows flex children to shrink below content size
+  min-height: 0;
+  flex: 1;
   overflow: hidden;
 }
 
-// ── Each column panel — scrolls independently ──────────────────
+// ── Each column panel ───────────────────────────────────────────
 
 .listPanel {
   display: flex;
@@ -68,8 +67,8 @@
   border-radius: 8px;
   padding: 14px;
   min-height: 0;
-  overflow-x: hidden; // never scroll horizontally
-  overflow-y: auto;   // only vertical scroll inside the panel
+  overflow-x: hidden;
+  overflow-y: auto;
 }
 
 .listPanelTitle {
@@ -86,22 +85,26 @@
   display: flex;
   flex-direction: column;
   gap: 0;
+  flex-shrink: 0;
+  border: 1px solid $color-secondary-light;
+  border-radius: 6px;
   overflow: hidden;
-  flex: 1;
-  min-height: 0;
 }
 
 .moduleBlockHeader {
-  border-top: 1px solid $color-secondary-light;
-  border-left: 1px solid $color-secondary-light;
-  border-right: 1px solid $color-secondary-light;
-
   display: flex;
   align-items: center;
   justify-content: space-between;
   padding: 8px 12px;
   background: #f9fafb;
+  border-bottom: 1px solid $color-secondary-light;
   flex-shrink: 0;
+}
+
+.moduleLabelGroup {
+  display: flex;
+  align-items: center;
+  gap: 6px;
 }
 
 .moduleLabel {
@@ -109,6 +112,21 @@
   font-weight: 600;
   color: #374151;
   letter-spacing: 0.02em;
+}
+
+.moduleCount {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: 10px;
+  background: #e5e7eb;
+  color: #374151;
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1;
 }
 
 .viewBtn {
@@ -128,41 +146,72 @@
   }
 }
 
-.moduleTableWrap {
-  overflow: hidden; // no horizontal scroll; panel handles vertical
-  flex: 1;
-  min-height: 0;
+// ── Simple table ────────────────────────────────────────────────
+
+.tableWrapper {
+  overflow-x: auto;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
 }
 
-// ── DataTable overrides inside dashboard ────────────────────────
+.tableWrapper > .table {
+  flex-shrink: 0;
+}
 
-// Strip the box-shadow the DataTable container normally carries
-// and let the moduleBlock border handle the visual boundary.
-.dashboardDataTable {
-  box-shadow: none;
+.tableBodyWrapper {
+  overflow-y: auto;
+  overflow-x: hidden;
+  width: 100%;
 
-  // Suppress DataTable's own horizontal scroll wrapper
-  :global(.tableScroll),
-  [class*='tableScroll'] {
-    overflow-x: hidden;
+  scrollbar-width: thin;
+  scrollbar-color: #d1d5db transparent;
+
+  &::-webkit-scrollbar {
+    width: 4px;
+  }
+  &::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  &::-webkit-scrollbar-thumb {
+    background-color: #d1d5db;
+    border-radius: 4px;
+  }
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.th {
+  text-align: left;
+  padding: 8px 12px;
+  font-size: 11px;
+  font-weight: 600;
+  color: #6b7280;
+  letter-spacing: 0.05em;
+  background: #f9fafb;
+  border-bottom: 1px solid #e5e7eb;
+  white-space: nowrap;
+}
+
+.tr {
+  &:not(:last-child) {
+    border-bottom: 1px solid #f3f4f6;
   }
 
-  table {
-    font-size: 13px;
+  &:hover {
+    background: #f9fafb;
   }
 }
 
-// ── Proposal-specific cell styles ──────────────────────────────
-
-.proposalNo {
-  font-weight: 500;
+.td {
+  padding: 8px 12px;
+  color: #111827;
+  font-size: 13px;
   white-space: nowrap;
-  color: var(--color-primary, #2563eb);
-}
-
-.amount {
-  white-space: nowrap;
-  font-variant-numeric: tabular-nums;
 }
 
 // ── Inline state messages ───────────────────────────────────────
@@ -181,7 +230,8 @@
   font-size: 13px;
 }
 
-// Skeleton loaders
+// ── Skeleton loaders ────────────────────────────────────────────
+
 .skeletonModuleBlock {
   display: flex;
   flex-direction: column;
@@ -222,4 +272,3 @@
   0%   { background-position: 200% 0; }
   100% { background-position: -200% 0; }
 }
-

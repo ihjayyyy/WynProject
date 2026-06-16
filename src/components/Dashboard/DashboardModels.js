@@ -26,18 +26,19 @@ function toApiModuleName(moduleName) {
 
 function mapSummaryToCards(summary) {
   const stats = Array.isArray(summary?.stats) ? summary.stats : [];
+  const title = summary?.title ?? 'Stat';
 
   return stats.map((item, index) => {
-    const label = item?.statName || `Stat ${index + 1}`;
+    const statName = item?.statName || `Stat ${index + 1}`;
     const number = item?.statValue ?? 0;
     const value = Number(number);
 
     return {
-      id: `${label}-${index}`,
-      label,
+      id: `${statName}-${index}`,
+      label: title,
       number,
-      change: value === 0 ? 'No records' : 'Active',
-      isPositive: value === 0,
+      change: value === 0 ? 'No records' : statName,
+      isPositive: true, // Assuming all stats are positive for simplicity; adjust logic as needed
     };
   });
 }

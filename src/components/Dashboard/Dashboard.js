@@ -3,9 +3,7 @@
 import React from 'react';
 import Link from 'next/link';
 import StatsCard from '../ui/StatsCard/StatsCard';
-import DataTable from '../ui/DataTable/DataTable';
 import { getColumnsForModule } from './dashboardColumns';
-
 import {
   getUserModules,
   getAllDashboardCards,
@@ -15,7 +13,12 @@ import {
 
 import styles from './Dashboard.module.scss';
 
+const MODULE_PATH_REGISTRY = {
+  'Projects.Projects': '/projects/project',
+};
+
 function moduleToPath(moduleName) {
+  if (MODULE_PATH_REGISTRY[moduleName]) return MODULE_PATH_REGISTRY[moduleName];
   return '/' + moduleName.replace(/\./g, '/').toLowerCase();
 }
 
@@ -24,7 +27,108 @@ function moduleDisplayName(moduleName) {
   return parts[parts.length - 1];
 }
 
-// Skeleton for the entire listsGrid (both panels)
+const ROW_HEIGHT = 37;
+const MAX_VISIBLE_ROWS = 5;
+
+function SimpleTable({ moduleName, data }) {
+  const columns = getColumnsForModule(moduleName, data);
+
+  if (!data || data.length === 0) {
+    return <p className={styles.tableMessage}>No records found.</p>;
+  }
+
+  const isScrollable = data.length > MAX_VISIBLE_ROWS;
+
+  return (
+    <div className={styles.tableWrapper}>
+      <table className={styles.table}>
+        <thead>
+          <tr>
+            {columns.map((col) => (
+              <th key={col.key} className={styles.th}>
+                {col.header}
+              </th>
+            ))}
+          </tr>
+        </thead>
+      </table>
+      <div
+        className={styles.tableBodyWrapper}
+        style={isScrollable ? { maxHeight: ROW_HEIGHT * MAX_VISIBLE_ROWS } : undefined}
+      >
+        <table className={styles.table}>
+          <colgroup>
+            {columns.map((col) => (
+              <col key={col.key} />
+            ))}
+          </colgroup>
+          <tbody>
+            {data.map((row, i) => (
+              <tr key={row.id ?? i} className={styles.tr}>
+                {columns.map((col) => (
+                  <td key={col.key} className={styles.td}>
+                    {col.render ? col.render(row) : (row[col.key] ?? '—')}
+                  </td>
+                ))}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
+function ModuleBlock({ moduleName, items, error }) {
+  const viewPath = moduleToPath(moduleName);
+  const count = items?.length ?? 0;
+
+  return (
+    <div className={styles.moduleBlock}>
+      <div className={styles.moduleBlockHeader}>
+        <div className={styles.moduleLabelGroup}>
+          <span className={styles.moduleLabel}>
+            {moduleDisplayName(moduleName)}
+          </span>
+          <span className={styles.moduleCount}>{count}</span>
+        </div>
+        <Link href={viewPath} className={styles.viewBtn}>
+          View ↗
+        </Link>
+      </div>
+      {error ? (
+        <p className={styles.tableError}>{error}</p>
+      ) : (
+        <SimpleTable moduleName={moduleName} data={items} />
+      )}
+    </div>
+  );
+}
+
+function ListPanel({ title, moduleMap }) {
+  const visibleEntries = Object.entries(moduleMap).filter(
+    ([, { data }]) => data.length > 0
+  );
+
+  return (
+    <div className={styles.listPanel}>
+      <h3 className={styles.listPanelTitle}>{title}</h3>
+      {visibleEntries.length === 0 ? (
+        <p className={styles.message}>No records found.</p>
+      ) : (
+        visibleEntries.map(([moduleName, { data, error }]) => (
+          <ModuleBlock
+            key={moduleName}
+            moduleName={moduleName}
+            items={data}
+            error={error}
+          />
+        ))
+      )}
+    </div>
+  );
+}
+
 function SkeletonListsGrid() {
   return (
     <div className={styles.listsGrid}>
@@ -59,62 +163,6 @@ function SkeletonCards({ count = 4 }) {
   );
 }
 
-function ModuleBlock({ moduleName, items, error }) {
-  const columns = getColumnsForModule(moduleName, items);
-  const viewPath = moduleToPath(moduleName);
-
-  return (
-    <div className={styles.moduleBlock}>
-      <div className={styles.moduleBlockHeader}>
-        <span className={styles.moduleLabel}>
-          {moduleDisplayName(moduleName)}
-        </span>
-        <Link href={viewPath} className={styles.viewBtn}>
-          View ↗
-        </Link>
-      </div>
-      <div className={styles.moduleTableWrap}>
-        {error ? (
-          <p className={styles.tableError}>{error}</p>
-        ) : (
-          <DataTable
-            columns={columns}
-            data={items}
-            showActions={false}
-            pagination={false}
-            emptyMessage="No records found."
-            className={styles.dashboardDataTable}
-          />
-        )}
-      </div>
-    </div>
-  );
-}
-
-function ListPanel({ title, moduleMap }) {
-  const visibleEntries = Object.entries(moduleMap).filter(
-    ([, { data }]) => data.length > 0
-  );
-
-  return (
-    <div className={styles.listPanel}>
-      <h3 className={styles.listPanelTitle}>{title}</h3>
-      {visibleEntries.length === 0 ? (
-        <p className={styles.message}>No records found.</p>
-      ) : (
-        visibleEntries.map(([moduleName, { data, error }]) => (
-          <ModuleBlock
-            key={moduleName}
-            moduleName={moduleName}
-            items={data}
-            error={error}
-          />
-        ))
-      )}
-    </div>
-  );
-}
-
 export default function Dashboard() {
   const [modules, setModules] = React.useState([]);
   const [allModules, setAllModules] = React.useState([]);
@@ -127,7 +175,6 @@ export default function Dashboard() {
   const [needsAttentionMap, setNeedsAttentionMap] = React.useState(null);
   const [listsReady, setListsReady] = React.useState(false);
 
-  // ── Step 1: load modules ──────────────────────────────────────────────────
   React.useEffect(() => {
     let mounted = true;
     (async () => {
@@ -140,10 +187,8 @@ export default function Dashboard() {
     return () => { mounted = false; };
   }, []);
 
-  // ── Step 2: fetch all data in parallel once modules are known ─────────────
   React.useEffect(() => {
     if (loadingModules || allModules.length === 0) return;
-
     let mounted = true;
 
     (async () => {
@@ -195,7 +240,6 @@ export default function Dashboard() {
     <div className={styles.dashboardWrap}>
       <h1 className={styles.title}>Dashboard</h1>
 
-      {/* STATS */}
       {statsLoading ? (
         <SkeletonCards count={4} />
       ) : (
@@ -206,7 +250,6 @@ export default function Dashboard() {
         </div>
       )}
 
-      {/* TABLES */}
       {!listsReady ? (
         <SkeletonListsGrid />
       ) : (
