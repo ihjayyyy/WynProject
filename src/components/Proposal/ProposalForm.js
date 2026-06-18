@@ -515,7 +515,7 @@ export default function ProposalForm() {
       customerReferenceNumber: values.customerReferenceNumber || '',
       margin: Number(values.margin) || 0,
       laborPercentage: Number(values.laborPercentage) || 0,
-      inquiryId: values.inquiryId || null,
+      inquiryId: values.inquiryId || 0,
       proposalTotal: Number(totals.proposalTotal) || 0,
       laborCostTotal: Number(totals.laborCostTotal) || 0,
       materialCostTotal: Number(totals.materialCostTotal) || 0,
