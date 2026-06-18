@@ -430,18 +430,18 @@ export default function PRForm() {
     ) : null;
   };
 
-  const OrderButton = () => {
-    return isAllowed(PageName, 'ww') &&
-      formId &&
-      formData.status &&
-      formData.status.toLowerCase() === 'approved' ? (
-      <div className={EntityStyle.buttonsContainer}>
-        <Button variant="save" onClick={handleApproveConfirm}>
-          Order
-        </Button>
-      </div>
-    ) : null;
-  };
+  // const OrderButton = () => {
+  //   return isAllowed(PageName, 'ww') &&
+  //     formId &&
+  //     formData.status &&
+  //     formData.status.toLowerCase() === 'approved' ? (
+  //     <div className={EntityStyle.buttonsContainer}>
+  //       <Button variant="save" onClick={handleApproveConfirm}>
+  //         Order
+  //       </Button>
+  //     </div>
+  //   ) : null;
+  // };
 
   const ArchiveButton = () => {
     return isAllowed(PageName, 'w') &&
@@ -525,7 +525,7 @@ export default function PRForm() {
             <ViewButton />
             <CRUDButton />
             <ApprovalButton />
-            <OrderButton />
+            {/* <OrderButton /> */}
             <ArchiveButton />
             <PrintButton />
           </div>
