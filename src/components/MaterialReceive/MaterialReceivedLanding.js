@@ -14,7 +14,7 @@ import InvalidPage from '@/components/InvalidPage/page';
 
 const baseColumns = [
   // { header: 'Id', key: 'id' },,
-  {header: 'Transfer Number', key: 'transferNo'},
+  {header: 'Transfer Number', key: 'transferNumber'},
 
   // { header: 'Name', key: 'name' },
   // { header: 'Code', key: 'code' },
@@ -40,7 +40,7 @@ const baseColumns = [
 ];
 
 export default function MaterialReceivedLanding() {
-  const PageName = 'Inventory.MaterialReceivedLanding';
+  const PageName = 'Inventory.MaterialReceived';
   const { isAllowed } = useContext(AccessContext);
   const router = useRouter();
   const [transfers, setTransfers] = useState([]);
@@ -138,11 +138,11 @@ export default function MaterialReceivedLanding() {
       (s, d) => s + (d.children || []).length,
       0
     );
-    const totalQty = list.reduce(
-      (s, d) =>
-        s + (d.children || []).reduce((ss, it) => ss + (Number(it.receivedQuantity) || 0), 0),
-      0
-    );
+    // const totalQty = list.reduce(
+    //   (s, d) =>
+    //     s + (d.children || []).reduce((ss, it) => ss + (Number(it.receivedQuantity) || 0), 0),
+    //   0
+    // );
     const warehouseToProject = list.filter(
       (d) =>
         d.transferFromType === 'Warehouse' && d.transferToType === 'Project'
@@ -156,7 +156,7 @@ export default function MaterialReceivedLanding() {
 
 return [
   { key: 'total', label: 'Total Received', number: total, change: `${transferredCount} transferred`, isPositive: true },
-  { key: 'qty', label: 'Total Qty Received', number: totalQty, change: `${totalQty} units`, isPositive: true },
+  // { key: 'qty', label: 'Total Qty Received', number: totalQty, change: `${totalQty} units`, isPositive: true },
   { key: 'w2p', label: 'Warehouse → Project', number: warehouseToProject, change: `${warehouseToProject} received`, isPositive: true },
   { key: 'p2w', label: 'Project → Warehouse', number: projectToWarehouse, change: `${projectToWarehouse} received`, isPositive: true },
   { key: 'attention', label: 'Needs Attention', number: attentionCount, change: `${draftCount} draft`, isPositive: attentionCount === 0 },

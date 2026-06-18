@@ -11,13 +11,11 @@ import { AccessContext } from '@/app/contextProviders/accessContext';
 import { getMaterialTransfers, transferMaterialTransfer, printMaterialTransfer_byId } from '@/services/MaterialTransfer';
 import { useToast } from '../ui/Toast/Toast';
 import InvalidPage from '@/components/InvalidPage/page';
+import Input from '../ui/Input/Input';
 
 const baseColumns = [
-  // { header: 'Id', key: 'id' },,
-  {header: 'Transfer Number', key: 'transferNo'},
-  // { header: 'Name', key: 'name' },
-  // { header: 'Code', key: 'code' },
-    {
+  { header: 'Transfer Number', key: 'transferNumber' },
+  {
     header: 'Date',
     key: 'date',
     render: (item) =>
@@ -39,11 +37,11 @@ export default function MaterialTransferLanding() {
   const [transfers, setTransfers] = useState([]);
   const [loading, setLoading] = useState(true);
   const toast = useToast();
-  const [isConfirmOpen, setIsConfirmOpen] = useState(false);
-  const [confirmTitle, setConfirmTitle] = useState('');
-  const [confirmMessage, setConfirmMessage] = useState('');
-  const [confirmAction, setConfirmAction] = useState(null);
-  const [confirmTarget, setConfirmTarget] = useState(null);
+
+  const [isTransferModalOpen, setIsTransferModalOpen] = useState(false);
+  const [transferTarget, setTransferTarget] = useState(null);
+  const [transferRows, setTransferRows] = useState([]);
+  const [transferSaving, setTransferSaving] = useState(false);
 
   const loadTransfers = React.useCallback(async () => {
     setLoading(true);
@@ -67,6 +65,63 @@ export default function MaterialTransferLanding() {
     })();
     return () => (mounted = false);
   }, [loadTransfers]);
+
+  const openTransferModal = (item) => {
+    setTransferTarget(item);
+    const rows = (item.children || []).map((child) => ({
+      transferDetailId: child.id, // auto-filled from child id
+      materialName: child.name,
+      code: child.code,
+      quantity: child.quantity,
+      uom: child.uom,
+      remarks: child.remarks || '',
+    }));
+    setTransferRows(rows);
+    setIsTransferModalOpen(true);
+  };
+
+  const closeTransferModal = () => {
+    setIsTransferModalOpen(false);
+    setTransferTarget(null);
+    setTransferRows([]);
+  };
+
+  const handleRowRemarksChange = (index, value) => {
+    setTransferRows((prev) =>
+      prev.map((row, i) => (i === index ? { ...row, remarks: value } : row))
+    );
+  };
+
+  const applyTransfer = async () => {
+    if (transferSaving) return;
+    if (!transferTarget?.id) {
+      toast.error('No transfer selected.');
+      return;
+    }
+    if (transferRows.length === 0) {
+      toast.error('No items to transfer.');
+      return;
+    }
+
+    try {
+      setTransferSaving(true);
+      const payload = {
+        details: transferRows.map(({ transferDetailId, remarks }) => ({
+          transferDetailId,
+          remarks,
+        })),
+      };
+      const res = await transferMaterialTransfer(transferTarget.id, payload);
+      if (res?.error) throw new Error(res.error);
+      toast.success('Transfer marked as transferred.');
+      closeTransferModal();
+      await loadTransfers();
+    } catch (error) {
+      toast.error('Failed to transfer.');
+    } finally {
+      setTransferSaving(false);
+    }
+  };
 
   const actionItems = useMemo(
     () => [
@@ -102,22 +157,13 @@ export default function MaterialTransferLanding() {
           const itemsFor = (actionItems || []).map((it) => ({ ...it }));
 
           if (isDraft && isAllowed(PageName, 'w')) {
-            itemsFor.push({ key: 'transfer', label: 'Transfer', icon: <FiSend size={14} />, onClick: (it) => {
-              setConfirmTarget(it);
-              setConfirmTitle('Transfer materials?');
-              setConfirmMessage(`Mark transfer "${it.name || it.code || ''}" as transferred?`);
-              setConfirmAction(() => async (target) => {
-                setLoading(true);
-                const res = await transferMaterialTransfer(target.id);
-                if (res?.error) toast.error('Failed to transfer');
-                else { toast.success('Transfer marked as transferred'); await loadTransfers(); }
-                setLoading(false);
-              });
-              setIsConfirmOpen(true);
-            }});
+            itemsFor.push({
+              key: 'transfer',
+              label: 'Transfer',
+              icon: <FiSend size={14} />,
+              onClick: openTransferModal,
+            });
           }
-
-          
 
           if (isTransferred && isAllowed(PageName, 'r')) {
             var lbl = (item.transferFromType === 'Warehouse' && item.transferToType === 'Project') ? "Print MRT" :
@@ -132,36 +178,24 @@ export default function MaterialTransferLanding() {
         },
       },
     ],
-    [actionItems, isAllowed, loadTransfers, toast]
+    [actionItems, isAllowed]
   );
 
   const stats = useMemo(() => {
     const list = Array.isArray(transfers) ? transfers : [];
     const total = list.length;
     const transferredCount = list.filter((d) => String(d?.status || '').toLowerCase() === 'transferred').length;
-    const totalItems = list.reduce(
-      (s, d) => s + (d.children || []).length,
-      0
-    );
-    const totalQty = list.reduce(
-      (s, d) =>
-        s + (d.children || []).reduce((ss, it) => ss + (Number(it.quantity) || 0), 0),
-      0
-    );
     const warehouseToProject = list.filter(
-      (d) =>
-        d.transferFromType === 'Warehouse' && d.transferToType === 'Project'
+      (d) => d.transferFromType === 'Warehouse' && d.transferToType === 'Project'
     ).length;
     const projectToWarehouse = list.filter(
-      (d) =>
-        d.transferFromType === 'Project' && d.transferToType === 'Warehouse'
+      (d) => d.transferFromType === 'Project' && d.transferToType === 'Warehouse'
     ).length;
     const draftCount = list.filter((d) => String(d?.status || '').toLowerCase() === 'draft').length;
     const attentionCount = draftCount;
 
     return [
       { key: 'total', label: 'Total Transfers', number: total, change: `${transferredCount} transferred`, isPositive: true },
-      { key: 'qty', label: 'Total Qty', number: totalQty, change: `${totalQty} units`, isPositive: true },
       { key: 'w2p', label: 'Warehouse → Project', number: warehouseToProject, change: `${warehouseToProject} transfers`, isPositive: true },
       { key: 'p2w', label: 'Project → Warehouse', number: projectToWarehouse, change: `${projectToWarehouse} transfers`, isPositive: true },
       { key: 'attention', label: 'Needs Attention', number: attentionCount, change: `${draftCount} draft`, isPositive: attentionCount === 0 },
@@ -178,30 +212,70 @@ export default function MaterialTransferLanding() {
 
   return (
     <>
-    <Landing
-      title="Material Transfers"
-      data={transfers}
-      columns={columns}
-      stats={stats}
-      searchPlaceholder="Search transfers"
-      newButtonLabel="New Transfer"
-      onNew={() => router.push('/inventory/materialtransfer/form')}
-      emptyMessage="No material transfers found"
-      width="320px"
-      filterFn={filterFn}
-      loading={loading}
-    />
-    <ConfirmModal
-      open={isConfirmOpen}
-      title={confirmTitle}
-      message={confirmMessage}
-      confirmText="Confirm"
-      onConfirm={async () => {
-        setIsConfirmOpen(false);
-        if (confirmAction && confirmTarget) await confirmAction(confirmTarget);
-      }}
-      onCancel={() => { setIsConfirmOpen(false); }}
-    />
+      <Landing
+        title="Material Transfers"
+        data={transfers}
+        columns={columns}
+        stats={stats}
+        searchPlaceholder="Search transfers"
+        newButtonLabel="New Transfer"
+        onNew={() => router.push('/inventory/materialtransfer/form')}
+        emptyMessage="No material transfers found"
+        width="320px"
+        filterFn={filterFn}
+        loading={loading}
+      />
+
+      <ConfirmModal
+        open={isTransferModalOpen}
+        title="Transfer materials?"
+        message={`Mark transfer "${transferTarget?.transferNumber || transferTarget?.name || transferTarget?.code || ''}" as transferred? Review remarks for each item below.`}
+        confirmText={transferSaving ? 'Transferring...' : 'Confirm Transfer'}
+        confirmVariant="primary"
+        onConfirm={applyTransfer}
+        onCancel={closeTransferModal}
+      >
+        <div style={{ maxHeight: '320px', overflowY: 'auto', marginBottom: '12px' }}>
+          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px' }}>
+            <thead>
+              <tr style={{ textAlign: 'left', borderBottom: '1px solid #e5e5e5' }}>
+                <th style={{ padding: '6px 8px', color: '#64748b' }}>Material</th>
+                <th style={{ padding: '6px 8px', color: '#64748b' }}>Qty</th>
+                <th style={{ padding: '6px 8px', color: '#64748b' }}>Remarks</th>
+              </tr>
+            </thead>
+            <tbody>
+              {transferRows.map((row, index) => (
+                <tr key={row.transferDetailId} style={{ borderBottom: '1px solid #f0f0f0' }}>
+                  <td style={{ padding: '6px 8px', verticalAlign: 'top' }}>
+                    <div style={{ fontWeight: 500 }}>{row.materialName}</div>
+                    <div style={{ fontSize: '11px', color: '#999' }}>{row.code}</div>
+                  </td>
+                  <td style={{ padding: '6px 8px', verticalAlign: 'top' }}>
+                    {row.quantity} {row.uom}
+                  </td>
+                  <td style={{ padding: '6px 8px', verticalAlign: 'top' }}>
+                    <Input
+                      type="text"
+                      value={row.remarks}
+                      onChange={(e) => handleRowRemarksChange(index, e.target.value)}
+                      placeholder="Add remarks"
+                      disabled={transferSaving}
+                    />
+                  </td>
+                </tr>
+              ))}
+              {transferRows.length === 0 && (
+                <tr>
+                  <td colSpan={3} style={{ padding: '12px 8px', textAlign: 'center', color: '#999' }}>
+                    No items to transfer
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      </ConfirmModal>
     </>
   );
 }

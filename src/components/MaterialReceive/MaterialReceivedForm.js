@@ -9,7 +9,7 @@ import Button from '../ui/Button/Button';
 import DetailsTable from '../ItemDetails/DetailsTable';
 import { getTransferredMaterialTransfers, getMaterialTransfer, receiveMaterialTransfer } from '@/services/MaterialTransfer';
 import { useConfirmModal } from '@/app/contextProviders/confirmModalContext';
-import { ItemsFields as TransferItemsFields, TableColumns as TransferTableColumns } from '@/components/MaterialTransfer/MaterialTransferModels';
+import { ItemsFields as ReceivedItemsFields, TableColumns as ReceivedTableColumns } from '@/components/MaterialReceive/MaterialReceivedModels';
 import { useToast } from '../ui/Toast/Toast';
 import { FiDownload } from 'react-icons/fi';
 
@@ -80,7 +80,6 @@ export default function MaterialReceivedForm() {
         }
       });
 
-
       const children = Array.isArray(data?.children) ? data.children : [];
 
       // Pre-populate table items from transfer children, with receivedQuantity default 0
@@ -90,6 +89,9 @@ export default function MaterialReceivedForm() {
         materialId: c.materialId ?? (c.material ? c.material.id : 0),
         code: c.code || (c.material && c.material.code) || '',
         name: c.name || (c.material && c.material.name) || '',
+        rackId: c.rackId ?? (c.rack ? c.rack.id : 0),
+        rackCode: (c.rack && c.rack.code) || '',
+        rackName: (c.rack && c.rack.name) || '',
         quantity: Number(c.quantity ?? c.qty ?? 0),
         receivedQuantity: Number(c.receivedQuantity ?? 0),
         uom: c.uom || (c.material && c.material.uom) || '',
@@ -97,30 +99,7 @@ export default function MaterialReceivedForm() {
       }));
 
       setTableData({ items: preItems, deletedItems: [] });
-
-      const materialOptions = children.map((c) => ({
-        value: c.materialId ?? c.id ?? (c.material ? c.material.id : 0),
-        label: (c.code ? `${c.code} - ` : '') + (c.name || (c.material && c.material.name) || ''),
-        code: c.code || (c.material && c.material.code) || '',
-        name: c.name || (c.material && c.material.name) || '',
-        uom: c.uom || (c.material && c.material.uom) || '',
-      }));
-
-      const baseFields = TransferItemsFields(materialOptions || []);
-      const nextFields = baseFields.map((f) => ({ ...f }));
-
-      const qtyIndex = nextFields.findIndex((f) => f.name === 'quantity');
-      if (qtyIndex !== -1) nextFields[qtyIndex].readonly = true;
-
-      nextFields.splice(qtyIndex + 1, 0, {
-        name: 'receivedQuantity',
-        label: 'Received Quantity',
-        type: 'number',
-        initialvalue: 0,
-        validator: Yup.number().typeError('Must be a number').min(0, 'Cannot be negative'),
-      });
-
-      setItemFields(nextFields);
+      setItemFields(ReceivedItemsFields());
     })();
   }, [selectedTransferId, toast]);
 
@@ -159,6 +138,7 @@ export default function MaterialReceivedForm() {
     const details = (tableData.items || []).map((it) => ({
       transferDetailId: it.id || it.parentId || 0,
       receivedQuantity: Number(it.receivedQuantity || 0),
+      remarks: it.remarks || '',
     }));
 
     const payload = { details };
@@ -213,7 +193,7 @@ export default function MaterialReceivedForm() {
           <DetailsTable
             itemModalHeader="Receive Items"
             parentId={selectedTransferId}
-            columns={TransferTableColumns.concat([{ header: 'Received', key: 'receivedQuantity', align: 'right', render: (it) => (Number(it.receivedQuantity) || 0) }])}
+            columns={ReceivedTableColumns}
             editable={!!selectedTransferId && !isReadOnly}
             allowAdd={false}
             itemFields={itemFields}

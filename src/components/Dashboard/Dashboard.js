@@ -39,9 +39,20 @@ function SimpleTable({ moduleName, data }) {
 
   const isScrollable = data.length > MAX_VISIBLE_ROWS;
 
+  // Single table (header + body together) so column widths are always
+  // identical. The header row uses `position: sticky` (see SCSS) to stay
+  // pinned while the body scrolls, instead of splitting into two <table>s.
   return (
-    <div className={styles.tableWrapper}>
+    <div
+      className={styles.tableWrapper}
+      style={isScrollable ? { maxHeight: ROW_HEIGHT * (MAX_VISIBLE_ROWS + 1) } : undefined}
+    >
       <table className={styles.table}>
+        <colgroup>
+          {columns.map((col) => (
+            <col key={col.key} />
+          ))}
+        </colgroup>
         <thead>
           <tr>
             {columns.map((col) => (
@@ -51,30 +62,18 @@ function SimpleTable({ moduleName, data }) {
             ))}
           </tr>
         </thead>
+        <tbody>
+          {data.map((row, i) => (
+            <tr key={row.id ?? i} className={styles.tr}>
+              {columns.map((col) => (
+                <td key={col.key} className={styles.td}>
+                  {col.render ? col.render(row) : (row[col.key] ?? '—')}
+                </td>
+              ))}
+            </tr>
+          ))}
+        </tbody>
       </table>
-      <div
-        className={styles.tableBodyWrapper}
-        style={isScrollable ? { maxHeight: ROW_HEIGHT * MAX_VISIBLE_ROWS } : undefined}
-      >
-        <table className={styles.table}>
-          <colgroup>
-            {columns.map((col) => (
-              <col key={col.key} />
-            ))}
-          </colgroup>
-          <tbody>
-            {data.map((row, i) => (
-              <tr key={row.id ?? i} className={styles.tr}>
-                {columns.map((col) => (
-                  <td key={col.key} className={styles.td}>
-                    {col.render ? col.render(row) : (row[col.key] ?? '—')}
-                  </td>
-                ))}
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
     </div>
   );
 }

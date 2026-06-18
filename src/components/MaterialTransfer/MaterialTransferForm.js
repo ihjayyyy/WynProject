@@ -14,6 +14,8 @@ import EntityForm from '../EntityForm/EntityForm';
 import EntityStyle from '../EntityForm/EntityContainer.module.scss';
 import Button from '../ui/Button/Button';
 import StatusBadge from '../ui/StatusBadge/StatusBadge';
+import ConfirmModal from '../ui/ConfirmModal/ConfirmModal';
+import Input from '../ui/Input/Input';
 import { getWarehouses } from '@/services/Warehouse';
 import { getProjects } from '@/services/Project';
 import { printMaterialRequests_byProject } from '@/services/MaterialRequest';
@@ -61,6 +63,10 @@ export default function MaterialTransferForm() {
   const [transferFromId, setTransferFromId] = useState(0);
   const [transferToType, setTransferToType] = useState('');
   const [transferToId, setTransferToId] = useState(0);
+
+  // ── Transfer modal (mark-as-transferred), same approach as the landing page ──
+  const [isTransferModalOpen, setIsTransferModalOpen] = useState(false);
+  const [transferRows, setTransferRows] = useState([]);
 
   // ── Stable onFormChange via ref ──────────────────────────────────────────────
   const onFormChangeRef = useRef(null);
@@ -324,6 +330,64 @@ export default function MaterialTransferForm() {
     );
   };
 
+  // ── Mark as transferred (same remarks-per-item modal used on the landing page) ─
+
+  const openTransferModal = () => {
+    const items = tableData.items || formData.children || [];
+    const rows = items.map((child) => ({
+      transferDetailId: child.id,
+      materialName: child.name,
+      code: child.code,
+      quantity: child.quantity,
+      uom: child.uom,
+      remarks: child.remarks || '',
+    }));
+    setTransferRows(rows);
+    setIsTransferModalOpen(true);
+  };
+
+  const closeTransferModal = () => {
+    setIsTransferModalOpen(false);
+    setTransferRows([]);
+  };
+
+  const handleRowRemarksChange = (index, value) => {
+    setTransferRows((prev) =>
+      prev.map((row, i) => (i === index ? { ...row, remarks: value } : row))
+    );
+  };
+
+  const applyTransfer = async () => {
+    if (actionLoading) return;
+    if (!formData?.id) {
+      toast.error('No transfer selected.');
+      return;
+    }
+    if (transferRows.length === 0) {
+      toast.error('No items to transfer.');
+      return;
+    }
+
+    try {
+      setActionLoading(true);
+      const payload = {
+        details: transferRows.map(({ transferDetailId, remarks }) => ({
+          transferDetailId,
+          remarks,
+        })),
+      };
+      const res = await transferMaterialTransfer(Number(formData.id), payload);
+      if (res?.error) throw new Error(res.error);
+      toast.success('Transfer marked as transferred.');
+      closeTransferModal();
+      await GetFormData();
+    } catch (error) {
+      toast.error('Failed to mark transfer as transferred');
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
   // ── Buttons ──────────────────────────────────────────────────────────────────
 
   const CreateButton = () =>
@@ -418,83 +482,121 @@ export default function MaterialTransferForm() {
 
   // ── Render ───────────────────────────────────────────────────────────────────
 
-  return isAllowed(PageName, 'r') ? (
-    validForm ? (
-      <EntityForm
-        title={formTitle}
-        breadcrumbLabel="Material Transfer"
-        icon={<FiRepeat />}
-        fields={formFields}
-          onValidate={async (values) => {
-            const errors = {};
-            if (!tableData.items || (Array.isArray(tableData.items) && tableData.items.length === 0)) {
-              errors.transferFrom = 'At least one transfer item is required';
-              setTableError(errors.transferFrom);
-            } else {
-              setTableError('');
+  return (
+    <>
+      {isAllowed(PageName, 'r') ? (
+        validForm ? (
+          <EntityForm
+            title={formTitle}
+            breadcrumbLabel="Material Transfer"
+            icon={<FiRepeat />}
+            fields={formFields}
+              onValidate={async (values) => {
+                const errors = {};
+                if (!tableData.items || (Array.isArray(tableData.items) && tableData.items.length === 0)) {
+                  errors.transferFrom = 'At least one transfer item is required';
+                  setTableError(errors.transferFrom);
+                } else {
+                  setTableError('');
+                }
+                return errors;
+              }}
+              initialValues={formData}
+            extraContent={
+              <div className={EntityStyle.extraContentContainer}>
+                <BalanceSummary />
+                <DetailsTable
+                  itemModalHeader="Transfer Items"
+                  parentId={formId}
+                  columns={TableColumns}
+                  editable={isAllowed(PageName, 'w') && !isReadOnly}
+                  itemFields={childFields}
+                  data={tableData}
+                  onChange={detailsUpdated}
+                />
+                  {tableError ? <div style={{ color: 'red', marginTop: 8 }}>{tableError}</div> : null}
+              </div>
             }
-            return errors;
-          }}
-          initialValues={formData}
-        extraContent={
-          <div className={EntityStyle.extraContentContainer}>
-            <BalanceSummary />
-            <DetailsTable
-              itemModalHeader="Transfer Items"
-              parentId={formId}
-              columns={TableColumns}
-              editable={isAllowed(PageName, 'w') && !isReadOnly}
-              itemFields={childFields}
-              data={tableData}
-              onChange={detailsUpdated}
-            />
-              {tableError ? <div style={{ color: 'red', marginTop: 8 }}>{tableError}</div> : null}
-          </div>
-        }
-        onSubmit={handleSaveConfirm}
-        backPath={backPath}
-        width="100%"
-        showSubmitButton={false}
-        readOnly={isReadOnly}
-        headerActions={
-          <div className={EntityStyle.buttonsContainer}>
-            <CreateButton />
-            <ViewButton />
-            <CRUDButton />
-            <PrintButton />
-            {isAllowed(PageName, 'w') && formData?.id && String(formData?.status || '').toLowerCase() === 'draft' && (
-              <Button
-                variant="primary"
-                disabled={actionLoading}
-                onClick={() => {
-                  confirmModal.show(
-                    'Transfer materials',
-                    `Mark transfer "${formData.name || formData.code || ''}" as transferred?`,
-                    'Transfer',
-                    'primary',
-                    () => async () => {
-                      setActionLoading(true);
-                      const res = await transferMaterialTransfer(Number(formData.id));
-                      if (res?.error) toast.error('Failed to mark transfer as transferred');
-                      else {
-                        toast.success('Transfer marked as transferred');
-                        await GetFormData();
-                      }
-                      setActionLoading(false);
-                    }
-                  );
-                }}
-              >
-                <FiSend size={14} style={{ marginRight: 6 }} />Transfer
-              </Button>
-            )}
-          </div>
-        }
-      />
-    ) : (
-      <InvalidPage message="Material Transfer not found." />
-    )
-  ) : (
-    <InvalidPage />
+            onSubmit={handleSaveConfirm}
+            backPath={backPath}
+            width="100%"
+            showSubmitButton={false}
+            readOnly={isReadOnly}
+            headerActions={
+              <div className={EntityStyle.buttonsContainer}>
+                <CreateButton />
+                <ViewButton />
+                <CRUDButton />
+                <PrintButton />
+                {isAllowed(PageName, 'w') && formData?.id && String(formData?.status || '').toLowerCase() === 'draft' && (
+                  <Button
+                    variant="primary"
+                    disabled={actionLoading}
+                    onClick={openTransferModal}
+                  >
+                    <FiSend size={14} style={{ marginRight: 6 }} />Transfer
+                  </Button>
+                )}
+              </div>
+            }
+          />
+        ) : (
+          <InvalidPage message="Material Transfer not found." />
+        )
+      ) : (
+        <InvalidPage />
+      )}
+
+      <ConfirmModal
+        open={isTransferModalOpen}
+        title="Transfer materials?"
+        message={`Mark transfer "${formData?.name || formData?.code || ''}" as transferred? Review remarks for each item below.`}
+        confirmText={actionLoading ? 'Transferring...' : 'Confirm Transfer'}
+        confirmVariant="primary"
+        onConfirm={applyTransfer}
+        onCancel={closeTransferModal}
+      >
+        <div style={{ maxHeight: '320px', overflowY: 'auto', marginBottom: '12px' }}>
+          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px' }}>
+            <thead>
+              <tr style={{ textAlign: 'left', borderBottom: '1px solid #e5e5e5' }}>
+                <th style={{ padding: '6px 8px', color: '#64748b' }}>Material</th>
+                <th style={{ padding: '6px 8px', color: '#64748b' }}>Qty</th>
+                <th style={{ padding: '6px 8px', color: '#64748b' }}>Remarks</th>
+              </tr>
+            </thead>
+            <tbody>
+              {transferRows.map((row, index) => (
+                <tr key={row.transferDetailId} style={{ borderBottom: '1px solid #f0f0f0' }}>
+                  <td style={{ padding: '6px 8px', verticalAlign: 'top' }}>
+                    <div style={{ fontWeight: 500 }}>{row.materialName}</div>
+                    <div style={{ fontSize: '11px', color: '#999' }}>{row.code}</div>
+                  </td>
+                  <td style={{ padding: '6px 8px', verticalAlign: 'top' }}>
+                    {row.quantity} {row.uom}
+                  </td>
+                  <td style={{ padding: '6px 8px', verticalAlign: 'top' }}>
+                    <Input
+                      type="text"
+                      value={row.remarks}
+                      onChange={(e) => handleRowRemarksChange(index, e.target.value)}
+                      placeholder="Add remarks"
+                      disabled={actionLoading}
+                    />
+                  </td>
+                </tr>
+              ))}
+              {transferRows.length === 0 && (
+                <tr>
+                  <td colSpan={3} style={{ padding: '12px 8px', textAlign: 'center', color: '#999' }}>
+                    No items to transfer
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      </ConfirmModal>
+    </>
   );
 }

@@ -72,32 +72,61 @@ async function updateMaterialTransfer(id, payload) {
   }
 }
 
-async function transferMaterialTransfer(id) {
+async function transferMaterialTransfer(id, payload) {
   try {
     const url = `${API_BASE_URL}/transferred/${id}`;
+
     const res = await fetch(url, {
       method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(payload),
     });
+
     const json = await res.json();
-    return { data: json, error: null };
+
+    return {
+      data: json,
+      error: null,
+    };
   } catch (error) {
-    return { data: null, error: error?.message || error };
+    return {
+      data: null,
+      error: error?.message || error,
+    };
   }
 }
 
 async function receiveMaterialTransfer(id, payload) {
   try {
     const url = `${API_BASE_URL}/receive/${id}`;
+
     const res = await fetch(url, {
       method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload),
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        details: payload.details.map((item) => ({
+          transferDetailId: item.transferDetailId,
+          receivedQuantity: item.receivedQuantity,
+          remarks: item.remarks || '',
+        })),
+      }),
     });
+
     const json = await res.json();
-    return { data: json, error: null };
+
+    return {
+      data: json,
+      error: null,
+    };
   } catch (error) {
-    return { data: null, error: error?.message || error };
+    return {
+      data: null,
+      error: error?.message || error,
+    };
   }
 }
 
