@@ -6,7 +6,7 @@ export const orders = [
     createdBy: 'Alice',
     createdDate: '2026-03-16',
     updatedBy: 'Bob',
-    updatedDate: '2026-03-16',
+    updatedAt: '2026-03-16',
     requestedBy: 'Facilities',
     items: [
       { id: 'i1', name: 'Chair Model A', qty: 10, supplierId: 'SUP-0001' },
@@ -22,7 +22,7 @@ export const orders = [
     createdBy: 'Carlos',
     createdDate: '2026-03-15',
     updatedBy: 'Carlos',
-    updatedDate: '2026-03-15',
+    updatedAt: '2026-03-15',
     requestedBy: 'Project A',
     items: [
       { id: 'i3', name: 'Plywood 4x8', qty: 20, supplierId: 'SUP-0003' },
@@ -41,7 +41,7 @@ export const initialOrderState = {
   createdBy: '',
   createdDate: '',
   updatedBy: '',
-  updatedDate: '',
+  updatedAt: '',
   requestedBy: '',
   items: [],
   itemsRequested: 0,

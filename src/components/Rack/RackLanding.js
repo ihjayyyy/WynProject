@@ -91,7 +91,7 @@ export default function RackLanding() {
       item.createdBy,
       item.createdDate,
       item.updatedBy,
-      item.updatedDate,
+      item.updatedAt,
       item.code,
       item.name,
       item.warehouseId,

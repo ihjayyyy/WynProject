@@ -63,7 +63,7 @@ export default function AssemblyLanding() {
       item.createdBy,
       item.createdAt,
       item.updatedBy,
-      item.updatedDate,
+      item.updatedAt,
       item.code,
       item.name,
     ]

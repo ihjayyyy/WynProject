@@ -31,7 +31,7 @@ const baseColumns = [
       {`${(Number(item.overallProgress) || 0).toFixed(2)}%`}
     </div>
   ) },
-  { header: 'UpdatedAt', key: 'updatedAt', render: (item) => (item.updatedAt ? new Date(item.updatedAt).toLocaleString() : '') },
+  { header: 'Updated Date', key: 'updatedAt', render: (item) => (item.updatedAt ? new Date(item.updatedAt).toLocaleString() : '') },
 ];
 
 export default function ProjectLanding() {

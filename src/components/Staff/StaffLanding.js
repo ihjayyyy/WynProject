@@ -61,7 +61,7 @@ export default function StaffLanding() {
       item.createdBy,
       item.createdDate,
       item.updatedBy,
-      item.updatedDate,
+      item.updatedAt,
       item.code,
       item.name,
       item.job,

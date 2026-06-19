@@ -30,7 +30,8 @@ const baseColumns = [
   ) },
   { header: 'Payment Status', key: 'paymentStatus', render: (item) => <StatusBadge status={item.paymentStatus} /> },
   // { header: 'Updated By', key: 'updatedBy' },
-  // { header: 'Updated Date', key: 'updatedDate' },
+  //   { header: 'Updated Date', key: 'updatedAt', render: (item) => (item.updatedAt ? new Date(item.updatedAt).toLocaleString() : '') },
+
 ];
 
 export default function SalesBillingLanding() {

@@ -37,7 +37,7 @@ const baseColumns = [
     </div>
   ) },
   { header: 'Updated By', key: 'updatedBy' },
-  { header: 'Updated Date', key: 'updatedDate' },
+  { header: 'Updated Date', key: 'updatedAt', render: (item) => (item.updatedAt ? new Date(item.updatedAt).toLocaleString() : '') },
 ];
 
 export default function OrdersLanding() {
@@ -143,7 +143,7 @@ export default function OrdersLanding() {
       item.createdBy,
       item.createdDate,
       item.updatedBy,
-      item.updatedDate,
+      item.updatedAt,
       item.supplier?.name,
       ...(item.items || []).map((it) => `${it.name} ${it.supplierId}`),
     ]

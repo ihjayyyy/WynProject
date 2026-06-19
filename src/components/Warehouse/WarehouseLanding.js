@@ -67,7 +67,7 @@ export default function WarehouseLanding() {
       item.createdBy,
       item.createdDate,
       item.updatedBy,
-      item.updatedDate,
+      item.updatedAt,
       item.code,
       item.name,
       item.location,

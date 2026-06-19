@@ -227,7 +227,7 @@ export default function InvoicesLanding() {
       item.createdBy,
       item.createdDate,
       item.updatedBy,
-      item.updatedDate,
+      item.updatedAt,
       ...(item.items || []).map((it) => `${it.name} ${it.supplierId}`),
     ]
       .filter(Boolean)

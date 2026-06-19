@@ -39,7 +39,7 @@ const baseColumns = [
     ),
   },
   // { header: 'Updated By', key: 'updatedBy' },
-  // { header: 'UpdatedAt', key: 'updatedAt', render: (item) => (item.updatedAt ? new Date(item.updatedAt).toLocaleString() : '') },
+  // { header: 'Updated Date', key: 'updatedAt', render: (item) => (item.updatedAt ? new Date(item.updatedAt).toLocaleString() : '') },
 ];
 
 export default function ProposalLanding() {

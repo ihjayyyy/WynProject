@@ -8,7 +8,7 @@ export const deliveries = [
     createdBy: 'Alice',
     createdDate: '2026-03-17',
     updatedBy: 'Alice',
-    updatedDate: '2026-03-17',
+    updatedAt: '2026-03-17',
     items: [
       { id: 'i1', name: 'Chair Model A', qty: 10, supplierId: 'SUP-0001' },
     ],
@@ -22,7 +22,7 @@ export const deliveries = [
     createdBy: 'Carlos',
     createdDate: '2026-03-16',
     updatedBy: 'Carlos',
-    updatedDate: '2026-03-17',
+    updatedAt: '2026-03-17',
     items: [
       { id: 'i3', name: 'Plywood 4x8', qty: 20, supplierId: 'SUP-0003' },
     ],
@@ -40,6 +40,6 @@ export const initialDeliveryState = {
   createdBy: '',
   createdDate: '',
   updatedBy: '',
-  updatedDate: '',
+  updatedAt: '',
   items: [],
 };

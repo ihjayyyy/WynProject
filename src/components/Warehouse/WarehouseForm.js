@@ -51,7 +51,7 @@ export default function WarehouseForm() {
           createdBy: found.createdBy || '',
           createdDate: found.createdAt || found.createdDate || '',
           updatedBy: found.updatedBy || '',
-          updatedDate: found.updatedAt || found.updatedDate || '',
+          updatedAt: found.updatedAt || found.updatedAt || '',
         };
         setInitialValuesState(mapped);
         setExists(true);

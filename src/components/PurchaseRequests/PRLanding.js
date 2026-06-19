@@ -32,7 +32,8 @@ const baseColumns = [
     render: (item) => <StatusBadge status={item.status} />,
   },
   { header: 'Updated By', key: 'updatedBy' },
-  { header: 'Updated Date', key: 'updatedDate' },
+    { header: 'Updated Date', key: 'updatedAt', render: (item) => (item.updatedAt ? new Date(item.updatedAt).toLocaleString() : '') },
+
 ];
 
 export default function PRLanding() {
@@ -136,7 +137,7 @@ export default function PRLanding() {
       item.createdBy,
       item.createdDate,
       item.updatedBy,
-      item.updatedDate,
+      item.updatedAt,
       ...(item.items || []).map((it) => `${it.name} ${it.projectId}`),
     ]
       .filter(Boolean)

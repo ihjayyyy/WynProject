@@ -22,7 +22,8 @@ const baseColumns = [
   // { header: 'Material Name', key: 'materialId' },
   { header: 'Quantity', key: 'quantity' },
   { header: 'Updated By', key: 'updatedBy' },
-  { header: 'Updated Date', key: 'updatedDate' },
+    { header: 'Updated Date', key: 'updatedAt', render: (item) => (item.updatedAt ? new Date(item.updatedAt).toLocaleString() : '') },
+
 ];
 
 export default function ToolsInventoryLanding() {
