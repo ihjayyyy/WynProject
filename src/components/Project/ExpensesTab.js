@@ -27,8 +27,7 @@ function getFieldValue(itemFields, fieldName, fallback = '') {
   return field ? field.value : fallback;
 }
 
-export default function ExpensesTab({ projectId = 0, editable = true }) {
-  const [items, setItems] = useState([]);
+export default function ExpensesTab({ projectId = 0, editable = true, projectStatus = '' }) {  const [items, setItems] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editing, setEditing] = useState(null);
@@ -221,16 +220,16 @@ export default function ExpensesTab({ projectId = 0, editable = true }) {
       <div className={styles.headerRow}>
         <h2 className={styles.title}>Expenses</h2>
         <div className={styles.headerActions}>
-          <SearchBar
-            placeholder="Search expenses"
-            value={searchTerm}
-            onChange={setSearchTerm}
-            showFilter={false}
-showButton={isAllowed('Projects.Projects', 'w') && editable}
-buttonLabel={isAllowed('Projects.Projects', 'w') && editable ? "Add Expense" : undefined}
-handleOnClick={isAllowed('Projects.Projects', 'w') && editable ? () => { setEditing(null); setIsModalOpen(true); } : undefined}
-            width="260px"
-          />
+<SearchBar
+  placeholder="Search expenses"
+  value={searchTerm}
+  onChange={setSearchTerm}
+  showFilter={false}
+  showButton={isAllowed('Projects.Projects', 'w') && editable && projectStatus === 'ONGOING'}
+  buttonLabel={isAllowed('Projects.Projects', 'w') && editable && projectStatus === 'ONGOING' ? "Add Expense" : undefined}
+  handleOnClick={isAllowed('Projects.Projects', 'w') && editable && projectStatus === 'ONGOING' ? () => { setEditing(null); setIsModalOpen(true); } : undefined}
+  width="260px"
+/>
         </div>
       </div>
 

@@ -38,8 +38,7 @@ const BASE_COLUMNS = [
   { header: 'Trip Cost', key: 'tripCost', render: (item) => Number(item.tripCost || 0).toLocaleString() },
 ];
 
-export default function TripTicketTab({ projectId = 0, editable = true }) {
-  const [items, setItems] = useState([]);
+export default function TripTicketTab({ projectId = 0, editable = true, projectStatus = '' }) {  const [items, setItems] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editing, setEditing] = useState(null);
@@ -261,16 +260,16 @@ export default function TripTicketTab({ projectId = 0, editable = true }) {
       <div className={styles.headerRow}>
         <h2 className={styles.title}>Trip Tickets</h2>
         <div className={styles.headerActions}>
-          <SearchBar
-            placeholder="Search trip tickets"
-            value={searchTerm}
-            onChange={setSearchTerm}
-            showFilter={false}
-            showButton={isAllowed(PageName, 'w') && editable}
-            buttonLabel={isAllowed(PageName, 'w') && editable ? "Add Trip Ticket" : undefined}
-            handleOnClick={isAllowed(PageName, 'w') && editable ? () => { setEditing(null); setIsModalOpen(true); } : undefined}
-            width="260px"
-          />
+        <SearchBar
+          placeholder="Search trip tickets"
+          value={searchTerm}
+          onChange={setSearchTerm}
+          showFilter={false}
+          showButton={isAllowed(PageName, 'w') && editable && projectStatus === 'ONGOING'}
+          buttonLabel={isAllowed(PageName, 'w') && editable && projectStatus === 'ONGOING' ? "Add Trip Ticket" : undefined}
+          handleOnClick={isAllowed(PageName, 'w') && editable && projectStatus === 'ONGOING' ? () => { setEditing(null); setIsModalOpen(true); } : undefined}
+          width="260px"
+        />
         </div>
       </div>
 

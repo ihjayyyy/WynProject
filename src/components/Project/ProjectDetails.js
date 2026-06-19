@@ -6,7 +6,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import Button from '../ui/Button/Button';
 import Input from '../ui/Input/Input';
 import Breadcrumbs from '../ui/Breadcrumbs/Breadcrumbs';
-import { getProjectById, getProjects, updateProject, startProject, completeProject, cancelProject, closeProject } from '../../services/Project';
+import { getProjectById, updateProject, startProject, completeProject, cancelProject, closeProject } from '../../services/Project';
 import ConfirmModal from '../ui/ConfirmModal/ConfirmModal';
 import ProjectScope from './ProjectScope';
 import ProjectStaffTab from './ProjectStaffTab';
@@ -38,25 +38,38 @@ export default function ProjectDetails() {
   const [confirmTarget, setConfirmTarget] = useState(null);
   const toast = useToast();
   const router = useRouter();
-  
+
   const searchParams = useSearchParams();
   const projectId = searchParams?.get ? searchParams.get('id') : null;
+
+  // Helper to unwrap the API response shape consistently everywhere
+  const unwrap = (res) =>
+    res?.data?.value && typeof res.data.value === 'object' && !Array.isArray(res.data.value)
+      ? res.data.value
+      : res?.data;
 
   useEffect(() => {
     let mounted = true;
     (async () => {
       setLoading(true);
       try {
-        const res = await getProjects();
+        const pid = projectId || (typeof window !== 'undefined' ? new URLSearchParams(window.location.search).get('id') : null);
+        if (!pid) {
+          if (mounted) {
+            setProject(null);
+            setForm({});
+          }
+          setLoading(false);
+          return;
+        }
+        const res = await getProjectById(pid);
         if (res?.error) {
           toast.error('Failed to load project');
         } else {
-          const list = res.data || [];
-          const pid = projectId || (typeof window !== 'undefined' ? new URLSearchParams(window.location.search).get('id') : null);
-          const found = list.find((p) => String(p.id) === String(pid));
+          const data = unwrap(res);
           if (mounted) {
-            setProject(found || null);
-            setForm(found ? { ...found } : {});
+            setProject(data || null);
+            setForm(data ? { ...data } : {});
           }
         }
       } catch (e) {
@@ -80,7 +93,14 @@ export default function ProjectDetails() {
   if (loading) return <div>Loading...</div>;
   if (!project) return <div>No project found</div>;
 
-  const projectStatus = (project.status || '').toUpperCase();
+  // status can come back as a plain string, a number, or an object
+  // (e.g. { id, name } / { value, label }) depending on the endpoint.
+  // Normalize to an uppercase string regardless of shape.
+  const rawStatus =
+    typeof project.status === 'object' && project.status !== null
+      ? (project.status.name || project.status.label || project.status.value || project.status.status || '')
+      : project.status;
+  const projectStatus = String(rawStatus || '').toUpperCase();
   const isCancelled = projectStatus === 'CANCELLED';
   const isFullyLocked = ['COMPLETED', 'CANCELLED', 'CLOSED'].includes(projectStatus);
   const isOngoing = projectStatus === 'ONGOING';
@@ -141,7 +161,7 @@ export default function ProjectDetails() {
                     <Button className="md" onClick={() => setEditing(true)}>Edit</Button>
 
                     {/* Start Project button - shown when status is NOTSTARTED */}
-                    {String(project.status || '').toUpperCase() === 'NOTSTARTED' && (
+                    {projectStatus === 'NOTSTARTED' && (
                       <Button
                         className="secondary md"
                         onClick={() => {
@@ -156,9 +176,7 @@ export default function ProjectDetails() {
                               else {
                                 toast.success('Project started');
                                 const r = await getProjectById(target.id);
-                                const updated = r.data?.value && typeof r.data.value === 'object' && !Array.isArray(r.data.value)
-                                  ? r.data.value
-                                  : r.data;
+                                const updated = unwrap(r);
                                 setProject(updated);
                                 setForm({ ...updated });
                               }
@@ -175,7 +193,7 @@ export default function ProjectDetails() {
                     )}
 
                     {/* Complete Project button - shown when overallProgress >= 100 */}
-                    {Number(project.overallProgress || 0) >= 100 && String(project.status || '').toUpperCase() !== 'COMPLETED' && (
+                    {Number(project.overallProgress || 0) >= 100 && projectStatus !== 'COMPLETED' && (
                       <Button
                         className="secondary md"
                         onClick={() => {
@@ -190,9 +208,7 @@ export default function ProjectDetails() {
                               else {
                                 toast.success('Project marked complete');
                                 const r = await getProjectById(target.id);
-                                const updated = r.data?.value && typeof r.data.value === 'object' && !Array.isArray(r.data.value)
-                                  ? r.data.value
-                                  : r.data;
+                                const updated = unwrap(r);
                                 setProject(updated);
                                 setForm({ ...updated });
                               }
@@ -225,9 +241,7 @@ export default function ProjectDetails() {
                           else {
                             toast.success('Project cancelled');
                             const r = await getProjectById(target.id);
-                            const updated = r.data?.value && typeof r.data.value === 'object' && !Array.isArray(r.data.value)
-                              ? r.data.value
-                              : r.data;
+                            const updated = unwrap(r);
                             setProject(updated);
                             setForm({ ...updated });
                           }
@@ -259,9 +273,7 @@ export default function ProjectDetails() {
                           else {
                             toast.success('Project closed');
                             const r = await getProjectById(target.id);
-                            const updated = r.data?.value && typeof r.data.value === 'object' && !Array.isArray(r.data.value)
-                              ? r.data.value
-                              : r.data;
+                            const updated = unwrap(r);
                             setProject(updated);
                             setForm({ ...updated });
                             router.push('/projects/project');
@@ -356,24 +368,27 @@ export default function ProjectDetails() {
         ) : (
           <div className={styles.panel}>
               {activeTab === 'Finance' && <ProjectFinanceTab projectId={project.id} project={project} editable={canWrite && tabEditable('Finance')} />}
-              {activeTab === 'Project Scope & Materials' && <ProjectScope projectId={project.id} editable={canWrite && tabEditable('Project Scope & Materials')} onCompletedQtyUpdated={async () => {
-                try {
-                  const res = await getProjectById(project.id);
-                  if (!res.error && res.data) {
-                    const updated = res.data?.value && typeof res.data.value === 'object' && !Array.isArray(res.data.value)
-                      ? res.data.value
-                      : res.data;
-                    setProject(updated);
-                    setForm({ ...updated });
-                  }
-                } catch (e) {}
-              }} />}
-              {activeTab === 'Expenses' && <ExpensesTab projectId={project.id} editable={canWrite && tabEditable('Expenses')} />}
-              {activeTab === 'Trip Tickets' && <TripTicketTab projectId={project.id} editable={canWrite && tabEditable('Trip Tickets')} />}
-              {activeTab === 'Staff' && <ProjectStaffTab projectId={project.id} editable={canWrite && tabEditable('Staff')} />}
-              {activeTab === 'Attendance' && <AttendanceTab projectId={project.id} editable={canWrite && tabEditable('Attendance')} />}
+              {activeTab === 'Project Scope & Materials' && <ProjectScope
+                projectId={project.id}
+                editable={canWrite && tabEditable('Project Scope & Materials')}
+                projectStatus={projectStatus}
+                onCompletedQtyUpdated={async () => {
+                  try {
+                    const res = await getProjectById(project.id);
+                    if (!res.error && res.data) {
+                      const updated = unwrap(res);
+                      setProject(updated);
+                      setForm({ ...updated });
+                    }
+                  } catch (e) {}
+                }}
+              />}
+{activeTab === 'Expenses' && <ExpensesTab projectId={project.id} editable={canWrite && tabEditable('Expenses')} projectStatus={projectStatus} />}
+{activeTab === 'Trip Tickets' && <TripTicketTab projectId={project.id} editable={canWrite && tabEditable('Trip Tickets')} projectStatus={projectStatus} />}
+{activeTab === 'Staff' && <ProjectStaffTab projectId={project.id} editable={canWrite && tabEditable('Staff')} />}
+{activeTab === 'Attendance' && <AttendanceTab projectId={project.id} editable={canWrite && tabEditable('Attendance')} projectStatus={projectStatus} />}
               {activeTab === 'Material Requests' && <MaterialRequestsTab projectId={project.id} editable={canWrite && tabEditable('Material Requests')} />}
-              {activeTab === 'Billing & Collection' && <ProjectBillingCollectionTab projectId={project.id} editable={canWrite && tabEditable('Billing & Collection')} />}
+              {activeTab === 'Billing & Collection' && <ProjectBillingCollectionTab projectId={project.id} editable={canWrite && tabEditable('Billing & Collection')} overallProgress={project.overallProgress} />}
           </div>
         )}
       </div>

@@ -171,31 +171,39 @@ export default function ProposalForm() {
   }, [initialValues]);
 
   // Normalize top-level date-only fields for inputs (YYYY-MM-DD)
-  const toDateOnlyString = (val) => {
-    if (!val && val !== 0) return '';
+  // fallbackToday: when true, blank/invalid values resolve to today's date
+  // instead of an empty string (used for new/draft proposals so date pickers
+  // start populated rather than triggering "Invalid date" validation errors).
+  const toDateOnlyString = (val, fallbackToday = false) => {
+    const todayStr = new Date().toISOString().slice(0, 10);
+    if (!val && val !== 0) return fallbackToday ? todayStr : '';
     try {
       const d = new Date(val);
-      if (isNaN(d.getTime())) return '';
+      if (isNaN(d.getTime())) return fallbackToday ? todayStr : '';
       const yyyy = d.getFullYear();
       const mm = String(d.getMonth() + 1).padStart(2, '0');
       const dd = String(d.getDate()).padStart(2, '0');
       return `${yyyy}-${mm}-${dd}`;
     } catch (err) {
-      return '';
+      return fallbackToday ? todayStr : '';
     }
   };
 
   const normalizedInitialValues = useMemo(() => {
     if (!initialValues) return initialValues;
     const today = new Date().toISOString().slice(0, 10);
+    // Only default to "today" for brand-new proposals (no proposalId yet),
+    // or when in revise/copy mode (both effectively create a new draft).
+    // Existing saved proposals keep a genuinely blank date as blank.
+    const shouldDefaultToToday = !proposalId || isReviseMode || isCopyMode;
     return {
       ...initialValues,
-      forecastedStartDate: toDateOnlyString(initialValues.forecastedStartDate),
-      forecastedEndDate: toDateOnlyString(initialValues.forecastedEndDate),
-      expirationDate: toDateOnlyString(initialValues.expirationDate),
+      forecastedStartDate: toDateOnlyString(initialValues.forecastedStartDate, shouldDefaultToToday),
+      forecastedEndDate: toDateOnlyString(initialValues.forecastedEndDate, shouldDefaultToToday),
+      expirationDate: toDateOnlyString(initialValues.expirationDate, shouldDefaultToToday),
       requestDate: toDateOnlyString(initialValues.requestDate) || today,
     };
-  }, [initialValues]);
+  }, [initialValues, proposalId, isReviseMode, isCopyMode]);
 
   const dedupeDeleted = (arr = []) => {
     const seen = new Map();
@@ -436,33 +444,54 @@ export default function ProposalForm() {
     );
   };
 
+  // Returns a full ISO-8601 UTC string with milliseconds, e.g. "2026-06-19T07:13:30.283Z",
+  // which is the format the API expects.
+  // dateOnly = true forces the time portion to midnight UTC (00:00:00.000Z) for the given date,
+  // rather than using "now".
   const formatPayloadDate = (v, dateOnly = false) => {
     if (v === null || v === undefined || v === '') {
       const now = new Date();
-      if (dateOnly) return now.toISOString().slice(0, 10) + 'T00:00:00.000Z';
+      if (dateOnly) {
+        const yyyy = now.getUTCFullYear();
+        const mm = String(now.getUTCMonth() + 1).padStart(2, '0');
+        const dd = String(now.getUTCDate()).padStart(2, '0');
+        return `${yyyy}-${mm}-${dd}T00:00:00.000Z`;
+      }
       return now.toISOString();
     }
-    if (v instanceof Date) {
-      const pad = (n) => String(n).padStart(2, '0');
-      const Y = v.getFullYear(), M = pad(v.getMonth() + 1), D = pad(v.getDate());
-      const h = pad(v.getHours()), m = pad(v.getMinutes()), s = pad(v.getSeconds());
-      if (dateOnly) return `${Y}-${M}-${D}T00:00:00`;
-      return `${Y}-${M}-${D}T${h}:${m}:${s}`;
+
+    // Plain "YYYY-MM-DD" strings (e.g. from <input type="date">) should be
+    // treated as that calendar date at UTC midnight, not parsed in local time
+    // (new Date('YYYY-MM-DD') is already UTC-midnight per spec, but we build
+    // it explicitly here to be safe and to support dateOnly truncation).
+    if (typeof v === 'string') {
+      const dateOnlyMatch = v.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+      if (dateOnlyMatch) {
+        const [, Y, M, D] = dateOnlyMatch;
+        return `${Y}-${M}-${D}T00:00:00.000Z`;
+      }
     }
-    const s = String(v).trim();
-    if (/^\d{4}-\d{2}-\d{2}$/.test(s)) return `${s}T00:00:00`;
-    if (/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(s)) return `${s}:00`;
-    const m = s.match(/^(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})/);
-    if (m) return m[1];
-    try {
-      const d = new Date(s);
-      if (isNaN(d)) return s;
-      const pad = (n) => String(n).padStart(2, '0');
-      const Y = d.getFullYear(), M = pad(d.getMonth() + 1), D = pad(d.getDate());
-      const h = pad(d.getHours()), mm = pad(d.getMinutes()), ss = pad(d.getSeconds());
-      if (dateOnly) return `${Y}-${M}-${D}T00:00:00`;
-      return `${Y}-${M}-${D}T${h}:${mm}:${ss}`;
-    } catch (err) { return s; }
+
+    let d;
+    if (v instanceof Date) {
+      d = v;
+    } else {
+      d = new Date(v);
+    }
+
+    if (isNaN(d.getTime())) {
+      // Fall back to "now" if we can't parse it
+      d = new Date();
+    }
+
+    if (dateOnly) {
+      const yyyy = d.getUTCFullYear();
+      const mm = String(d.getUTCMonth() + 1).padStart(2, '0');
+      const dd = String(d.getUTCDate()).padStart(2, '0');
+      return `${yyyy}-${mm}-${dd}T00:00:00.000Z`;
+    }
+
+    return d.toISOString();
   };
 
   const sanitizeChild = (c = {}, defaultParentId = 0) => ({

@@ -65,7 +65,7 @@ export default function ProjectFinanceTab({ projectId, project, editable }) {
   const validationSchema = Yup.object().shape({
     downPaymentPercent: Yup.number().typeError('Down Payment Percent must be a number').min(0, 'Down Payment Percent cannot be less than 0').max(100, 'Down Payment Percent cannot be greater than 100').nullable(),
     downPayment: Yup.number().typeError('Down Payment must be a number').min(0, 'Down Payment cannot be negative').nullable(),
-    retentionFee: Yup.number().typeError('Retention Fee must be a number').min(0, 'Retention Fee cannot be negative').nullable(),
+    retentionFee: Yup.number().typeError('Retention Fee must be a number').min(0, 'Retention Fee cannot be less than 0').max(100, 'Retention Fee cannot be greater than 100').nullable(),
     recoupmentPercentage: Yup.number().typeError('Recoupment % must be a number').min(0, 'Recoupment % cannot be less than 0').max(100, 'Recoupment % cannot be greater than 100').nullable(),
     lastBillingDate: Yup.date().typeError('Invalid date').nullable(),
   });
@@ -145,8 +145,12 @@ export default function ProjectFinanceTab({ projectId, project, editable }) {
     <>
     <div className={styles.panelHeader}>
         <h3>Finance</h3>
-                      <div className={styles.panelActions}>
-        {!editing && finance && !finance.hasDownpayment && <Button className="md" onClick={handleGenerateDownpaymentBilling}>Generate Downpayment Billing</Button>}
+        <div className={styles.panelActions}>
+        {!editing && finance && !finance.hasDownpayment && Number(finance.downPayment) > 0 && (
+          <Button className="md" onClick={handleGenerateDownpaymentBilling}>
+            Generate Downpayment Billing
+          </Button>
+        )}        
         {editing && (
           <>
             <Button className="secondary md" onClick={() => { setForm({ ...finance }); setEditing(false); }}>Cancel</Button>
@@ -196,7 +200,9 @@ export default function ProjectFinanceTab({ projectId, project, editable }) {
           </div>
         ) : (
           <div className="value">
-            {finance?.downPayment ?? ''}
+            {finance?.downPayment != null && finance.downPayment !== ''
+              ? Number(finance.downPayment).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+              : ''}
             {finance?.downPayment && project?.contractPrice
               ? ` (${((finance.downPayment / project.contractPrice) * 100).toFixed(2)}%)`
               : ''}
@@ -204,14 +210,26 @@ export default function ProjectFinanceTab({ projectId, project, editable }) {
         )}
       </div>
       <div className={styles.field}>
-        <label>Retention Fee</label>
+        <label>Retention Fee (%)</label>
         {editing ? (
           <div style={{ display: 'flex', flexDirection: 'column' }}>
-            <Input type="number" value={form.retentionFee ?? ''} onChange={e => { setForm({ ...form, retentionFee: e.target.value === '' ? '' : Number(e.target.value) }); setFormErrors(prev => ({ ...prev, retentionFee: undefined })); }} />
+            <Input
+              type="number"
+              value={form.retentionFee ?? ''}
+              onChange={e => {
+                const val = e.target.value === '' ? '' : Number(e.target.value);
+                setForm({ ...form, retentionFee: val });
+                setFormErrors(prev => ({ ...prev, retentionFee: undefined }));
+              }}
+            />
             {formErrors.retentionFee && <div style={{ color: 'red', fontSize: '0.75rem' }}>{formErrors.retentionFee}</div>}
           </div>
         ) : (
-          <div className="value">{finance?.retentionFee ?? ''}</div>
+          <div className="value">
+            {finance?.retentionFee != null && finance.retentionFee !== ''
+              ? `${Number(finance.retentionFee).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}%`
+              : ''}
+          </div>
         )}
       </div>
       <div className={styles.field}>

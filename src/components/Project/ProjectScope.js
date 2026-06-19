@@ -108,7 +108,9 @@ function buildScopePayload({
   };
 }
 
-export default function ProjectScope({ projectId = 0, editable = true, onCompletedQtyUpdated }) {
+export default function ProjectScope({ projectId = 0, editable = true, projectStatus = '', onCompletedQtyUpdated }) {
+  const isOngoing = String(projectStatus || '').toUpperCase() === 'ONGOING';
+
   const [isCompletedQtyModalOpen, setIsCompletedQtyModalOpen] = useState(false);
   const [completedQtyTarget, setCompletedQtyTarget] = useState(null);
   const [completedQtyValue, setCompletedQtyValue] = useState(0);
@@ -223,9 +225,9 @@ export default function ProjectScope({ projectId = 0, editable = true, onComplet
     { header: 'Completed Qty', key: 'completedQuantity', align: 'right', width: '120px', render: (it) => (it && it.completedQuantity != null ? Number(it.completedQuantity).toLocaleString() : '') },
     { header: 'Total', key: 'totalCost', align: 'right', width: '140px', render: (it) => Number(it.totalPrice || it.totalAmount || 0).toLocaleString() },
   ];
-  
+
   const PrintCompletionButton = () => {
-    return projectId ? 
+    return projectId ?
     <>
     <Button variant="primary" icon={<FiPrinter size={14} />} /*disabled={actionLoading}*/ onClick={async () => {
       // setActionLoading(true);
@@ -251,17 +253,19 @@ export default function ProjectScope({ projectId = 0, editable = true, onComplet
               setConfirmTarget(it);
               setIsConfirmOpen(true);
             }} />
-            <Button
-              size="sm"
-              variant="success"
-              icon={<FiCheckCircle size={20} color="#22c55e" />} // Tailwind green-500
-              title="Update Completed Quantity"
-              onClick={() => {
-                setCompletedQtyTarget(it);
-                setCompletedQtyValue(it.completedQuantity ?? 0);
-                setIsCompletedQtyModalOpen(true);
-              }}
-            />
+            {isOngoing && (
+              <Button
+                size="sm"
+                variant="success"
+                icon={<FiCheckCircle size={20} color="#22c55e" />} // Tailwind green-500
+                title="Update Completed Quantity"
+                onClick={() => {
+                  setCompletedQtyTarget(it);
+                  setCompletedQtyValue(it.completedQuantity ?? 0);
+                  setIsCompletedQtyModalOpen(true);
+                }}
+              />
+            )}
           </div>
         );
       }
@@ -335,7 +339,7 @@ export default function ProjectScope({ projectId = 0, editable = true, onComplet
         <h2 className={styles.title}>Scope of Work</h2>
         <div className={styles.headerActions}>
           <SearchBar placeholder="Search scope of work" value={searchTerm} onChange={setSearchTerm} showFilter={false} showButton={editable} buttonLabel="Add Scope" handleOnClick={() => { setScopeEditing(null); setIsScopeModalOpen(true); }} width="320px" />
-            
+
             <PrintCompletionButton/>
         </div>
       </div>
@@ -352,6 +356,12 @@ export default function ProjectScope({ projectId = 0, editable = true, onComplet
                 confirmVariant="success"
                 onCancel={() => { setIsCompletedQtyModalOpen(false); setCompletedQtyTarget(null); }}
                 onConfirm={async () => {
+                  if (!isOngoing) {
+                    window.alert('Project must be Ongoing to update completed quantity.');
+                    setIsCompletedQtyModalOpen(false);
+                    setCompletedQtyTarget(null);
+                    return;
+                  }
                   if (completedQtyTarget) {
                     const res = await updateCompletedQuantity(completedQtyTarget.id, Number(completedQtyValue));
                     setIsCompletedQtyModalOpen(false);

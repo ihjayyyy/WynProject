@@ -143,8 +143,7 @@ const BASE_COLUMNS = [
   { header: 'OT Hours', key: 'overtimeHours', render: (item) => Number(item.overtimeHours || 0).toFixed(2) },
 ];
 
-export default function AttendanceTab({ projectId = 0, editable = true }) {
-  const PageName = 'Projects.Projects';
+export default function AttendanceTab({ projectId = 0, editable = true, projectStatus = '' }) {  const PageName = 'Projects.Projects';
   const { isAllowed } = useContext(AccessContext);
   const [defaultDateRange] = useState(getCurrentWorkingWeek);
   const [items, setItems] = useState([]);
@@ -456,9 +455,9 @@ export default function AttendanceTab({ projectId = 0, editable = true }) {
             value={searchTerm}
             onChange={setSearchTerm}
             showFilter={false}
-            showButton={isAllowed(PageName, 'w') && editable}
-            buttonLabel={isAllowed(PageName, 'w') && editable ? "Add Attendance" : undefined}
-            handleOnClick={isAllowed(PageName, 'w') && editable ? () => { setEditing(null); setIsModalOpen(true); } : undefined}
+            showButton={isAllowed(PageName, 'w') && editable && projectStatus === 'ONGOING'}
+            buttonLabel={isAllowed(PageName, 'w') && editable && projectStatus === 'ONGOING' ? "Add Attendance" : undefined}
+            handleOnClick={isAllowed(PageName, 'w') && editable && projectStatus === 'ONGOING' ? () => { setEditing(null); setIsModalOpen(true); } : undefined}
             width="280px"
           />
         </div>

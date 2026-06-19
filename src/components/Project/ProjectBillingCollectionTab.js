@@ -1,4 +1,4 @@
-  'use client';
+'use client';
 
 import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
@@ -23,11 +23,13 @@ const billingColumns = [
   { header: 'Payment Status', key: 'paymentStatus', render: (item) => <StatusBadge status={item.paymentStatus} /> },
 ];
 
-export default function ProjectBillingCollectionTab({ projectId = 0, editable = false }) {
+export default function ProjectBillingCollectionTab({ projectId = 0, editable = false, overallProgress = 0 }) {
   const router = useRouter();
   const confirmModal = useConfirmModal();
   const [billings, setBillings] = useState([]);
   const [loading, setLoading] = useState(false);
+
+  const hasProgress = Number(overallProgress || 0) > 0;
 
   const handleGenerateProgressBilling = () => {
     confirmModal.show(
@@ -60,7 +62,7 @@ export default function ProjectBillingCollectionTab({ projectId = 0, editable = 
       <div className={styles.headerRow}>
         <h2 className={styles.title}>Billing and Collection</h2>
         <div className={styles.panelActions}>
-          {editable && projectId && (
+          {editable && projectId && hasProgress && (
             <Button className="md" onClick={handleGenerateProgressBilling} disabled={loading}>
               {loading ? 'Generating...' : 'Generate Progress Billing'}
             </Button>
