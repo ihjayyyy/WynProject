@@ -4,7 +4,7 @@ import { createPortal } from 'react-dom';
 import styles from './ConfirmModal.module.scss';
 import Button from '../Button/Button';
 
-export default function ConfirmModal({ open, title, message, confirmText = 'Confirm', cancelText = 'Cancel', confirmVariant = 'primary', onConfirm, onCancel, children }) {
+export default function ConfirmModal({ open, title, message, confirmText = 'Confirm', cancelText = 'Cancel', confirmVariant = 'primary', onConfirm, onCancel, children, wide = false }) {
   useEffect(() => {
     if (!open) return;
     const onKey = (e) => {
@@ -25,9 +25,11 @@ export default function ConfirmModal({ open, title, message, confirmText = 'Conf
 
   if (!open) return null;
 
+  const panelClassName = wide ? `${styles.panel} ${styles.widePanel}` : styles.panel;
+
   const content = (
     <div className={styles.overlay} role="dialog" aria-modal="true" onClick={onCancel}>
-      <div className={styles.panel} onClick={(e) => e.stopPropagation()}>
+      <div className={panelClassName} onClick={(e) => e.stopPropagation()}>
         {title && <h3 className={styles.title}>{title}</h3>}
         {message && <p className={styles.message}>{message}</p>}
         {children}

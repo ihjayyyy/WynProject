@@ -4,7 +4,7 @@
   background: $color-background-light;
   border: 1px solid $color-secondary-light;
   border-radius: $border-radius-lg;
-  padding: $spacing-lg;
+  padding: $spacing-md;
   box-shadow: $shadow-sm;
   transition: all 0.2s ease;
 
@@ -26,6 +26,7 @@
   font-weight: $font-weight-bold;
   color: $color-text-primary-light;
   line-height: 1;
+  margin-right: $spacing-sm;
 }
 
 .statLabel {

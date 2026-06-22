@@ -137,9 +137,37 @@ async function printSalesCollection_byId(id) {
   }
 }
 
+async function getCollectionsByBillingId(billingId) {
+  if (!billingId) {
+    return { data: null, error: 'Missing billingId' };
+  }
+
+  try {
+    const url = `${API_BASE_URL}/ByBilling/${billingId}`;
+
+    const res = await fetch(url, {
+      method: 'GET',
+      headers: { 'Content-Type': 'application/json' },
+    });
+
+    const json = await res.json();
+
+    return {
+      data: json && json.value ? json.value : json,
+      error: null,
+    };
+  } catch (error) {
+    return {
+      data: null,
+      error: error?.message || error,
+    };
+  }
+}
+
 export {
   getCollections,
   getCollectionById,
+  getCollectionsByBillingId,
   createCollection,
   updateCollection,
   cancelCollection,
@@ -150,6 +178,7 @@ export {
 export default {
   getCollections,
   getCollectionById,
+  getCollectionsByBillingId,
   createCollection,
   updateCollection,
   cancelCollection,
