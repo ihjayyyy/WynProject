@@ -14,6 +14,7 @@ const billingColumns = [
   { header: 'Billing No.', key: 'salesBillingNo' },
   { header: 'Description', key: 'description' },
   { header: 'Billing Type', key: 'billingType' },
+  { header: 'Progress', key: 'name' },
   { header: 'Total Amount Paid', key: 'totalAmountPaid', render: (item) => Number(item.totalAmountPaid || 0).toLocaleString() },
   { header: 'Collection No.', key: 'collectionNo' },
   { header: 'Receipt No.', key: 'receiptNo' },

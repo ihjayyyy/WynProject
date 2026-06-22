@@ -340,7 +340,9 @@ export default function ProjectScope({ projectId = 0, editable = true, projectSt
         <div className={styles.headerActions}>
           <SearchBar placeholder="Search scope of work" value={searchTerm} onChange={setSearchTerm} showFilter={false} showButton={editable} buttonLabel="Add Scope" handleOnClick={() => { setScopeEditing(null); setIsScopeModalOpen(true); }} width="320px" />
 
-            <PrintCompletionButton/>
+            {String(projectStatus || '').toUpperCase() !== 'NOTSTARTED' && (
+              <PrintCompletionButton />
+            )}
         </div>
       </div>
 

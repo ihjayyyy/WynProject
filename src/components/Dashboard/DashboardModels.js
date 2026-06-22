@@ -37,8 +37,8 @@ function mapSummaryToCards(summary) {
       id: `${statName}-${index}`,
       label: title,
       number,
-      change: value === 0 ? 'No records' : statName,
-      isPositive: true, // Assuming all stats are positive for simplicity; adjust logic as needed
+      change: value === 0 ? `No records of ${statName}` : statName,
+      isPositive: true,
     };
   });
 }

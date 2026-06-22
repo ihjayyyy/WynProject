@@ -94,8 +94,13 @@ export default function ProjectLanding() {
             // ...(isAllowed(PageName, 'w')
             //   ? [{ key: 'edit', label: 'Edit', icon: <FiEdit2 size={14} />, onClick: () => router.push(`/projects/project/projectdetails?id=${item.id}&mode=edit`) }]
             //   : []),
-            ...(isAllowed(PageName, 'r')
-              ? [{ key: 'viewpdf', label: 'Print Accomplishment Report', icon: <FiFileText size={14} />, onClick: () => printCompletion_byId(item.id) }]
+            ...(isAllowed(PageName, 'r') && !isNotStarted
+              ? [{
+                  key: 'viewpdf',
+                  label: 'Print Accomplishment Report',
+                  icon: <FiFileText size={14} />,
+                  onClick: () => printCompletion_byId(item.id)
+                }]
               : []),
 
             // Start Project — only shown when status is NotStarted
