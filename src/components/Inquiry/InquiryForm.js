@@ -91,10 +91,13 @@ export default function InquiryForm() {
   }, [inquiryId, inquiries]);
 
   // Merge base values with any auto-fill overrides
-  const initialValues = useMemo(() => ({
-    ...baseInitialValues,
-    ...autoFillOverrides,
-  }), [baseInitialValues, autoFillOverrides]);
+const initialValues = useMemo(() => ({
+  ...baseInitialValues,
+  date:
+    baseInitialValues?.date ||
+    new Date().toISOString().split('T')[0],
+  ...autoFillOverrides,
+}), [baseInitialValues, autoFillOverrides]);
 
   // Called when the customer dropdown changes.
   // We update the ref first so the value is immediately available when
