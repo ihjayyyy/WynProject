@@ -91,7 +91,7 @@ export default function ToolsLanding() {
     [router]
   );
 
-  const columns = useMemo(() => [...baseColumns, { header: 'Action', key: 'actions', align: 'right', render: (item) => <DropdownAction item={item} items={actionItems} /> }], [actionItems]);
+  const columns = useMemo(() => [...baseColumns, { header: 'Action', key: 'actions', align: 'right', sortable: false, render: (item) => <DropdownAction item={item} items={actionItems} /> }], [actionItems]);
 
   const toolStats = useMemo(() => {
     const total = inventory.length;

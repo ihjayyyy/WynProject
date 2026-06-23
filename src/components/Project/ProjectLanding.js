@@ -77,6 +77,7 @@ export default function ProjectLanding() {
         header: 'Action',
         key: 'actions',
         align: 'right',
+        sortable: false,
         render: (item) => {
           const status = (item.status || '').toString().toUpperCase().replace(/\s+/g, '');
           const toFinite = (v) => { const n = Number(v); return Number.isFinite(n) ? n : null; };

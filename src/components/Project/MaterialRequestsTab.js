@@ -74,14 +74,27 @@ export default function MaterialRequestsTab({ projectId, editable = true }) {
    * Returns the total requestedQty already submitted for a given
    * materialId + scopeId combination, excluding the item currently
    * being edited (so editing doesn't double-count itself).
+   *
+   * FIX: Uses a loose scopeId match — if either side is 0/null/undefined
+   * (i.e. the API returned an unscoped item), we still count it toward
+   * the total so the "Available to Request" correctly reflects prior
+   * requests for the same material regardless of scope discrepancies.
    */
   const getTotalRequestedQty = useCallback((materialId, scopeId) => {
     return items
-      .filter((item) =>
-        Number(item.materialId) === Number(materialId) &&
-        Number(item.scopeId) === Number(scopeId) &&
-        item.id !== editing?.id
-      )
+      .filter((item) => {
+        const materialMatch = Number(item.materialId) === Number(materialId);
+
+        // Strict scope match OR either side is 0/null/undefined (unscoped)
+        const scopeMatch =
+          Number(item.scopeId) === Number(scopeId) ||
+          !item.scopeId ||
+          !scopeId;
+
+        const notCurrentEdit = item.id !== editing?.id;
+
+        return materialMatch && scopeMatch && notCurrentEdit;
+      })
       .reduce((sum, item) => sum + (Number(item.requestedQty) || 0), 0);
   }, [items, editing]);
 
@@ -97,18 +110,23 @@ export default function MaterialRequestsTab({ projectId, editable = true }) {
       const alreadyRequested = getTotalRequestedQty(m.id, m.scopeId);
       const remaining = m.quantity - alreadyRequested;
       // Always show the material that is currently being edited
+      // FIX: also use loose scopeId match here for consistency
       const isCurrentlyEditing =
         editing &&
         Number(editing.materialId) === Number(m.id) &&
-        Number(editing.scopeId) === Number(m.scopeId);
+        (Number(editing.scopeId) === Number(m.scopeId) || !editing.scopeId || !m.scopeId);
       return isCurrentlyEditing || remaining > 0;
     })
     .map((m) => {
       const alreadyRequested = getTotalRequestedQty(m.id, m.scopeId);
       const remaining = m.quantity - alreadyRequested;
       return {
+        // IMPORTANT: composite "id:scopeId" value, must match the field's
+        // controlled value below so the select can resolve the label.
         value: `${m.id}:${m.scopeId}`,
-        label: m.name,
+        // Show how much of this material can still be requested right in
+        // the dropdown label, e.g. "Bolt, single upset, 5/8\" x 12\" (15 pcs left)"
+        label: `${m.name} (${remaining} ${m.uom || ''} left)`.replace(/\s+left/, ' left').replace(/\(\s+/, '('),
         materialId: m.id,
         scopeId: m.scopeId,
       };
@@ -142,6 +160,9 @@ export default function MaterialRequestsTab({ projectId, editable = true }) {
         name: 'materialId',
         label: 'Material',
         type: 'select',
+        // Controlled value must be the SAME composite "id:scopeId" format
+        // used by materialOptions[].value, or the select can't find a
+        // matching option and falls back to the placeholder.
         value: record.materialId ? `${record.materialId}:${record.scopeId ?? 0}` : '',
         options: materialOptions,
         required: true,
@@ -151,20 +172,47 @@ export default function MaterialRequestsTab({ projectId, editable = true }) {
           const sid = Number(sidStr) || 0;
           const mat = materials.find((m) => Number(m.id) === mid && Number(m.scopeId) === sid);
           if (mat) {
-            updateField('materialId', mid);
-            updateField('projectQty', Number(mat.quantity) || 0);
+            // Keep materialId as the composite string so it still matches
+            // an entry in materialOptions on re-render. The numeric id is
+            // parsed back out later (in modalFields' own 'projectQty'/etc.
+            // lookups via findMaterial, and in the save payload in onClose).
+            const pq = Number(mat.quantity) || 0;
+            const alreadyRequested = getTotalRequestedQty(mid, sid);
+            updateField('materialId', nextValue);
+            updateField('projectQty', pq);
             updateField('name', mat.name || '');
             updateField('code', mat.code || '');
             updateField('uom', mat.uom || '');
             updateField('scopeId', sid);
+            // Recompute live — this field's initial `value` only reflects
+            // whatever material was selected when the modal first opened
+            // (or nothing, for a brand-new request), so it must be set
+            // explicitly here whenever the user picks/changes a material.
+            updateField('availableQty', pq - alreadyRequested);
           } else {
-            updateField('materialId', 0);
+            updateField('materialId', '');
             updateField('projectQty', 0);
             updateField('scopeId', 0);
+            updateField('availableQty', '');
           }
         }
       },
-      { name: 'projectQty', label: 'Project Quantity', type: 'number', value: (selectedMaterial && (selectedMaterial.quantity !== undefined ? selectedMaterial.quantity : selectedMaterial.projectQty)) || record.projectQty || '', readonly: true },
+      { name: 'projectQty', label: 'Project Quantity', type: 'number', value: (selectedMaterial && (selectedMaterial.quantity !== undefined ? selectedMaterial.quantity : selectedMaterial.projectQty)) || record.projectQty || '', readonly: true, hidden: true },
+      {
+        name: 'availableQty',
+        label: 'Available to Request',
+        type: 'number',
+        readonly: true,
+        value: (() => {
+          const pq = Number((selectedMaterial && (selectedMaterial.quantity !== undefined ? selectedMaterial.quantity : selectedMaterial.projectQty)) || record.projectQty || 0);
+          if (!pq) return '';
+          const materialId = (selectedMaterial && selectedMaterial.id) || record.materialId;
+          const scopeId = (selectedMaterial && selectedMaterial.scopeId) || record.scopeId;
+          if (!materialId) return '';
+          const alreadyRequested = getTotalRequestedQty(materialId, scopeId);
+          return pq - alreadyRequested;
+        })(),
+      },
       {
         name: 'requestedQty',
         label: 'Requested Quantity',
@@ -176,7 +224,10 @@ export default function MaterialRequestsTab({ projectId, editable = true }) {
           .test('max-remaining', 'Requested quantity exceeds remaining project quantity', function (value) {
             const pq = Number(this.parent?.projectQty) || 0;
             if (!pq) return true;
-            const materialId = this.parent?.materialId;
+            // materialId on the in-progress form value may still be the
+            // composite "id:scopeId" string; parse the numeric id out.
+            const [midStr] = String(this.parent?.materialId || '').split(':');
+            const materialId = Number(midStr) || this.parent?.materialId;
             const scopeId = this.parent?.scopeId;
             const alreadyRequested = getTotalRequestedQty(materialId, scopeId);
             const remaining = pq - alreadyRequested;
@@ -317,14 +368,25 @@ export default function MaterialRequestsTab({ projectId, editable = true }) {
           const authName = `${(auth.firstName || '').trim()} ${(auth.lastName || '').trim()}`.trim() || auth.email || auth.userId || '';
           const today = new Date().toISOString().slice(0, 10);
 
+          // materialId coming from the form may still be the composite
+          // "id:scopeId" string produced by the select field — parse the
+          // numeric material id back out before building the payload.
+          const [midStr, sidStrFromMaterial] = String(value.materialId || '').split(':');
+          const numericMaterialId = Number(midStr) || 0;
+          const numericScopeId = Number(value.scopeId) || Number(sidStrFromMaterial) || 0;
+
+          const matchedMaterial = materials.find(
+            (m) => Number(m.id) === numericMaterialId && Number(m.scopeId) === numericScopeId
+          );
+
           const payload = {
             ...INITIAL_MATERIAL_REQUEST,
             ...value,
-            name: value.name || (materials.find((m) => Number(m.id) === Number(value.materialId) && Number(m.scopeId) === Number(value.scopeId))?.name) || '',
-            code: value.code || (materials.find((m) => Number(m.id) === Number(value.materialId) && Number(m.scopeId) === Number(value.scopeId))?.code) || '',
-            materialId: Number(value.materialId) || 0,
+            name: value.name || matchedMaterial?.name || '',
+            code: value.code || matchedMaterial?.code || '',
+            materialId: numericMaterialId,
             projectId: Number(projectId) || 0,
-            scopeId: Number(value.scopeId) || 0,
+            scopeId: numericScopeId,
             projectQty: value.projectQty !== undefined ? Number(value.projectQty) : 0,
             requestedQty: value.requestedQty !== undefined ? Number(value.requestedQty) : 0,
             balance: value.balance !== undefined ? Number(value.balance) : 0,

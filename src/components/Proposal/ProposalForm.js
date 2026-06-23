@@ -519,6 +519,7 @@ export default function ProposalForm() {
     scopeOfWork: c.scopeOfWork || '',
     remarks: c.remarks || '',
     laborPercentage: Number(c.laborPercentage) || 0,
+    marginQuantity: Number(c.marginQuantity) || 0,
   });
 
   const buildModelPayload = (values) => {

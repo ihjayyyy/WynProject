@@ -58,7 +58,7 @@ export default function SuppliersLanding() {
       }
       return col;
     });
-    return [...cols, { header: 'Action', key: 'actions', align: 'right', render: (item) => <DropdownAction item={item} items={actionItems} /> }];
+    return [...cols, { header: 'Action', key: 'actions', sortable: false, align: 'right', render: (item) => <DropdownAction item={item} items={actionItems} /> }];
   }, [actionItems]);
 
   const supplierStats = useMemo(() => {

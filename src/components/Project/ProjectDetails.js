@@ -78,7 +78,7 @@ export default function ProjectDetails() {
       setLoading(false);
     })();
     return () => (mounted = false);
-  }, [projectId, toast]);
+  }, [projectId]);
 
   const save = async () => {
     if (!project) return;

@@ -53,6 +53,7 @@ export default function RolesLanding() {
       ...baseColumns,
       {
         header: 'Action',
+        sortable: false,
         key: 'actions',
         align: 'right',
         render: (item) => <DropdownAction item={item} items={actionItems} />,

@@ -129,7 +129,7 @@ export default function MaterialInventoryLanding() {
     const warehouseCol = { header: 'Warehouse', key: 'warehouse', render: (item) => { const rack = racksMap[item.rackId]; const wid = rack && rack.warehouseId; return warehousesMap[wid] || ''; } };
     if (rackIndex >= 0) cols.splice(rackIndex, 0, warehouseCol);
 
-    return [...cols, { header: 'Action', key: 'actions', align: 'right', render: (item) => <DropdownAction item={item} items={actionItems} /> }];
+    return [...cols, { header: 'Action', key: 'actions', align: 'right', sortable: false, render: (item) => <DropdownAction item={item} items={actionItems} /> }];
   }, [actionItems, materialsMap, racksMap, warehousesMap]);
 
   const stats = useMemo(() => {

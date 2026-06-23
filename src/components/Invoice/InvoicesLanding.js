@@ -125,6 +125,7 @@ export default function InvoicesLanding() {
         header: 'Action',
         key: 'actions',
         align: 'right',
+        sortable: false,
         render: (item) => <DropdownAction item={item} items={actionItems} />,
       },
     ],

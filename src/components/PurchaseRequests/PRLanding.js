@@ -86,6 +86,7 @@ export default function PRLanding() {
       {
         header: 'Action',
         key: 'actions',
+        sortable: false,
         align: 'right',
         render: (item) => <DropdownAction item={item} items={actionItems} />,
       },

@@ -44,7 +44,7 @@ export default function StaffLanding() {
     [router]
   );
 
-  const columns = useMemo(() => [...baseColumns, { header: 'Action', key: 'actions', align: 'right', render: (item) => <DropdownAction item={item} items={actionItems} /> }], [actionItems]);
+  const columns = useMemo(() => [...baseColumns, { header: 'Action', key: 'actions', sortable: false, align: 'right', render: (item) => <DropdownAction item={item} items={actionItems} /> }], [actionItems]);
 
   const staffStats = useMemo(() => {
     const total = staffs.length;

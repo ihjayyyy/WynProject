@@ -267,3 +267,18 @@
     }
   }
 }
+
+.thContent {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.sortIcon {
+  display: inline-flex;
+  align-items: center;
+}
+
+.sortIconIdle {
+  opacity: 0.35;
+}

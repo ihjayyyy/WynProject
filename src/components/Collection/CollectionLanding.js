@@ -110,7 +110,7 @@ export default function CollectionLanding() {
   );
 
   const columns = useMemo(
-    () => [...baseColumns, { header: 'Status', key: 'status', render: (item) => <StatusBadge status={item.status} /> }, { header: 'Action', key: 'actions', align: 'right', render: (item) => <DropdownAction item={item} items={actionItems.filter(a => !a.hidden || !a.hidden(item))} /> }],
+    () => [...baseColumns, { header: 'Status', key: 'status', render: (item) => <StatusBadge status={item.status} /> }, { header: 'Action', key: 'actions', align: 'right', sortable: false, render: (item) => <DropdownAction item={item} items={actionItems.filter(a => !a.hidden || !a.hidden(item))} /> }],
     [actionItems]
   );
 

@@ -120,7 +120,7 @@ export default function ProposalLanding() {
     return () => (mounted = false);
   }, [loadProposals]);
 
-  const columns = useMemo(() => [...baseColumns, { header: 'Action', key: 'actions', align: 'right', render: (item) => {
+  const columns = useMemo(() => [...baseColumns, { header: 'Action', key: 'actions', sortable: false, align: 'right', render: (item) => {
       const proposalStatus = String(item?.proposalStatus || '').toLowerCase();
       const isDraft = item && String((item.proposalStatus || '').toLowerCase()) === 'draft';
       const itemsFor = (actionItems || []).map((it) => ({

@@ -102,6 +102,7 @@ export default function MaterialReceivedLanding() {
         header: 'Action',
         key: 'actions',
         align: 'right',
+        sortable:false,
         render: (item) => {
           const status = String(item?.status || '').toLowerCase();
           const isDraft = status === 'draft';

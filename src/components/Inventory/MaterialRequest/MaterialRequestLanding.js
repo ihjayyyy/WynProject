@@ -21,6 +21,7 @@ const baseColumns = [
   {
     header: 'Print RV',
     key: '__actions',
+    sortable: false,
     render: (item) =>
       <div>
         {(item.rivNumber != "" && item.rivNumber != null) && (

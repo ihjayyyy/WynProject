@@ -16,14 +16,15 @@ const baseColumns = [
   // { header: 'Reference', key: 'reference' },
   { header: 'Company', key: 'companyName' },
   { header: 'Attention', key: 'attention' },
-  { header: 'Contact', key: 'contactPerson', render: (item) => (
+  { header: 'Contact', key: 'contactPerson',  sortValue: (item) => item.contactPerson, render: (item) => (
     <span>{item.contactPerson}{item.contactPerson && item.contactNumber ? <br /> : null}{item.contactNumber}</span>
   )},
   { header: 'Email', key: 'email' },
   {
     header: 'Status',
     key: 'status',
-    render: (item) => <StatusBadge status={item.status} />
+    render: (item) => <StatusBadge status={item.status} />,
+    sortValue: (item) => item.status,
   }
 ];
 
@@ -116,7 +117,8 @@ export default function InquiryLanding() {
       header: 'Action',
       key: 'actions',
       align: 'right',
-      render: (item) => <DropdownAction item={item} items={actionItems.filter(a => !a.hidden || !a.hidden(item))} />
+      render: (item) => <DropdownAction item={item} items={actionItems.filter(a => !a.hidden || !a.hidden(item))} />,
+      sortable: false,
     }
   ], [actionItems]);
 
