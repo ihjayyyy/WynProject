@@ -13,7 +13,10 @@ import EntityForm from '../EntityForm/EntityForm';
 import Button from '../ui/Button/Button';
 import { getSuppliers } from '@/services/Supplier';
 import { getMaterials, getMaterial } from '@/services/Materials';
-import { GetAll as GetAllPurchaseRequest } from '@/services/PurchaseRequest';
+import {
+  GetAll as GetAllPurchaseRequest,
+  Get as GetPurchaseRequest,
+} from '@/services/PurchaseRequest';
 import POStyles from './PurchaseOrders.module.scss';
 import {
   InitialData,
@@ -51,7 +54,7 @@ export default function PurchaseOrdersForm() {
   const [purchaseRequests, setPurchaseRequests] = useState([]);
   const [po, setPO] = useState({});
   const [validPO, setvalidPO] = useState(false);
-  const [tableData, setTableData] = useState([]);
+  const [tableData, setTableData] = useState({ items: [], deletedItems: [] });
   const [tableError, setTableError] = useState('');
   const [totalExcluded, setTotalExcluded] = useState(0);
   const [totalVAT, setTotalVAT] = useState(0);
@@ -70,7 +73,7 @@ export default function PurchaseOrdersForm() {
 
   // set PO Fields
   const onPOChange = (fieldname, value, formData) => {
-    const poChildren = po.children.map((d) => {
+    const poChildren = (po.children || []).map((d) => {
       let vat = 0;
       const unitCost = Number(d.unitCost || 0);
       const quantity = Number(d.quantity || 0);
@@ -102,17 +105,25 @@ export default function PurchaseOrdersForm() {
 
   // Handle Purchase Request selection and populate table with its children
   const onPRSelected = async (pr) => {
-    if (!pr || !pr.children || pr.children.length === 0) {
-      // Clear table if no PR selected or PR has no children
+    if (!pr) {
       setTableData({ items: [], deletedItems: [] });
       setPO((prevPo) => ({ ...prevPo, children: [], deletedChildren: [] }));
       return;
     }
 
     try {
+      const prResult = await GetPurchaseRequest(pr.id);
+      const selectedPR = prResult?.data;
+      const prChildren = selectedPR?.children || [];
+      if (prResult?.error || !selectedPR || prChildren.length === 0) {
+        setTableData({ items: [], deletedItems: [] });
+        setPO((prevPo) => ({ ...prevPo, children: [], deletedChildren: [] }));
+        return;
+      }
+
       // Fetch material details for each PR child
       const poItems = await Promise.all(
-        pr.children.map(async (child) => {
+        prChildren.map(async (child) => {
           const materialRes = await getMaterial(child.materialId);
           const material = materialRes?.data;
 
@@ -238,11 +249,7 @@ export default function PurchaseOrdersForm() {
   }, []);
 
   // set PO Data
-  useEffect(() => {
-    GetPO();
-  }, [orderId]);
-
-  const GetPO = async () => {
+  const GetPO = React.useCallback(async () => {
     let initPO = { ...InitialData };
 
     const today = new Date();
@@ -314,13 +321,16 @@ export default function PurchaseOrdersForm() {
     setTotalVAT(vat);
     setTotalIncludedd(included);
     setTotalExcluded(included - vat);
-  };
+  }, [orderId]);
+
+  useEffect(() => {
+    GetPO();
+  }, [GetPO]);
 
   // Set Form View
   const isReadOnly = useMemo(() => {
-    if (validPO) return mode === 'view';
-    else return true;
-  }, [po, mode]);
+    return validPO ? mode === 'view' : true;
+  }, [validPO, mode]);
 
   // Set Form Title
   const formTitle = useMemo(() => {
@@ -361,14 +371,14 @@ export default function PurchaseOrdersForm() {
   };
 
   // Set Item Details data
-  useEffect(() => {
-    updatePOItemFields();
+  const updatePOItemFields = React.useCallback(() => {
+    const poitems = POItemsFields(materials, po);
+    setPOItemFields(poitems);
   }, [materials, po]);
 
-  const updatePOItemFields = () => {
-    var poitems = POItemsFields(materials, po);
-    setPOItemFields(poitems);
-  };
+  useEffect(() => {
+    updatePOItemFields();
+  }, [updatePOItemFields]);
 
   const handleSaveConfirm = (entity) => {
     console.log(entity);
