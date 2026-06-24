@@ -114,7 +114,7 @@ export default function MaterialReceivedForm() {
         name: 'transferId',
         label: 'Material Transfer',
         type: 'select',
-        options: (values) => (Array.isArray(transfers) ? transfers.map(t => ({ value: t.id, label: `${t.code || t.name || ''}` })) : []),
+        options: (values) => (Array.isArray(transfers) ? transfers.map(t => ({ value: t.id, label: `${ t.transferNumber || t.code || t.name || ''}` })) : []),
         searchable: true,
         onChange: (val) => {
           setSelectedTransferId(Number(val) || 0);
