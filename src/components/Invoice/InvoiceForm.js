@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useMemo, useState, useEffect, useContext } from 'react';
+import React, { useCallback, useMemo, useState, useEffect, useContext } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { FiList, FiPrinter } from 'react-icons/fi';
 import {
@@ -81,12 +81,12 @@ export default function PurchaseInvoiceForm() {
     fetchMaterials();
   }, []);
 
-  const fetchOrders = async (supplierid) => {
+  const fetchOrders = useCallback(async (supplierid) => {
     const res = await GetOrdersBySupplier(supplierid);
     if (res && !res.error) {
       setOrders(res.data);
     }
-  };
+  }, []);
 
   const loadOrders = async (orderId) => {
     const res = await GetPO(orderId);
@@ -167,7 +167,26 @@ export default function PurchaseInvoiceForm() {
     ItemsFields(materials, formData),
   );
 
-  const GetFormData = async () => {
+  const syncTotals = useCallback((items = []) => {
+    const normalizedItems = Array.isArray(items) ? items : [];
+    const totalVAT = normalizedItems.reduce(
+      (sum, item) => sum + Number(item.vat || 0),
+      0,
+    );
+    const totalIncluded = normalizedItems.reduce(
+      (sum, item) => sum + Number(item.totalAmount ?? item.amount ?? 0),
+      0,
+    );
+    const totalExcluded = totalIncluded - totalVAT;
+
+    setTotalExcluded(totalExcluded);
+    setTotalVAT(totalVAT);
+    setTotalIncluded(totalIncluded);
+
+    return { totalExcluded, totalVAT, totalIncluded };
+  }, []);
+
+  const GetFormData = useCallback(async () => {
     let initData = { ...InitialData };
 
     if (formId !== 0) {
@@ -199,24 +218,37 @@ export default function PurchaseInvoiceForm() {
       initData.deletedChildren = initData.deletedChildren.map(normalizeChild);
     }
 
-    setForm(initData);
+    const children = Array.isArray(initData.children) ? initData.children : [];
+    const totals = syncTotals(children);
+
+    const normalizedFormData = {
+      ...initData,
+      children,
+      deletedChildren: Array.isArray(initData.deletedChildren)
+        ? initData.deletedChildren
+        : [],
+      vat: totals.totalVAT,
+      amount: totals.totalIncluded,
+    };
+
+    setForm(normalizedFormData);
     setvalidForm(Object.keys(initData).length === 0 ? false : true);
     setTableData({
-      items: initData.children,
-      deletedItems: initData.deletedChildren,
+      items: children,
+      deletedItems: normalizedFormData.deletedChildren,
     });
-  };
+  }, [fetchOrders, formId, syncTotals]);
 
   // Set Form Data
   useEffect(() => {
     GetFormData();
-  }, [formId]);
+  }, [GetFormData]);
 
   // Set Form View
   const isReadOnly = useMemo(() => {
     if (validForm) return mode === 'view';
     else return true;
-  }, [formData, mode]);
+  }, [validForm, mode]);
 
   // Set Form Title
   const formTitle = useMemo(() => {
@@ -233,39 +265,27 @@ export default function PurchaseInvoiceForm() {
   }, [formData]);
 
   const detailsUpdated = (items, deletedItems) => {
-    const totalVAT = items.reduce(
-      (total, item) => total + Number(item.vat || 0),
-      0,
-    );
-    const totalIncluded = items.reduce(
-      (total, item) => total + Number(item.totalAmount ?? item.amount ?? 0),
-      0,
-    );
-    const totalexcluded = totalIncluded - totalVAT;
-
-    setTotalExcluded(totalexcluded);
-    setTotalVAT(totalVAT);
-    setTotalIncluded(totalIncluded);
+    const totals = syncTotals(items);
 
     const formDataCopy = { ...formData };
     formDataCopy.children = items;
     formDataCopy.deletedChildren = deletedItems;
-    formDataCopy.vat = totalVAT;
-    formDataCopy.amount = totalIncluded;
+    formDataCopy.vat = totals.totalVAT;
+    formDataCopy.amount = totals.totalIncluded;
 
     setForm(formDataCopy);
     if (Array.isArray(items) && items.length > 0) setTableError('');
   };
 
   // Set Item Details data
-  useEffect(() => {
-    updateItemFields();
+  const updateItemFields = useCallback(() => {
+    const items = ItemsFields(materials, formData);
+    setItemFields(items);
   }, [materials, formData]);
 
-  const updateItemFields = () => {
-    var items = ItemsFields(materials, formData);
-    setItemFields(items);
-  };
+  useEffect(() => {
+    updateItemFields();
+  }, [updateItemFields]);
 
   const handleSaveConfirm = (entity) => {
     const title = 'Save Invoice';
