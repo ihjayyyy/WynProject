@@ -404,6 +404,7 @@ export default function PurchasePaymentsForm() {
       checkNumber: values.checkNumber || '',
       description: values.description || '',
       amount: computedAmount,
+      totalAmountPaid: computedAmountPaid,
       withholdingTax: computedWithholdingTax,
       withholdingTaxPercentage: Number(values.withholdingTaxPercentage) || 0,
       netAmount: computedNetAmount,

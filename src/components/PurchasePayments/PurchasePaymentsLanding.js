@@ -25,6 +25,20 @@ const baseColumns = [
   { header: 'Payment No.', key: 'paymentNumber' },
   { header: 'Supplier', key: 'supplierName' },
   {
+    header: 'Total Invoice Paid',
+    key: 'totalAmountPaid',
+    render: (item) => (
+      <div style={{ textAlign: 'right' }}>
+        {item.amount != null
+          ? Number(item.totalAmountPaid).toLocaleString(undefined, {
+              minimumFractionDigits: 2,
+              maximumFractionDigits: 2,
+            })
+          : ''}
+      </div>
+    ),
+  },
+  {
     header: 'Amount',
     key: 'amount',
     render: (item) => (
