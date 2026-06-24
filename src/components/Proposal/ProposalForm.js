@@ -268,7 +268,7 @@ export default function ProposalForm() {
   }, [proposalId, isEditMode, isReviseMode, isCopyMode, initialValues, status]);
 
   const customerOptions = customers.map((c) => ({ value: c.id, label: c.customerName || c.name || c.code }));
-  const inquiryOptions = inquiries.map((q) => ({ value: q.id, label: q.reference || q.code || q.name || String(q.id) }));
+  const inquiryOptions = inquiries.map((q) => ({ value: q.id, label: q.inquiryNo || q.reference || q.code || q.name || String(q.id) }));
 
   const totals = React.useMemo(() => {
     const rows = (childrenState || []).filter((c) => !c || !c.__isScope);
@@ -336,9 +336,9 @@ export default function ProposalForm() {
     { name: 'spacer-3', type: 'spacer', span: 'span1' },
     { name: 'forecastedStartDate', label: 'Forecast Start', type: 'date', span: 'span1', validator: Yup.date().typeError('Invalid date').nullable() },
 
-    { name: 'customerCode', label: 'Customer Code', span: 'span1', readOnly: isReviseMode },
-    { name: 'spacer-4', type: 'spacer', span: 'span1' },
-    { name: 'forecastedEndDate', label: 'Forecast End', type: 'date', span: 'span1', validator: Yup.date().typeError('Invalid date').nullable() },
+    // { name: 'customerCode', label: 'Customer Code', span: 'span1', readOnly: isReviseMode },
+    // { name: 'spacer-4', type: 'spacer', span: 'span1' },
+    // { name: 'forecastedEndDate', label: 'Forecast End', type: 'date', span: 'span1', validator: Yup.date().typeError('Invalid date').nullable() },
 
     { name: 'contactPerson', label: 'Contact Person', span: 'span1', readOnly: isReviseMode },
     { name: 'spacer-5', type: 'spacer', span: 'span1' },
