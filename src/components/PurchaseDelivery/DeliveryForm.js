@@ -316,7 +316,7 @@ export default function PurchaseDeliveryForm() {
           )}
         {formData && formData.status && formData.status.toLowerCase() === 'draft' && (
           <Button onClick={handleSubmitConfirm} variant="save">
-            Deliver
+            Confirm Delivery
           </Button>
         )}
       </div>

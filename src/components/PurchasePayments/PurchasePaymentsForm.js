@@ -553,7 +553,7 @@ export default function PurchasePaymentsForm() {
             payment?.status === 'Draft' &&
             isAllowed(PageName, 'w') && (
               <Button variant="primary" onClick={handleSubmitPayment}>
-                Submit Payment
+                Mark as Paid
               </Button>
             )}
 
