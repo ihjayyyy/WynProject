@@ -15,8 +15,8 @@ import { AccessContext } from '@/app/contextProviders/accessContext';
 import * as Yup from 'yup';
 
 const BASE_COLUMNS = [
-  { header: 'Name', key: 'name' },
-  { header: 'Code', key: 'code' },
+  // { header: 'Name', key: 'name' },
+  // { header: 'Code', key: 'code' },
   { header: 'Description', key: 'description', render: (item) => item.description || item.desciption || '—' },
   { header: 'Amount', key: 'amount', render: (item) => Number(item.amount || 0).toLocaleString() },
   { header: 'Reference #', key: 'referenceNumber', render: (item) => item.referenceNumber || '—' },
@@ -68,20 +68,20 @@ export default function ExpensesTab({ projectId = 0, editable = true, projectSta
         hidden: true,
         validator: Yup.number().notRequired(),
       },
-      {
-        name: 'code',
-        label: 'Code',
-        type: 'text',
-        value: record.code || '',
-        validator: Yup.string().notRequired(),
-      },
-      {
-        name: 'name',
-        label: 'Name',
-        type: 'text',
-        value: record.name || '',
-        validator: Yup.string().required('Name is required'),
-      },
+      // {
+      //   name: 'code',
+      //   label: 'Code',
+      //   type: 'text',
+      //   value: record.code || '',
+      //   validator: Yup.string().notRequired(),
+      // },
+      // {
+      //   name: 'name',
+      //   label: 'Name',
+      //   type: 'text',
+      //   value: record.name || '',
+      //   validator: Yup.string().required('Name is required'),
+      // },
       {
         name: 'description',
         label: 'Description',
@@ -92,8 +92,8 @@ export default function ExpensesTab({ projectId = 0, editable = true, projectSta
       {
         name: 'referenceNumber',
         label: 'Reference Number',
-        type: 'number',
-        value: Number(record.referenceNumber) || 0,
+        type: 'text',
+        value: record.referenceNumber || '',
         validator: Yup.number().notRequired(),
       },
             {
