@@ -31,7 +31,7 @@ export const SalesBillingFields = (
     name: 'projectId',
     label: 'Project',
     type: 'select',
-    options: projects.map((p) => ({ label: p.name, value: p.id })),
+    options: projects.map((p) => ({ label: p.projectNo + " | " + p.name, value: p.id })),
     searchable: true,
     span: 'span2',
     onChange: (val, values, setValues) => {
