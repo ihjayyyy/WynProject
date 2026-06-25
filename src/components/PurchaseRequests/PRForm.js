@@ -32,6 +32,13 @@ import InvalidPage from '@/components/InvalidPage/page';
 import { AccessContext } from '@/app/contextProviders/accessContext';
 import { useConfirmModal } from '@/app/contextProviders/confirmModalContext';
 
+// Helper: format any date value into 'yyyy-MM-dd' for <input type="date">
+const toInputDate = (date) => {
+  const d = new Date(date);
+  if (isNaN(d)) return '';
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+};
+
 export default function PRForm() {
   const PageName = 'Purchase.Requests';
   const { isAllowed } = useContext(AccessContext);
@@ -105,14 +112,14 @@ export default function PRForm() {
 
       // Normalize date fields for form input
       if (initData.requestDate) {
-        const d = new Date(initData.requestDate);
-        if (!isNaN(d)) {
-          initData.requestDate = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-        }
+        initData.requestDate = toInputDate(initData.requestDate);
       }
       // Add more date fields here if needed
     } else {
       setMode('new');
+      // Default requestDate to today's date when creating a new PR
+      // Must be 'yyyy-MM-dd' for <input type="date"> to display it
+      initData.requestDate = toInputDate(new Date());
     }
     setFormData(initData);
     setformValid(Object.keys(initData).length === 0 ? false : true);
@@ -189,8 +196,7 @@ export default function PRForm() {
     console.log(formData);
 
     if (!entity.requestDate) {
-      const today = new Date();
-      entity.requestDate = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+      entity.requestDate = toInputDate(new Date());
     }
 
     entity.children = (formData.children || []).map((child) => ({

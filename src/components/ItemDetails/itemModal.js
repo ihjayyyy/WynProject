@@ -13,7 +13,7 @@ import Select from '../ui/Select/Select';
 import inputStyles from '../ui/Input/Input.module.scss';
 import { useConfirmModal } from "@/app/contextProviders/confirmModalContext";
 
-const ItemModal = ({ headerLabel, mode = "new", itemIndex = -1, isOpen, onClose, fields, onItemRemove, closeOnOutsideClick = true, confirmOnClose = false }) => {
+const ItemModal = ({ headerLabel, mode = "new", itemIndex = -1, isOpen, onClose, fields, onItemRemove, closeOnOutsideClick = false, confirmOnClose = false }) => {
 
   const confirmModal = useConfirmModal();
 

@@ -2,18 +2,19 @@
 
 import React, { useMemo, useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { FiEdit2, FiEye, FiPackage } from 'react-icons/fi';
+import { FiEdit2, FiEye, FiPackage, FiStar } from 'react-icons/fi';
 import * as Yup from 'yup';
 import DropdownAction from '../ui/DropdownAction/DropdownAction';
 import Landing from '../ui/Landing/Landing';
 import ItemModal from '../ItemDetails/itemModal';
+import ConfirmModal from '../ui/ConfirmModal/ConfirmModal';
+import Select from '../ui/Select/Select';
 import { byTypeMaterials } from '../../services/Materials';
 import { getRacks } from '../../services/Rack';
-import { createMaterialInventory } from '../../services/MaterialInventory';
+import { createMaterialInventory, getRacksByMaterialId, setDefaultMaterialInventory } from '../../services/MaterialInventory';
 import { useToast } from '../ui/Toast/Toast';
 
 const baseColumns = [
-  // { header: 'Id', key: 'id' },,
   { header: 'Code', key: 'code' },
   { header: 'Name', key: 'name' },
   { header: 'UOM', key: 'uom' },
@@ -32,6 +33,13 @@ export default function MaterialsLanding() {
   const [materials, setMaterials] = useState([]);
   const [racks, setRacks] = useState([]);
   const [inventoryModal, setInventoryModal] = useState({ open: false, material: null });
+
+  // Set Default modal state
+  const [defaultModal, setDefaultModal] = useState({ open: false, material: null });
+  const [defaultRackOptions, setDefaultRackOptions] = useState([]);
+  const [selectedInventoryId, setSelectedInventoryId] = useState('');
+  const [defaultSaving, setDefaultSaving] = useState(false);
+  const [defaultLoading, setDefaultLoading] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -63,6 +71,55 @@ export default function MaterialsLanding() {
     [racks]
   );
 
+  // Open Set Default modal and load racks for that material
+  const openDefaultModal = async (item) => {
+    setDefaultModal({ open: true, material: item });
+    setSelectedInventoryId('');
+    setDefaultRackOptions([]);
+    setDefaultLoading(true);
+    try {
+      const res = await getRacksByMaterialId(item.id);
+      if (!res?.error) {
+        const opts = (res.data || []).map((r) => ({
+          label: `${r.rack?.warehouseName ? r.rack.warehouseName + ' - ' : ''}${r.rack?.name || ''}${r.isDefault ? ' (Default)' : ''}`,
+          value: String(r.id),
+        }));
+        setDefaultRackOptions(opts);
+      } else {
+        toast.error('Failed to load racks for this material.');
+      }
+    } catch (e) {
+      toast.error('Failed to load racks for this material.');
+    } finally {
+      setDefaultLoading(false);
+    }
+  };
+
+  const closeDefaultModal = () => {
+    setDefaultModal({ open: false, material: null });
+    setSelectedInventoryId('');
+    setDefaultRackOptions([]);
+  };
+
+  const applySetDefault = async () => {
+    if (defaultSaving) return;
+    if (!selectedInventoryId) {
+      toast.error('Please select a rack / inventory record.');
+      return;
+    }
+    try {
+      setDefaultSaving(true);
+      const res = await setDefaultMaterialInventory(Number(selectedInventoryId));
+      if (res?.error) throw new Error(res.error);
+      toast.success('Default inventory set successfully.');
+      closeDefaultModal();
+    } catch (err) {
+      toast.error('Failed to set default inventory.');
+    } finally {
+      setDefaultSaving(false);
+    }
+  };
+
   const inventoryFields = useMemo(() => {
     if (!inventoryModal.material) return [];
     const mat = inventoryModal.material;
@@ -87,6 +144,7 @@ export default function MaterialsLanding() {
       { key: 'view', label: 'View', icon: <FiEye size={14} />, onClick: (item) => router.push(`/materialsSettings/materials/materialsForm?id=${item.id}`) },
       { key: 'edit', label: 'Edit', icon: <FiEdit2 size={14} />, onClick: (item) => router.push(`/materialsSettings/materials/materialsForm?id=${item.id}&mode=edit`) },
       { key: 'createInventory', label: 'Create Inventory', icon: <FiPackage size={14} />, onClick: (item) => setInventoryModal({ open: true, material: item }) },
+      { key: 'setDefault', label: 'Set Default', icon: <FiStar size={14} />, onClick: openDefaultModal },
     ],
     [router]
   );
@@ -133,6 +191,7 @@ export default function MaterialsLanding() {
         width="320px"
         filterFn={filterFn}
       />
+
       <ItemModal
         headerLabel="Create Inventory"
         mode="new"
@@ -162,6 +221,36 @@ export default function MaterialsLanding() {
           }
         }}
       />
+
+      <ConfirmModal
+        open={defaultModal.open}
+        title="Set Default Inventory"
+        message="Select the rack / inventory record to set as the default for this material."
+        confirmText={defaultSaving ? 'Saving...' : 'Set Default'}
+        confirmVariant="primary"
+        onConfirm={applySetDefault}
+        onCancel={closeDefaultModal}
+      >
+        <div style={{ marginBottom: '12px' }}>
+          {defaultLoading ? (
+            <div style={{ fontSize: '13px', color: '#64748b' }}>Loading racks...</div>
+          ) : (
+            <Select
+              value={selectedInventoryId}
+              onChange={(e) => setSelectedInventoryId(e.target.value)}
+              options={defaultRackOptions}
+              placeholder="Select a rack..."
+              searchable
+              disabled={defaultSaving}
+            />
+          )}
+          {defaultModal.material?.name ? (
+            <div style={{ marginTop: '8px', fontSize: '12px', color: '#64748b' }}>
+              Material: {defaultModal.material.name}
+            </div>
+          ) : null}
+        </div>
+      </ConfirmModal>
     </>
   );
 }

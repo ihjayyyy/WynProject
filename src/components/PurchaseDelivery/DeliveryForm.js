@@ -10,6 +10,7 @@ import EntityStyle from '../EntityForm/EntityContainer.module.scss';
 import Button from '../ui/Button/Button';
 import { getSuppliers } from '@/services/Supplier';
 import { getMaterials } from '@/services/Materials';
+import { getRacksByMaterialId } from '@/services/MaterialInventory';
 import { Get as GetPO, GetOrdersBySupplier } from '@/services/PurchaseOrder';
 import { InitialData, Create, Get, Update, ConfirmDelivery, printDelivery_byId } from '@/services/PurchaseDelivery';
 import { useToast } from '../ui/Toast/Toast';
@@ -60,24 +61,59 @@ export default function PurchaseDeliveryForm() {
     }
   };
 
+  // Helper: fetch racks for a material and pick default/first rack (sorted by code)
+  const resolveRackForMaterial = async (materialId) => {
+    try {
+      const res = await getRacksByMaterialId(materialId);
+      const rackOptions = (Array.isArray(res?.data) ? res.data : [])
+        .map((entry) => ({
+          value: entry?.rack?.id || 0,
+          code: entry?.rack?.code || '',
+          name: entry?.rack?.name || '',
+          isDefault: Boolean(entry?.isDefault),
+        }))
+        .filter((r) => Number(r.value) > 0)
+        .sort((a, b) => String(a.code).localeCompare(String(b.code)));
+
+      const defaultRack = rackOptions.find((r) => r.isDefault) || null;
+      const chosen = defaultRack || rackOptions[0] || null;
+
+      return {
+        rackId: chosen ? chosen.value : 0,
+        rackCode: chosen ? chosen.code : '',
+        rackName: chosen ? chosen.name : '',
+      };
+    } catch (error) {
+      return { rackId: 0, rackCode: '', rackName: '' };
+    }
+  };
+
   const loadOrders = async (orderId) => {
     const res = await GetPO(orderId);
 
-    const children = res.data.children.map((d) => ({
-      id: 0,
-      parentId: 0,
-      poChildId: d.id,
-      materialId: d.materialId,
-      rackId: 0,
-      code: d.code,
-      name: d.name,
-      uom: d.uom,
-      orderQuantity: Number(d.quantity) || 0,      
-      quantity: Number(d.orderBalance) || 0,        
-      previousBalance: Number(d.orderBalance) || 0, 
-      remainingBalance: 0,
-      remarks: '',
-    }));
+    const children = await Promise.all(
+      res.data.children.map(async (d) => {
+        const { rackId, rackCode, rackName } = await resolveRackForMaterial(d.materialId);
+
+        return {
+          id: 0,
+          parentId: 0,
+          poChildId: d.id,
+          materialId: d.materialId,
+          rackId,
+          rackCode,
+          rackName,
+          code: d.code,
+          name: d.name,
+          uom: d.uom,
+          orderQuantity: Number(d.quantity) || 0,
+          quantity: Number(d.orderBalance) || 0,
+          previousBalance: Number(d.orderBalance) || 0,
+          remainingBalance: 0,
+          remarks: '',
+        };
+      })
+    );
 
     setForm((prev) => ({ ...prev, children }));
     setTableData((prev) => ({ ...prev, items: children }));

@@ -193,6 +193,37 @@ async function updateMaterialInventoryQuantity(id, quantityChange) {
   }
 }
 
+async function setDefaultMaterialInventory(inventoryId) {
+  try {
+    const url = `${API_BASE_URL}/SetDefault/${inventoryId}`;
+
+    const res = await fetch(url, {
+      method: 'PUT',
+      headers: {
+        Accept: '*/*',
+      },
+    });
+
+    let data = null;
+
+    try {
+      data = await res.json();
+    } catch {
+      data = await res.text();
+    }
+
+    return {
+      data,
+      error: null,
+    };
+  } catch (error) {
+    return {
+      data: null,
+      error: error?.message || error,
+    };
+  }
+}
+
 export {
   getMaterialInventories,
   getMaterialInventory,
@@ -202,6 +233,7 @@ export {
   createMaterialInventory,
   updateMaterialInventory,
   updateMaterialInventoryQuantity,
+  setDefaultMaterialInventory,
   generateMaterialInventoryReport,
   printMaterialReport_byId,
 };
@@ -215,6 +247,7 @@ const MaterialInventoryService = {
   createMaterialInventory,
   updateMaterialInventory,
   updateMaterialInventoryQuantity,
+  setDefaultMaterialInventory,
   generateMaterialInventoryReport,
   printMaterialReport_byId,
 };
