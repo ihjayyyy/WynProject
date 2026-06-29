@@ -2,7 +2,7 @@
 
 import React, { useMemo, useState, useEffect, useContext } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { FiList, FiEdit2, FiXCircle, FiArchive, FiPrinter } from 'react-icons/fi';
+import { FiList, FiEdit2, FiXCircle, FiArchive, FiPrinter, FiCheckCircle } from 'react-icons/fi';
 import DetailsTable from '../ItemDetails/DetailsTable';
 import EntityForm from '../EntityForm/EntityForm';
 import { useToast } from '../ui/Toast/Toast';
@@ -231,6 +231,25 @@ export default function CollectionForm() {
     );
   };
 
+  const handleMarkAsPaidCollection = () => {
+    confirmModal.show(
+      'Mark as Paid',
+      `Are you sure you want to mark collection "${collection?.collectionNo || collection?.id}" as paid?`,
+      'Confirm',
+      'primary',
+      () => async () => {
+        const { error } = await CollectionService.markCollectionAsPaid(collectionId);
+        if (error) {
+          toast.error('Failed to mark collection as paid.');
+        } else {
+          toast.success('Collection marked as paid.');
+          setCollection((prev) => ({ ...prev, status: 'Paid' }));
+          setMode('view');
+        }
+      }
+    );
+  };
+
   const handleCloseCollection = () => {
     confirmModal.show(
       'Close Collection',
@@ -324,6 +343,10 @@ export default function CollectionForm() {
         <div style={{ display: 'flex', gap: 8 }}>
           {isReadOnly && collection?.status?.toLowerCase() === 'draft' && isAllowed(PageName, 'w') && (
             <Button variant="primary" onClick={() => setMode('edit')}>Edit</Button>
+          )}
+          {/* Mark as Paid - shown only when status is draft and totalAmountPaid is not 0 */}
+          {isAllowed(PageName, 'w') && collectionId !== 0 && (collection?.status || '').toLowerCase() === 'draft' && (Number(collection?.totalAmountPaid) || 0) !== 0 && (
+            <Button variant="primary" icon={<FiCheckCircle />} onClick={handleMarkAsPaidCollection}>Mark as Paid</Button>
           )}
           {/* Cancel Collection - shown when not already cancelled */}
           {isAllowed(PageName, 'w') && collectionId !== 0 && (collection?.status || '').toLowerCase() !== 'cancelled' && (

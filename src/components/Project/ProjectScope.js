@@ -3,11 +3,12 @@ import DataTable from '../ui/DataTable/DataTable';
 import SearchBar from '../ui/SearchBar/SearchBar';
 import styles from './ProjectScope.module.scss';
 import Button from '../ui/Button/Button';
-import { FiPlus, FiEdit2, FiTrash2, FiCheckCircle, FiPrinter } from 'react-icons/fi';
+import { FiPlus, FiEdit2, FiTrash2, FiCheckCircle, FiPrinter, FiList } from 'react-icons/fi';
 import Input from '../ui/Input/Input';
 import ProjectScopeModal from './ProjectScopeModal';
 import ProjectMaterialModal from './ProjectMaterialModal';
 import ConfirmModal from '../ui/ConfirmModal/ConfirmModal';
+import ProjectBOMModal from './ProjectBOMModal';
 import { getByProjectId, createProjectScope, updateProjectScope } from '../../services/ProjectScope';
 import { updateCompletedQuantity } from '../../services/ProjectMaterial';
 import { printCompletion_byId } from '@/services/Project';
@@ -108,7 +109,7 @@ function buildScopePayload({
   };
 }
 
-export default function ProjectScope({ projectId = 0, editable = true, projectStatus = '', onCompletedQtyUpdated }) {
+export default function ProjectScope({ projectId = 0, editable = true, projectStatus = '', projectLabel = '', onCompletedQtyUpdated }) {
   const isOngoing = String(projectStatus || '').toUpperCase() === 'ONGOING';
 
   const [isCompletedQtyModalOpen, setIsCompletedQtyModalOpen] = useState(false);
@@ -126,6 +127,7 @@ export default function ProjectScope({ projectId = 0, editable = true, projectSt
   const [confirmTarget, setConfirmTarget] = useState(null);
   const [isApplyLaborConfirmOpen, setIsApplyLaborConfirmOpen] = useState(false);
   const [pendingScopeUpdate, setPendingScopeUpdate] = useState(null);
+  const [isBomModalOpen, setIsBomModalOpen] = useState(false);
 
   const [scopesList, setScopesList] = useState([]);
 
@@ -339,6 +341,15 @@ export default function ProjectScope({ projectId = 0, editable = true, projectSt
         <h2 className={styles.title}>Scope of Work</h2>
         <div className={styles.headerActions}>
           <SearchBar placeholder="Search scope of work" value={searchTerm} onChange={setSearchTerm} showFilter={false} showButton={editable} buttonLabel="Add Scope" handleOnClick={() => { setScopeEditing(null); setIsScopeModalOpen(true); }} width="320px" />
+
+            <Button
+              variant="secondary"
+              icon={<FiList size={14} />}
+              onClick={() => setIsBomModalOpen(true)}
+              disabled={!projectId}
+            >
+              Show Project BOM
+            </Button>
 
             {String(projectStatus || '').toUpperCase() !== 'NOTSTARTED' && (
               <PrintCompletionButton />
@@ -605,6 +616,13 @@ export default function ProjectScope({ projectId = 0, editable = true, projectSt
         setIsConfirmOpen(false);
         setConfirmTarget(null);
       }} onCancel={() => { setIsConfirmOpen(false); setConfirmTarget(null); }} />
+
+      <ProjectBOMModal
+        open={isBomModalOpen}
+        projectId={projectId}
+        projectLabel={projectLabel}
+        onClose={() => setIsBomModalOpen(false)}
+      />
     </div>
   );
 }
