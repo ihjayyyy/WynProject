@@ -103,7 +103,10 @@ export const ItemsFields = (materials, pr) => [
     name: 'material',
     label: 'Material',
     type: 'select',
-    options: materials.map(({ id, name }) => ({ value: id, label: name })),
+    options: materials.map(({ id, name, code }) => ({
+  value: id,
+  label: `${code ? `[${code}] ` : ''}${name || ''}`.trim(),
+})),
     readonly: false,
     initialvalue: '',
     hydrateOnOpen: true,

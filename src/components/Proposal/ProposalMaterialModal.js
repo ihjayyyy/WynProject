@@ -569,12 +569,10 @@ export default function ProposalMaterialModal({
                     m.id != null &&
                     m.id !== ''
                 )
-                .map((m) => ({
-                  value: String(m.id),
-                  label: `${
-                    m.name || m.code || ''
-                  }`.trim(),
-                })),
+              .map((m) => ({
+                value: String(m.id),
+                label: `${m.code ? `[${m.code}] ` : ''}${m.name || ''}`.trim(),
+              })),
 
         validator:
           !isService && categorySelected

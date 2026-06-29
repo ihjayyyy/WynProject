@@ -113,9 +113,12 @@ export default function ToolsInventoryForm() {
     }
   };
 
-  const toolOptions = useMemo(() => {
-    return (materials || []).map((m) => ({ value: m.id, label: `${m.code || m.id} — ${m.name}` }));
-  }, [materials]);
+const toolOptions = useMemo(() => {
+  return (materials || []).map((m) => ({
+    value: m.id,
+    label: `${m.code ? `[${m.code}] ` : ''}${m.name || ''}`.trim(),
+  }));
+}, [materials]);
 
   useEffect(() => {
     let cancelled = false;

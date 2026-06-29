@@ -190,7 +190,10 @@ export const POItemsFields = (materials, po) => [
     name: 'materialId',
     label: 'Material',
     type: 'select',
-    options: materials.map(({ id, name }) => ({ value: id, name: name })),
+    options: materials.map(({ id, name, code }) => ({
+  value: id,
+  label: `${code ? `[${code}] ` : ''}${name || ''}`.trim(),
+})),
     readonly: false,
     initialvalue: '',
     validator: Yup.string().required(`Material is required`),

@@ -239,6 +239,8 @@ export default function SalesBillingForm() {
       dueDate: ensureISODate(billing.dueDate || entity.dueDate),
       amount: totalIncluded,
       vat: totalVAT,
+        balance: totalIncluded,
+
     };
     let res;
     if (!updatedBilling.id || updatedBilling.id === 0) {

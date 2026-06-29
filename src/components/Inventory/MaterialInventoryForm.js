@@ -113,9 +113,12 @@ export default function MaterialInventoryForm() {
     }
   };
 
-  const materialOptions = useMemo(() => {
-    return (materials || []).map((m) => ({ label: `${m.code ? m.code + ' - ' : ''}${m.name}`, value: m.id }));
-  }, [materials]);
+const materialOptions = useMemo(() => {
+  return (materials || []).map((m) => ({
+    label: `${m.code ? `[${m.code}] ` : ''}${m.name || ''}`.trim(),
+    value: m.id,
+  }));
+}, [materials]);
 
   useEffect(() => {
     let cancelled = false;

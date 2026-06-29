@@ -211,7 +211,10 @@ export default function ProjectMaterialModal({ open, initial = {}, onCancel, onC
         ? [{ value: '__loading__', label: 'Loading materials...' }]
         : materials
             .filter((m) => m && m.id != null && m.id !== '')
-            .map((m) => ({ value: String(m.id), label: `${m.name || m.code || ''}`.trim() })),
+            .map((m) => ({
+  value: String(m.id),
+  label: `${m.code ? `[${m.code}] ` : ''}${m.name || ''}`.trim(),
+})),
       validator: !isService && categorySelected ? Yup.string().required('Material is required') : Yup.string().notRequired(),
       onChange: (item, updateField, itemFields, nextValue) => {
         const next = applyMaterialSelect(nextValue, itemFields);

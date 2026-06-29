@@ -50,10 +50,10 @@ export default function AssemblyMaterialModal({ open, initial = {}, onCancel, on
         label: 'Material',
         type: 'select',
         value: form.materialId ? String(form.materialId) : '',
-        options: materials.map((m) => ({
-          value: String(m.id),
-          label: `${m.name || m.code || ''}`.trim(),
-        })),
+options: materials.map((m) => ({
+  value: String(m.id),
+  label: `${m.code ? `[${m.code}] ` : ''}${m.name || ''}`.trim(),
+})),
         validator: Yup.string().required('Material is required'),
         onChange: (item, updateField, itemFields, nextValue) => {
           const mat = materials.find((m) => String(m.id) === String(nextValue));

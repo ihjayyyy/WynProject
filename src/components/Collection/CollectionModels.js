@@ -99,7 +99,14 @@ export const CollectionItemFields = (billings = [], withholdingTaxPercent = 0) =
       if (found) {
         updateField('name', found.name || '');
         updateField('code', found.code || '');
-        const amount = Number(found.balance) || 0;
+
+        // Some billings report balance as 0 even though they are still unpaid
+        // (e.g. balance hasn't been computed/synced on the backend yet).
+        // Fall back to the billing's amount in that case so the field isn't
+        // silently autofilled with 0.
+        const rawBalance = Number(found.balance) || 0;
+        const rawAmount = Number(found.amount) || 0;
+        const amount = rawBalance > 0 ? rawBalance : rawAmount;
         updateField('amount', amount);
 
         // Calculate amountPaid so that balance becomes zero after withholding

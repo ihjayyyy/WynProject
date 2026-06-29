@@ -162,7 +162,12 @@ export const ItemsFields = (materialOptions = [], isWarehouseToProject = false, 
     name: 'materialId',
     label: 'Material',
     type: 'select',
-    options: Array.isArray(materialOptions) ? materialOptions : [],
+    options: Array.isArray(materialOptions)
+      ? materialOptions.map((m) => ({
+          ...m,
+          label: `${m.code ? `[${m.code}] ` : ''}${m.name || m.label || ''}`.trim(),
+        }))
+      : [],
     validator: Yup.string().required('Material is required'),
     onChange: async (item, updateField, fields, nextValue) => {
       const material = Array.isArray(materialOptions)
