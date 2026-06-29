@@ -218,13 +218,16 @@ export const ItemsFields = (materialOptions = [], isWarehouseToProject = false, 
   { name: 'code', label: 'Code', type: 'text', hidden: true },
   { name: 'name', label: 'Name', type: 'text', hidden: true },
     // Rack selection and display-only fields
-  { name: 'rackId', label: 'Rack', span: 'span2', type: 'select', options: [], searchable: true,
-    onChange: (item, updateField, fields) => {
-      const rackField = (fields || []).find((f) => f.name === 'rackId');
-      const selected = rackField && Array.isArray(rackField.options) ? rackField.options.find(o => String(o.value) === String(item.value)) : null;
-      updateField('rackQuantity', selected ? Number(selected.quantity || 0) : 0);
-    }
-  },
+{ name: 'rackId', label: 'Rack', span: 'span2', type: 'select', options: [], searchable: true,
+  onChange: (item, updateField, fields) => {
+    const rackField = (fields || []).find((f) => f.name === 'rackId');
+    const selected = rackField && Array.isArray(rackField.options)
+      ? rackField.options.find(o => String(o.value) === String(item.value))
+      : null;
+    updateField('rackQuantity', selected ? Number(selected.quantity || 0) : 0);
+    updateField('quantity', 1); // ← reset quantity on rack change
+  }
+},
   {
     name: 'quantity',
     label: 'Quantity',

@@ -807,11 +807,74 @@ export default function ProposalMaterialModal({
         validator: Yup.number().notRequired(),
       },
 
-      {
-        name: 'laborCost',
-        label: 'Labor Cost (Editable)',
+            {
+        name: 'laborPercentage',
+        label: 'Labor Percentage (%)',
         type: 'number',
 
+        value:
+          Number(
+            calculatedForm.laborPercentage
+          ) || 0,
+
+        validator: Yup.number()
+          .min(0)
+          .max(100)
+          .notRequired(),
+
+        onChange: (
+          item,
+          updateField,
+          itemFields,
+          nextValue
+        ) => {
+          const pct =
+            Number(nextValue) || 0;
+
+          const matCost =
+            Number(
+              itemFields.find(
+                (f) =>
+                  f.name ===
+                  'materialCost'
+              )?.value
+            ) || 0;
+
+          const lab = Number(
+            (
+              (matCost * pct) /
+              100
+            ).toFixed(2)
+          );
+
+          const total = Number(
+            (matCost + lab).toFixed(2)
+          );
+
+          updateField('laborCost', lab);
+
+          updateField(
+            'totalAmount',
+            total
+          );
+
+          updateField(
+            'extendedCost',
+            total
+          );
+
+          updateField(
+            'totalPrice',
+            total
+          );
+        },
+      },
+      
+      {
+        name: 'laborCost',
+        label: 'Labor Cost',
+        type: 'number',
+        readonly: true,
         value:
           Number(calculatedForm.laborCost) || 0,
 
@@ -981,68 +1044,6 @@ export default function ProposalMaterialModal({
         validator: Yup.string().notRequired(),
       },
 
-      {
-        name: 'laborPercentage',
-        label: 'Labor Percentage (%)',
-        type: 'number',
-
-        value:
-          Number(
-            calculatedForm.laborPercentage
-          ) || 0,
-
-        validator: Yup.number()
-          .min(0)
-          .max(100)
-          .notRequired(),
-
-        onChange: (
-          item,
-          updateField,
-          itemFields,
-          nextValue
-        ) => {
-          const pct =
-            Number(nextValue) || 0;
-
-          const matCost =
-            Number(
-              itemFields.find(
-                (f) =>
-                  f.name ===
-                  'materialCost'
-              )?.value
-            ) || 0;
-
-          const lab = Number(
-            (
-              (matCost * pct) /
-              100
-            ).toFixed(2)
-          );
-
-          const total = Number(
-            (matCost + lab).toFixed(2)
-          );
-
-          updateField('laborCost', lab);
-
-          updateField(
-            'totalAmount',
-            total
-          );
-
-          updateField(
-            'extendedCost',
-            total
-          );
-
-          updateField(
-            'totalPrice',
-            total
-          );
-        },
-      },
     ];
   }, [
     calculatedForm,
