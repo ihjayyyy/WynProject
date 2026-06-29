@@ -7,8 +7,7 @@ import styles from './ProjectDetails.module.scss';
 import Button from '../ui/Button/Button';
 import Input from '../ui/Input/Input';
 
-export default function ProjectFinanceTab({ projectId, project, editable }) {
-  const router = useRouter();
+export default function ProjectFinanceTab({ projectId, project, projectStatus, editable }) {  const router = useRouter();
   const confirmModal = useConfirmModal();
   const [finance, setFinance] = useState(null);
   const [editing, setEditing] = useState(false);
@@ -146,7 +145,11 @@ export default function ProjectFinanceTab({ projectId, project, editable }) {
     <div className={styles.panelHeader}>
         <h3>Finance</h3>
         <div className={styles.panelActions}>
-        {!editing && finance && !finance.hasDownpayment && Number(finance.downPayment) > 0 && (
+        {!editing &&
+          projectStatus === 'ONGOING' &&
+          finance &&
+          !finance.hasDownpayment &&
+          Number(finance.downPayment) > 0 && (
           <Button className="md" onClick={handleGenerateDownpaymentBilling}>
             Generate Downpayment Billing
           </Button>

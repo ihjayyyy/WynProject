@@ -367,8 +367,15 @@ export default function ProjectDetails() {
           </div>
         ) : (
           <div className={styles.panel}>
-              {activeTab === 'Finance' && <ProjectFinanceTab projectId={project.id} project={project} editable={canWrite && tabEditable('Finance')} />}
-              {activeTab === 'Project Scope & Materials' && <ProjectScope
+{activeTab === 'Finance' && (
+  <ProjectFinanceTab
+    projectId={project.id}
+    project={project}
+    projectStatus={projectStatus}
+    editable={canWrite && tabEditable('Finance')}
+  />
+)}
+         {activeTab === 'Project Scope & Materials' && <ProjectScope
                 projectId={project.id}
                 editable={canWrite && tabEditable('Project Scope & Materials')}
                 projectStatus={projectStatus}
