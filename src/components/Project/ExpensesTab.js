@@ -94,7 +94,7 @@ export default function ExpensesTab({ projectId = 0, editable = true, projectSta
         label: 'Reference Number',
         type: 'text',
         value: record.referenceNumber || '',
-        validator: Yup.number().notRequired(),
+        validator: Yup.string().notRequired(),
       },
             {
         name: 'amount',
