@@ -34,16 +34,26 @@ async function getCollections() {
 
 async function getCollectionById(id) {
   if (!id) return { data: null, error: 'Missing id' };
+
   try {
     const url = `${API_BASE_URL}/${id}`;
+
     const res = await fetch(url, {
       method: 'GET',
       headers: { 'Content-Type': 'application/json' },
     });
+
     const json = await res.json();
-    return { data: json && json.value ? json.value : json, error: null };
+
+    return {
+      data: json && json.value ? json.value : json,
+      error: null,
+    };
   } catch (error) {
-    return { data: null, error: error?.message || error };
+    return {
+      data: null,
+      error: error?.message || error,
+    };
   }
 }
 
@@ -54,71 +64,139 @@ async function createCollection(payload) {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload),
     });
+
     const json = await res.json();
-    return { data: json, error: null };
+
+    return {
+      data: json,
+      error: null,
+    };
   } catch (error) {
-    return { data: null, error: error?.message || error };
+    return {
+      data: null,
+      error: error?.message || error,
+    };
   }
 }
 
 async function updateCollection(id, payload) {
   try {
     const url = `${API_BASE_URL}/${id}`;
+
     const res = await fetch(url, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload),
     });
+
     const json = await res.json();
-    return { data: json, error: null };
+
+    return {
+      data: json,
+      error: null,
+    };
   } catch (error) {
-    return { data: null, error: error?.message || error };
+    return {
+      data: null,
+      error: error?.message || error,
+    };
   }
 }
 
 async function cancelCollection(salesCollectionId) {
   try {
     const url = `${API_BASE_URL}/${salesCollectionId}/cancel`;
+
     const res = await fetch(url, {
       method: 'PUT',
       headers: { Accept: '*/*' },
     });
 
     let json = null;
+
     try {
       json = await res.json();
     } catch {
       json = null;
     }
 
-    return { data: json, error: null };
+    return {
+      data: json,
+      error: null,
+    };
   } catch (error) {
-    return { data: null, error: error?.message || error };
+    return {
+      data: null,
+      error: error?.message || error,
+    };
   }
 }
 
 async function closeCollection(salesCollectionId) {
   try {
     const url = `${API_BASE_URL}/${salesCollectionId}/close`;
+
     const res = await fetch(url, {
       method: 'PUT',
       headers: { Accept: '*/*' },
     });
 
     let json = null;
+
     try {
       json = await res.json();
     } catch {
       json = null;
     }
 
-    return { data: json, error: null };
+    return {
+      data: json,
+      error: null,
+    };
   } catch (error) {
-    return { data: null, error: error?.message || error };
+    return {
+      data: null,
+      error: error?.message || error,
+    };
   }
 }
+
+async function markCollectionAsPaid(salesCollectionId) {
+  try {
+    const url = `${API_BASE_URL}/MarkAsPaid/${salesCollectionId}`;
+
+    const res = await fetch(url, {
+      method: 'PUT',
+      headers: { Accept: '*/*' },
+    });
+
+    let json = null;
+
+    try {
+      json = await res.json();
+    } catch {
+      json = null;
+    }
+
+    return {
+      data: json,
+      error: null,
+    };
+  } catch (error) {
+    return {
+      data: null,
+      error: error?.message || error,
+    };
+  }
+}
+
 async function printSalesCollection_byId(id) {
-  if (!id) return { data: null, error: 'Missing id' };
+  if (!id) {
+    return {
+      data: null,
+      error: 'Missing id',
+    };
+  }
 
   try {
     const url = `${API_BASE_URL}/pdf/${id}`;
@@ -139,7 +217,10 @@ async function printSalesCollection_byId(id) {
 
 async function getCollectionsByBillingId(billingId) {
   if (!billingId) {
-    return { data: null, error: 'Missing billingId' };
+    return {
+      data: null,
+      error: 'Missing billingId',
+    };
   }
 
   try {
@@ -172,6 +253,7 @@ export {
   updateCollection,
   cancelCollection,
   closeCollection,
+  markCollectionAsPaid,
   printSalesCollection_byId,
 };
 
@@ -183,6 +265,7 @@ export default {
   updateCollection,
   cancelCollection,
   closeCollection,
+  markCollectionAsPaid,
   INITIAL_COLLECTION,
   printSalesCollection_byId,
 };

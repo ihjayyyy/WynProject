@@ -3,7 +3,7 @@
 import React, { useMemo, useState, useEffect, useCallback } from 'react';
 import CollectionService, { printSalesCollection_byId } from '@/services/Collection';
 import { useRouter } from 'next/navigation';
-import { FiEdit2, FiEye, FiXCircle, FiArchive, FiFileText } from 'react-icons/fi';
+import { FiEdit2, FiEye, FiXCircle, FiArchive, FiFileText, FiCheckCircle } from 'react-icons/fi';
 import DropdownAction from '../ui/DropdownAction/DropdownAction';
 import Landing from '../ui/Landing/Landing';
 import { useConfirmModal } from '@/app/contextProviders/confirmModalContext';
@@ -54,6 +54,11 @@ export default function CollectionLanding() {
     });
   }, []);
 
+  const refetchCollections = useCallback(async () => {
+    const res = await CollectionService.getCollections();
+    if (!res?.error) setCollections(Array.isArray(res.data) ? res.data : (res.data ? [res.data] : []));
+  }, []);
+
   const handleCancel = useCallback((item) => {
     confirmModal.show(
       'Cancel Collection',
@@ -82,15 +87,31 @@ export default function CollectionLanding() {
         const { error } = await CollectionService.closeCollection(item.id);
         if (!error) {
           toast.success('Collection closed.');
-          // refetch collections
-          const res = await CollectionService.getCollections();
-          if (!res?.error) setCollections(Array.isArray(res.data) ? res.data : (res.data ? [res.data] : []));
+          await refetchCollections();
         } else {
           toast.error('Failed to close collection.');
         }
       }
     );
-  }, [confirmModal, toast]);
+  }, [confirmModal, toast, refetchCollections]);
+
+  const handleMarkAsPaid = useCallback((item) => {
+    confirmModal.show(
+      'Mark as Paid',
+      `Are you sure you want to mark collection "${item.collectionNo || item.id}" as paid?`,
+      'Confirm',
+      'primary',
+      () => async () => {
+        const { error } = await CollectionService.markCollectionAsPaid(item.id);
+        if (!error) {
+          toast.success('Collection marked as paid.');
+          await refetchCollections();
+        } else {
+          toast.error('Failed to mark collection as paid.');
+        }
+      }
+    );
+  }, [confirmModal, toast, refetchCollections]);
 
   const actionItems = useMemo(
     () => [
@@ -100,13 +121,18 @@ export default function CollectionLanding() {
         return s === 'billed' || s === 'cancelled' || s === 'closed';
       } },
       { key: 'viewpdf', label: 'Print Invoice', icon: <FiFileText size={14} />, onClick: (item) => printSalesCollection_byId(item.id) },
+      { key: 'markaspaid', label: 'Mark as Paid', icon: <FiCheckCircle size={14} />, onClick: handleMarkAsPaid, hidden: (item) => {
+        const s = (item.status || '').toString().toLowerCase();
+        const totalPaid = Number(item?.totalAmountPaid) || 0;
+        return s !== 'draft' || totalPaid === 0;
+      } },
       { key: 'cancel', label: 'Cancel Collection', icon: <FiXCircle size={14} />, onClick: handleCancel, hidden: (item) => (item.status || '').toString().toLowerCase() === 'cancelled' },
       { key: 'close', label: 'Close Collection', icon: <FiArchive size={14} />, onClick: handleClose, hidden: (item) => {
         const s = (item.status || '').toString().toLowerCase();
         return s !== 'cancelled';
       } },
     ],
-    [router, handleCancel, handleClose]
+    [router, handleCancel, handleClose, handleMarkAsPaid]
   );
 
   const columns = useMemo(
