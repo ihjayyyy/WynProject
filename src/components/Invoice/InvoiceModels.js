@@ -138,7 +138,7 @@ export const TableColumns = [
     key: 'quantity',
     align: 'right',
     width: '80px',
-    render: (it) => it.quantity.toFixed(0) + ' ' + it.uom,
+    render: (it) => Number(it.quantity).toFixed(0) + ' ' + it.uom,
   },
   {
     header: 'Discount',
