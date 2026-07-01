@@ -20,8 +20,6 @@ const columns = [
   { header: 'Code', key: 'code', width: '160px' },
   { header: 'Name', key: 'name', width: '160px' },
   { header: 'Quantity', key: 'quantity', align: 'right', width: '100px' },
-  { header: 'Updated By', key: 'updatedBy', width: '120px', render: (it) => it.updatedBy || '-' },
-  { header: 'Updated At', key: 'updatedAt', width: '160px', render: (it) => formatDateTime(it.updatedAt) },
 ];
 
 export default function ProjectBOMModal({ open, projectId, projectLabel = '', onClose }) {

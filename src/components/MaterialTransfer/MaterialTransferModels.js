@@ -162,6 +162,7 @@ export const ItemsFields = (materialOptions = [], isWarehouseToProject = false, 
     name: 'materialId',
     label: 'Material',
     type: 'select',
+    searchable: true,
     options: Array.isArray(materialOptions)
       ? materialOptions.map((m) => ({
           ...m,

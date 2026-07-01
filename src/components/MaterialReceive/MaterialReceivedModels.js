@@ -31,43 +31,67 @@ export const TableColumns = [
     width: '100px',
     render: (it) => (Number(it.receivedQuantity) || 0).toFixed(0),
   },
-  { header: 'Remarks', key: 'remarks', width: '220px', render: (it) => it.remarks || '' },
+  { header: 'Remarks', key: 'remarks', width: '220px', render: (it) => it.existingRemarks || it.remarks || '' },
 ];
 
-export const ItemsFields = () => ([
-  { name: 'id', label: 'id', type: 'number', hidden: true, initialvalue: 0 },
-  { name: 'parentId', label: 'parentId', type: 'number', hidden: true, initialvalue: 0 },
+// status: the current MaterialTransfer status (e.g. transferData?.status).
+// When it's "PartiallyReceived", remarks become mandatory on this receive pass,
+// and any remarks left over from a previous partial receive are shown
+// read-only under the input via `description`, so the user's new text
+// gets appended rather than overwriting history.
+export const ItemsFields = (status) => {
+  const isPartiallyReceived = String(status || '').toLowerCase() === 'partiallyreceived';
 
-  // Carried over from the original transfer — fixed already, not editable here
-  { name: 'materialId', label: 'materialId', type: 'number', hidden: true, initialvalue: 0 },
-  { name: 'code', label: 'Code', type: 'text', hidden: true },
-  { name: 'name', label: 'Name', type: 'text', hidden: true },
+  return [
+    { name: 'id', label: 'id', type: 'number', hidden: true, initialvalue: 0 },
+    { name: 'parentId', label: 'parentId', type: 'number', hidden: true, initialvalue: 0 },
 
-  { name: 'rackId', label: 'rackId', type: 'number', hidden: true, initialvalue: 0 },
-  { name: 'rackCode', label: 'rackCode', type: 'text', hidden: true },
-  { name: 'rackName', label: 'rackName', type: 'text', hidden: true },
+    // Carried over from the original transfer — fixed already, not editable here
+    { name: 'materialId', label: 'materialId', type: 'number', hidden: true, initialvalue: 0 },
+    { name: 'code', label: 'Code', type: 'text', hidden: true },
+    { name: 'name', label: 'Name', type: 'text', hidden: true },
 
-  {
-    name: 'quantity',
-    label: 'Transferred Quantity',
-    type: 'number',
-    readonly: true,
-  },
+    { name: 'rackId', label: 'rackId', type: 'number', hidden: true, initialvalue: 0 },
+    { name: 'rackCode', label: 'rackCode', type: 'text', hidden: true },
+    { name: 'rackName', label: 'rackName', type: 'text', hidden: true },
 
-  {
-    name: 'receivedQuantity',
-    label: 'Received Quantity',
-    type: 'number',
-    initialvalue: 0,
-    validator: Yup.number()
-      .typeError('Must be a number')
-      .min(0, 'Cannot be negative')
-      .required('Received quantity is required'),
-  },
+    {
+      name: 'quantity',
+      label: 'Transferred Quantity',
+      type: 'number',
+      readonly: true,
+    },
 
-  { name: 'uom', label: 'Unit of Measure', type: 'text', readonly: true },
+    {
+      name: 'receivedQuantity',
+      label: 'Received Quantity',
+      type: 'number',
+      initialvalue: 0,
+      validator: Yup.number()
+        .typeError('Must be a number')
+        .min(0, 'Cannot be negative')
+        .required('Received quantity is required'),
+    },
 
-  { name: 'remarks', label: 'Remarks', type: 'text' },
-]);
+    { name: 'uom', label: 'Unit of Measure', type: 'text', readonly: true },
+
+    // Remarks left on this item from a prior partial receive. Not directly
+    // editable — kept so it can be displayed under the "remarks" input and
+    // merged back in on save.
+    { name: 'existingRemarks', label: 'Previous Remarks', type: 'text', hidden: true, initialvalue: '' },
+
+    {
+      name: 'remarks',
+      label: isPartiallyReceived ? 'New Remarks' : 'Remarks',
+      type: 'text',
+      // Renders under the input, showing prior remarks (if any) for context.
+      description: (values) =>
+        values?.existingRemarks ? `Previous remarks: ${values.existingRemarks}` : '',
+      validator: isPartiallyReceived
+        ? Yup.string().trim().required('Remarks are required for partially received items')
+        : Yup.string(),
+    },
+  ];
+};
 
 export default { TableColumns, ItemsFields };

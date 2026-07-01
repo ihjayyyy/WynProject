@@ -1,10 +1,10 @@
 'use client';
 
-import React, { useMemo, useState } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { FiEdit2, FiEye } from 'react-icons/fi';
 import DropdownAction from '../ui/DropdownAction/DropdownAction';
-import Landing from '../ui/Landing/Landing';
+import Landing, { applyLandingFilters } from '../ui/Landing/Landing';
 import { getCustomers } from '../../services/Customer';
 
 const baseColumns = [
@@ -24,6 +24,10 @@ const baseColumns = [
 export default function CustomersLanding() {
   const [customers, setCustomers] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [filterValues, setFilterValues] = useState({
+    vatType: '',
+    name: '',
+  });
   const router = useRouter();
 
   const actionItems = useMemo(
@@ -35,19 +39,6 @@ export default function CustomersLanding() {
   );
 
   const columns = useMemo(() => [...baseColumns, { header: 'Action', key: 'actions', align: 'right', sortable: false, render: (item) => <DropdownAction item={item} items={actionItems} /> }], [actionItems]);
-
-  const customerStats = useMemo(() => {
-    const total = customers.length;
-    const companies = new Set(customers.map((item) => item.companyName).filter(Boolean)).size;
-    const withEmail = customers.filter((item) => item.email).length;
-    const withContact = customers.filter((item) => item.contactNumber).length;
-    return [
-      { key: 'total', label: 'Total Customers', number: total, change: `${total} records`, isPositive: true },
-      { key: 'companies', label: 'Companies', number: companies, change: `${companies} unique`, isPositive: true },
-      { key: 'email', label: 'With Email', number: withEmail, change: `${withEmail}/${total || 0}`, isPositive: true },
-      { key: 'contact', label: 'With Contact', number: withContact, change: `${withContact}/${total || 0}`, isPositive: true },
-    ];
-  }, [customers]);
 
   React.useEffect(() => {
     let mounted = true;
@@ -62,6 +53,70 @@ export default function CustomersLanding() {
       setLoading(false);
     })();
     return () => (mounted = false);
+  }, []);
+
+  const vatTypeOptions = useMemo(() => {
+    const uniqueVatTypes = Array.from(
+      new Set(customers.map((item) => String(item?.vatType || '').trim()).filter(Boolean))
+    ).sort((a, b) => a.localeCompare(b));
+
+    return [{ label: 'All VAT Types', value: '' }, ...uniqueVatTypes.map((vatType) => ({ label: vatType, value: vatType }))];
+  }, [customers]);
+
+  const companyOptions = useMemo(() => {
+    const uniqueCompanies = Array.from(
+      new Set(customers.map((item) => String(item?.name || '').trim()).filter(Boolean))
+    ).sort((a, b) => a.localeCompare(b));
+
+    return [{ label: 'All Companies', value: '' }, ...uniqueCompanies.map((company) => ({ label: company, value: company }))];
+  }, [customers]);
+
+  const landingFilters = useMemo(
+    () => [
+      {
+        key: 'name',
+        label: 'Company',
+        type: 'select',
+        options: companyOptions,
+        placeholder: 'All Companies',
+        accessor: (item) => item?.name,
+        match: 'equals',
+      },
+      {
+        key: 'vatType',
+        label: 'VAT Type',
+        type: 'select',
+        options: vatTypeOptions,
+        placeholder: 'All VAT Types',
+        accessor: (item) => item?.vatType,
+        match: 'equals',
+      },
+    ],
+    [companyOptions, vatTypeOptions]
+  );
+
+  const filteredCustomers = useMemo(
+    () => applyLandingFilters(customers, landingFilters, filterValues),
+    [customers, landingFilters, filterValues]
+  );
+
+  const customerStats = useMemo(() => {
+    const total = filteredCustomers.length;
+    const companies = new Set(filteredCustomers.map((item) => item.name).filter(Boolean)).size;
+    const withEmail = filteredCustomers.filter((item) => item.email).length;
+    const withContact = filteredCustomers.filter((item) => item.contactNumber).length;
+    return [
+      { key: 'total', label: 'Total Customers', number: total, change: `${total} records`, isPositive: true },
+      { key: 'companies', label: 'Companies', number: companies, change: `${companies} unique`, isPositive: true },
+      { key: 'email', label: 'With Email', number: withEmail, change: `${withEmail}/${total || 0}`, isPositive: true },
+      { key: 'contact', label: 'With Contact', number: withContact, change: `${withContact}/${total || 0}`, isPositive: true },
+    ];
+  }, [filteredCustomers]);
+
+  const hasActiveFilters = Object.values(filterValues).some((value) => String(value || '').trim() !== '');
+
+  const clearFilters = useCallback(() => {
+    setFilterValues({ vatType: '', name: '' });
   }, []);
 
   const filterFn = (item, keyword) => {
@@ -79,6 +134,8 @@ export default function CustomersLanding() {
       .some((value) => String(value).toLowerCase().includes(keyword));
   };
 
+  if (loading) return <div>Loading...</div>;
+
   return (
     <Landing
       title="Customers"
@@ -88,9 +145,14 @@ export default function CustomersLanding() {
       searchPlaceholder="Search customer"
       newButtonLabel="New Customer"
       onNew={() => router.push('/customers/customersform')}
-      emptyMessage="No customers found"
+      emptyMessage={hasActiveFilters ? 'No customers found for the selected filters' : 'No customers found'}
       width="320px"
       filterFn={filterFn}
+      filters={landingFilters}
+      filterValues={filterValues}
+      onFilterChange={(key, value) => setFilterValues((prev) => ({ ...prev, [key]: value }))}
+      onClearFilters={clearFilters}
+      hasActiveFilters={hasActiveFilters}
     />
   );
 }

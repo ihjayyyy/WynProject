@@ -160,6 +160,7 @@ export default function MaterialRequestsTab({ projectId, editable = true }) {
         name: 'materialId',
         label: 'Material',
         type: 'select',
+        searchable: true,
         // Controlled value must be the SAME composite "id:scopeId" format
         // used by materialOptions[].value, or the select can't find a
         // matching option and falls back to the placeholder.

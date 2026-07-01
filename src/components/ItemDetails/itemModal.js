@@ -221,6 +221,7 @@ const ItemModal = ({ headerLabel, mode = "new", itemIndex = -1, isOpen, onClose,
                       id={item.name}
                       value={item.value !== "undefined" ? item.value : ""}
                       onChange={(e) => { handleChange(e, item) }}
+                      searchable={item.searchable || false}
                       options={[
                         { value: '', label: `Select ${item.label}` },
                         ...((item.options || []).map((opt) => ({
@@ -253,6 +254,11 @@ const ItemModal = ({ headerLabel, mode = "new", itemIndex = -1, isOpen, onClose,
                     {errors[item.name].message}
                   </p>
                 )}
+                {item.description && (() => {
+                  const values = itemFields.reduce((acc, f) => ({ ...acc, [f.name]: f.value }), {});
+                  const desc = typeof item.description === 'function' ? item.description(values) : item.description;
+                  return desc ? <p style={{ fontSize: '0.8rem', color: '#666', marginTop: '4px' }}>{desc}</p> : null;
+                })()}
               </div>
             )
           ))}

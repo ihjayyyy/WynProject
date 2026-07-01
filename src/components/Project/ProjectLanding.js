@@ -1,10 +1,10 @@
 'use client';
 
-import React, { useMemo, useState, useContext } from 'react';
+import React, { useCallback, useMemo, useState, useContext } from 'react';
 import { useRouter } from 'next/navigation';
 import { FiEdit2, FiEye, FiFileText, FiPlay, FiCheckSquare, FiXCircle, FiArchive } from 'react-icons/fi';
 import DropdownAction from '../ui/DropdownAction/DropdownAction';
-import Landing from '../ui/Landing/Landing';
+import Landing, { applyLandingFilters } from '../ui/Landing/Landing';
 import StatusBadge from '../ui/StatusBadge/StatusBadge';
 import { getProjects, printCompletion_byId, startProject, completeProject, cancelProject, closeProject } from '../../services/Project';
 import { useToast } from '../ui/Toast/Toast';
@@ -48,6 +48,11 @@ export default function ProjectLanding() {
   const [confirmMessage, setConfirmMessage] = useState('');
   const [confirmAction, setConfirmAction] = useState(null);
   const [confirmTarget, setConfirmTarget] = useState(null);
+
+  const [filterValues, setFilterValues] = useState({
+    status: '',
+    companyName: '',
+  });
 
   const loadProjects = React.useCallback(async () => {
     setLoading(true);
@@ -200,26 +205,71 @@ export default function ProjectLanding() {
     [isAllowed, router, loadProjects, toast]
   );
 
+  const statusOptions = useMemo(() => {
+    const uniqueStatuses = Array.from(
+      new Set(items.map((item) => String(item?.status || item?.projectStatus || item?.state || '').trim()).filter(Boolean))
+    ).sort((a, b) => a.localeCompare(b));
+
+    return [{ label: 'All Status', value: '' }, ...uniqueStatuses.map((status) => ({ label: status, value: status }))];
+  }, [items]);
+
+  const companyOptions = useMemo(() => {
+    const uniqueCompanies = Array.from(
+      new Set(items.map((item) => String(item?.companyName || '').trim()).filter(Boolean))
+    ).sort((a, b) => a.localeCompare(b));
+
+    return [{ label: 'All Companies', value: '' }, ...uniqueCompanies.map((company) => ({ label: company, value: company }))];
+  }, [items]);
+
+  const landingFilters = useMemo(
+    () => [
+      {
+        key: 'status',
+        label: 'Status',
+        type: 'select',
+        options: statusOptions,
+        placeholder: 'All Status',
+        accessor: (item) => item?.status || item?.projectStatus || item?.state,
+        match: 'equals',
+      },
+      {
+        key: 'companyName',
+        label: 'Company',
+        type: 'select',
+        options: companyOptions,
+        placeholder: 'All Companies',
+        accessor: (item) => item?.companyName,
+        match: 'equals',
+      },
+    ],
+    [statusOptions, companyOptions]
+  );
+
+  const filteredItems = useMemo(
+    () => applyLandingFilters(items, landingFilters, filterValues),
+    [items, landingFilters, filterValues]
+  );
+
   const stats = useMemo(() => {
-    const total = items.length;
-    const completedCount = items.filter((it) => {
+    const total = filteredItems.length;
+    const completedCount = filteredItems.filter((it) => {
       const status = String(it?.status || it?.projectStatus || it?.state || '').toUpperCase().replace(/\s+/g, '');
       return status === 'COMPLETED';
     }).length;
-    const totalValue = items.reduce((s, it) => s + (Number(it.contractPrice) || 0), 0);
-    const inProgress = items.filter((it) => (Number(it.overallProgress) || 0) < 100).length;
-    const notStartedCount = items.filter((it) => {
+    const totalValue = filteredItems.reduce((s, it) => s + (Number(it.contractPrice) || 0), 0);
+    const inProgress = filteredItems.filter((it) => (Number(it.overallProgress) || 0) < 100).length;
+    const notStartedCount = filteredItems.filter((it) => {
       const status = String(it?.status || it?.projectStatus || it?.state || '').toUpperCase().replace(/\s+/g, '');
       const isNotStarted = status === 'NOTSTARTED';
       return isNotStarted;
     }).length;
-    const readyToCompleteCount = items.filter((it) => {
+    const readyToCompleteCount = filteredItems.filter((it) => {
       const status = String(it?.status || it?.projectStatus || it?.state || '').toUpperCase().replace(/\s+/g, '');
       const progress = Number(it?.overallProgress ?? it?.progress) || 0;
       const readyToComplete = progress >= 100 && status !== 'COMPLETED' && status !== 'CLOSED';
       return readyToComplete;
     }).length;
-    const attentionCount = items.filter((it) => {
+    const attentionCount = filteredItems.filter((it) => {
       const status = String(it?.status || it?.projectStatus || it?.state || '').toUpperCase().replace(/\s+/g, '');
       const progress = Number(it?.overallProgress ?? it?.progress) || 0;
       const isNotStarted = status === 'NOTSTARTED';
@@ -238,7 +288,13 @@ export default function ProjectLanding() {
         isPositive: attentionCount === 0,
       },
     ];
-  }, [items]);
+  }, [filteredItems]);
+
+  const hasActiveFilters = Object.values(filterValues).some((value) => String(value || '').trim() !== '');
+
+  const clearFilters = useCallback(() => {
+    setFilterValues({ status: '', companyName: '' });
+  }, []);
 
   const filterFn = (item, keyword) => {
     return [item.id, item.projectNo, item.name, item.companyName, item.status]
@@ -254,9 +310,14 @@ export default function ProjectLanding() {
         columns={columns}
         stats={stats}
         searchPlaceholder="Search projects"
-        emptyMessage="No projects found"
+        emptyMessage={hasActiveFilters ? 'No projects found for the selected filters' : 'No projects found'}
         width="320px"
         filterFn={filterFn}
+        filters={landingFilters}
+        filterValues={filterValues}
+        onFilterChange={(key, value) => setFilterValues((prev) => ({ ...prev, [key]: value }))}
+        onClearFilters={clearFilters}
+        hasActiveFilters={hasActiveFilters}
         loading={loading}
       />
 

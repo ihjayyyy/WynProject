@@ -82,7 +82,10 @@ export default function MaterialReceivedForm() {
 
       const children = Array.isArray(data?.children) ? data.children : [];
 
-      // Pre-populate table items from transfer children, with receivedQuantity default 0
+      // Pre-populate table items from transfer children, with receivedQuantity default 0.
+      // Any remarks already on the item (e.g. from a prior partial receive) are kept
+      // separately in `existingRemarks` so they can be displayed read-only and merged
+      // with new remarks on save, rather than being overwritten.
       const preItems = children.map((c) => ({
         id: c.id ?? c.transferDetailId ?? 0,
         parentId: c.parentId ?? c.transferId ?? selectedTransferId,
@@ -95,18 +98,30 @@ export default function MaterialReceivedForm() {
         quantity: Number(c.quantity ?? c.qty ?? 0),
         receivedQuantity: Number(c.receivedQuantity ?? 0),
         uom: c.uom || (c.material && c.material.uom) || '',
-        remarks: c.remarks || '',
+        existingRemarks: c.remarks || '',
+        remarks: '',
       }));
 
       setTableData({ items: preItems, deletedItems: [] });
-      setItemFields(ReceivedItemsFields());
+      setItemFields(ReceivedItemsFields(data?.status));
     })();
   }, [selectedTransferId, toast]);
 
+  const isReceived = useMemo(
+    () => String(transferData?.status || '').toLowerCase() === 'received',
+    [transferData]
+  );
+
   const isReadOnly = useMemo(() => {
+    if (isReceived) return true;
     if (transferData) return mode === 'view';
     return mode !== 'edit' && mode !== 'new' ? true : false;
-  }, [transferData, mode]);
+  }, [transferData, mode, isReceived]);
+
+  const isPartiallyReceived = useMemo(
+    () => String(transferData?.status || '').toLowerCase() === 'partiallyreceived',
+    [transferData]
+  );
 
   const formFields = useMemo(() => (
     [
@@ -129,6 +144,16 @@ export default function MaterialReceivedForm() {
     if (Array.isArray(items) && items.length > 0) setTableError('');
   };
 
+  // Combines remarks carried over from a prior partial receive with what the
+  // user enters this time. If both exist they're joined with a newline so
+  // history is preserved; if only one exists, that one is used as-is.
+  const combineRemarks = (oldRemarks, newRemarks) => {
+    const oldTrim = (oldRemarks || '').trim();
+    const newTrim = (newRemarks || '').trim();
+    if (oldTrim && newTrim) return `${oldTrim}\n${newTrim}`;
+    return oldTrim || newTrim;
+  };
+
   const handleSave = async (values) => {
     if (!selectedTransferId) {
       toast.error('No material transfer selected');
@@ -138,7 +163,7 @@ export default function MaterialReceivedForm() {
     const details = (tableData.items || []).map((it) => ({
       transferDetailId: it.id || it.parentId || 0,
       receivedQuantity: Number(it.receivedQuantity || 0),
-      remarks: it.remarks || '',
+      remarks: combineRemarks(it.existingRemarks, it.remarks),
     }));
 
     const payload = { details };
@@ -212,6 +237,12 @@ export default function MaterialReceivedForm() {
         } else if (!tableData.items || (Array.isArray(tableData.items) && tableData.items.length === 0)) {
           errors.transferId = 'At least one receive item is required';
           setTableError(errors.transferId);
+        } else if (
+          isPartiallyReceived &&
+          (tableData.items || []).some((it) => !String(it.remarks || '').trim())
+        ) {
+          errors.transferId = 'Remarks are required for all items when the transfer is Partially Received';
+          setTableError(errors.transferId);
         } else {
           setTableError('');
         }
@@ -222,7 +253,7 @@ export default function MaterialReceivedForm() {
       headerActions={(
         <div className={EntityStyle.buttonsContainer}>
           {isReadOnly ? (
-            <Button variant="outline" onClick={() => setMode('edit')}>Edit</Button>
+            !isReceived && <Button variant="outline" onClick={() => setMode('edit')}>Edit</Button>
           ) : (
             <>
               <Button variant="outlineDanger" onClick={() => { setMode(transferData ? 'view' : 'new'); }}>Cancel</Button>

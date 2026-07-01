@@ -190,6 +190,7 @@ export const POItemsFields = (materials, po) => [
     name: 'materialId',
     label: 'Material',
     type: 'select',
+    searchable: true,
     options: materials.map(({ id, name, code }) => ({
   value: id,
   label: `${code ? `[${code}] ` : ''}${name || ''}`.trim(),

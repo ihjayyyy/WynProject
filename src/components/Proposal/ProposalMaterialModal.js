@@ -73,9 +73,7 @@ export default function ProposalMaterialModal({
     type,
     isAssembly = false
   ) => {
-    if (isAssembly) return 'Assembly';
-
-    if (!type) return '';
+    if (!type) return isAssembly ? 'Assembly' : '';
 
     const lower = type.toLowerCase();
 
@@ -98,6 +96,8 @@ export default function ProposalMaterialModal({
     ) {
       return 'Assembly';
     }
+
+    if (isAssembly) return 'Assembly';
 
     return '';
   };
@@ -545,6 +545,7 @@ export default function ProposalMaterialModal({
             : 'Material Name',
 
         type: 'select',
+        searchable: true,
 
         hidden:
           isService || !categorySelected,

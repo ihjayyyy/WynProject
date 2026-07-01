@@ -1,10 +1,10 @@
 'use client';
 
-import React, { useMemo, useState, useContext } from 'react';
+import React, { useCallback, useMemo, useState, useContext } from 'react';
 import { useRouter } from 'next/navigation';
 import { FiCheck, FiCheckCircle, FiEdit2, FiEye, FiFileText, FiSend, FiX, FiXCircle, FiArchive, FiCopy } from 'react-icons/fi';
 import DropdownAction from '../ui/DropdownAction/DropdownAction';
-import Landing from '../ui/Landing/Landing';
+import Landing, { applyLandingFilters } from '../ui/Landing/Landing';
 import StatusBadge from '../ui/StatusBadge/StatusBadge';
 import { getProposals, submitProposal, approveProposal, rejectProposal, winProposal, loseProposal, printProposal_byId as printProposal_byId, cancelProposal, closeProposal, printProposalBreakdown_byId as printProposalBreakdown_byId, printJobOrder_byProposal } from '../../services/Proposal';
 import { convertProposal } from '../../services/Project';
@@ -56,6 +56,10 @@ export default function ProposalLanding() {
   const [confirmTarget, setConfirmTarget] = useState(null);
   const [confirmIncludeCreateProject, setConfirmIncludeCreateProject] = useState(false);
   const [createProjectChecked, setCreateProjectChecked] = useState(false);
+  const [filterValues, setFilterValues] = useState({
+    proposalStatus: '',
+    customerName: '',
+  });
 
   const actionItems = useMemo(
     () => [
@@ -279,30 +283,74 @@ export default function ProposalLanding() {
       return <DropdownAction item={item} items={itemsFor} />;
     } }], [actionItems, isAllowed, loadProposals, toast]);
 
+  const statusOptions = useMemo(() => {
+    const uniqueStatuses = Array.from(
+      new Set(items.map((item) => String(item?.proposalStatus || '').trim()).filter(Boolean))
+    ).sort((a, b) => a.localeCompare(b));
+
+    return [{ label: 'All Status', value: '' }, ...uniqueStatuses.map((status) => ({ label: status, value: status }))];
+  }, [items]);
+
+  const customerOptions = useMemo(() => {
+    const uniqueCustomers = Array.from(
+      new Set(items.map((item) => String(item?.customerName || '').trim()).filter(Boolean))
+    ).sort((a, b) => a.localeCompare(b));
+
+    return [{ label: 'All Customers', value: '' }, ...uniqueCustomers.map((customer) => ({ label: customer, value: customer }))];
+  }, [items]);
+
+  const landingFilters = useMemo(
+    () => [
+      {
+        key: 'proposalStatus',
+        label: 'Status',
+        type: 'select',
+        options: statusOptions,
+        placeholder: 'All Status',
+        accessor: (item) => item?.proposalStatus,
+        match: 'equals',
+      },
+      {
+        key: 'customerName',
+        label: 'Customer',
+        type: 'select',
+        options: customerOptions,
+        placeholder: 'All Customers',
+        accessor: (item) => item?.customerName,
+        match: 'equals',
+      },
+    ],
+    [statusOptions, customerOptions]
+  );
+
+  const filteredItems = useMemo(
+    () => applyLandingFilters(items, landingFilters, filterValues),
+    [items, landingFilters, filterValues]
+  );
+
   const stats = useMemo(() => {
-    const total = items.length;
-    const wonCount = items.filter((it) => {
+    const total = filteredItems.length;
+    const wonCount = filteredItems.filter((it) => {
       const proposalStatus = String(it?.proposalStatus || '').toLowerCase();
       return proposalStatus === 'won' || proposalStatus === 'win';
     }).length;
-    const totalValue = items.reduce((s, it) => s + (Number(it.proposalTotal) || 0), 0);
-    const draftCount = items.filter((it) => {
-      const approvalStatus = String(it?.approvalStatus || '').toLowerCase();
+    const totalValue = filteredItems.reduce((s, it) => s + (Number(it.proposalTotal) || 0), 0);
+    const draftCount = filteredItems.filter((it) => {
       const proposalStatus = String(it?.proposalStatus || '').toLowerCase();
       const isDraft = proposalStatus === 'draft';
       return isDraft;
     }).length;
-    const forApprovalCount = items.filter((it) => {
+    const forApprovalCount = filteredItems.filter((it) => {
       const approvalStatus = String(it?.approvalStatus || '').toLowerCase();
       const forApproval = approvalStatus === 'for approval';
       return forApproval;
     }).length;
-    const generateProjectCount = items.filter((it) => {
+    const generateProjectCount = filteredItems.filter((it) => {
       const proposalStatus = String(it?.proposalStatus || '').toLowerCase();
       const needsProjectGeneration = (proposalStatus === 'won' || proposalStatus === 'win') && it?.isProjectCreated === false;
       return needsProjectGeneration;
     }).length;
-    const attentionCount = items.filter((it) => {
+    const attentionCount = filteredItems.filter((it) => {
       const approvalStatus = String(it?.approvalStatus || '').toLowerCase();
       const proposalStatus = String(it?.proposalStatus || '').toLowerCase();
       const isDraft = proposalStatus === 'draft';
@@ -321,7 +369,13 @@ export default function ProposalLanding() {
         isPositive: attentionCount === 0,
       },
     ];
-  }, [items]);
+  }, [filteredItems]);
+
+  const hasActiveFilters = Object.values(filterValues).some((value) => String(value || '').trim() !== '');
+
+  const clearFilters = useCallback(() => {
+    setFilterValues({ proposalStatus: '', customerName: '' });
+  }, []);
 
   const filterFn = (item, keyword) => {
     return [item.id, item.proposalNo, item.name, item.customerName, item.customerReferenceNumber]
@@ -339,9 +393,14 @@ return isAllowed(PageName, 'r') ? (
       searchPlaceholder="Search proposals"
       newButtonLabel={isAllowed(PageName, 'w') ? 'New Proposal' : ''}
       onNew={() => isAllowed(PageName, 'w') && router.push('/projects/proposal/proposalform')}
-      emptyMessage="No proposals found"
+      emptyMessage={hasActiveFilters ? 'No proposals found for the selected filters' : 'No proposals found'}
       width="320px"
       filterFn={filterFn}
+      filters={landingFilters}
+      filterValues={filterValues}
+      onFilterChange={(key, value) => setFilterValues((prev) => ({ ...prev, [key]: value }))}
+      onClearFilters={clearFilters}
+      hasActiveFilters={hasActiveFilters}
       loading={loading}
     />
 
@@ -382,4 +441,3 @@ return isAllowed(PageName, 'r') ? (
   </>
 ) : <InvalidPage />;
 }
- 

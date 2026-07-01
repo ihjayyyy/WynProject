@@ -6,7 +6,6 @@ import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import Landing from '../ui/Landing/Landing';
 import StatusBadge from '../ui/StatusBadge/StatusBadge';
-import Select from '../ui/Select/Select';
 import Button from '../ui/Button/Button';
 import { AccessContext } from '@/app/contextProviders/accessContext';
 import {
@@ -482,6 +481,111 @@ export default function ReportsLanding() {
     [accessibleModuleOptions, selectedModule]
   );
 
+  const reportFilters = useMemo(() => {
+    const filters = [
+      {
+        key: 'module',
+        label: 'Module',
+        type: 'select',
+        options: accessibleModuleOptions,
+        placeholder: 'Select module',
+        predicate: () => true,
+      },
+      {
+        key: 'status',
+        label: 'Status',
+        type: 'select',
+        options: statusOptions,
+        placeholder: 'All Status',
+        predicate: () => true,
+      },
+      {
+        key: 'dateFrom',
+        label: 'Date From',
+        type: 'date',
+        predicate: () => true,
+        max: dateTo || undefined,
+      },
+      {
+        key: 'dateTo',
+        label: 'Date To',
+        type: 'date',
+        predicate: () => true,
+        min: dateFrom || undefined,
+      },
+    ];
+
+    if (shouldUseSupplierFilter) {
+      filters.push({
+        key: 'supplierId',
+        label: 'Supplier',
+        type: 'select',
+        options: supplierOptions,
+        placeholder: 'All Suppliers',
+        predicate: () => true,
+      });
+    }
+
+    if (shouldUseRackFilter) {
+      filters.push({
+        key: 'rackId',
+        label: 'Rack',
+        type: 'select',
+        options: rackOptions,
+        placeholder: 'All Racks',
+        predicate: () => true,
+      });
+    }
+
+    return filters;
+  }, [
+    accessibleModuleOptions,
+    statusOptions,
+    dateFrom,
+    dateTo,
+    shouldUseSupplierFilter,
+    supplierOptions,
+    shouldUseRackFilter,
+    rackOptions,
+  ]);
+
+  const reportFilterValues = useMemo(
+    () => ({
+      module: selectedModule,
+      status,
+      dateFrom,
+      dateTo,
+      supplierId,
+      rackId,
+    }),
+    [selectedModule, status, dateFrom, dateTo, supplierId, rackId]
+  );
+
+  const handleFilterChange = (key, value) => {
+    switch (key) {
+      case 'module':
+        setSelectedModule(value);
+        break;
+      case 'status':
+        setStatus(value);
+        break;
+      case 'dateFrom':
+        setDateFrom(value);
+        break;
+      case 'dateTo':
+        setDateTo(value);
+        break;
+      case 'supplierId':
+        setSupplierId(value);
+        break;
+      case 'rackId':
+        setRackId(value);
+        break;
+      default:
+        break;
+    }
+  };
+
   const handleGenerateCsv = () => {
     const headers = ['Module', 'Reference No', 'Party', 'Date', 'Amount', 'Status', 'Details Status'];
     const csvLines = [
@@ -583,98 +687,6 @@ export default function ReportsLanding() {
     </div>
   );
 
-  const reportFilters = (
-    <div className={styles.filtersWrap}>
-      <div className={styles.moduleFilterWrap}>
-        <label htmlFor='reports-module-filter' className={styles.moduleLabel}>
-          Module
-        </label>
-        <Select
-          id='reports-module-filter'
-          value={selectedModule}
-          onChange={(event) => setSelectedModule(event.target.value)}
-          options={accessibleModuleOptions}
-          placeholder='Select module'
-          className={styles.moduleSelect}
-        />
-      </div>
-
-      <div className={styles.dateFilterWrap}>
-        <label htmlFor='reports-status-filter' className={styles.moduleLabel}>
-          Status
-        </label>
-        <Select
-          id='reports-status-filter'
-          value={status}
-          onChange={(event) => setStatus(event.target.value)}
-          options={statusOptions}
-          placeholder='All Status'
-          className={styles.moduleSelect}
-        />
-      </div>
-
-      <div className={styles.dateFilterWrap}>
-        <label htmlFor='reports-date-from' className={styles.moduleLabel}>
-          Date From
-        </label>
-        <input
-          id='reports-date-from'
-          type='date'
-          value={dateFrom}
-          max={dateTo}
-          onChange={(event) => setDateFrom(event.target.value)}
-          className={styles.dateInput}
-        />
-      </div>
-
-      <div className={styles.dateFilterWrap}>
-        <label htmlFor='reports-date-to' className={styles.moduleLabel}>
-          Date To
-        </label>
-        <input
-          id='reports-date-to'
-          type='date'
-          value={dateTo}
-          min={dateFrom}
-          onChange={(event) => setDateTo(event.target.value)}
-          className={styles.dateInput}
-        />
-      </div>
-
-      {shouldUseSupplierFilter ? (
-        <div className={styles.supplierFilterWrap}>
-          <label htmlFor='reports-supplier-filter' className={styles.moduleLabel}>
-            Supplier
-          </label>
-          <Select
-            id='reports-supplier-filter'
-            value={supplierId}
-            onChange={(event) => setSupplierId(event.target.value)}
-            options={supplierOptions}
-            placeholder='All Suppliers'
-            className={styles.supplierSelect}
-          />
-        </div>
-      ) : null}
-
-      {shouldUseRackFilter ? (
-        <div className={styles.rackFilterWrap}>
-          <label htmlFor='reports-rack-filter' className={styles.moduleLabel}>
-            Rack
-          </label>
-          <Select
-            id='reports-rack-filter'
-            value={rackId}
-            onChange={(event) => setRackId(event.target.value)}
-            options={rackOptions}
-            placeholder='All Racks'
-            className={styles.rackSelect}
-          />
-        </div>
-      ) : null}
-    </div>
-  );
-
   if (loading) return <div>Loading...</div>;
 
   return (
@@ -688,7 +700,9 @@ export default function ReportsLanding() {
       width='420px'
       filterFn={filterFn}
       headerAddon={reportActions}
-      belowStatsAddon={reportFilters}
+      filters={reportFilters}
+      filterValues={reportFilterValues}
+      onFilterChange={handleFilterChange}
     />
   );
 }

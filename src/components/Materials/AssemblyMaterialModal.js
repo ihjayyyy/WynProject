@@ -49,6 +49,7 @@ export default function AssemblyMaterialModal({ open, initial = {}, onCancel, on
         name: 'materialId',
         label: 'Material',
         type: 'select',
+        searchable: true,
         value: form.materialId ? String(form.materialId) : '',
 options: materials.map((m) => ({
   value: String(m.id),

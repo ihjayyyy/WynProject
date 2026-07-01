@@ -47,13 +47,13 @@ export default function ProjectMaterialModal({ open, initial = {}, onCancel, onC
   const [materials, setMaterials] = useState([]);
 
   const normalizeMaterialCategory = (t, isAssembly = false) => {
-    if (isAssembly) return 'Assembly';
-    if (!t) return '';
+    if (!t) return isAssembly ? 'Assembly' : '';
     const lower = t.toLowerCase();
     if (lower === 'service') return 'Service';
     if (lower === 'tools' || lower === 'tool') return 'Tool';
     if (lower === 'materials' || lower === 'material') return 'Material';
     if (lower === 'assembly' || lower === 'assemblies') return 'Assembly';
+    if (isAssembly) return 'Assembly';
     return '';
   };
 
@@ -201,30 +201,31 @@ export default function ProjectMaterialModal({ open, initial = {}, onCancel, onC
       hidden: !isService,
       validator: isService ? Yup.string().required('Service Name is required') : Yup.string().notRequired(),
     },
-    {
-      name: 'materialId',
-      label: materialCategory === 'Tool' ? 'Tool Name' : materialCategory === 'Service' ? 'Service Name' : materialCategory === 'Assembly' ? 'Assembly Name' : 'Material Name',
-      type: 'select',
-      hidden: isService || !categorySelected,
-      value: calculatedForm.materialId ? String(calculatedForm.materialId) : '',
-      options: materials.length === 0
-        ? [{ value: '__loading__', label: 'Loading materials...' }]
-        : materials
-            .filter((m) => m && m.id != null && m.id !== '')
-            .map((m) => ({
-  value: String(m.id),
-  label: `${m.code ? `[${m.code}] ` : ''}${m.name || ''}`.trim(),
-})),
-      validator: !isService && categorySelected ? Yup.string().required('Material is required') : Yup.string().notRequired(),
-      onChange: (item, updateField, itemFields, nextValue) => {
-        const next = applyMaterialSelect(nextValue, itemFields);
-        updateField('materialId', next.materialId ? String(next.materialId) : '');
-        updateField('uom', next.uom || '');
-        updateField('unitCost', Number(next.unitCost) || 0);
-        updateField('code', next.code || '');
-        updateField('name', next.name || '');
-      },
-    },
+{
+  name: 'materialId',
+  label: materialCategory === 'Tool' ? 'Tool Name' : materialCategory === 'Service' ? 'Service Name' : materialCategory === 'Assembly' ? 'Assembly Name' : 'Material Name',
+  type: 'select',
+  searchable: true,
+  hidden: isService || !categorySelected,
+  value: calculatedForm.materialId ? String(calculatedForm.materialId) : '',
+  options: materials.length === 0
+    ? [{ value: '__loading__', label: 'Loading materials...' }]
+    : materials
+        .filter((m) => m && m.id != null && m.id !== '')
+        .map((m) => ({
+          value: String(m.id),
+          label: `${m.code ? `[${m.code}] ` : ''}${m.name || ''}`.trim(),
+        })),
+  validator: !isService && categorySelected ? Yup.string().required('Material is required') : Yup.string().notRequired(),
+  onChange: (item, updateField, itemFields, nextValue) => {
+    const next = applyMaterialSelect(nextValue, itemFields);
+    updateField('materialId', next.materialId ? String(next.materialId) : '');
+    updateField('uom', next.uom || '');
+    updateField('unitCost', Number(next.unitCost) || 0);
+    updateField('code', next.code || '');
+    updateField('name', next.name || '');
+  },
+},
     { name: 'code', label: materialCategory === 'Tool' ? 'Tool Code' : materialCategory === 'Service' ? 'Service Code' : materialCategory === 'Assembly' ? 'Assembly Code' : 'Material Code', type: 'text', value: calculatedForm.code || '', readonly: true, validator: Yup.string().notRequired() },
     { name: 'materialType', label: 'Type', type: 'text', value: calculatedForm.materialType || '', hidden: true, validator: Yup.string().notRequired() },
     { name: 'uom', label: 'UoM', type: 'text', value: calculatedForm.uom || '', readonly: true, validator: Yup.string().notRequired() },

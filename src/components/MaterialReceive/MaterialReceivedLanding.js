@@ -106,7 +106,10 @@ export default function MaterialReceivedLanding() {
         render: (item) => {
           const status = String(item?.status || '').toLowerCase();
           const isDraft = status === 'draft';
-          const itemsFor = (actionItems || []).map((it) => ({ ...it }));
+          const isReceived = status === 'received';
+          const itemsFor = (actionItems || [])
+            .filter((it) => !(it.key === 'edit' && isReceived))
+            .map((it) => ({ ...it }));
 
           if (isDraft && isAllowed(PageName, 'w')) {
             itemsFor.push({ key: 'transfer', label: 'Transfer', icon: <FiSend size={14} />, onClick: (it) => {

@@ -33,8 +33,62 @@
 
 .belowStatsAddon {
   display: flex;
-  align-items: center;
+  align-items: stretch;
   justify-content: flex-start;
+  width: 100%;
+}
+
+.dynamicFiltersWrap {
+  display: flex;
+  align-items: flex-end;
+  gap: 12px;
+  row-gap: 10px;
+  flex-wrap: wrap;
+  width: 100%;
+  border-radius: 10px;
+  background: var(--color-background-light);
+}
+
+.filterGroup {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+  min-width: 220px;
+}
+
+.filterLabel {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--color-text-secondary-light);
+}
+
+.filterSelect {
+  min-width: 220px;
+}
+
+.filterTextInput,
+.filterDateInput {
+  min-width: 220px;
+  min-height: 42px;
+  border: 1px solid var(--color-secondary-light);
+  border-radius: 8px;
+  background: var(--color-background-light);
+  color: var(--color-text-primary-light);
+  padding: 0 12px;
+  font-size: 14px;
+
+  &:focus {
+    outline: none;
+    border-color: var(--color-accent-light);
+    box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1);
+  }
+}
+
+.filterActions {
+  display: flex;
+  align-items: flex-end;
+  margin-left: auto;
 }
 
 .tableSection {
@@ -53,6 +107,28 @@
   .headerActions {
     width: 100%;
     justify-content: flex-start;
+  }
+
+  .dynamicFiltersWrap {
+    flex-direction: column;
+    align-items: stretch;
+    padding: 10px;
+  }
+
+  .filterGroup {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .filterSelect,
+  .filterTextInput,
+  .filterDateInput,
+  .filterActions {
+    width: 100%;
+  }
+
+  .filterActions {
+    margin-left: 0;
   }
 }
     

@@ -1,10 +1,10 @@
 'use client';
 
-import React, { useMemo, useState } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { FiEdit2, FiEye } from 'react-icons/fi';
 import DropdownAction from '../ui/DropdownAction/DropdownAction';
-import Landing from '../ui/Landing/Landing';
+import Landing, { applyLandingFilters } from '../ui/Landing/Landing';
 import { getSuppliers } from '../../services/Supplier';
 import { useEffect } from 'react';
 
@@ -22,6 +22,11 @@ const baseColumns = [
 
 export default function SuppliersLanding() {
   const [suppliers, setSuppliers] = useState([]);
+  const [filterValues, setFilterValues] = useState({
+    name: '',
+    vatType: '',
+    terms: '',
+  });
   const router = useRouter();
 
   useEffect(() => {
@@ -61,12 +66,80 @@ export default function SuppliersLanding() {
     return [...cols, { header: 'Action', key: 'actions', sortable: false, align: 'right', render: (item) => <DropdownAction item={item} items={actionItems} /> }];
   }, [actionItems]);
 
+  const companyOptions = useMemo(() => {
+    const uniqueCompanies = Array.from(
+      new Set(suppliers.map((item) => String(item?.name || '').trim()).filter(Boolean))
+    ).sort((a, b) => a.localeCompare(b));
+
+    return [{ label: 'All Companies', value: '' }, ...uniqueCompanies.map((company) => ({ label: company, value: company }))];
+  }, [suppliers]);
+
+  const vatTypeOptions = useMemo(() => {
+    const uniqueVatTypes = Array.from(
+      new Set(suppliers.map((item) => String(item?.vatType || '').trim()).filter(Boolean))
+    ).sort((a, b) => a.localeCompare(b));
+
+    return [{ label: 'All VAT Types', value: '' }, ...uniqueVatTypes.map((vatType) => ({ label: vatType, value: vatType }))];
+  }, [suppliers]);
+
+  const termsOptions = useMemo(() => {
+    const uniqueTerms = Array.from(
+      new Set(suppliers.map((item) => String(item?.terms || '').trim()).filter(Boolean))
+    ).sort((a, b) => a.localeCompare(b));
+
+    return [{ label: 'All Terms', value: '' }, ...uniqueTerms.map((terms) => ({ label: terms, value: terms }))];
+  }, [suppliers]);
+
+  const landingFilters = useMemo(
+    () => [
+      {
+        key: 'name',
+        label: 'Company',
+        type: 'select',
+        options: companyOptions,
+        placeholder: 'All Companies',
+        accessor: (item) => item?.name,
+        match: 'equals',
+      },
+      {
+        key: 'vatType',
+        label: 'VAT Type',
+        type: 'select',
+        options: vatTypeOptions,
+        placeholder: 'All VAT Types',
+        accessor: (item) => item?.vatType,
+        match: 'equals',
+      },
+      {
+        key: 'terms',
+        label: 'Terms',
+        type: 'select',
+        options: termsOptions,
+        placeholder: 'All Terms',
+        accessor: (item) => item?.terms,
+        match: 'equals',
+      },
+    ],
+    [companyOptions, vatTypeOptions, termsOptions]
+  );
+
+  const filteredSuppliers = useMemo(
+    () => applyLandingFilters(suppliers, landingFilters, filterValues),
+    [suppliers, landingFilters, filterValues]
+  );
+
   const supplierStats = useMemo(() => {
-    const total = suppliers.length;
+    const total = filteredSuppliers.length;
     return [
       { key: 'total', label: 'Total Suppliers', number: total, change: `${total} records`, isPositive: true },
     ];
-  }, [suppliers]);
+  }, [filteredSuppliers]);
+
+  const hasActiveFilters = Object.values(filterValues).some((value) => String(value || '').trim() !== '');
+
+  const clearFilters = useCallback(() => {
+    setFilterValues({ name: '', vatType: '', terms: '' });
+  }, []);
 
   const filterFn = (item, keyword) => {
     return [
@@ -90,9 +163,14 @@ export default function SuppliersLanding() {
       searchPlaceholder="Search supplier"
       newButtonLabel="New Supplier"
       onNew={() => router.push('/suppliers/supplierform')}
-      emptyMessage="No suppliers found"
+      emptyMessage={hasActiveFilters ? 'No suppliers found for the selected filters' : 'No suppliers found'}
       width="320px"
       filterFn={filterFn}
+      filters={landingFilters}
+      filterValues={filterValues}
+      onFilterChange={(key, value) => setFilterValues((prev) => ({ ...prev, [key]: value }))}
+      onClearFilters={clearFilters}
+      hasActiveFilters={hasActiveFilters}
     />
   );
 }

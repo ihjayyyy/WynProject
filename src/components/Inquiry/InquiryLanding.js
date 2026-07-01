@@ -3,11 +3,10 @@
 import React, { useCallback, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { FiCheckCircle, FiEdit2, FiEye, FiFileText, FiXCircle } from 'react-icons/fi';
-import Landing from '../ui/Landing/Landing';
+import Landing, { applyLandingFilters } from '../ui/Landing/Landing';
 import StatusBadge from '../ui/StatusBadge/StatusBadge';
 import DropdownAction from '../ui/DropdownAction/DropdownAction';
 import ConfirmModal from '../ui/ConfirmModal/ConfirmModal';
-import StatsCard from '../ui/StatsCard/StatsCard';
 import { getInquiries, updateInquiry, acknowledgeInquiry, printInquirySlip_byId } from '../../services/Inquiry';
 import { useToast } from '../ui/Toast/Toast';
 
@@ -29,10 +28,13 @@ const baseColumns = [
 ];
 
 export default function InquiryLanding() {
-  const [searchTerm, setSearchTerm] = useState('');
   const [inquiries, setInquiries] = useState([]);
   const [loading, setLoading] = useState(true);
   const [confirmAction, setConfirmAction] = useState(null);
+  const [filterValues, setFilterValues] = useState({
+    status: '',
+    company: '',
+  });
   const router = useRouter();
   const toast = useToast();
 
@@ -122,21 +124,70 @@ export default function InquiryLanding() {
     }
   ], [actionItems]);
 
+  const statusOptions = useMemo(() => {
+    const uniqueStatuses = Array.from(
+      new Set(inquiries.map((item) => String(item?.status || '').trim()).filter(Boolean))
+    ).sort((a, b) => a.localeCompare(b));
+
+    return [{ label: 'All Status', value: '' }, ...uniqueStatuses.map((status) => ({ label: status, value: status }))];
+  }, [inquiries]);
+
+  const companyOptions = useMemo(() => {
+    const uniqueCompanies = Array.from(
+      new Set(inquiries.map((item) => String(item?.companyName || '').trim()).filter(Boolean))
+    ).sort((a, b) => a.localeCompare(b));
+
+    return [{ label: 'All Companies', value: '' }, ...uniqueCompanies.map((company) => ({ label: company, value: company }))];
+  }, [inquiries]);
+
+  const landingFilters = useMemo(
+    () => [
+      {
+        key: 'status',
+        label: 'Status',
+        type: 'select',
+        options: statusOptions,
+        placeholder: 'All Status',
+        accessor: (item) => item?.status,
+        match: 'equals',
+      },
+      {
+        key: 'company',
+        label: 'Company',
+        type: 'select',
+        options: companyOptions,
+        placeholder: 'All Companies',
+        accessor: (item) => item?.companyName,
+        match: 'equals',
+      },
+    ],
+    [statusOptions, companyOptions]
+  );
+
+  const filteredInquiries = useMemo(
+    () => applyLandingFilters(inquiries, landingFilters, filterValues),
+    [inquiries, landingFilters, filterValues]
+  );
+
   const inquiryStats = useMemo(() => {
-    const total = inquiries.length;
-    const companies = new Set(inquiries.map((i) => i.companyName).filter(Boolean)).size;
-    const withEmail = inquiries.filter((i) => i.email).length;
-    const withContact = inquiries.filter((i) => i.contactNumber).length;
-    const createdCount = inquiries.filter((i) => String(i?.status || '').toLowerCase() === 'created').length;
+    const total = filteredInquiries.length;
+    const companies = new Set(filteredInquiries.map((i) => i.companyName).filter(Boolean)).size;
+    const withContact = filteredInquiries.filter((i) => i.contactNumber).length;
+    const createdCount = filteredInquiries.filter((i) => String(i?.status || '').toLowerCase() === 'created').length;
     const attentionCount = createdCount;
     return [
       { key: 'total', label: 'Total Inquiries', number: total, change: `${total} records`, isPositive: true },
       { key: 'companies', label: 'Companies', number: companies, change: `${companies} unique`, isPositive: true },
-      // { key: 'email', label: 'With Email', number: withEmail, change: `${withEmail}/${total || 0}`, isPositive: true },
       { key: 'contact', label: 'With Contact', number: withContact, change: `${withContact}/${total || 0}`, isPositive: true },
       { key: 'attention', label: 'Needs Attention', number: attentionCount, change: `${createdCount} created`, isPositive: attentionCount === 0 },
     ];
-  }, [inquiries]);
+  }, [filteredInquiries]);
+
+  const hasActiveFilters = Object.values(filterValues).some((value) => String(value || '').trim() !== '');
+
+  const clearFilters = useCallback(() => {
+    setFilterValues({ status: '', company: '' });
+  }, []);
 
   const filterFn = (item, keyword) => {
     return [
@@ -150,6 +201,8 @@ export default function InquiryLanding() {
       .some((value) => String(value).toLowerCase().includes(keyword));
   };
 
+  if (loading) return <div>Loading...</div>;
+
   return (
     <>
       <Landing
@@ -160,9 +213,14 @@ export default function InquiryLanding() {
         searchPlaceholder="Search inquiry"
         newButtonLabel="New Inquiry"
         onNew={() => router.push('/inquiry/inquiryform')}
-        emptyMessage="No inquiries found"
+        emptyMessage={hasActiveFilters ? 'No inquiries found for the selected filters' : 'No inquiries found'}
         width="320px"
         filterFn={filterFn}
+        filters={landingFilters}
+        filterValues={filterValues}
+        onFilterChange={(key, value) => setFilterValues((prev) => ({ ...prev, [key]: value }))}
+        onClearFilters={clearFilters}
+        hasActiveFilters={hasActiveFilters}
       />
 
       <ConfirmModal

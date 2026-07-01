@@ -103,6 +103,7 @@ export const ItemsFields = (materials, pr) => [
     name: 'material',
     label: 'Material',
     type: 'select',
+    searchable: true,
     options: materials.map(({ id, name, code }) => ({
   value: id,
   label: `${code ? `[${code}] ` : ''}${name || ''}`.trim(),

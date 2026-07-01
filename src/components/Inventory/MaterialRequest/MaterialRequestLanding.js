@@ -18,6 +18,8 @@ const baseColumns = [
   { header: 'Requested By', key: 'requestedBy' },
   { header: 'Status', key: 'status', render: (item) => <StatusBadge status={item.status} /> },
   { header: 'Request Date', key: 'requestDate', render: (item) => (item.requestDate ? new Date(item.requestDate).toLocaleString() : '') },
+  { header: 'Deadline', key: 'deadline', render: (item) => (item.deadline ? new Date(item.deadline  ).toLocaleString() : '') },
+
   {
     header: 'Print RV',
     key: '__actions',
