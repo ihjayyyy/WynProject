@@ -26,10 +26,31 @@ async function getProjectBOMByProjectId(projectId) {
   }
 }
 
-export { getProjectBOMByProjectId };
+async function getProposalBOM(proposalId) {
+  if (!proposalId) return { data: null, error: 'Missing proposalId' };
+
+  try {
+    const data = await parseResponse(
+      await fetch(`${API_BASE_URL}/GetProposalBOM/${proposalId}`, {
+        method: 'GET',
+        headers: { Accept: '*/*' },
+      })
+    );
+
+    return { data, error: null };
+  } catch (error) {
+    return { data: null, error: error?.message || error };
+  }
+}
+
+export {
+  getProjectBOMByProjectId,
+  getProposalBOM,
+};
 
 const ProjectBOMService = {
   getProjectBOMByProjectId,
+  getProposalBOM,
 };
 
 export default ProjectBOMService;

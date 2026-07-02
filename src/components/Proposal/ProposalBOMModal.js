@@ -1,57 +1,40 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { FiDownload, FiX } from 'react-icons/fi';
 import Button from '../ui/Button/Button';
 import DataTable from '../ui/DataTable/DataTable';
-import { getProjectBOMByProjectId } from '../../services/ProjectBOM';
-import styles from './ProjectBOMModal.module.scss';
-
-function formatDateTime(value) {
-  if (!value) return '-';
-
-  const d = new Date(value);
-
-  if (Number.isNaN(d.getTime())) return '-';
-
-  return d.toLocaleString();
-}
+import { getProposalBOM } from '../../services/ProjectBOM';
+import styles from './ProposalBOMModal.module.scss';
 
 const columns = [
-  { header: 'Scope', key: 'scopeName', width: '160px' },
-  { header: 'Code', key: 'code', width: '160px' },
-  { header: 'Name', key: 'name', width: '160px' },
+  { header: 'Scope', key: 'proposalScopeName', width: '220px' },
+  { header: 'Code', key: 'code', width: '180px' },
+  { header: 'Name', key: 'name', width: '220px' },
   { header: 'Quantity', key: 'quantity', align: 'right', width: '100px' },
 ];
 
-export default function ProjectBOMModal({
-  open,
-  projectId,
-  projectLabel = '',
-  onClose,
-}) {
+export default function ProposalBOMModal({ open, proposalId, proposalLabel = '', onClose }) {
   const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
   useEffect(() => {
-    if (!open || !projectId) return;
+    if (!open || !proposalId) return;
 
     let mounted = true;
-
     setLoading(true);
     setError(null);
 
     (async () => {
-      const res = await getProjectBOMByProjectId(projectId);
-
+      const res = await getProposalBOM(proposalId);
       if (!mounted) return;
 
       if (!res || res.error) {
         setRows([]);
-        setError(res?.error ? String(res.error) : 'Failed to load Project BOM');
+        setError(res?.error ? String(res.error) : 'Failed to load Proposal BOM');
         setLoading(false);
         return;
       }
@@ -59,8 +42,8 @@ export default function ProjectBOMModal({
       const list = Array.isArray(res.data) ? res.data : [];
 
       const sortedList = [...list].sort((a, b) => {
-        const scopeA = a?.scopeName?.toLowerCase() || '';
-        const scopeB = b?.scopeName?.toLowerCase() || '';
+        const scopeA = a?.proposalScopeName?.toLowerCase() || '';
+        const scopeB = b?.proposalScopeName?.toLowerCase() || '';
 
         return scopeA.localeCompare(scopeB);
       });
@@ -72,36 +55,27 @@ export default function ProjectBOMModal({
     return () => {
       mounted = false;
     };
-  }, [open, projectId]);
+  }, [open, proposalId]);
 
   if (!open) return null;
 
   const handleDownloadPdf = () => {
     if (!rows.length) return;
 
-    const doc = new jsPDF({
-      orientation: 'landscape',
-      unit: 'mm',
-      format: 'a4',
-    });
-
+    const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
     const pageWidth = doc.internal.pageSize.getWidth();
 
     doc.setFontSize(16);
-    doc.text('Project BOM', 14, 16);
-
+    doc.text('Proposal BOM', 14, 16);
     doc.setFontSize(10);
 
-    if (projectLabel) {
-      doc.text(`Project: ${projectLabel}`, 14, 22);
+    if (proposalLabel) {
+      doc.text(`Proposal: ${proposalLabel}`, 14, 22);
     }
 
-    doc.text(
-      `Generated: ${new Date().toLocaleString()}`,
-      pageWidth - 14,
-      16,
-      { align: 'right' }
-    );
+    doc.text(`Generated: ${new Date().toLocaleString()}`, pageWidth - 14, 16, {
+      align: 'right',
+    });
 
     doc.text(`Total Items: ${rows.length}`, pageWidth - 14, 22, {
       align: 'right',
@@ -140,20 +114,20 @@ export default function ProjectBOMModal({
         lineWidth: 0.2,
       },
       columnStyles: {
-        0: { cellWidth: 56 },
+        0: { cellWidth: 74 },
         1: { cellWidth: 56 },
-        2: { cellWidth: 56 },
+        2: { cellWidth: 90 },
         3: { halign: 'right', cellWidth: 28 },
       },
       margin: { left: 14, right: 14 },
       theme: 'grid',
     });
 
-    const safeLabel = (projectLabel || `project-${projectId}`)
+    const safeLabel = (proposalLabel || `proposal-${proposalId}`)
       .toString()
       .replace(/[^a-z0-9-_]+/gi, '-');
 
-    doc.save(`project-bom-${safeLabel}.pdf`);
+    doc.save(`proposal-bom-${safeLabel}.pdf`);
   };
 
   return (
@@ -161,7 +135,7 @@ export default function ProjectBOMModal({
       <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
         <div className={styles.header}>
           <h3 className={styles.title}>
-            Project BOM{projectLabel ? ` — ${projectLabel}` : ''}
+            Proposal BOM{proposalLabel ? ` - ${proposalLabel}` : ''}
           </h3>
 
           <button

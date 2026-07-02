@@ -21,6 +21,7 @@ import { AccessContext } from '@/app/contextProviders/accessContext';
 import InvalidPage from '@/components/InvalidPage/page';
 import RichTextEditor from '../ui/RichTextEditor/RichTextEditor';
 import formStyles from './ProposalForm.module.scss';
+import ProposalBOMModal from './ProposalBOMModal';
 import { useConfirmModal } from '@/app/contextProviders/confirmModalContext';
 
 export default function ProposalForm() {
@@ -239,6 +240,7 @@ export default function ProposalForm() {
   const [confirmTitle, setConfirmTitle] = useState('');
   const [confirmMessage, setConfirmMessage] = useState('');
   const [confirmCallback, setConfirmCallback] = useState(null);
+  const [isProposalBOMOpen, setIsProposalBOMOpen] = useState(false);
 
   const formTitle = useMemo(() => {
     if (!proposalId) return 'Proposal Form';
@@ -928,6 +930,14 @@ export default function ProposalForm() {
                   // Documents
                   isAllowed(PageName, 'r') && isReadOnly ? 
                   <>
+                  <Button
+                    variant="primary"
+                    icon={<FiFileText size={14} />}
+                    disabled={actionLoading || !proposalId}
+                    onClick={() => setIsProposalBOMOpen(true)}
+                  >
+                    View BOM
+                  </Button>
                   <Button variant="primary" icon={<FiPrinter size={14} />} disabled={actionLoading} onClick={async () => {
                     setActionLoading(true);
                     await printProposal_byId(proposalId);
@@ -956,6 +966,12 @@ export default function ProposalForm() {
           if (confirmCallback) await confirmCallback();
         }}
         onCancel={() => setIsConfirmOpen(false)}
+      />
+      <ProposalBOMModal
+        open={isProposalBOMOpen}
+        proposalId={proposalId}
+        proposalLabel={initialValues?.proposalNo || initialValues?.name || initialValues?.code || ''}
+        onClose={() => setIsProposalBOMOpen(false)}
       />
     </>
   ) : <InvalidPage />;
