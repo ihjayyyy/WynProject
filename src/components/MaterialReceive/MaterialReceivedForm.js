@@ -239,9 +239,14 @@ export default function MaterialReceivedForm() {
           setTableError(errors.transferId);
         } else if (
           isPartiallyReceived &&
-          (tableData.items || []).some((it) => !String(it.remarks || '').trim())
+          (tableData.items || []).some((it) => {
+            const quantity = Number(it.quantity || 0);
+            const received = Number(it.receivedQuantity || 0);
+            const isLinePartiallyReceived = received < quantity;
+            return isLinePartiallyReceived && !String(it.remarks || '').trim();
+          })
         ) {
-          errors.transferId = 'Remarks are required for all items when the transfer is Partially Received';
+          errors.transferId = 'Remarks are required only for partially received items';
           setTableError(errors.transferId);
         } else {
           setTableError('');

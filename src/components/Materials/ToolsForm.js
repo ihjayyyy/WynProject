@@ -8,6 +8,7 @@ import EntityForm from '../EntityForm/EntityForm';
 import Button from '../ui/Button/Button';
 import { createMaterial, updateMaterial, getMaterial, INITIAL_MATERIAL } from '../../services/Materials';
 import { getRacks } from '../../services/Rack';
+import { getSuppliers } from '../../services/Supplier';
 import { useToast } from '../ui/Toast/Toast';
 
 export default function ToolsForm() {
@@ -38,6 +39,7 @@ export default function ToolsForm() {
   const [initialValues, setInitialValues] = useState({ ...INITIAL_MATERIAL, materialType: 'Tool', isAssembly: false });
   const [exists, setExists] = useState(false);
   const [racks, setRacks] = useState([]);
+  const [suppliers, setSuppliers] = useState([]);
 
   useEffect(() => {
     let cancelled = false;
@@ -50,9 +52,27 @@ export default function ToolsForm() {
     return () => { cancelled = true; };
   }, []);
 
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await getSuppliers();
+        if (!cancelled && !res?.error) setSuppliers(res.data || []);
+      } catch (e) {}
+    })();
+    return () => { cancelled = true; };
+  }, []);
+
   const rackOptions = useMemo(() => {
     return (racks || []).map((r) => ({ label: `${r.warehouseName ? r.warehouseName + ' - ' : ''}${r.name}`, value: r.id }));
   }, [racks]);
+
+  const supplierOptions = useMemo(() => {
+    return (suppliers || []).map((s) => ({
+      label: `${s.code ? `[${s.code}] ` : ''}${s.supplierName || s.name || ''}`.trim(),
+      value: s.id,
+    }));
+  }, [suppliers]);
 
   useEffect(() => {
     let cancelled = false;
@@ -100,6 +120,15 @@ export default function ToolsForm() {
   const fields = [
     { name: 'code', label: 'Code', span: 'span2', validator: Yup.string().required('Code is required') },
     { name: 'name', label: 'Name', span: 'span2', validator: Yup.string().required('Name is required') },
+    {
+      name: 'supplierId',
+      label: 'Supplier',
+      type: 'select',
+      options: supplierOptions,
+      span: 'span2',
+      searchable: true,
+      validator: Yup.mixed().required('Supplier is required'),
+    },
     { name: 'purchasePrice', label: 'Purchase Price', type: 'number', span: 'span2', validator: Yup.number().min(0, 'Purchase price must be 0 or more') },
     { name: 'sellingPrice', label: 'Selling Price', type: 'number', span: 'span2', validator: Yup.number().min(0, 'Selling price must be 0 or more') },
     ...(!toolId
@@ -147,6 +176,7 @@ export default function ToolsForm() {
           initialQuantity: Number(values.initialQuantity) || 0,
           stockLevel: Number(values.stockLevel ?? values.initialQuantity) || 0,
         isAssembly: false,
+        supplierId: Number(values.supplierId) || 0,
       };
       try {
         const res = await createMaterial(payload);
@@ -175,6 +205,7 @@ export default function ToolsForm() {
         referenceNumber: values.referenceNumber || '0',
           stockLevel: Number(values.stockLevel) || 0,
         isAssembly: false,
+        supplierId: Number(values.supplierId) || 0,
       };
       const res = await updateMaterial(toolId, payload);
       if (res?.error) {

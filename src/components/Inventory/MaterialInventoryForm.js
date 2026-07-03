@@ -13,6 +13,11 @@ import { useToast } from '../ui/Toast/Toast';
 import { byTypeMaterials as fetchByTypeMaterials } from '../../services/Materials';
 import { getRacks } from '../../services/Rack';
 
+const MATERIAL_TYPE_OPTIONS = [
+  { label: 'Material', value: 'Material' },
+  { label: 'Other', value: 'Other' },
+];
+
 export default function MaterialInventoryForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -21,6 +26,10 @@ export default function MaterialInventoryForm() {
   const [isEditModeLocal, setIsEditModeLocal] = useState(false);
   const [racks, setRacks] = useState([]);
   const isEditMode = mode === 'edit' || isEditModeLocal;
+
+  // Drives which material type is used to fetch the Material dropdown options.
+  // NOT sent in the payload.
+  const [materialTypeFilter, setMaterialTypeFilter] = useState('Material');
 
   useEffect(() => {
     let cancelled = false;
@@ -33,13 +42,14 @@ export default function MaterialInventoryForm() {
     return () => { cancelled = true; };
   }, []);
 
-  const [initialValues, setInitialValues] = useState(INITIAL_MATERIAL_INVENTORY);
+  const [initialValues, setInitialValues] = useState({ ...INITIAL_MATERIAL_INVENTORY, materialType: 'Material' });
 
   useEffect(() => {
     let cancelled = false;
     (async () => {
       if (!inventoryId) {
-        setInitialValues(INITIAL_MATERIAL_INVENTORY);
+        setInitialValues({ ...INITIAL_MATERIAL_INVENTORY, materialType: 'Material' });
+        setMaterialTypeFilter('Material');
         return;
       }
       try {
@@ -47,7 +57,8 @@ export default function MaterialInventoryForm() {
         const data = res?.data;
         if (!cancelled && !res?.error && data) {
           const item = Array.isArray(data) ? data[0] : data;
-          setInitialValues(item || INITIAL_MATERIAL_INVENTORY);
+          setInitialValues({ ...(item || INITIAL_MATERIAL_INVENTORY), materialType: item?.materialType || 'Material' });
+          setMaterialTypeFilter(item?.materialType || 'Material');
         }
       } catch (e) {}
     })();
@@ -101,7 +112,7 @@ export default function MaterialInventoryForm() {
       const freshData = fresh?.data;
       if (!fresh?.error && freshData) {
         const item = Array.isArray(freshData) ? freshData[0] : freshData;
-        setInitialValues(item || INITIAL_MATERIAL_INVENTORY);
+        setInitialValues({ ...(item || INITIAL_MATERIAL_INVENTORY), materialType: item?.materialType || 'Material' });
       }
 
       toast.success('Quantity updated successfully.');
@@ -120,26 +131,41 @@ const materialOptions = useMemo(() => {
   }));
 }, [materials]);
 
+  // Refetch materials whenever the material type filter changes.
   useEffect(() => {
     let cancelled = false;
     (async () => {
       try {
-        const res = await fetchByTypeMaterials({ materialType: 'Material', isAssembly: false });
+        const res = await fetchByTypeMaterials({ materialType: materialTypeFilter || 'Material', isAssembly: false });
         if (!cancelled && !res?.error) setMaterials(res.data || []);
       } catch (e) {}
     })();
     return () => { cancelled = true; };
-  }, []);
+  }, [materialTypeFilter]);
 
   const rackOptions = useMemo(() => {
     return (racks || []).map((r) => ({ label: `${r.warehouseName ? r.warehouseName + ' - ' : ''}${r.name}`, value: r.id }));
   }, [racks]);
 
   const fields = [
-    { name: 'materialId', label: 'Material', span: 'span1', type: 'select', options: materialOptions, searchable: true, validator: Yup.mixed().required('Material is required') },
+    {
+      name: 'materialType',
+      label: 'Material Type',
+      type: 'select',
+      options: MATERIAL_TYPE_OPTIONS,
+      span: 'span1',
+      onChange: (selected, values, setValues) => {
+        setMaterialTypeFilter(selected);
+        // Clear the previously selected material since it may not belong
+        // to the newly selected material type.
+        setValues({ ...values, materialType: selected, materialId: '' });
+      },
+    },
     { name: 'spacer-1', type: 'spacer', span: 'span2' },
-    { name: 'rackId', label: 'Rack', span: 'span1', type: 'select', options: rackOptions, searchable: true, validator: Yup.mixed().required('Rack is required') },
+    { name: 'materialId', label: 'Material', span: 'span1', type: 'select', options: materialOptions, searchable: true, validator: Yup.mixed().required('Material is required') },
     { name: 'spacer-2', type: 'spacer', span: 'span2' },
+    { name: 'rackId', label: 'Rack', span: 'span1', type: 'select', options: rackOptions, searchable: true, validator: Yup.mixed().required('Rack is required') },
+    { name: 'spacer-3', type: 'spacer', span: 'span2' },
     { name: 'name', label: 'Name', span: 'span2', validator: Yup.string().required('Name is required') },
     { name: 'quantity', label: 'Quantity', type: 'number', span: 'span2', readOnly: () => Boolean(inventoryId), validator: Yup.number().min(0, 'Quantity must be 0 or more').required('Quantity is required') },
     { name: 'stockLevel', label: 'Stock Level', type: 'number', span: 'span2', validator: Yup.number().min(0, 'Stock level must be 0 or more') },
@@ -156,6 +182,8 @@ const materialOptions = useMemo(() => {
         const now = new Date().toISOString().slice(0, 10);
         if (!inventoryId) {
           try {
+            // NOTE: materialType is intentionally excluded from the payload —
+            // it's only used to filter the Material dropdown on this form.
             const payload = { name: values.name, code: values.code || '', rackId: values.rackId, materialId: values.materialId, quantity: values.quantity, stockLevel: Number(values.stockLevel ?? values.quantity) || 0 };
             const result = await createMaterialInventory(payload);
             if (result.error) throw new Error(result.error);
@@ -176,6 +204,8 @@ const materialOptions = useMemo(() => {
           }
         }
         try {
+          // NOTE: materialType is intentionally excluded from the payload —
+          // it's only used to filter the Material dropdown on this form.
           const payload = { name: values.name, code: values.code || '', rackId: values.rackId, materialId: values.materialId, quantity: values.quantity, stockLevel: Number(values.stockLevel) || 0 };
           const result = await updateMaterialInventory(inventoryId, payload);
           if (result.error) throw new Error(result.error);

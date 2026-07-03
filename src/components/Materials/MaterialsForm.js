@@ -9,7 +9,13 @@ import Button from '../ui/Button/Button';
 import { createMaterial, updateMaterial, getMaterial, INITIAL_MATERIAL } from '../../services/Materials';
 import { getUnitsOfMeasure } from '../../services/UnitOfMeasure';
 import { getRacks } from '../../services/Rack';
+import { getSuppliers } from '../../services/Supplier';
 import { useToast } from '../ui/Toast/Toast';
+
+const MATERIAL_TYPE_OPTIONS = [
+  { label: 'Material', value: 'Material' },
+  { label: 'Other', value: 'Other' },
+];
 
 export default function MaterialsForm() {
   const router = useRouter();
@@ -24,6 +30,7 @@ export default function MaterialsForm() {
   const [exists, setExists] = useState(false);
   const [uomOptions, setUomOptions] = useState([]);
   const [racks, setRacks] = useState([]);
+  const [suppliers, setSuppliers] = useState([]);
 
   useEffect(() => {
     let cancelled = false;
@@ -36,9 +43,27 @@ export default function MaterialsForm() {
     return () => { cancelled = true; };
   }, []);
 
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await getSuppliers();
+        if (!cancelled && !res?.error) setSuppliers(res.data || []);
+      } catch (e) {}
+    })();
+    return () => { cancelled = true; };
+  }, []);
+
   const rackOptions = useMemo(() => {
     return (racks || []).map((r) => ({ label: `${r.warehouseName ? r.warehouseName + ' - ' : ''}${r.name}`, value: r.id }));
   }, [racks]);
+
+  const supplierOptions = useMemo(() => {
+    return (suppliers || []).map((s) => ({
+      label: `${s.code ? `[${s.code}] ` : ''}${s.supplierName || s.name || ''}`.trim(),
+      value: s.id,
+    }));
+  }, [suppliers]);
 
   // Load UOM options
   useEffect(() => {
@@ -74,7 +99,11 @@ export default function MaterialsForm() {
           setInitialValues({ ...INITIAL_MATERIAL, materialType: 'Material', isAssembly: false });
           setExists(false);
         } else {
-          setInitialValues({ ...res.data, materialType: 'Material', isAssembly: false });
+          setInitialValues({
+            ...res.data,
+            materialType: res.data.materialType || 'Material',
+            isAssembly: false,
+          });
           setExists(true);
         }
       } catch (e) {
@@ -101,6 +130,23 @@ export default function MaterialsForm() {
   const fields = [
     { name: 'code', label: 'Code', span: 'span2', validator: Yup.string().required('Code is required') },
     { name: 'name', label: 'Name', span: 'span2', validator: Yup.string().required('Name is required') },
+    {
+      name: 'materialType',
+      label: 'Material Type',
+      type: 'select',
+      options: MATERIAL_TYPE_OPTIONS,
+      span: 'span2',
+      validator: Yup.string().required('Material Type is required'),
+    },
+    {
+      name: 'supplierId',
+      label: 'Supplier',
+      type: 'select',
+      options: supplierOptions,
+      span: 'span2',
+      searchable: true,
+      validator: Yup.mixed().required('Supplier is required'),
+    },
     { name: 'purchasePrice', label: 'Purchase Price', type: 'number', span: 'span2', validator: Yup.number().min(0, 'Purchase price must be 0 or more') },
     { name: 'sellingPrice', label: 'Selling Price', type: 'number', span: 'span2', validator: Yup.number().min(0, 'Selling price must be 0 or more') },
     ...(!materialId
@@ -138,7 +184,7 @@ export default function MaterialsForm() {
       const payload = {
         name: values.name,
         code: values.code,
-        materialType: 'Material',
+        materialType: values.materialType || 'Material',
         unitOfMeasure: values.uom || values.unitOfMeasure || '',
         purchaseUnitOfMeasure: values.defaultPurchaseUOM || values.purchaseUnitOfMeasure || '',
         purchasePrice: Number(values.purchasePrice ?? values.unitCost) || 0,
@@ -148,6 +194,7 @@ export default function MaterialsForm() {
         initialQuantity: Number(values.initialQuantity) || 0,
         stockLevel: Number(values.stockLevel ?? values.initialQuantity) || 0,
         isAssembly: false,
+        supplierId: Number(values.supplierId) || 0,
       };
       try {
         const res = await createMaterial(payload);
@@ -168,7 +215,7 @@ export default function MaterialsForm() {
       const payload = {
         name: values.name,
         code: values.code,
-        materialType: 'Material',
+        materialType: values.materialType || 'Material',
         unitOfMeasure: values.uom || values.unitOfMeasure || '',
         purchaseUnitOfMeasure: values.defaultPurchaseUOM || values.purchaseUnitOfMeasure || '',
         purchasePrice: Number(values.purchasePrice ?? values.unitCost) || 0,
@@ -176,6 +223,7 @@ export default function MaterialsForm() {
         referenceNumber: values.referenceNumber || '0',
         stockLevel: Number(values.stockLevel) || 0,
         isAssembly: false,
+        supplierId: Number(values.supplierId) || 0,
       };
       const res = await updateMaterial(materialId, payload);
       if (res?.error) {

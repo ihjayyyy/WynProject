@@ -12,6 +12,12 @@ import { getMaterialInventories, updateMaterialInventoryQuantity } from '../../s
 import { byTypeMaterials as fetchByTypeMaterials } from '../../services/Materials';
 import { getRacks } from '../../services/Rack';
 import { getWarehouses } from '../../services/Warehouse';
+import styles from './MaterialInventoryLanding.module.scss';
+
+const MATERIAL_TYPE_OPTIONS = [
+  { label: 'Material', value: 'Material' },
+  { label: 'Other', value: 'Other' },
+];
 
 const baseColumns = [
   // { header: 'Id', key: 'id' },
@@ -31,21 +37,24 @@ export default function MaterialInventoryLanding() {
   const [materials, setMaterials] = useState([]);
   const [racks, setRacks] = useState([]);
   const [warehouses, setWarehouses] = useState([]);
+  const [materialType, setMaterialType] = useState('Material');
   const [isQtyModalOpen, setIsQtyModalOpen] = useState(false);
   const [qtyTargetItem, setQtyTargetItem] = useState(null);
   const [qtyChange, setQtyChange] = useState('');
   const [qtySaving, setQtySaving] = useState(false);
+  const [loadingMaterials, setLoadingMaterials] = useState(false);
 
-  const loadInventoryData = async (cancelled = false) => {
+  const loadInventoryData = async (cancelled = false, type = 'Material') => {
     try {
+      setLoadingMaterials(true);
       const res = await getRacks();
       if (!cancelled && !res?.error) setRacks(res.data || []);
       const res2 = await getWarehouses();
       if (!cancelled && !res2?.error) setWarehouses(res2.data || []);
-      const matRes = await fetchByTypeMaterials({ materialType: 'Material', isAssembly: false });
+      const matRes = await fetchByTypeMaterials({ materialType: type, isAssembly: false });
       if (!cancelled && !matRes?.error) {
         setMaterials(matRes.data || []);
-        const invRes = await getMaterialInventories({ materialType: 'Material' });
+        const invRes = await getMaterialInventories({ materialType: type });
         if (!cancelled && !invRes?.error) {
           const invData = invRes.data || [];
           const inv = invData.filter((it) => (matRes.data || []).some((m) => m.id === it.materialId));
@@ -54,16 +63,19 @@ export default function MaterialInventoryLanding() {
           setInventory([]);
         }
       }
-    } catch (e) {}
+    } catch (e) {
+    } finally {
+      if (!cancelled) setLoadingMaterials(false);
+    }
   };
 
   useEffect(() => {
     let cancelled = false;
     (async () => {
-      await loadInventoryData(cancelled);
+      await loadInventoryData(cancelled, materialType);
     })();
     return () => { cancelled = true; };
-  }, []);
+  }, [materialType]);
 
   const openQuantityModal = (item) => {
     setQtyTargetItem(item);
@@ -141,6 +153,26 @@ export default function MaterialInventoryLanding() {
     ];
   }, [inventory]);
 
+  const typeToggle = (
+    <div className={styles.typeToggleRow}>
+      <span className={styles.typeLabel}>Type</span>
+      <div className={styles.tabs}>
+        {MATERIAL_TYPE_OPTIONS.map((opt) => (
+          <button
+            type="button"
+            key={opt.value}
+            className={`${styles.tab} ${materialType === opt.value ? styles.tabActive : ''}`}
+            onClick={() => setMaterialType(opt.value)}
+            disabled={loadingMaterials && materialType === opt.value}
+            aria-pressed={materialType === opt.value}
+          >
+            {opt.label}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+
   const filterFn = (it, k) => {
     const keyword = k;
     return [
@@ -166,6 +198,7 @@ export default function MaterialInventoryLanding() {
         emptyMessage="No inventory records found"
         width="320px"
         filterFn={filterFn}
+        belowStatsAddon={typeToggle}
       />
 
       <ConfirmModal

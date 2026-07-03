@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useMemo, useState, useEffect } from 'react';
+import React, { useMemo, useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { FiEdit2, FiEye, FiPackage, FiStar } from 'react-icons/fi';
 import * as Yup from 'yup';
@@ -13,6 +13,12 @@ import { byTypeMaterials } from '../../services/Materials';
 import { getRacks } from '../../services/Rack';
 import { createMaterialInventory, getRacksByMaterialId, setDefaultMaterialInventory } from '../../services/MaterialInventory';
 import { useToast } from '../ui/Toast/Toast';
+import styles from './MaterialsLanding.module.scss';
+
+const MATERIAL_TYPE_OPTIONS = [
+  { label: 'Material', value: 'Material' },
+  { label: 'Other', value: 'Other' },
+];
 
 const baseColumns = [
   { header: 'Code', key: 'code' },
@@ -31,6 +37,8 @@ export default function MaterialsLanding() {
   const router = useRouter();
   const toast = useToast();
   const [materials, setMaterials] = useState([]);
+  const [materialType, setMaterialType] = useState('Material');
+  const [loadingMaterials, setLoadingMaterials] = useState(false);
   const [racks, setRacks] = useState([]);
   const [inventoryModal, setInventoryModal] = useState({ open: false, material: null });
 
@@ -44,16 +52,20 @@ export default function MaterialsLanding() {
   useEffect(() => {
     let cancelled = false;
     (async () => {
+      setLoadingMaterials(true);
       try {
-        const res = await byTypeMaterials({ materialType: 'Material', isAssembly: false });
+        const res = await byTypeMaterials({ materialType, isAssembly: false });
         if (!cancelled && !res?.error) {
           const items = (res.data || []).map((m) => ({ ...m, uom: m.unitOfMeasure, purchasePrice: m.purchasePrice ?? m.unitCost ?? 0 }));
           setMaterials(items);
         }
-      } catch (e) {}
+      } catch (e) {
+      } finally {
+        if (!cancelled) setLoadingMaterials(false);
+      }
     })();
     return () => { cancelled = true; };
-  }, []);
+  }, [materialType]);
 
   useEffect(() => {
     let cancelled = false;
@@ -72,7 +84,7 @@ export default function MaterialsLanding() {
   );
 
   // Open Set Default modal and load racks for that material
-  const openDefaultModal = async (item) => {
+  const openDefaultModal = useCallback(async (item) => {
     setDefaultModal({ open: true, material: item });
     setSelectedInventoryId('');
     setDefaultRackOptions([]);
@@ -93,7 +105,7 @@ export default function MaterialsLanding() {
     } finally {
       setDefaultLoading(false);
     }
-  };
+  }, [toast]);
 
   const closeDefaultModal = () => {
     setDefaultModal({ open: false, material: null });
@@ -146,7 +158,7 @@ export default function MaterialsLanding() {
       { key: 'createInventory', label: 'Create Inventory', icon: <FiPackage size={14} />, onClick: (item) => setInventoryModal({ open: true, material: item }) },
       { key: 'setDefault', label: 'Set Default', icon: <FiStar size={14} />, onClick: openDefaultModal },
     ],
-    [router]
+    [router, openDefaultModal]
   );
 
   const columns = useMemo(() => [...baseColumns, { header: 'Action', key: 'actions', align: 'right', sortable: false, render: (item) => <DropdownAction item={item} items={actionItems} /> }], [actionItems]);
@@ -177,6 +189,26 @@ export default function MaterialsLanding() {
       .some((value) => String(value).toLowerCase().includes(keyword));
   };
 
+  const typeToggle = (
+    <div className={styles.typeToggleRow}>
+      <span className={styles.typeLabel}>Type</span>
+      <div className={styles.tabs}>
+        {MATERIAL_TYPE_OPTIONS.map((opt) => (
+          <button
+            type="button"
+            key={opt.value}
+            className={`${styles.tab} ${materialType === opt.value ? styles.tabActive : ''}`}
+            onClick={() => setMaterialType(opt.value)}
+            disabled={loadingMaterials && materialType === opt.value}
+            aria-pressed={materialType === opt.value}
+          >
+            {opt.label}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+
   return (
     <>
       <Landing
@@ -190,6 +222,7 @@ export default function MaterialsLanding() {
         emptyMessage="No material records found"
         width="320px"
         filterFn={filterFn}
+        belowStatsAddon={typeToggle}
       />
 
       <ItemModal

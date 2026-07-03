@@ -1,0 +1,50 @@
+@use 'sass:color';
+@use '../../styles/variables' as *;
+
+.typeToggleRow {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.typeLabel {
+  font-size: 13px;
+  font-weight: 600;
+  color: $color-primary-light;
+}
+
+.tabs {
+  display: flex;
+  gap: 8px;
+}
+
+.tab {
+  background: $color-background-alt-light;
+  color: $color-text-primary-light;
+  padding: 8px 12px;
+  border-radius: 999px;
+  font-size: 13px;
+  cursor: pointer;
+  border: 1px solid rgba(0, 0, 0, 0.06);
+  transition: background 0.12s, transform 0.08s, color 0.12s;
+  display: inline-flex;
+  align-items: center;
+}
+
+.tab:hover:not(:disabled) {
+  background: color.scale($color-background-alt-light, $lightness: -6%);
+  transform: translateY(-1px);
+}
+
+.tab:disabled {
+  opacity: 0.75;
+  cursor: not-allowed;
+}
+
+.tabActive {
+  background: $color-accent-light;
+  color: $color-text-primary-dark;
+  border-color: rgba(0, 0, 0, 0.06);
+  box-shadow: 0 6px 18px rgba(59, 130, 246, 0.18);
+}

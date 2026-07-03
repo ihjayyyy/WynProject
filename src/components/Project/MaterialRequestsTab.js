@@ -140,7 +140,7 @@ export default function MaterialRequestsTab({ projectId, editable = true }) {
     const authName = `${(auth.firstName || '').trim()} ${(auth.lastName || '').trim()}`.trim() || auth.email || auth.userId || '';
     const today = new Date().toISOString().slice(0, 10);
     const defaultDeadlineDate = new Date();
-    defaultDeadlineDate.setMonth(defaultDeadlineDate.getMonth() + 1);
+    defaultDeadlineDate.setDate(defaultDeadlineDate.getDate() + 21);
     const defaultDeadline = defaultDeadlineDate.toISOString().slice(0, 10);
     const fmt = (v) => {
       if (!v) return '';
