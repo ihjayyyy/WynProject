@@ -14,9 +14,9 @@ import Button from '../ui/Button/Button';
 import { getSuppliers } from '@/services/Supplier';
 import { getMaterials, getMaterial } from '@/services/Materials';
 import {
-  GetAll as GetAllPurchaseRequest,
-  Get as GetPurchaseRequest,
-} from '@/services/PurchaseRequest';
+  GetAll as GetAllSupplierPurchaseRequests,
+  Get as GetSupplierPurchaseRequest,
+} from '@/services/PurchaseSupplierRequest';
 import POStyles from './PurchaseOrders.module.scss';
 import {
   InitialData,
@@ -103,8 +103,7 @@ export default function PurchaseOrdersForm() {
     setTableData({ ...tableData, items: poChildren });
   };
 
-  // Handle Purchase Request selection and populate table with its children
-  const onPRSelected = async (pr) => {
+  const onPRSelected = async (pr, setFormValues, currentValues) => {
     if (!pr) {
       setTableData({ items: [], deletedItems: [] });
       setPO((prevPo) => ({ ...prevPo, children: [], deletedChildren: [] }));
@@ -112,26 +111,28 @@ export default function PurchaseOrdersForm() {
     }
 
     try {
-      const prResult = await GetPurchaseRequest(pr.id);
-      const selectedPR = prResult?.data;
-      const prChildren = selectedPR?.children || [];
-      if (prResult?.error || !selectedPR || prChildren.length === 0) {
+      const sprResult = await GetSupplierPurchaseRequest(pr.id);
+      const selectedSPR = sprResult?.data;
+      const sprChildren = selectedSPR?.children || [];
+      if (sprResult?.error || !selectedSPR || sprChildren.length === 0) {
         setTableData({ items: [], deletedItems: [] });
         setPO((prevPo) => ({ ...prevPo, children: [], deletedChildren: [] }));
         return;
       }
 
-      // Fetch material details for each PR child
+      // Resolve the canonical supplier record — the SPR's own supplierName
+      // field is unreliable, so cross-reference the suppliers list already
+      // loaded for this form.
+      const matchedSupplier = suppliers.find(
+        (s) => s.id === selectedSPR.supplierId,
+      );
+
       const poItems = await Promise.all(
-        prChildren.map(async (child) => {
+        sprChildren.map(async (child) => {
           const materialRes = await getMaterial(child.materialId);
           const material = materialRes?.data;
+          if (!material) return null;
 
-          if (!material) {
-            return null;
-          }
-
-          // Transform PR child to PO item format
           const unitCost = Number(material.purchasePrice || 0);
           const quantity = Number(child.quantity || 0);
           const discount = 0;
@@ -139,7 +140,6 @@ export default function PurchaseOrdersForm() {
           let amount = subamount;
           let vat = 0;
 
-          // Calculate VAT based on current PO vatType
           const vatType = po?.vatType || 'included';
           switch (vatType) {
             case 'included':
@@ -158,23 +158,22 @@ export default function PurchaseOrdersForm() {
           }
 
           return {
-            id: 0, // New item, will get assigned on save
+            id: 0,
             parentId: 0,
             materialId: child.materialId,
             code: child.code || material.code,
             name: child.name || material.name,
-            quantity: quantity,
-            unitCost: unitCost,
+            quantity,
+            unitCost,
             uom: material.purchaseUnitOfMeasure || child.uom,
-            discount: discount,
-            vat: vat,
-            amount: amount,
+            discount,
+            vat,
+            amount,
             remarks: child.remarks || '',
           };
         }),
       );
 
-      // Filter out null entries
       const validItems = poItems.filter((item) => item !== null);
       const newTotalVAT = validItems.reduce(
         (t, i) => t + Number(i.vat || 0),
@@ -190,20 +189,62 @@ export default function PurchaseOrdersForm() {
       setTotalIncludedd(newTotalIncluded);
       setTotalExcluded(newTotalExcluded);
 
-      // Update table data with populated items
       setTableData({ items: validItems, deletedItems: [] });
 
-      // Update PO with the new children
+      const supplierFields = matchedSupplier
+        ? {
+            supplierId: matchedSupplier.id,
+            supplierCode: matchedSupplier.code,
+            supplierName: matchedSupplier.name,
+            address: matchedSupplier.address,
+            contactPerson: matchedSupplier.contactPerson,
+            email: matchedSupplier.email,
+            contactNumber: matchedSupplier.contactNumber,
+            vatType: matchedSupplier.vatType
+              ? matchedSupplier.vatType
+              : po?.vatType || 'included',
+            code: matchedSupplier.code,
+            name: matchedSupplier.name,
+            jobOrder: selectedSPR.jobOrder || '',
+            supplierReferenceNo: selectedSPR.supplierReferenceNo || '',
+          }
+        : {
+            // Fallback if the suppliers list hasn't loaded yet or the id
+            // doesn't match anything — uses whatever the SPR itself has.
+            supplierId: selectedSPR.supplierId,
+            supplierCode: selectedSPR.supplierCode,
+            supplierName: selectedSPR.supplierName,
+            address: selectedSPR.address,
+            contactPerson: selectedSPR.contactPerson,
+            email: selectedSPR.email,
+            contactNumber: selectedSPR.contactNumber,
+            code: selectedSPR.supplierCode,
+            name: selectedSPR.supplierName,
+            jobOrder: selectedSPR.jobOrder || '',
+            supplierReferenceNo: selectedSPR.supplierReferenceNo || '',
+          };
+
       setPO((prevPo) => ({
         ...prevPo,
+        ...supplierFields,
         children: validItems,
         deletedChildren: [],
         vat: newTotalVAT,
         amount: newTotalIncluded,
       }));
+
+      // EntityForm's header fields only reflect its own live form state —
+      // push the resolved supplier fields directly into the form, same as
+      // the Supplier dropdown's own onChange does.
+      if (typeof setFormValues === 'function') {
+        setFormValues({
+          ...(currentValues || {}),
+          ...supplierFields,
+        });
+      }
     } catch (err) {
-      console.error('Failed to populate PO from PR:', err);
-      toast.error('Failed to load materials from purchase request');
+      console.error('Failed to populate PO from SPR:', err);
+      toast.error('Failed to load materials from supplier purchase request');
     }
   };
 
@@ -235,7 +276,7 @@ export default function PurchaseOrdersForm() {
       }
     };
     const fetchPurchaseRequests = async () => {
-      const res = await GetAllPurchaseRequest();
+      const res = await GetAllSupplierPurchaseRequests();
       if (res && !res.error) {
         const approved = (res.data || []).filter(
           (r) => r.status?.toLowerCase() === 'approved',
@@ -407,6 +448,7 @@ export default function PurchaseOrdersForm() {
       ...entity,
       vat: po.vat,
       amount: po.amount,
+      jobOrder: po.jobOrder,
       termsAndConditions: richText.termsAndConditions,
     };
 
