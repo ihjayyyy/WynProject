@@ -338,24 +338,10 @@ export default function ProjectDetails() {
               </div>
 
               <div className={styles.field}>
-                <label>Contract Price</label>
-                <div className="value">{project.contractPrice ? Number(project.contractPrice).toLocaleString() : ''}</div>
-              </div>
-
-              <div className={styles.field}>
                 <label>Overall Progress %</label>
                 <div className="value">{project.overallProgress ?? 0}%</div>
               </div>
 
-              <div className={styles.field}>
-                <label>Total Expense</label>
-                <div className="value">{project.totalExpenses ? Number(project.totalExpenses).toLocaleString() : ''}</div>
-              </div>
-
-              <div className={styles.field}>
-                <label>Net</label>
-                  <div className="value">{project.net}</div>
-              </div>
             </div>
 
             {/* Details content */}

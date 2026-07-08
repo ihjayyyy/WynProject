@@ -20,7 +20,7 @@ const baseColumns = [
     key: 'date',
     render: (item) =>
       item.date
-        ? new Date(item.date).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: '2-digit' })
+        ? new Date(item.date).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: '2-digit' })
         : '—',
   },
   { header: 'From Type', key: 'transferFromType' },

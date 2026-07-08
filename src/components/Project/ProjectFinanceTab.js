@@ -118,7 +118,7 @@ export default function ProjectFinanceTab({ projectId, project, projectStatus, e
     setLoading(false);
   };
 
-  
+
 
   const handleGenerateDownpaymentBilling = () => {
     confirmModal.show(
@@ -165,6 +165,33 @@ export default function ProjectFinanceTab({ projectId, project, projectStatus, e
       </div>
     </div>
     <div className={styles.detailsFields}>
+
+ <div className={styles.field}>
+        <label>Contract Price</label>
+        <div className="value">
+          {project?.contractPrice
+            ? Number(project.contractPrice).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+            : (0).toFixed(2)}
+        </div>
+      </div>
+
+      <div className={styles.field}>
+        <label>Total Expense</label>
+        <div className="value">
+          {project?.totalExpenses
+            ? Number(project.totalExpenses).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+            : (0).toFixed(2)}
+        </div>
+      </div>
+
+      <div className={styles.field}>
+        <label>Net</label>
+        <div className="value">
+          {project?.net != null && project.net !== ''
+            ? Number(project.net).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+            : (0).toFixed(2)}
+        </div>
+      </div>
 
       <div className={styles.field}>
         <label>Down Payment</label>
@@ -239,11 +266,22 @@ export default function ProjectFinanceTab({ projectId, project, projectStatus, e
         <label>Recoupment %</label>
         {editing ? (
           <div style={{ display: 'flex', flexDirection: 'column' }}>
-            <Input type="number" value={form.recoupmentPercentage ?? ''} onChange={e => { setForm({ ...form, recoupmentPercentage: e.target.value === '' ? '' : Number(e.target.value) }); setFormErrors(prev => ({ ...prev, recoupmentPercentage: undefined })); }} />
+            <Input
+              type="number"
+              value={form.recoupmentPercentage ?? ''}
+              onChange={e => {
+                setForm({ ...form, recoupmentPercentage: e.target.value === '' ? '' : Number(e.target.value) });
+                setFormErrors(prev => ({ ...prev, recoupmentPercentage: undefined }));
+              }}
+            />
             {formErrors.recoupmentPercentage && <div style={{ color: 'red', fontSize: '0.75rem' }}>{formErrors.recoupmentPercentage}</div>}
           </div>
         ) : (
-          <div className="value">{finance?.recoupmentPercentage ?? ''}</div>
+          <div className="value">
+            {finance?.recoupmentPercentage != null && finance.recoupmentPercentage !== ''
+              ? `${Number(finance.recoupmentPercentage).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}%`
+              : ''}
+          </div>
         )}
       </div>
       <div className={styles.field}>
@@ -260,7 +298,6 @@ export default function ProjectFinanceTab({ projectId, project, projectStatus, e
         <label>Last Billing Date</label>
         <div className="value">{finance?.lastBillingDate ? new Date(finance.lastBillingDate).toLocaleDateString() : ''}</div>
       </div>
-      {/* Project Completion input removed as per backend update */}
     </div>
     </>
   );

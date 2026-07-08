@@ -26,7 +26,7 @@ const baseColumns = [
   // { header: 'Material Name', key: 'materialId' },
   { header: 'Quantity', key: 'quantity' },
   { header: 'Updated By', key: 'updatedBy' },
-  { header: 'Updated Date', key: 'updatedAt', render: (item) => (item.updatedAt ? new Date(item.updatedAt).toLocaleString() : '') },
+  { header: 'Updated Date', key: 'updatedAt', render: (item) => (item.updatedAt ? new Date(item.updatedAt).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: '2-digit' }) : '') },
 
 ];
 
@@ -204,21 +204,21 @@ export default function MaterialInventoryLanding() {
       <ConfirmModal
         open={isQtyModalOpen}
         title="Adjust Quantity"
-        message="Use positive number to add stock and negative number to deduct stock."
+        message="Enter the quantity to add to the current stock."
         confirmText={qtySaving ? 'Saving...' : 'Apply'}
         confirmVariant="primary"
         onConfirm={applyQuantityChange}
         onCancel={closeQuantityModal}>
         <div style={{ marginBottom: '12px' }}>
-          <Input
-            type="number"
-            value={qtyChange}
-            onChange={(e) => setQtyChange(e.target.value)}
-            placeholder="e.g. 5 or -3"
-            min={-999999}
-            max={999999}
-            disabled={qtySaving}
-          />
+        <Input
+          type="number"
+          value={qtyChange}
+          onChange={(e) => setQtyChange(e.target.value)}
+          placeholder="e.g. 5"
+          min={1}
+          step={1}
+          disabled={qtySaving}
+        />
           {qtyTargetItem?.name ? (
             <div style={{ marginTop: '8px', fontSize: '12px', color: '#64748b' }}>
               Target: {qtyTargetItem.name}

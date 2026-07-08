@@ -12,7 +12,7 @@ import ProposalMaterialsTable from './ProposalMaterialsTable';
 import Button from '../ui/Button/Button';
 import { useToast } from '../ui/Toast/Toast';
 import { INITIAL_PROPOSAL, getProposalById, createProposal, updateProposal, submitProposal, approveProposal, rejectProposal, winProposal, loseProposal, cancelProposal, closeProposal, reviseProposal, createRevisedProposal, printProposal_byId, printProposalBreakdown_byId } from '../../services/Proposal';
-import { getParameter } from '../../services/Parameter';
+import { getParameter, getParameterByName } from '../../services/Parameter';
 import { convertProposal } from '../../services/Project';
 import ConfirmModal from '../ui/ConfirmModal/ConfirmModal';
 import { getCustomers } from '../../services/Customer';
@@ -36,6 +36,10 @@ export default function ProposalForm() {
   const [isEditModeLocal, setIsEditModeLocal] = useState(false);
   const isEditMode = mode === 'edit' || mode === 'revise' || isEditModeLocal;
 
+  // Finance permission - lowercase 'f'. When missing, finance fields
+  // (Labor %, Margin) are still shown but rendered non-editable.
+  const canEditFinance = isAllowed(PageName, 'f');
+
   // null = not yet loaded
   const [items, setItems] = useState(null);
   const [customers, setCustomers] = useState([]);
@@ -58,6 +62,18 @@ export default function ProposalForm() {
     attachmentUrl: '',
   });
   const [parameterDefaultsLoaded, setParameterDefaultsLoaded] = useState(false);
+  // Days-to-expire default pulled from Parameter (module: Proposal, name: ExpiresIn).
+  // Used to compute expirationDate = today + expiresInDays for brand-new proposals.
+  const [expiresInDays, setExpiresInDays] = useState(null);
+  // Default labor % pulled from Parameter (module: ProposalScope, name: LaborPercent).
+  // API returns a fraction (e.g. "0.1"); we convert to a whole-number percentage (10)
+  // to match how laborPercentage is edited/displayed elsewhere in this form.
+  const [defaultLaborPercentage, setDefaultLaborPercentage] = useState(null);
+  // Live mirror of the parent form's Labor (%) field, kept in sync via the field's
+  // onChange below. Needed because ProposalMaterialsTable/ProposalScopeModal read
+  // this as the default for brand-new scopes, and initialValues.laborPercentage is
+  // only a load-time snapshot — it doesn't reflect what the user is currently typing.
+  const [liveLaborPercentage, setLiveLaborPercentage] = useState(0);
   const toast = useToast();
 
   React.useEffect(() => {
@@ -152,8 +168,33 @@ export default function ProposalForm() {
             workDurationDescription: paramMap.WorkDurationDescription || '',
           });
           setExtraFields((prev) => ({ ...prev, miscellaneousTitle: paramMap.MiscellaneousTitle || '' }));
+          // If ExpiresIn happens to be included in the bulk parameter list, use it directly.
+          if (paramMap.ExpiresIn !== undefined) {
+            const days = Number(paramMap.ExpiresIn);
+            if (!isNaN(days)) setExpiresInDays(days);
+          }
         }
         setParameterDefaultsLoaded(true);
+      });
+
+      // Dedicated fetch for the ExpiresIn parameter (module: Proposal, name: ExpiresIn).
+      // Response shape: { value: { value: "30", module, code, id, name, updatedAt, updatedBy }, isSuccess, ... }
+      getParameterByName('Proposal', 'ExpiresIn').then((res) => {
+        if (!res.error && res.data !== null && res.data !== undefined && res.data !== '') {
+          const days = Number(res.data);
+          if (!isNaN(days)) setExpiresInDays(days);
+        }
+      });
+
+      // Dedicated fetch for the LaborPercent parameter (module: ProposalScope, name: LaborPercent).
+      // Response shape: { value: { value: "0.1", module, code, id, name, updatedAt, updatedBy }, isSuccess, ... }
+      // "0.1" is a fraction representing 10% — multiply by 100 to get the whole-number
+      // percentage this form's laborPercentage field expects.
+      getParameterByName('ProposalScope', 'LaborPercent').then((res) => {
+        if (!res.error && res.data !== null && res.data !== undefined && res.data !== '') {
+          const fraction = Number(res.data);
+          if (!isNaN(fraction)) setDefaultLaborPercentage(fraction * 100);
+        }
       });
     } else {
       setRichText({
@@ -190,6 +231,16 @@ export default function ProposalForm() {
     }
   };
 
+  // Returns today + days as a YYYY-MM-DD string.
+  const addDaysToTodayString = (days) => {
+    const d = new Date();
+    d.setDate(d.getDate() + (Number(days) || 0));
+    const yyyy = d.getFullYear();
+    const mm = String(d.getMonth() + 1).padStart(2, '0');
+    const dd = String(d.getDate()).padStart(2, '0');
+    return `${yyyy}-${mm}-${dd}`;
+  };
+
   const normalizedInitialValues = useMemo(() => {
     if (!initialValues) return initialValues;
     const today = new Date().toISOString().slice(0, 10);
@@ -197,14 +248,44 @@ export default function ProposalForm() {
     // or when in revise/copy mode (both effectively create a new draft).
     // Existing saved proposals keep a genuinely blank date as blank.
     const shouldDefaultToToday = !proposalId || isReviseMode || isCopyMode;
+
+    // Expiration date default: today + expiresInDays (from the Proposal_ExpiresIn
+    // parameter), falling back to plain "today" if the parameter hasn't loaded
+    // yet or is not a valid number. Only applies when we'd otherwise default to
+    // today AND there isn't already a real expirationDate on the record (so we
+    // never clobber a genuinely saved value on revise/copy of an existing proposal).
+    const hasExistingExpiration = Boolean(initialValues.expirationDate);
+    let expirationDateValue;
+    if (shouldDefaultToToday && !hasExistingExpiration) {
+      expirationDateValue = expiresInDays != null && !isNaN(expiresInDays)
+        ? addDaysToTodayString(expiresInDays)
+        : today;
+    } else {
+      expirationDateValue = toDateOnlyString(initialValues.expirationDate, shouldDefaultToToday);
+    }
+
+    // Labor % default: only for a genuinely brand-new proposal (no proposalId at all,
+    // and not revise/copy — those already carry over the source proposal's real value).
+    // Only applies when the record doesn't already have a non-zero laborPercentage.
+    const isBrandNew = !proposalId && !isReviseMode && !isCopyMode;
+    const hasExistingLaborPercentage = Boolean(initialValues.laborPercentage);
+    const laborPercentageValue = (isBrandNew && !hasExistingLaborPercentage && defaultLaborPercentage != null && !isNaN(defaultLaborPercentage))
+      ? defaultLaborPercentage
+      : initialValues.laborPercentage;
+
     return {
       ...initialValues,
       forecastedStartDate: toDateOnlyString(initialValues.forecastedStartDate, shouldDefaultToToday),
       forecastedEndDate: toDateOnlyString(initialValues.forecastedEndDate, shouldDefaultToToday),
-      expirationDate: toDateOnlyString(initialValues.expirationDate, shouldDefaultToToday),
+      expirationDate: expirationDateValue,
       requestDate: toDateOnlyString(initialValues.requestDate) || today,
+      laborPercentage: laborPercentageValue,
     };
-  }, [initialValues, proposalId, isReviseMode, isCopyMode]);
+  }, [initialValues, proposalId, isReviseMode, isCopyMode, expiresInDays, defaultLaborPercentage]);
+
+  React.useEffect(() => {
+    setLiveLaborPercentage(Number(normalizedInitialValues?.laborPercentage) || 0);
+  }, [normalizedInitialValues]);
 
   const dedupeDeleted = (arr = []) => {
     const seen = new Map();
@@ -269,7 +350,7 @@ export default function ProposalForm() {
     );
   }, [proposalId, isEditMode, isReviseMode, isCopyMode, initialValues, status]);
 
-  const customerOptions = customers.map((c) => ({ value: c.id, label: c.customerName || c.name || c.code }));
+  const customerOptions = customers.map((c) => ({ value: c.id, label: c.name}));
   const inquiryOptions = inquiries.map((q) => ({ value: q.id, label: q.inquiryNo || q.reference || q.code || q.name || String(q.id) }));
 
   const totals = React.useMemo(() => {
@@ -323,9 +404,9 @@ export default function ProposalForm() {
             customerId: sel.id,
             customerCode: sel.code || String(sel.id || ''),
             code: sel.code || '',
-            customerName: sel.customerName || sel.name || '',
+            customerName: sel.customerName,
             contactNumber: sel.contactNumber || '',
-            contactPerson: sel.contactPerson || '',
+            contactPerson: sel.customerName || '',
             address: sel.address || '',
             email: sel.email || '',
           });
@@ -350,38 +431,45 @@ export default function ProposalForm() {
     { name: 'contactNumber', label: 'Contact Number', span: 'span1', readOnly: isReviseMode },
     { name: 'spacer-6', type: 'spacer', span: 'span1' },
     {
+      // FINANCE FIELD: still shown to everyone, but the input and the
+      // "Apply to all" action are only enabled for users with 'f' permission.
       name: 'laborPercentage', label: 'Labor (%)', type: 'custom', span: 'span1',
-      render: ({ values, setValues }) => (
-        <div className={inputStyles.field}>
-          <label htmlFor="laborPercentage">Labor (%)</label>
-          <Input
-            id="laborPercentage"
-            type="number"
-            value={values.laborPercentage ?? ''}
-            readOnly={isReadOnly}
-            onChange={(e) => {
-              const pct = Number(e.target.value) || 0;
-              setValues({ ...values, laborPercentage: pct });
-            }}
-          />
-          {!isReadOnly && (
-            <Button
-              variant="secondary"
-              onClick={() => {
-                const pct = Number(values.laborPercentage) || 0;
-                confirmModal.show(
-                  'Apply Labor % to All',
-                  `Apply ${pct}% labor to all scopes and materials? This will overwrite their existing values.`,
-                  'Apply', 'primary',
-                  () => () => applyLaborPctToChildren(pct)
-                );
+      render: ({ values, setValues }) => {
+        const fieldDisabled = isReadOnly || !canEditFinance;
+        return (
+          <div className={inputStyles.field}>
+            <label htmlFor="laborPercentage">Labor (%)</label>
+            <Input
+              id="laborPercentage"
+              type="number"
+              value={values.laborPercentage ?? ''}
+              readOnly={fieldDisabled}
+              onChange={(e) => {
+                if (fieldDisabled) return;
+                const pct = Number(e.target.value) || 0;
+                setValues({ ...values, laborPercentage: pct });
+                setLiveLaborPercentage(pct);
               }}
-            >
-              Apply to all
-            </Button>
-          )}
-        </div>
-      ),
+            />
+            {!isReadOnly && canEditFinance && (
+              <Button
+                variant="secondary"
+                onClick={() => {
+                  const pct = Number(values.laborPercentage) || 0;
+                  confirmModal.show(
+                    'Apply Labor % to All',
+                    `Apply ${pct}% labor to all scopes and materials? This will overwrite their existing values.`,
+                    'Apply', 'primary',
+                    () => () => applyLaborPctToChildren(pct)
+                  );
+                }}
+              >
+                Apply to all
+              </Button>
+            )}
+          </div>
+        );
+      },
       validator: Yup.number().typeError('Labor % must be a number').min(0, 'Labor % cannot be less than 0').max(100, 'Labor % cannot be greater than 100').nullable(),
     },
     { name: 'address', label: 'Address', span: 'span1', readOnly: isReviseMode },
@@ -429,7 +517,13 @@ export default function ProposalForm() {
         );
       },
     } : { name: 'spacer-materialCostTotal', type: 'spacer', span: 'span1' }),
-    { name: 'margin', label: 'Margin (%)', type: 'number', span: 'span1', readOnly: (values) => (isReadOnly && !isAdminView), hidden: true, validator: Yup.number().typeError('Margin must be a number').min(0, 'Margin cannot be less than 0').max(100, 'Margin cannot be greater than 100').nullable() },
+    {
+      // FINANCE FIELD: still shown, but non-editable without 'f' permission.
+      name: 'margin', label: 'Margin (%)', type: 'number', span: 'span1',
+      readOnly: (values) => (isReadOnly && !isAdminView) || !canEditFinance,
+      hidden: true,
+      validator: Yup.number().typeError('Margin must be a number').min(0, 'Margin cannot be less than 0').max(100, 'Margin cannot be greater than 100').nullable(),
+    },
     { name: 'description', label: 'Description', type: 'textarea', span: 'span2', readOnly: isReviseMode },
   ];
 
@@ -576,6 +670,10 @@ export default function ProposalForm() {
   return isAllowed(PageName, 'r') ? (
     <>
       <EntityForm
+        // Force a remount once the ExpiresIn parameter resolves so EntityForm
+        // re-seeds its internal form state from the freshly computed
+        // normalizedInitialValues (it only reads initialValues once on mount).
+        key={`proposal-${proposalId || 'new'}-${mode || 'view'}-${expiresInDays ?? 'pending'}-${defaultLaborPercentage ?? 'pending'}`}
         title={formTitle}
         breadcrumbLabel='Proposal'
         icon={<FiSend />}
@@ -622,7 +720,8 @@ export default function ProposalForm() {
               items={childrenState || []}
               isAdmin={isAdminView}
               hideCostColumns={true}
-              parentLaborPercentage={Number(initialValues?.laborPercentage) || 0}
+              canEditFinance={canEditFinance}
+              parentLaborPercentage={liveLaborPercentage}
               onChange={(updated, deleted) => {
                 setChildrenState(updated || []);
                 // clear table-level error when user modifies children

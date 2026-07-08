@@ -24,14 +24,14 @@ const baseColumns = [
       {item.contractPrice ? Number(item.contractPrice).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : ''}
     </div>
   ) },
-  { header: 'Start', key: 'startDate', render: (item) => (item.startDate ? new Date(item.startDate).toLocaleDateString() : '') },
-  { header: 'End', key: 'endDate', render: (item) => (item.endDate ? new Date(item.endDate).toLocaleDateString() : '') },
+  { header: 'Start', key: 'startDate', render: (item) => (item.startDate ? new Date(item.startDate).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: '2-digit' }) : '') },
+  { header: 'End', key: 'endDate', render: (item) => (item.endDate ? new Date(item.endDate).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: '2-digit' }) : '') },
   { header: 'Progress', key: 'overallProgress', render: (item) => (
     <div style={{ textAlign: 'right' }}>
       {`${(Number(item.overallProgress) || 0).toFixed(2)}%`}
     </div>
   ) },
-  { header: 'Updated Date', key: 'updatedAt', render: (item) => (item.updatedAt ? new Date(item.updatedAt).toLocaleString() : '') },
+  { header: 'Updated Date', key: 'updatedAt', render: (item) => (item.updatedAt ? new Date(item.updatedAt).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: '2-digit' }) : '') },
 ];
 
 export default function ProjectLanding() {

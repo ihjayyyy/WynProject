@@ -18,7 +18,18 @@ function formatDate(v) {
   }
 }
 
-export default function ProposalMaterialsTable({ items = [], onChange, editable = true, proposalId = 0, parentLaborPercentage = 0 }) {
+export default function ProposalMaterialsTable({
+  items = [],
+  onChange,
+  editable = true,
+  proposalId = 0,
+  parentLaborPercentage = 0,
+  // Finance permission (lowercase 'f'). When false, finance-specific inputs
+  // (labor %, material/labor cost, margin) inside the scope/material modals
+  // should render as non-editable, even though the table itself and its
+  // non-finance fields remain fully usable.
+  canEditFinance = true,
+}) {
   const [localItems, setLocalItems] = useState([]);
   const [isAdmin, setIsAdmin] = useState(true); // toggle to simulate admin view
   const [deletedChildren, setDeletedChildren] = useState([]);
@@ -166,10 +177,21 @@ export default function ProposalMaterialsTable({ items = [], onChange, editable 
         open={isScopeModalOpen}
         initial={scopeEditing ? (() => { const s = (localItems || []).find((it) => it.__isScope && it.scopeOfWork === scopeEditing); const fallback = (localItems || []).find((it) => !it.__isScope && it.scopeOfWork === scopeEditing); return { scopeOfWork: scopeEditing, laborPercentage: s?.laborPercentage ?? fallback?.laborPercentage ?? 0, scopeDuration: s?.scopeDuration ?? fallback?.scopeDuration ?? 0 }; })() : null}
         defaultLaborPercentage={parentLaborPercentage || 0}
+        // Labor % lives inside this modal — pass the flag down so the modal
+        // can render its laborPercentage input as read-only when the user
+        // lacks 'f' access, while scopeOfWork/scopeDuration stay editable.
+        canEditFinance={canEditFinance}
         onCancel={() => { setIsScopeModalOpen(false); setScopeEditing(null); }}
         onConfirm={({ scopeOfWork: val, laborPercentage: pct, scopeDuration: dur }) => {
+          // If the user can't edit finance, never let a submitted labor %
+          // value overwrite the existing one — fall back to the prior value.
+          const s = (localItems || []).find((it) => it.__isScope && it.scopeOfWork === scopeEditing);
+          const fallbackScope = (localItems || []).find((it) => !it.__isScope && it.scopeOfWork === scopeEditing);
+          const prevPct = s?.laborPercentage ?? fallbackScope?.laborPercentage ?? (parentLaborPercentage || 0);
+          const effectivePct = canEditFinance ? pct : prevPct;
+
           if (!scopeEditing) {
-            const newItem = { id: 0, _localId: `S-${Date.now()}`, scopeOfWork: val, laborPercentage: pct, scopeDuration: dur, __isScope: true, parentId: proposalId ? Number(proposalId) : undefined };
+            const newItem = { id: 0, _localId: `S-${Date.now()}`, scopeOfWork: val, laborPercentage: effectivePct, scopeDuration: dur, __isScope: true, parentId: proposalId ? Number(proposalId) : undefined };
             const updatedWithScope = [newItem, ...(localItems || [])];
             setLocalItems(updatedWithScope);
             if (typeof onChange === 'function') onChange(updatedWithScope, deletedChildren);
@@ -179,20 +201,17 @@ export default function ProposalMaterialsTable({ items = [], onChange, editable 
             setIsMaterialModalOpen(true);
           } else {
             // Check if laborPercentage changed
-            const s = (localItems || []).find((it) => it.__isScope && it.scopeOfWork === scopeEditing);
-            const fallback = (localItems || []).find((it) => !it.__isScope && it.scopeOfWork === scopeEditing);
-            const prevPct = s?.laborPercentage ?? fallback?.laborPercentage ?? 0;
-            const pctChanged = Number(pct) !== Number(prevPct);
+            const pctChanged = canEditFinance && Number(effectivePct) !== Number(prevPct);
 
             const applyUpdate = (applyToMaterials) => {
               const updatedScopes = (localItems || []).map((it) => {
                 if (it.scopeOfWork !== scopeEditing) return it;
-                const updated = { ...it, scopeOfWork: val, laborPercentage: pct, scopeDuration: dur };
-                if (applyToMaterials && !it.__isScope) {
+                const updated = { ...it, scopeOfWork: val, laborPercentage: effectivePct, scopeDuration: dur };
+                if (applyToMaterials && canEditFinance && !it.__isScope) {
                   const matCost = Number(it.materialCost) || 0;
-                  const lab = Number((matCost * pct / 100).toFixed(2));
+                  const lab = Number((matCost * effectivePct / 100).toFixed(2));
                   const total = Number((matCost + lab).toFixed(2));
-                  return { ...updated, laborPercentage: pct, laborCost: lab, totalAmount: total, extendedCost: total, totalPrice: total };
+                  return { ...updated, laborPercentage: effectivePct, laborCost: lab, totalAmount: total, extendedCost: total, totalPrice: total };
                 }
                 return updated;
               });
@@ -201,7 +220,7 @@ export default function ProposalMaterialsTable({ items = [], onChange, editable 
             };
 
             if (pctChanged) {
-              setPendingScopeUpdate({ val, pct, dur, applyUpdate });
+              setPendingScopeUpdate({ val, pct: effectivePct, dur, applyUpdate });
               setIsApplyLaborConfirmOpen(true);
             } else {
               applyUpdate(false);
@@ -212,42 +231,60 @@ export default function ProposalMaterialsTable({ items = [], onChange, editable 
         }}
       />
 
-      <ProposalMaterialModal open={isMaterialModalOpen} initial={materialEditing || { parentId: Number(proposalId) || 0, scopeOfWork: materialScopeTarget || 'General', laborPercentage: (() => { const s = (localItems || []).find((it) => it.__isScope && it.scopeOfWork === materialScopeTarget); return s?.laborPercentage ?? parentLaborPercentage ?? 0; })() }} keepOpenOnSave={!materialEditing} onCancel={() => { setIsMaterialModalOpen(false); setMaterialScopeTarget(null); setMaterialEditing(null); }} onConfirm={(m, options = {}) => {
-        if (materialEditing) {
-          // update existing
-          let matched = false;
-          const updatedMat = (localItems || []).map((p) => {
-            const matchById = materialEditing && materialEditing.id && Number(materialEditing.id) !== 0 && p.id === materialEditing.id;
-            const matchByLocal = materialEditing && materialEditing._localId && p._localId === materialEditing._localId;
-            if (matchById || matchByLocal) {
-              matched = true;
-              const parentId = p.parentId !== undefined && p.parentId !== null ? p.parentId : (proposalId ? Number(proposalId) : undefined);
-              return { ...p, ...m, parentId };
+      <ProposalMaterialModal
+        open={isMaterialModalOpen}
+        initial={materialEditing || { parentId: Number(proposalId) || 0, scopeOfWork: materialScopeTarget || 'General', laborPercentage: (() => { const s = (localItems || []).find((it) => it.__isScope && it.scopeOfWork === materialScopeTarget); return s?.laborPercentage ?? parentLaborPercentage ?? 0; })() }}
+        keepOpenOnSave={!materialEditing}
+        // Cost/labor/margin fields live inside this modal — pass the flag
+        // down so it can render those specific inputs as read-only while
+        // name/code/uom/quantity/type stay editable.
+        canEditFinance={canEditFinance}
+        onCancel={() => { setIsMaterialModalOpen(false); setMaterialScopeTarget(null); setMaterialEditing(null); }}
+        onConfirm={(m, options = {}) => {
+          // Strip finance-affecting fields from the submitted payload when
+          // the user isn't allowed to edit them, so a modal bug (or a user
+          // bypassing a disabled input) can't sneak a changed value through.
+          const financeKeys = ['unitCost', 'materialCost', 'laborCost', 'laborPercentage', 'margin', 'marginQuantity', 'vat', 'totalAmount', 'extendedCost', 'totalPrice'];
+          const safeM = canEditFinance
+            ? m
+            : Object.fromEntries(Object.entries(m || {}).filter(([k]) => !financeKeys.includes(k)));
+
+          if (materialEditing) {
+            // update existing
+            let matched = false;
+            const updatedMat = (localItems || []).map((p) => {
+              const matchById = materialEditing && materialEditing.id && Number(materialEditing.id) !== 0 && p.id === materialEditing.id;
+              const matchByLocal = materialEditing && materialEditing._localId && p._localId === materialEditing._localId;
+              if (matchById || matchByLocal) {
+                matched = true;
+                const parentId = p.parentId !== undefined && p.parentId !== null ? p.parentId : (proposalId ? Number(proposalId) : undefined);
+                return { ...p, ...safeM, parentId };
+              }
+              return p;
+            });
+            // If somehow no existing row matched (race / stale ids), try to match by code+name+parentId and update that one
+            if (!matched) {
+              const fallbackIndex = (localItems || []).findIndex((p) => p.code === (materialEditing && materialEditing.code) && p.name === (materialEditing && materialEditing.name) && p.parentId === (materialEditing && materialEditing.parentId));
+              if (fallbackIndex !== -1) {
+                const p = (localItems || [])[fallbackIndex];
+                updatedMat[fallbackIndex] = { ...p, ...safeM, parentId: p.parentId !== undefined && p.parentId !== null ? p.parentId : (proposalId ? Number(proposalId) : undefined) };
+              }
             }
-            return p;
-          });
-          // If somehow no existing row matched (race / stale ids), try to match by code+name+parentId and update that one
-          if (!matched) {
-            const fallbackIndex = (localItems || []).findIndex((p) => p.code === (materialEditing && materialEditing.code) && p.name === (materialEditing && materialEditing.name) && p.parentId === (materialEditing && materialEditing.parentId));
-            if (fallbackIndex !== -1) {
-              const p = (localItems || [])[fallbackIndex];
-              updatedMat[fallbackIndex] = { ...p, ...m, parentId: p.parentId !== undefined && p.parentId !== null ? p.parentId : (proposalId ? Number(proposalId) : undefined) };
-            }
+            setLocalItems(updatedMat);
+            if (typeof onChange === 'function') onChange(updatedMat, deletedChildren);
+          } else {
+            const item = { id: 0, _localId: `M-${Date.now()}`, ...safeM, scopeOfWork: materialScopeTarget || 'General', parentId: proposalId ? Number(proposalId) : undefined };
+            const updatedWithItem = [item, ...(localItems || [])];
+            setLocalItems(updatedWithItem);
+            if (typeof onChange === 'function') onChange(updatedWithItem, deletedChildren);
           }
-          setLocalItems(updatedMat);
-          if (typeof onChange === 'function') onChange(updatedMat, deletedChildren);
-        } else {
-          const item = { id: 0, _localId: `M-${Date.now()}`, ...m, scopeOfWork: materialScopeTarget || 'General', parentId: proposalId ? Number(proposalId) : undefined };
-          const updatedWithItem = [item, ...(localItems || [])];
-          setLocalItems(updatedWithItem);
-          if (typeof onChange === 'function') onChange(updatedWithItem, deletedChildren);
-        }
-        if (options.closeModal !== false) {
-          setIsMaterialModalOpen(false);
-          setMaterialScopeTarget(null);
-          setMaterialEditing(null);
-        }
-      }} />
+          if (options.closeModal !== false) {
+            setIsMaterialModalOpen(false);
+            setMaterialScopeTarget(null);
+            setMaterialEditing(null);
+          }
+        }}
+      />
       
         <ConfirmModal open={isConfirmOpen} title="Remove material?" message={confirmTarget ? `Remove material "${confirmTarget.name || confirmTarget.code || ''}"?` : 'Remove this material?'} confirmText="Remove" confirmVariant="danger" onConfirm={() => {
           // use canonical item from localItems to preserve original id (if present)

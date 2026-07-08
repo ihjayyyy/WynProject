@@ -62,14 +62,14 @@ const formatDate = (value) => {
   if (!value || value === EMPTY_DATE) return '-';
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return '-';
-  return date.toLocaleDateString();
+  return date.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: '2-digit' });
 };
 
 const formatDateTime = (value) => {
   if (!value || value === EMPTY_DATE) return '-';
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return '-';
-  return date.toLocaleString();
+  return date.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: '2-digit' });
 };
 
 const asText = (value, fallback = '-') => {

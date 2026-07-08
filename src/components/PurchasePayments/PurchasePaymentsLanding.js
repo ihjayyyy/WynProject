@@ -16,7 +16,7 @@ const baseColumns = [
       item.paymentDate
         ? new Date(item.paymentDate).toLocaleDateString('en-US', {
             year: 'numeric',
-            month: 'short',
+            month: 'long',
             day: '2-digit',
           })
         : '—',

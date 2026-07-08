@@ -141,7 +141,6 @@ const toolOptions = useMemo(() => {
     { name: 'materialId', label: 'Tool', span: 'span1', type: 'select', options: toolOptions, searchable: true, validator: Yup.mixed().required('Tool is required') },
     { name: 'spacer-2', type: 'spacer', span: 'span1' },
     { name: 'name', label: 'Name', span: 'span2', validator: Yup.string().required('Name is required') },
-    { name: 'quantity', label: 'Quantity', type: 'number', span: 'span2', readOnly: () => Boolean(inventoryId), validator: Yup.number().min(0, 'Quantity must be 0 or more').required('Quantity is required') },
     { name: 'stockLevel', label: 'Stock Level', type: 'number', span: 'span2', validator: Yup.number().min(0, 'Stock level must be 0 or more') },
   ];
 
@@ -176,7 +175,14 @@ const toolOptions = useMemo(() => {
           }
         }
         try {
-          const payload = { name: values.name, code: values.code || '', rackId: values.rackId, materialId: values.materialId, quantity: values.quantity, stockLevel: Number(values.stockLevel) || 0 };
+          const payload = {
+            name: values.name,
+            code: values.code || '',
+            rackId: values.rackId,
+            materialId: values.materialId,
+            quantity: values.quantity,
+            stockLevel: Number(values.stockLevel ?? values.quantity) || 0,
+          };
           const result = await updateMaterialInventory(inventoryId, payload);
           if (result.error) throw new Error(result.error);
           toast.success('Inventory record updated');
@@ -220,7 +226,7 @@ const toolOptions = useMemo(() => {
     <ConfirmModal
       open={isQtyModalOpen}
       title="Adjust Quantity"
-      message="Use positive number to add stock and negative number to deduct stock."
+      message="Enter the quantity to add to the current stock."
       confirmText={qtySaving ? 'Saving...' : 'Apply'}
       confirmVariant="primary"
       onConfirm={handleApplyQuantityChange}
@@ -230,9 +236,9 @@ const toolOptions = useMemo(() => {
           type="number"
           value={qtyChange}
           onChange={(e) => setQtyChange(e.target.value)}
-          placeholder="e.g. 5 or -3"
-          min={-999999}
-          max={999999}
+          placeholder="e.g. 5"
+          min={1}
+          step={1}
           disabled={qtySaving}
         />
         {initialValues?.name ? (

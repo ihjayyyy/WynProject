@@ -17,8 +17,8 @@ const baseColumns = [
   { header: 'Request Notes', key: 'reasonOrProject' },
   { header: 'Requested By', key: 'requestedBy' },
   { header: 'Status', key: 'status', render: (item) => <StatusBadge status={item.status} /> },
-  { header: 'Request Date', key: 'requestDate', render: (item) => (item.requestDate ? new Date(item.requestDate).toLocaleString() : '') },
-  { header: 'Deadline', key: 'deadline', render: (item) => (item.deadline ? new Date(item.deadline  ).toLocaleString() : '') },
+  { header: 'Request Date', key: 'requestDate', render: (item) => (item.requestDate ? new Date(item.requestDate).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: '2-digit' }) : '') },
+  { header: 'Deadline', key: 'deadline', render: (item) => (item.deadline ? new Date(item.deadline  ).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: '2-digit' }) : '') },
 
   {
     header: 'Print RV',

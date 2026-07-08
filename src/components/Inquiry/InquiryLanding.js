@@ -11,7 +11,7 @@ import { getInquiries, updateInquiry, acknowledgeInquiry, printInquirySlip_byId 
 import { useToast } from '../ui/Toast/Toast';
 
 const baseColumns = [
-  { header: 'Date', key: 'date', render: (item) => (item.date ? new Date(item.date).toLocaleString() : '') },
+  { header: 'Date', key: 'date', render: (item) => (item.date ? new Date(item.date).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: '2-digit' }) : '') },
   // { header: 'Reference', key: 'reference' },
   { header: 'Company', key: 'companyName' },
   { header: 'Attention', key: 'attention' },

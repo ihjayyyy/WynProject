@@ -286,7 +286,7 @@ export default function SalesBillingLanding() {
                     <td style={{ padding: '6px 8px', verticalAlign: 'top' }}>{c.collectionNo}</td>
                     <td style={{ padding: '6px 8px', verticalAlign: 'top' }}>{c.customerName}</td>
                     <td style={{ padding: '6px 8px', verticalAlign: 'top' }}>
-                      {c.date ? new Date(c.date).toLocaleDateString() : ''}
+                      {c.date ? new Date(c.date).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: '2-digit' }) : ''}
                     </td>
                     <td style={{ padding: '6px 8px', verticalAlign: 'top', textAlign: 'right' }}>
                       {c.amount != null ? Number(c.amount).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : ''}

@@ -2,7 +2,7 @@
 
 import React, { useMemo, useState, useEffect } from 'react';
 import * as Yup from 'yup';
-import { useRouter, useSearchParams} from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { FiBox } from 'react-icons/fi';
 import EntityForm from '../EntityForm/EntityForm';
 import Button from '../ui/Button/Button';
@@ -31,6 +31,11 @@ export default function MaterialsForm() {
   const [uomOptions, setUomOptions] = useState([]);
   const [racks, setRacks] = useState([]);
   const [suppliers, setSuppliers] = useState([]);
+
+  // Holds the values that are pending submission while we wait for the user
+  // to confirm they want to proceed with a selling price below purchase price.
+  const [pendingSubmitValues, setPendingSubmitValues] = useState(null);
+  const [showPriceWarning, setShowPriceWarning] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -147,12 +152,23 @@ export default function MaterialsForm() {
       searchable: true,
       validator: Yup.mixed().required('Supplier is required'),
     },
-    { name: 'purchasePrice', label: 'Purchase Price', type: 'number', span: 'span2', validator: Yup.number().min(0, 'Purchase price must be 0 or more') },
+    {
+      name: 'purchasePrice',
+      label: 'Purchase Price',
+      type: 'number',
+      span: 'span2',
+      validator: Yup.number().min(0, 'Purchase price must be 0 or more'),
+      // When the purchase price changes, mirror it into selling price.
+      // The user can still edit selling price afterwards since this only
+      // runs when purchasePrice itself changes.
+      onChange: (value, values, setValues) => {
+        setValues({ ...values, purchasePrice: value, sellingPrice: value });
+      },
+    },
     { name: 'sellingPrice', label: 'Selling Price', type: 'number', span: 'span2', validator: Yup.number().min(0, 'Selling price must be 0 or more') },
     ...(!materialId
       ? [
           { name: 'rackId', label: 'Rack', span: 'span2', type: 'select', options: rackOptions, searchable: true, validator: Yup.mixed().required('Rack is required') },
-          { name: 'initialQuantity', label: 'Initial Quantity', type: 'number', span: 'span2', validator: Yup.number().min(0, 'Initial quantity must be 0 or more') },
           { name: 'stockLevel', label: 'Stock Level', type: 'number', span: 'span2', validator: Yup.number().min(0, 'Stock level must be 0 or more') },
         ]
       : []),
@@ -178,8 +194,8 @@ export default function MaterialsForm() {
     },
   ];
 
-  // Handler for form submit
-  const handleSubmit = async (values) => {
+  // Builds the payload and actually performs the create/update call.
+  const submitValues = async (values) => {
     if (!materialId) {
       const payload = {
         name: values.name,
@@ -191,8 +207,8 @@ export default function MaterialsForm() {
         sellingPrice: Number(values.sellingPrice) || 0,
         referenceNumber: values.referenceNumber || '0',
         rackId: Number(values.rackId) || 0,
-        initialQuantity: Number(values.initialQuantity) || 0,
-        stockLevel: Number(values.stockLevel ?? values.initialQuantity) || 0,
+        initialQuantity: 0,
+        stockLevel: Number(values.stockLevel) || 0,
         isAssembly: false,
         supplierId: Number(values.supplierId) || 0,
       };
@@ -211,6 +227,7 @@ export default function MaterialsForm() {
       }
       return;
     }
+
     try {
       const payload = {
         name: values.name,
@@ -239,39 +256,111 @@ export default function MaterialsForm() {
     }
   };
 
+  // Handler for form submit. If selling price is lower than purchase price,
+  // pause and ask the user to confirm before actually saving.
+  const handleSubmit = async (values) => {
+    const purchasePrice = Number(values.purchasePrice ?? values.unitCost) || 0;
+    const sellingPrice = Number(values.sellingPrice) || 0;
+
+    if (sellingPrice < purchasePrice) {
+      setPendingSubmitValues(values);
+      setShowPriceWarning(true);
+      return;
+    }
+
+    await submitValues(values);
+  };
+
+  const handleConfirmLowSellingPrice = async () => {
+    const values = pendingSubmitValues;
+    setShowPriceWarning(false);
+    setPendingSubmitValues(null);
+    if (values) {
+      await submitValues(values);
+    }
+  };
+
+  const handleCancelLowSellingPrice = () => {
+    setShowPriceWarning(false);
+    setPendingSubmitValues(null);
+  };
+
   return (
-    <EntityForm
-      title={formTitle}
-      icon={<FiBox />}
-      fields={fields}
-      initialValues={initialValues}
-      onSubmit={handleSubmit}
-      backPath="/materialsSettings/materials"
-      width="100%"
-      columns={3}
-      showSubmitButton={false}
-      readOnly={isReadOnly}
-      headerActions={
-        !materialId ? (
-          <Button type="submit" variant="save">Create</Button>
-        ) : (
-          <>
-            {isReadOnly ? (
-              canEnterEditMode ? (
-                <Button variant="outlinedPrimary" onClick={() => setIsEditModeLocal(true)}>Edit</Button>
-              ) : null
-            ) : (
-              <>
-                <Button variant="outlineDanger" onClick={() => {
-                  if (mode === 'edit') { router.push(`/materialsSettings/materials/materialsForm?id=${materialId}`); return; }
-                  setIsEditModeLocal(false);
-                }}>Cancel</Button>
-                <Button type="submit" variant="save">Save</Button>
-              </>
-            )}
-          </>
-        )
-      }
-    />
+    <>
+      <EntityForm
+        title={formTitle}
+        icon={<FiBox />}
+        fields={fields}
+        initialValues={initialValues}
+        onSubmit={handleSubmit}
+        backPath="/materialsSettings/materials"
+        width="100%"
+        columns={3}
+        showSubmitButton={false}
+        readOnly={isReadOnly}
+        headerActions={
+          !materialId ? (
+            <Button type="submit" variant="save">Create</Button>
+          ) : (
+            <>
+              {isReadOnly ? (
+                canEnterEditMode ? (
+                  <Button variant="outlinedPrimary" onClick={() => setIsEditModeLocal(true)}>Edit</Button>
+                ) : null
+              ) : (
+                <>
+                  <Button variant="outlineDanger" onClick={() => {
+                    if (mode === 'edit') { router.push(`/materialsSettings/materials/materialsForm?id=${materialId}`); return; }
+                    setIsEditModeLocal(false);
+                  }}>Cancel</Button>
+                  <Button type="submit" variant="save">Save</Button>
+                </>
+              )}
+            </>
+          )
+        }
+      />
+
+      {showPriceWarning && (
+        <div
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: 'rgba(0, 0, 0, 0.45)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 1000,
+          }}
+        >
+          <div
+            style={{
+              backgroundColor: '#fff',
+              borderRadius: 8,
+              padding: '24px 28px',
+              maxWidth: 420,
+              width: '90%',
+              boxShadow: '0 10px 30px rgba(0,0,0,0.2)',
+            }}
+          >
+            <h3 style={{ marginTop: 0, marginBottom: 12 }}>Selling Price Below Purchase Price</h3>
+            <p style={{ marginBottom: 20, color: '#444' }}>
+              The selling price you entered is lower than the purchase price. Do you still want to continue?
+            </p>
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 12 }}>
+              <Button variant="outlineDanger" onClick={handleCancelLowSellingPrice}>
+                Cancel
+              </Button>
+              <Button variant="save" onClick={handleConfirmLowSellingPrice}>
+                Continue Anyway
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
   );
 }

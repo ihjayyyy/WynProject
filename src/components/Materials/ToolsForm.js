@@ -134,7 +134,6 @@ export default function ToolsForm() {
     ...(!toolId
       ? [
           { name: 'rackId', label: 'Rack', span: 'span2', type: 'select', options: rackOptions, searchable: true, validator: Yup.mixed().required('Rack is required') },
-          { name: 'initialQuantity', label: 'Initial Quantity', type: 'number', span: 'span2', validator: Yup.number().min(0, 'Initial quantity must be 0 or more') },
           { name: 'stockLevel', label: 'Stock Level', type: 'number', span: 'span2', validator: Yup.number().min(0, 'Stock level must be 0 or more') },
         ]
       : []),
@@ -173,8 +172,8 @@ export default function ToolsForm() {
         sellingPrice: Number(values.sellingPrice) || 0,
         referenceNumber: values.referenceNumber || '0',
         rackId: Number(values.rackId) || 0,
-          initialQuantity: Number(values.initialQuantity) || 0,
-          stockLevel: Number(values.stockLevel ?? values.initialQuantity) || 0,
+        initialQuantity: 0,
+        stockLevel: Number(values.stockLevel) || 0,
         isAssembly: false,
         supplierId: Number(values.supplierId) || 0,
       };

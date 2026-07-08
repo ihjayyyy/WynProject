@@ -52,6 +52,10 @@ export default function ProposalMaterialModal({
   onCancel,
   onConfirm,
   keepOpenOnSave = false,
+  // Finance permission (lowercase 'f'). When false, Price, Discount, and
+  // Labor Percentage render read-only and their recompute handlers no-op,
+  // while item type, material selection, and quantities stay editable.
+  canEditFinance = true,
 }) {
   const [resetKey, setResetKey] = useState(0);
 
@@ -250,10 +254,7 @@ export default function ProposalMaterialModal({
 
           unitCost:
             Number(
-              mat.sellingPrice ??
-                mat.unitCost ??
-                mat.unitPrice ??
-                source.unitCost
+              mat.sellingPrice
             ) || 0,
 
           code: mat.code || source.code || '',
@@ -652,10 +653,13 @@ export default function ProposalMaterialModal({
 
       {
         name: 'unitCost',
-        label: 'Price (Editable)',
+label: canEditFinance ? 'Price (Editable)' : 'Price',
         type: 'number',
         value:
           Number(calculatedForm.unitCost) || 0,
+
+        // FINANCE FIELD: read-only without 'f' access.
+        readonly: !canEditFinance,
 
         validator: Yup.number()
           .min(0)
@@ -666,6 +670,7 @@ export default function ProposalMaterialModal({
           updateField,
           itemFields
         ) => {
+          if (!canEditFinance) return;
           recomputeTotals(
             updateField,
             itemFields
@@ -750,11 +755,14 @@ export default function ProposalMaterialModal({
 
       {
         name: 'discount',
-        label: 'Discount (Editable)',
+        label: canEditFinance ? 'Discount (Editable)' : 'Discount',
         type: 'number',
 
         value:
           Number(calculatedForm.discount) || 0,
+
+        // FINANCE FIELD: read-only without 'f' access.
+        readonly: !canEditFinance,
 
         validator: Yup.number()
           .min(0)
@@ -765,6 +773,7 @@ export default function ProposalMaterialModal({
           updateField,
           itemFields
         ) => {
+          if (!canEditFinance) return;
           recomputeTotals(
             updateField,
             itemFields
@@ -806,15 +815,18 @@ export default function ProposalMaterialModal({
         validator: Yup.number().notRequired(),
       },
 
-            {
+      {
         name: 'laborPercentage',
-        label: 'Labor Percentage (%)',
+        label: canEditFinance ? 'Labor Percentage (Editable)' : 'Labor Percentage',
         type: 'number',
 
         value:
           Number(
             calculatedForm.laborPercentage
           ) || 0,
+
+        // FINANCE FIELD: read-only without 'f' access.
+        readonly: !canEditFinance,
 
         validator: Yup.number()
           .min(0)
@@ -827,6 +839,8 @@ export default function ProposalMaterialModal({
           itemFields,
           nextValue
         ) => {
+          if (!canEditFinance) return;
+
           const pct =
             Number(nextValue) || 0;
 
@@ -887,6 +901,8 @@ export default function ProposalMaterialModal({
           itemFields,
           nextValue
         ) => {
+          if (!canEditFinance) return;
+
           const matCost =
             Number(
               itemFields.find(
@@ -1049,6 +1065,7 @@ export default function ProposalMaterialModal({
     materials,
     applyMaterialSelect,
     materialCategory,
+    canEditFinance,
   ]);
 
   const isEditMode = Boolean(
@@ -1085,6 +1102,20 @@ export default function ProposalMaterialModal({
           return new Date().toISOString();
         };
 
+        // Guard: if the user lacks finance access, force these fields back
+        // to their original/incoming values regardless of what was
+        // submitted, so a stray bypass of the disabled input can't change
+        // pricing data.
+        const originalUnitCost = Number(initial?.unitCost) || 0;
+        const originalDiscount = Number(initial?.discount) || 0;
+        const originalLaborPct = Number(initial?.laborPercentage) || 0;
+        const originalLaborCost = Number(initial?.laborCost) || 0;
+        const originalMaterialCost = Number(initial?.materialCost) || 0;
+        const originalVat = Number(initial?.vat) || 0;
+        const originalTotalAmount = Number(initial?.totalAmount) || 0;
+        const originalExtendedCost = Number(initial?.extendedCost) || 0;
+        const originalTotalPrice = Number(initial?.totalPrice) || 0;
+
         const payload = {
           id: Number(val.id) || 0,
 
@@ -1102,8 +1133,9 @@ export default function ProposalMaterialModal({
 
           uom: val.uom || '',
 
-          unitCost:
-            Number(val.unitCost) || 0,
+          unitCost: canEditFinance
+            ? (Number(val.unitCost) || 0)
+            : originalUnitCost,
 
           marginQuantity:
             Number(val.marginQuantity) || 0,
@@ -1111,32 +1143,40 @@ export default function ProposalMaterialModal({
           quantity:
             Number(val.quantity) || 0,
 
-          vat: Number(val.vat) || 0,
+          vat: canEditFinance
+            ? (Number(val.vat) || 0)
+            : originalVat,
 
-          materialCost:
-            Number(val.materialCost) || 0,
+          materialCost: canEditFinance
+            ? (Number(val.materialCost) || 0)
+            : originalMaterialCost,
 
           margin:
             Number(val.margin) || 0,
 
-          discount:
-            Number(val.discount) || 0,
+          discount: canEditFinance
+            ? (Number(val.discount) || 0)
+            : originalDiscount,
 
-          laborCost:
-            Number(val.laborCost) || 0,
+          laborCost: canEditFinance
+            ? (Number(val.laborCost) || 0)
+            : originalLaborCost,
 
-          extendedCost:
-            Number(val.extendedCost) || 0,
+          extendedCost: canEditFinance
+            ? (Number(val.extendedCost) || 0)
+            : originalExtendedCost,
 
-          totalAmount:
-            Number(val.totalAmount) || 0,
+          totalAmount: canEditFinance
+            ? (Number(val.totalAmount) || 0)
+            : originalTotalAmount,
 
           isAssembly: Boolean(
             val.isAssembly
           ),
 
-          totalPrice:
-            Number(val.totalPrice) || 0,
+          totalPrice: canEditFinance
+            ? (Number(val.totalPrice) || 0)
+            : originalTotalPrice,
 
           forecastedStartDate:
             getIsoDate(
@@ -1153,10 +1193,9 @@ export default function ProposalMaterialModal({
 
           remarks: '',
 
-          laborPercentage:
-            Number(
-              val.laborPercentage
-            ) || 0,
+          laborPercentage: canEditFinance
+            ? (Number(val.laborPercentage) || 0)
+            : originalLaborPct,
         };
 
         const shouldKeepOpen =

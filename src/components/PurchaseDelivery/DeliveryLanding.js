@@ -15,7 +15,7 @@ const baseColumns = [
       item.deliveryDate
         ? new Date(item.deliveryDate).toLocaleDateString('en-US', {
             year: 'numeric',
-            month: 'short',
+            month: 'long',
             day: '2-digit',
           })
         : '—',

@@ -167,7 +167,6 @@ const materialOptions = useMemo(() => {
     { name: 'rackId', label: 'Rack', span: 'span1', type: 'select', options: rackOptions, searchable: true, validator: Yup.mixed().required('Rack is required') },
     { name: 'spacer-3', type: 'spacer', span: 'span2' },
     { name: 'name', label: 'Name', span: 'span2', validator: Yup.string().required('Name is required') },
-    { name: 'quantity', label: 'Quantity', type: 'number', span: 'span2', readOnly: () => Boolean(inventoryId), validator: Yup.number().min(0, 'Quantity must be 0 or more').required('Quantity is required') },
     { name: 'stockLevel', label: 'Stock Level', type: 'number', span: 'span2', validator: Yup.number().min(0, 'Stock level must be 0 or more') },
   ];
 
@@ -184,7 +183,14 @@ const materialOptions = useMemo(() => {
           try {
             // NOTE: materialType is intentionally excluded from the payload —
             // it's only used to filter the Material dropdown on this form.
-            const payload = { name: values.name, code: values.code || '', rackId: values.rackId, materialId: values.materialId, quantity: values.quantity, stockLevel: Number(values.stockLevel ?? values.quantity) || 0 };
+            const payload = {
+              name: values.name,
+              code: values.code || '',
+              rackId: values.rackId,
+              materialId: values.materialId,
+              quantity: values.quantity,
+              stockLevel: Number(values.stockLevel ?? values.quantity) || 0,
+            };
             const result = await createMaterialInventory(payload);
             if (result.error) throw new Error(result.error);
             let created = null;

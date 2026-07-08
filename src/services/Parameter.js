@@ -16,5 +16,21 @@ async function getParameter(moduleName) {
   }
 }
 
-export { getParameter };
-export default { getParameter };
+async function getParameterByName(moduleName, paramName) {
+  try {
+    const url = `${API_BASE_URL}/get/${moduleName}/${paramName}`;
+    const res = await fetch(url, {
+      method: 'GET',
+      headers: { Accept: '*/*' },
+    });
+    const json = await res.json();
+    const inner = json && json.value ? json.value : null;
+    console.log(`getParameterByName(${moduleName}, ${paramName}) =>`, inner);
+    return { data: inner ? inner.value : null, error: json?.error || null };
+  } catch (error) {
+    return { data: null, error: error?.message || error };
+  }
+}
+
+export { getParameter, getParameterByName };
+export default { getParameter, getParameterByName };

@@ -18,7 +18,7 @@ const baseColumns = [
   { header: 'Email', key: 'email' },
   { header: 'VAT Type', key: 'vatType' },
   { header: 'Updated By', key: 'updatedBy' },
-  { header: 'Updated Date', key: 'updatedAt', render: (item) => (item.updatedAt ? new Date(item.updatedAt).toLocaleString() : '') },
+  { header: 'Updated Date', key: 'updatedAt', render: (item) => (item.updatedAt ? new Date(item.updatedAt).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: '2-digit' }) : '') },
 ];
 
 export default function CustomersLanding() {
