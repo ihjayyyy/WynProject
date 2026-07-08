@@ -3,7 +3,7 @@ import * as Yup from 'yup';
 export const POFields = (
   suppliers,
   onFieldhanged,
-  purchaseRequests = [],
+  supplierPurchaseRequests = [],
   onPRSelected,
 ) => [
   { name: 'code', label: 'Supplier Code', span: 'span1', readOnly: true },
@@ -14,6 +14,7 @@ export const POFields = (
     options: suppliers.map((s) => ({ label: s.name, value: s.id })),
     searchable: true,
     span: 'span3',
+    readOnly: true,
     validator: Yup.number()
       .typeError('Supplier is required')
       .required('Supplier is required'),
@@ -46,7 +47,7 @@ export const POFields = (
         terms: found.terms,
         contactNumber: found.contactNumber,
         vatType: found.vatType ? found.vatType : 'included',
-        supplierName: found.supplierName,
+        supplierName: found.name,
         code: found.code,
         name: found.name,
       };
@@ -72,31 +73,42 @@ export const POFields = (
   { name: 'address', label: 'Address', span: 'span4' },
   {
     name: 'purchaseRequestId',
-    label: 'Purchase Request',
+    label: 'Supplier Purchase Request',
     type: 'select',
-    options: purchaseRequests.map((r) => ({
+    options: supplierPurchaseRequests.map((r) => ({
       label: r.requestNumber + (r.name ? ' - ' + r.name : ''),
       value: r.id,
     })),
     searchable: true,
     span: 'span2',
     onChange: (val, values, setValues) => {
-      const found = purchaseRequests.find((p) => p.id === val);
-      console.log('PR: ', found);
+      const found = supplierPurchaseRequests.find((p) => p.id === val);
       if (!found) {
         const clearedValues = { ...values, purchaseRequestNumber: '' };
         setValues(clearedValues);
         onFieldhanged('purchaseRequestId', val, clearedValues);
-        onPRSelected && onPRSelected(null);
+        onPRSelected && onPRSelected(null, setValues, clearedValues);
         return;
       }
+      // Best-effort immediate fill from the SPR's own fields — the form's
+      // onPRSelected callback will follow up and overwrite these with the
+      // canonical supplier record (fixes SPR's unreliable supplierName).
       const valuesCopy = {
         ...values,
         purchaseRequestNumber: found.requestNumber,
+        supplierId: found.supplierId,
+        supplierCode: found.supplierCode,
+        supplierName: found.supplierName,
+        address: found.address,
+        contactPerson: found.contactPerson,
+        email: found.email,
+        contactNumber: found.contactNumber,
+        code: found.supplierCode,
+        name: found.supplierName,
       };
       setValues(valuesCopy);
       onFieldhanged('purchaseRequestId', val, valuesCopy);
-      onPRSelected && onPRSelected(found);
+      onPRSelected && onPRSelected(found, setValues, valuesCopy);
     },
   },
   { name: 'supplierReferenceNo', label: 'Supplier PO', span: 'span2' },
@@ -128,6 +140,7 @@ export const POFields = (
       .typeError('Estimated Delivery is required')
       .required('Estimated Delivery is required'),
   },
+  { name: 'jobOrder', label: 'Job Order', span: 'span2', readOnly: true },
   ,
 ];
 
@@ -192,9 +205,9 @@ export const POItemsFields = (materials, po) => [
     type: 'select',
     searchable: true,
     options: materials.map(({ id, name, code }) => ({
-  value: id,
-  label: `${code ? `[${code}] ` : ''}${name || ''}`.trim(),
-})),
+      value: id,
+      label: `${code ? `[${code}] ` : ''}${name || ''}`.trim(),
+    })),
     readonly: false,
     initialvalue: '',
     validator: Yup.string().required(`Material is required`),

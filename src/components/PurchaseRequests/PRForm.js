@@ -142,7 +142,7 @@ export default function PRForm() {
   const formTitle = useMemo(() => {
     const title =
       formData && formData.status
-        ? formData.orderNumber
+        ? formData.requestNumber
         : 'New Purchase Request';
     return (
       <div className={EntityStyle.formTitle}>

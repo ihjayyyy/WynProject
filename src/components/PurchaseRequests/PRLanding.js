@@ -96,10 +96,20 @@ export default function PRLanding() {
 
   const orderStats = useMemo(() => {
     const total = prList.length;
-    const orderedCount = prList.filter((item) => String(item?.status || '').toLowerCase() === 'ordered').length;
-    const totalItems = prList.reduce((sum, item) => sum + ((item.items || []).length || 0), 0);
+    const orderedCount = prList.filter(
+      (item) => String(item?.status || '').toLowerCase() === 'ordered',
+    ).length;
+    const totalItems = prList.reduce(
+      (sum, item) => sum + ((item.items || []).length || 0),
+      0,
+    );
     const totalQty = prList.reduce(
-      (sum, item) => sum + (item.items || []).reduce((sub, row) => sub + (Number(row.qty) || 0), 0),
+      (sum, item) =>
+        sum +
+        (item.items || []).reduce(
+          (sub, row) => sub + (Number(row.qty) || 0),
+          0,
+        ),
       0,
     );
     const draftCount = prList.filter((item) => {
@@ -108,14 +118,36 @@ export default function PRLanding() {
     }).length;
     const pendingCount = prList.filter((item) => {
       const status = String(item?.status || '').toLowerCase();
-      return status === 'pending' || status === 'for approval' || status === 'created';
+      return (
+        status === 'pending' ||
+        status === 'for approval' ||
+        status === 'created'
+      );
     }).length;
     const attentionCount = draftCount + pendingCount;
 
     return [
-      { key: 'total', label: 'Total Requests', number: total, change: `${orderedCount} ordered`, isPositive: true },
-      { key: 'items', label: 'Items Requested', number: totalItems, change: `${totalItems} items`, isPositive: true },
-      { key: 'qty', label: 'Total Qty', number: totalQty, change: `${totalQty} units`, isPositive: true },
+      {
+        key: 'total',
+        label: 'Total Requests',
+        number: total,
+        change: `${orderedCount} ordered`,
+        isPositive: true,
+      },
+      {
+        key: 'items',
+        label: 'Items Requested',
+        number: totalItems,
+        change: `${totalItems} items`,
+        isPositive: true,
+      },
+      {
+        key: 'qty',
+        label: 'Total Qty',
+        number: totalQty,
+        change: `${totalQty} units`,
+        isPositive: true,
+      },
       {
         key: 'attention',
         label: 'Needs Attention',

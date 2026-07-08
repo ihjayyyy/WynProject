@@ -113,6 +113,12 @@ export const sidenavItems = [
         name: 'Purchase.Requests',
       },
       {
+        label: 'Supplier Request',
+        icon: FiInbox,
+        href: '/purchase/supplier-requests',
+        name: 'Purchase.SupplierRequests',
+      },
+      {
         label: 'Orders',
         icon: FiClipboard,
         href: '/purchase/orders',
