@@ -98,6 +98,39 @@ async function generateDownpaymentBilling(projectId) {
     }
 }
 
-export { getProjectFinances, getProjectFinanceByProjectId, createProjectFinance, updateProjectFinance, generateProgressBilling, generateDownpaymentBilling };
-const ProjectFinanceService = { getProjectFinances, getProjectFinanceByProjectId, createProjectFinance, updateProjectFinance, generateProgressBilling, generateDownpaymentBilling };
+async function getFinancialStatement(projectId) {
+    try {
+        const url = `${API_BASE_URL}/FinancialStatement/${projectId}`;
+        const res = await fetch(url, {
+            method: 'GET',
+            headers: { Accept: '*/*' },
+        });
+
+        const json = await res.json();
+        return { data: json, error: null };
+    } catch (error) {
+        return { data: null, error: error?.message || error };
+    }
+}
+
+export {
+    getProjectFinances,
+    getProjectFinanceByProjectId,
+    createProjectFinance,
+    updateProjectFinance,
+    generateProgressBilling,
+    generateDownpaymentBilling,
+    getFinancialStatement,
+};
+
+const ProjectFinanceService = {
+    getProjectFinances,
+    getProjectFinanceByProjectId,
+    createProjectFinance,
+    updateProjectFinance,
+    generateProgressBilling,
+    generateDownpaymentBilling,
+    getFinancialStatement,
+};
+
 export default ProjectFinanceService;

@@ -204,13 +204,16 @@ export default function SalesBillingLanding() {
     }).length;
     return [
       { key: 'total', label: 'Total Billings', number: total, change: `${billedCount} billed`, isPositive: true },
-      {
-        key: 'amount',
-        label: 'Total Amount',
-        number: `PHP ${totalAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
-        change: `PHP ${billedAmount.toFixed(2)} billed`,
-        isPositive: true,
-      },
+{
+  key: 'amountReceivable',
+  label: 'Amount Receivable',
+  number: `PHP ${billedAmount.toLocaleString(undefined, {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  })}`,
+  change: '',
+  isPositive: true,
+},
       { key: 'attention', label: 'Needs Attention', number: attentionCount, change: `${draftCount} draft, ${unpaidCount} unpaid, ${partialCount} partial, ${balanceCount} with balance`, isPositive: attentionCount === 0 },
     ];
   }, [billings]);

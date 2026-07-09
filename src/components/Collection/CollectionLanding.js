@@ -141,44 +141,98 @@ export default function CollectionLanding() {
   );
 
   const stats = useMemo(() => {
-    const total = collections.length;
-    const closedCount = collections.filter((item) => String(item?.status || '').toLowerCase() === 'closed').length;
-    const totalAmount = collections.reduce((s, c) => s + (c.amount || 0), 0);
-    const closedAmount = collections.reduce((sum, item) => {
+    const now = new Date();
+
+    // Monthly collections
+    const monthlyCollections = collections.filter((item) => {
+      if (!item.date) return false;
+
+      const date = new Date(item.date);
+
+      return (
+        date.getFullYear() === now.getFullYear() &&
+        date.getMonth() === now.getMonth()
+      );
+    });
+
+    const monthlyTotal = monthlyCollections.length;
+
+    const monthlyClosedCount = monthlyCollections.filter(
+      (item) => String(item?.status || '').toLowerCase() === 'closed'
+    ).length;
+
+    // Overall collections
+    const totalCollections = collections.length;
+
+    // Financial totals
+    const totalAmountToCollect = collections.reduce(
+      (sum, item) => sum + (Number(item.amount) || 0),
+      0
+    );
+
+    const collectedAmount = collections.reduce((sum, item) => {
       const status = String(item?.status || '').toLowerCase();
-      return status === 'closed' ? sum + (Number(item.amount) || 0) : sum;
+
+      return status === 'closed'
+        ? sum + (Number(item.totalAmountPaid) || 0)
+        : sum;
     }, 0);
+
+    // Needs Attention
     const draftCount = collections.filter((c) => {
       const status = String(c?.status || '').toLowerCase();
       const isTerminal = status === 'cancelled' || status === 'closed';
+
       return !isTerminal && status === 'draft';
     }).length;
+
     const remainingCount = collections.filter((c) => {
       const status = String(c?.status || '').toLowerCase();
       const amount = Number(c?.amount) || 0;
       const totalPaid = Number(c?.totalAmountPaid) || 0;
-      const hasRemaining = amount > totalPaid;
       const isTerminal = status === 'cancelled' || status === 'closed';
-      return !isTerminal && hasRemaining;
+
+      return !isTerminal && amount > totalPaid;
     }).length;
+
     const attentionCount = collections.filter((c) => {
       const status = String(c?.status || '').toLowerCase();
       const amount = Number(c?.amount) || 0;
       const totalPaid = Number(c?.totalAmountPaid) || 0;
       const hasRemaining = amount > totalPaid;
       const isTerminal = status === 'cancelled' || status === 'closed';
+
       return !isTerminal && (status === 'draft' || hasRemaining);
     }).length;
+
     return [
-      { key: 'total', label: 'Total Collections', number: total, change: `${closedCount} closed`, isPositive: true },
       {
-        key: 'amount',
-        label: 'Total Amount',
-        number: `PHP ${totalAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
-        change: `PHP ${closedAmount.toFixed(2)} closed`,
+        key: 'total',
+        label: 'Monthly Collections',
+        number: monthlyTotal,
+        change: `${monthlyClosedCount} closed • ${totalCollections} total`,
         isPositive: true,
       },
-      { key: 'attention', label: 'Needs Attention', number: attentionCount, change: `${draftCount} draft, ${remainingCount} with remaining`, isPositive: attentionCount === 0 },
+      {
+        key: 'collected',
+        label: 'Amount Collected',
+        number: `PHP ${collectedAmount.toLocaleString(undefined, {
+          minimumFractionDigits: 2,
+          maximumFractionDigits: 2,
+        })}`,
+        change: `PHP ${totalAmountToCollect.toLocaleString(undefined, {
+          minimumFractionDigits: 2,
+          maximumFractionDigits: 2,
+        })} total to be collected`,
+        isPositive: totalAmountToCollect === 0,
+      },
+      {
+        key: 'attention',
+        label: 'Needs Attention',
+        number: attentionCount,
+        change: `${draftCount} draft, ${remainingCount} with remaining`,
+        isPositive: attentionCount === 0,
+      },
     ];
   }, [collections]);
 

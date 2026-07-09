@@ -1,20 +1,35 @@
 import React, { useEffect, useState } from 'react';
 import * as Yup from 'yup';
-import { getProjectFinanceByProjectId, updateProjectFinance, createProjectFinance, INITIAL_PROJECT_FINANCE, generateDownpaymentBilling } from '../../services/ProjectFinance';
+import {
+  getProjectFinanceByProjectId,
+  updateProjectFinance,
+  createProjectFinance,
+  INITIAL_PROJECT_FINANCE,
+  generateDownpaymentBilling,
+  getFinancialStatement,
+} from '../../services/ProjectFinance';
 import { useRouter } from 'next/navigation';
 import { useConfirmModal } from '@/app/contextProviders/confirmModalContext';
 import styles from './ProjectDetails.module.scss';
 import Button from '../ui/Button/Button';
 import Input from '../ui/Input/Input';
+import DataTable from '../ui/DataTable/DataTable';
 
-export default function ProjectFinanceTab({ projectId, project, projectStatus, editable }) {  const router = useRouter();
+export default function ProjectFinanceTab({ projectId, project, projectStatus, editable }) {
+  const router = useRouter();
   const confirmModal = useConfirmModal();
   const [finance, setFinance] = useState(null);
   const [editing, setEditing] = useState(false);
   const [form, setForm] = useState({});
   const [loading, setLoading] = useState(true);
   const [formErrors, setFormErrors] = useState({});
+
+  // Financial Statement state
+  const [statement, setStatement] = useState(null);
+  const [statementLoading, setStatementLoading] = useState(true);
+
   console.log('ProjectFinanceTab rendered with projectId:', projectId, 'project:', project);
+
   useEffect(() => {
     let mounted = true;
     (async () => {
@@ -52,6 +67,21 @@ export default function ProjectFinanceTab({ projectId, project, projectStatus, e
     })();
     return () => (mounted = false);
   }, [projectId, project]);
+
+  // Fetch Financial Statement
+  useEffect(() => {
+    let mounted = true;
+    (async () => {
+      setStatementLoading(true);
+      const res = await getFinancialStatement(projectId);
+      const data = res?.data?.value ?? res?.data ?? null;
+      if (mounted) {
+        setStatement(data);
+      }
+      setStatementLoading(false);
+    })();
+    return () => (mounted = false);
+  }, [projectId]);
 
   const cleanPayload = (payload) => {
     const {
@@ -118,8 +148,6 @@ export default function ProjectFinanceTab({ projectId, project, projectStatus, e
     setLoading(false);
   };
 
-
-
   const handleGenerateDownpaymentBilling = () => {
     confirmModal.show(
       'Generate Downpayment Billing',
@@ -135,6 +163,83 @@ export default function ProjectFinanceTab({ projectId, project, projectStatus, e
           router.push('/finance/billings/form');
         }
       }
+    );
+  };
+
+  // ---- Financial Statement helpers ----
+  const fmt = (val) => {
+    const num = Number(val) || 0;
+    return num.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  };
+
+  const todayLabel = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: '2-digit' });
+
+  const renderFinancialStatement = () => {
+    if (statementLoading) return <div>Loading financial statement...</div>;
+    if (!statement) return <div>No financial statement available.</div>;
+
+    const {
+      totalContractPrice = 0,
+      bom = 0,
+      labor = 0,
+      trips = 0,
+      otherExpenses = 0,
+      total = 0,
+      net = 0,
+    } = statement;
+
+
+    const statementColumns = [
+      {
+        header: `Financial Statement as of ${todayLabel}`,
+        key: 'label',
+        align: 'left',
+        sortable: false,
+        width: '40%',
+        render: (item) => (item.bold ? <strong>{item.label}</strong> : item.label),
+      },
+      {
+        header: 'Debit',
+        key: 'debit',
+        align: 'right',
+        sortable: false,
+        width: '30%',
+        render: (item) => (item.debit != null ? fmt(item.debit) : ''),
+      },
+      {
+        header: 'Credit',
+        key: 'credit',
+        align: 'right',
+        sortable: false,
+        width: '30%',
+        render: (item) => (item.credit != null ? fmt(item.credit) : ''),
+      },
+    ];
+
+    const statementData = [
+      { label: 'Total Contract Price', debit: totalContractPrice, credit: null },
+      { label: 'Less', debit: null, credit: null, bold: true },
+      { label: 'BOM', debit: null, credit: bom },
+      { label: 'Labor', debit: null, credit: labor },
+      { label: 'Trips', debit: null, credit: trips },
+      { label: 'Other Expenses', debit: null, credit: otherExpenses },
+      { label: '', debit: totalContractPrice, credit: total, isTotalRow: true },
+      {
+        label: 'Net',
+        debit: null,
+        credit: net,
+        bold: true,
+      },
+    ];
+
+    return (
+      <DataTable
+        columns={statementColumns}
+        data={statementData}
+        showActions={false}
+        pagination={false}
+        emptyMessage="No financial statement available."
+      />
     );
   };
 
@@ -299,6 +404,17 @@ export default function ProjectFinanceTab({ projectId, project, projectStatus, e
         <div className="value">{finance?.lastBillingDate ? new Date(finance.lastBillingDate).toLocaleDateString() : ''}</div>
       </div>
     </div>
+
+    {String(projectStatus).toUpperCase() === 'ONGOING' && (
+      <>
+        <div className={styles.panelHeader}>
+          <h3>Financial Statement</h3>
+        </div>
+        <div>
+          {renderFinancialStatement()}
+        </div>
+      </>
+    )}
     </>
   );
 }
