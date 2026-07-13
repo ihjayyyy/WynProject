@@ -147,8 +147,16 @@ export default function ProposalForm() {
     } else if (items && typeof items === 'object') {
       selected = String(items.id) === String(proposalId) ? items : undefined;
     }
+
+    // COPY MODE: append "- copy" to the proposal name so it's clear this is
+    // a duplicate of the source proposal, without mutating the original data.
+    if (isCopyMode && selected) {
+      const baseName = selected.name || '';
+      return { ...selected, name: baseName ? `${baseName} - copy` : baseName };
+    }
+
     return selected || INITIAL_PROPOSAL;
-  }, [proposalId, items, isReviseMode]);
+  }, [proposalId, items, isReviseMode, isCopyMode]);
 
   React.useEffect(() => {
     setChildrenState(initialValues?.children || []);

@@ -165,58 +165,90 @@ export default function SalesBillingLanding() {
   const columns = useMemo(() => [...baseColumns, { header: 'Action', key: 'actions', sortable: false, align: 'right', render: (item) => <DropdownAction item={item} items={actionItems} /> }], [actionItems]);
 
   const stats = useMemo(() => {
-    const total = billings.length;
-    const billedCount = billings.filter((item) => String(item?.status || '').toLowerCase() === 'billed').length;
-    const totalAmount = billings.reduce((s, b) => s + (b.amount || 0), 0);
-    const billedAmount = billings.reduce((sum, item) => {
-      const status = String(item?.status || '').toLowerCase();
-      return status === 'billed' ? sum + (Number(item.amount) || 0) : sum;
-    }, 0);
-    const draftCount = billings.filter((b) => {
-      const status = String(b?.status || '').toLowerCase();
-      const isTerminal = status === 'cancelled' || status === 'closed';
-      return !isTerminal && status === 'draft';
-    }).length;
-    const unpaidCount = billings.filter((b) => {
-      const status = String(b?.status || '').toLowerCase();
-      const paymentStatus = String(b?.paymentStatus || '').toLowerCase();
-      const isTerminal = status === 'cancelled' || status === 'closed';
-      return !isTerminal && paymentStatus === 'unpaid';
-    }).length;
-    const partialCount = billings.filter((b) => {
-      const status = String(b?.status || '').toLowerCase();
-      const paymentStatus = String(b?.paymentStatus || '').toLowerCase();
-      const isTerminal = status === 'cancelled' || status === 'closed';
-      return !isTerminal && paymentStatus === 'partial';
-    }).length;
-    const balanceCount = billings.filter((b) => {
-      const status = String(b?.status || '').toLowerCase();
-      const hasBalance = Number(b?.balance) > 0;
-      const isTerminal = status === 'cancelled' || status === 'closed';
-      return !isTerminal && hasBalance;
-    }).length;
-    const attentionCount = billings.filter((b) => {
-      const status = String(b?.status || '').toLowerCase();
-      const paymentStatus = String(b?.paymentStatus || '').toLowerCase();
-      const hasBalance = Number(b?.balance) > 0;
-      const isTerminal = status === 'cancelled' || status === 'closed';
-      return !isTerminal && (status === 'draft' || paymentStatus === 'unpaid' || paymentStatus === 'partial' || hasBalance);
-    }).length;
-    return [
-      { key: 'total', label: 'Total Billings', number: total, change: `${billedCount} billed`, isPositive: true },
-{
-  key: 'amountReceivable',
-  label: 'Amount Receivable',
-  number: `PHP ${billedAmount.toLocaleString(undefined, {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  })}`,
-  change: '',
-  isPositive: true,
-},
-      { key: 'attention', label: 'Needs Attention', number: attentionCount, change: `${draftCount} draft, ${unpaidCount} unpaid, ${partialCount} partial, ${balanceCount} with balance`, isPositive: attentionCount === 0 },
-    ];
-  }, [billings]);
+  const total = billings.length;
+
+  const billedCount = billings.filter(
+    (item) => String(item?.status || '').toLowerCase() === 'billed'
+  ).length;
+
+  const amountReceivable = billings.reduce((sum, item) => {
+    const status = String(item?.status || '').toLowerCase();
+    return status === 'billed'
+      ? sum + (Number(item.balance) || 0)
+      : sum;
+  }, 0);
+
+  const draftCount = billings.filter((b) => {
+    const status = String(b?.status || '').toLowerCase();
+    const isTerminal = status === 'cancelled' || status === 'closed';
+    return !isTerminal && status === 'draft';
+  }).length;
+
+  const unpaidCount = billings.filter((b) => {
+    const status = String(b?.status || '').toLowerCase();
+    const paymentStatus = String(b?.paymentStatus || '').toLowerCase();
+    const isTerminal = status === 'cancelled' || status === 'closed';
+    return !isTerminal && paymentStatus === 'unpaid';
+  }).length;
+
+  const partialCount = billings.filter((b) => {
+    const status = String(b?.status || '').toLowerCase();
+    const paymentStatus = String(b?.paymentStatus || '').toLowerCase();
+    const isTerminal = status === 'cancelled' || status === 'closed';
+    return !isTerminal && paymentStatus === 'partial';
+  }).length;
+
+  const balanceCount = billings.filter((b) => {
+    const status = String(b?.status || '').toLowerCase();
+    const hasBalance = Number(b?.balance) > 0;
+    const isTerminal = status === 'cancelled' || status === 'closed';
+    return !isTerminal && hasBalance;
+  }).length;
+
+  const attentionCount = billings.filter((b) => {
+    const status = String(b?.status || '').toLowerCase();
+    const paymentStatus = String(b?.paymentStatus || '').toLowerCase();
+    const hasBalance = Number(b?.balance) > 0;
+    const isTerminal = status === 'cancelled' || status === 'closed';
+
+    return (
+      !isTerminal &&
+      (
+        status === 'draft' ||
+        paymentStatus === 'unpaid' ||
+        paymentStatus === 'partial' ||
+        hasBalance
+      )
+    );
+  }).length;
+
+  return [
+    {
+      key: 'total',
+      label: 'Total Billings',
+      number: total,
+      change: `${billedCount} billed`,
+      isPositive: true,
+    },
+    {
+      key: 'amountReceivable',
+      label: 'Amount Receivable',
+      number: `PHP ${amountReceivable.toLocaleString(undefined, {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+      })}`,
+      change: '',
+      isPositive: true,
+    },
+    {
+      key: 'attention',
+      label: 'Needs Attention',
+      number: attentionCount,
+      change: `${draftCount} draft, ${unpaidCount} unpaid, ${partialCount} partial, ${balanceCount} with balance`,
+      isPositive: attentionCount === 0,
+    },
+  ];
+}, [billings]);
 
   const filterFn = (item, keyword) => {
     const itemText = [

@@ -32,6 +32,30 @@ const toDateInputValue = (date) => {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 };
 
+/**
+ * Collapses items that share the same materialId into a single row, summing
+ * quantity across them. Used only for the read-only / non-editable table
+ * display — the underlying raw items (one per scanned barcode) are always
+ * what's actually saved and what the edit/add-item flow operates on.
+ *
+ * Each merged row keeps the first underlying item's fields (name, uom, etc.)
+ * and is flagged with `_merged: true` when it represents more than one
+ * source item, so TableColumns can adjust how it renders the material cell.
+ */
+const groupItemsByMaterial = (items = []) => {
+  const map = new Map();
+  (items || []).forEach((it) => {
+    const key = it.materialId ?? it.code;
+    if (!map.has(key)) {
+      map.set(key, { ...it, quantity: 0, _sourceIds: [] });
+    }
+    const entry = map.get(key);
+    entry.quantity += Number(it.quantity) || 0;
+    entry._sourceIds.push(it.id);
+  });
+  return Array.from(map.values()).map((r) => ({ ...r, _merged: r._sourceIds.length > 1 }));
+};
+
 export default function MaterialTransferForm() {
   const PageName = 'Inventory.MaterialTransfer';
   const { isAllowed } = useContext(AccessContext);
@@ -55,7 +79,7 @@ export default function MaterialTransferForm() {
   const [formData, setForm] = useState({});
   const [validForm, setValidForm] = useState(false);
   const [tableData, setTableData] = useState({ items: [], deletedItems: [] });
-  const [childFields, setChildFields] = useState(ItemsFields([], false, false));
+  const [childFields, setChildFields] = useState(ItemsFields([], false, false, []));
   const [tableError, setTableError] = useState('');
 
   // Dedicated primitives so effects always have the latest values
@@ -199,25 +223,28 @@ export default function MaterialTransferForm() {
         const res = await getByProjectId(transferFromId);
         if (!mounted) return;
         if (!res?.error && Array.isArray(res.data)) {
-          // Flatten all children across all scopes — deduplicate by materialId
-          const seen = new Set();
+          // Sum available quantity per materialId across all scopes
+          const byMaterialId = {};
           res.data.forEach((scope) => {
             (scope.children || []).forEach((child) => {
-              const key = child.materialId;
-              if (!seen.has(key)) {
-                seen.add(key);
-                opts.push({
-                  value: child.materialId,
-                  label: child.name || child.code || String(child.materialId),
+              const mid = child.materialId;
+              if (!byMaterialId[mid]) {
+                byMaterialId[mid] = {
+                  value: mid,
+                  label: child.name || child.code || String(mid),
                   code: child.code || '',
                   name: child.name || '',
                   uom: child.uom || '',
-                  availableQuantity: Number(child.quantity || child.initialQuantity || 0),
                   scopeId: child.scopeId ?? 0,
-                });
+                  availableQuantity: 0,
+                };
               }
+              byMaterialId[mid].availableQuantity += Number(child.quantity || child.initialQuantity || 0);
             });
           });
+
+          opts = Object.values(byMaterialId);
+          opts.forEach((o) => { newBalanceMap[o.value] = o.availableQuantity; });
         }
       }
 
@@ -231,12 +258,14 @@ export default function MaterialTransferForm() {
   }, [transferFromType, transferFromId, transferToType, transferToId]);
 
   // ── Rebuild child fields ─────────────────────────────────────────────────────
+  // Also depends on tableData.items so the barcode "already used" check
+  // inside ItemsFields always sees the current list of items in this transfer.
 
   useEffect(() => {
     const isWarehouseToProject = transferFromType === 'Warehouse' && transferToType === 'Project';
     const isProjectToWarehouse = transferFromType === 'Project' && transferToType === 'Warehouse';
-    setChildFields(ItemsFields(materialRequestOptions, isWarehouseToProject, isProjectToWarehouse));
-  }, [materialRequestOptions, transferFromType, transferToType]);
+    setChildFields(ItemsFields(materialRequestOptions, isWarehouseToProject, isProjectToWarehouse, tableData.items));
+  }, [materialRequestOptions, transferFromType, transferToType, tableData.items]);
 
   // ── Form fields ──────────────────────────────────────────────────────────────
 
@@ -251,6 +280,19 @@ export default function MaterialTransferForm() {
     if (validForm) return mode === 'view';
     return true;
   }, [validForm, mode]);
+
+  const isEditable = isAllowed(PageName, 'w') && !isReadOnly;
+
+  // Merge same-material rows for display when the table isn't editable
+  // (view mode). While editable, the raw per-barcode items are shown so
+  // add/edit/remove and remarks-per-barcode keep working as before.
+  const displayTableData = useMemo(() => {
+    if (isEditable) return tableData;
+    return {
+      items: groupItemsByMaterial(tableData.items),
+      deletedItems: tableData.deletedItems,
+    };
+  }, [tableData, isEditable]);
 
   const formTitle = useMemo(() => {
     const title = formData?.name || 'New Material Transfer';
@@ -286,22 +328,28 @@ export default function MaterialTransferForm() {
     );
   };
 
+  // Item form carries UI-only helper fields (rackDisplay, barcodeMessage)
+  // used purely for display — map explicitly to the transfer-item schema
+  // instead of spreading, so nothing extra ever leaks into the request and
+  // nothing schema-required gets missed.
+  const mapChildForSave = (child) => ({
+    id: child?.id ?? 0,
+    parentId: child?.parentId ?? 0,
+    materialId: child?.materialId,
+    name: child?.name || '',
+    code: child?.code || '',
+    quantity: Number(child?.quantity || 0),
+    uom: child?.uom || '',
+    remarks: child?.remarks || '',
+    rackId: child?.rackId || 0,
+  });
+
   const save = async (entity) => {
     const payload = {
       ...formData,
       ...entity,
-      children: (formData.children || []).map((child) => {
-          const { rackQuantity, ...rest } = child || {};
-          return {
-            ...rest,
-            quantity: Number(child.quantity || 0),
-            scopeId: child.scopeId ?? 0,
-          };
-        }),
-      deletedChildren: (formData.deletedChildren || []).map((child) => ({
-        ...child,
-        scopeId: child.scopeId ?? 0,
-      })),
+      children: (formData.children || []).map(mapChildForSave),
+      deletedChildren: (formData.deletedChildren || []).map(mapChildForSave),
     };
     payload.id = payload.id ?? 0;
 
@@ -331,6 +379,8 @@ export default function MaterialTransferForm() {
   };
 
   // ── Mark as transferred (same remarks-per-item modal used on the landing page) ─
+  // Always operates on the raw per-barcode items (tableData.items), never the
+  // merged display view, since each barcode needs its own remarks/receipt.
 
   const openTransferModal = () => {
     const items = tableData.items || formData.children || [];
@@ -428,11 +478,15 @@ export default function MaterialTransferForm() {
     : null
     }
 
-  // ── Balance summary panel (shown when Warehouse → Project and options loaded) ─
+  // ── Balance summary panel (shown when Warehouse ⇄ Project and options loaded) ─
 
   const BalanceSummary = () => {
-    if (transferFromType !== 'Warehouse' || transferToType !== 'Project') return null;
+    const isWarehouseToProject = transferFromType === 'Warehouse' && transferToType === 'Project';
+    const isProjectToWarehouse = transferFromType === 'Project' && transferToType === 'Warehouse';
+    if (!isWarehouseToProject && !isProjectToWarehouse) return null;
     if (!materialRequestOptions.length) return null;
+
+    const heading = isWarehouseToProject ? 'Available Balances' : 'Available Stock';
 
     return (
       <div style={{
@@ -450,7 +504,7 @@ export default function MaterialTransferForm() {
           textTransform: 'uppercase',
           letterSpacing: '0.04em',
         }}>
-          Available Balances
+          {heading}
         </p>
         <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
           {materialRequestOptions.map((opt) => (
@@ -509,9 +563,9 @@ export default function MaterialTransferForm() {
                   itemModalHeader="Transfer Items"
                   parentId={formId}
                   columns={TableColumns}
-                  editable={isAllowed(PageName, 'w') && !isReadOnly}
+                  editable={isEditable}
                   itemFields={childFields}
-                  data={tableData}
+                  data={displayTableData}
                   onChange={detailsUpdated}
                 />
                   {tableError ? <div style={{ color: 'red', marginTop: 8 }}>{tableError}</div> : null}

@@ -1,5 +1,5 @@
 import * as Yup from "yup";
-import { getRacksByMaterialId } from '@/services/MaterialInventory';
+import BarcodeService from '@/services/Barcode';
 
 export const INITIAL_MATERIAL_TRANSFER = {
   name: '',
@@ -147,144 +147,210 @@ export const FormFields = (warehouses = [], projects = [], onFieldChanged) => ([
   { name: 'description', label: 'Description', type: 'textbox', span: 'span8' },
 ]);
 
+/**
+ * TableColumns — used by DetailsTable to render the items list.
+ *
+ * When a row represents multiple merged barcode-level items (it._merged
+ * is set by groupItemsByMaterial in MaterialTransferForm), showing a single
+ * barcode next to the material name would be misleading, so just the
+ * material name is shown instead. Individual (non-merged) rows keep the
+ * original "barcode - name" display.
+ */
 export const TableColumns = [
-  { header: 'Material', key: 'material', width: '240px', render: (it) => (it.code ? `${it.code} - ${it.name}` : it.name) },
+  {
+    header: 'Material',
+    key: 'material',
+    width: '240px',
+    render: (it) => (it._merged ? it.name : (it.code ? `${it.code} - ${it.name}` : it.name)),
+  },
   { header: 'UOM', key: 'uom', width: '80px', render: (it) => it.uom },
   { header: 'Quantity', key: 'quantity', align: 'right', width: '100px', render: (it) => (Number(it.quantity) || 0).toFixed(0) },
-  { header: 'Remarks', key: 'remarks', width: '220px', render: (it) => it.remarks || '' },
 ];
 
-export const ItemsFields = (materialOptions = [], isWarehouseToProject = false, isProjectToWarehouse = false) => ([
-  { name: 'id', label: 'id', type: 'number', hidden: true, initialvalue: 0 },
-  { name: 'parentId', label: 'parentId', type: 'number', hidden: true, initialvalue: 0 },
-  { name: 'scopeId', label: 'scopeId', type: 'number', hidden: true, initialvalue: 0 },
-  {
-    name: 'materialId',
-    label: 'Material',
-    type: 'select',
-    searchable: true,
-    options: Array.isArray(materialOptions)
-      ? materialOptions.map((m) => ({
-          ...m,
-          label: `${m.code ? `[${m.code}] ` : ''}${m.name || m.label || ''}`.trim(),
-        }))
-      : [],
-    validator: Yup.string().required('Material is required'),
-    onChange: async (item, updateField, fields, nextValue) => {
-      const material = Array.isArray(materialOptions)
-        ? materialOptions.find((m) => String(m.value) === String(item.value))
-        : null;
+/**
+ * ItemsFields — barcode-driven item entry.
+ *
+ * Maps 1:1 onto the transfer-item schema:
+ *   { id, parentId, materialId, name, code, quantity, uom, remarks, rackId }
+ *
+ * The "Barcode" input IS the `code` field — whatever the user scans/types is
+ * saved as-is as children[].code. This also means it round-trips correctly
+ * when re-opening an existing saved item: child.code from the API becomes
+ * this field's initial value.
+ *
+ * Barcode status (matched / not found / already used / not available) is
+ * carried in a hidden `barcodeMessage` field and surfaced via the `code`
+ * field's `description` — the same pattern MaterialReceivedModels uses for
+ * existingRemarks under the remarks input: a hidden field holds the value,
+ * and the visible field's description reads it back as plain text.
+ *
+ * On the debounced (400ms) change to the barcode field:
+ *   0. Do nothing (just clear material fields / message) until the value is
+ *      at least MIN_BARCODE_LENGTH characters long — avoids firing a lookup
+ *      (and a premature "not found") on every keystroke while the user is
+ *      still typing or the scanner is still streaming characters in.
+ *   1. Reject the scan if that exact barcode is already attached to another
+ *      item in this transfer (existingItems). The item currently being
+ *      edited is excluded from this check via its `id`, so re-saving an
+ *      existing item doesn't flag against itself.
+ *   2. Otherwise, look up the barcode via BarcodeService.getByBarcodeWithMaterial:
+ *      a. Verify the scanned material is part of this transfer's available
+ *         balance (materialOptions — requested/allocated balance for
+ *         Warehouse→Project, or project on-hand stock for Project→Warehouse).
+ *         If not found, the scan is rejected.
+ *      b. Auto-fill materialId, name, uom, rackId from the response.
+ *      c. Default quantity to 1 (still editable/adjustable by the user).
+ *
+ * Quantity is only validated as "required, positive" here — there's no
+ * client-side cap against rack/project stock, so the backend should enforce
+ * that limit on save.
+ */
+const MIN_BARCODE_LENGTH = 6;
 
-      if (!material) {
-        updateField('code', '');
-        updateField('name', '');
-        updateField('uom', '');
-        updateField('scopeId', 0);
-        // clear rack-related fields/options
-        const rackField = (fields || []).find((f) => f.name === 'rackId');
-        if (rackField) {
-          rackField.options = [];
-          updateField('rackId', '');
-          updateField('rackQuantity', 0);
-        }
-        return;
-      }
+export const ItemsFields = (materialOptions = [], isWarehouseToProject = false, isProjectToWarehouse = false, existingItems = []) => {
+  // Scoped to this ItemsFields() call, which the item-entry modal treats as one
+  // in-flight item at a time — safe to share a single debounce timer here.
+  let barcodeLookupTimer = null;
 
-      updateField('code', material.code || '');
-      updateField('name', material.name || material.label || '');
-      updateField('uom', material.uom || '');
-      updateField('scopeId', material.scopeId ?? 0);
+  const clearMaterialFields = (updateField) => {
+    updateField('materialId', 0);
+    updateField('name', '');
+    updateField('uom', '');
+    updateField('rackId', 0);
+    updateField('rackDisplay', '');
+  };
 
-      // fetch racks for selected material and populate rack options
-      try {
-        const res = await getRacksByMaterialId(material.value ?? material.id ?? item.value);
-        const list = (res?.data || [])
-          .map((entry) => ({
-            value: entry.rack?.id || entry.id || 0,
-            label: entry.rack ? `${entry.rack.code || ''} - ${entry.rack.name || ''}`.trim() : String(entry.id || ''),
-            quantity: Number(entry.quantity || entry.stockLevel || 0),
-            warehouseId: entry.rack?.warehouseId ?? 0,
-          }));
+  return [
+    { name: 'id', label: 'id', type: 'number', hidden: true, initialvalue: 0 },
+    { name: 'parentId', label: 'parentId', type: 'number', hidden: true, initialvalue: 0 },
 
-        const rackField = (fields || []).find((f) => f.name === 'rackId');
-        if (rackField) {
-          rackField.options = list;
-          // reset selected rack
-          updateField('rackId', '');
-          updateField('rackQuantity', 0);
-        }
-      } catch (e) {
-        // ignore
-      }
-        // also set project quantity if material option contains available/project quantity
-        const projectQty = material.availableQuantity ?? material.totalBalance ?? material.quantity ?? 0;
-        updateField('projectQuantity', Number(projectQty || 0));
+    // Populated by the barcode lookup below; this is what actually gets validated.
+    {
+      name: 'materialId',
+      label: 'materialId',
+      type: 'number',
+      hidden: true,
+      initialvalue: 0,
+      validator: Yup.number()
+        .min(1, 'Scan a valid barcode to select a material')
+        .required('Scan a valid barcode to select a material'),
     },
-  },
-  { name: 'code', label: 'Code', type: 'text', hidden: true },
-  { name: 'name', label: 'Name', type: 'text', hidden: true },
-    // Rack selection and display-only fields
-{ name: 'rackId', label: 'Rack', span: 'span2', type: 'select', options: [], searchable: true,
-  onChange: (item, updateField, fields) => {
-    const rackField = (fields || []).find((f) => f.name === 'rackId');
-    const selected = rackField && Array.isArray(rackField.options)
-      ? rackField.options.find(o => String(o.value) === String(item.value))
-      : null;
-    updateField('rackQuantity', selected ? Number(selected.quantity || 0) : 0);
-    updateField('quantity', 1); // ← reset quantity on rack change
-  }
-},
-  {
-    name: 'quantity',
-    label: 'Quantity',
-    type: 'number',
-    readonly: false,
-    initialvalue: 1,
-    validator: Yup.number()
-      .required('Quantity is required')
-      .typeError('Quantity must be a number')
-      .positive('Quantity must be greater than 0.')
-      .min(1, 'Quantity must be greater than 0.')
-      .test('max-available', 'Quantity must not exceed available quantity', function (value) {
-        const v = Number(value || 0);
-        if (isWarehouseToProject) {
-          const rackQty = Number(this.parent?.rackQuantity || 0);
-          if (!rackQty) return true;
-          return v <= rackQty;
-        }
-        if (isProjectToWarehouse) {
-          const projQty = Number(this.parent?.projectQuantity || 0);
-          if (!projQty) return true;
-          return v <= projQty;
-        }
-        return true;
-      }),
-    onChange: (item, updateField, fields) => {
-      const qty = Number(item.value || 0);
-      if (isWarehouseToProject) {
-        const rackField = (fields || []).find((f) => f.name === 'rackQuantity');
-        const max = Number(rackField?.value || 0);
-        if (max && qty > max) {
-          updateField('quantity', max);
+
+    // Carries the barcode status text (matched / not found / duplicate /
+    // not available / too short). Not shown directly — read back via
+    // `code`'s description below, same pattern as existingRemarks -> remarks.
+    { name: 'barcodeMessage', label: 'barcodeMessage', type: 'text', hidden: true, initialvalue: '' },
+
+    {
+      name: 'code',
+      label: 'Barcode',
+      type: 'text',
+      span: 'span2',
+      placeholder: 'Scan or type barcode',
+      description: (values) => values?.barcodeMessage || '',
+      validator: Yup.string().required('Barcode is required'),
+      onChange: (item, updateField, fields) => {
+        const value = (item.value ?? '').toString().trim();
+        updateField('code', value);
+        updateField('barcodeMessage', '');
+
+        if (barcodeLookupTimer) clearTimeout(barcodeLookupTimer);
+
+        if (!value) {
+          clearMaterialFields(updateField);
           return;
         }
-      }
-      if (isProjectToWarehouse) {
-        const projField = (fields || []).find((f) => f.name === 'projectQuantity');
-        const max = Number(projField?.value || 0);
-        if (max && qty > max) {
-          updateField('quantity', max);
+
+        // Don't fire a lookup (or clear/flag anything beyond the reset above)
+        // until there are enough characters to plausibly be a real barcode.
+        // Prevents a "not found" flash while the user/scanner is mid-input.
+        if (value.length < MIN_BARCODE_LENGTH) {
+          clearMaterialFields(updateField);
           return;
         }
-      }
-      updateField('quantity', qty);
-    },
-  },
 
-  { name: 'rackQuantity', label: 'Rack Qty', type: 'number', readonly: true, initialvalue: 0, hidden: isProjectToWarehouse },
-  { name: 'projectQuantity', label: 'Project Qty', type: 'number', readonly: true, initialvalue: 0, hidden: isWarehouseToProject },
-  { name: 'uom', label: 'Unit of Measure', type: 'text', readonly: true },
-  { name: 'remarks', label: 'Remarks', type: 'text' },
-]);
+        barcodeLookupTimer = setTimeout(async () => {
+          // Reject if this exact barcode is already attached to another item
+          // in this transfer. Exclude the row currently being edited (by id)
+          // so editing an existing item doesn't flag against itself.
+          const currentItemId = fields?.id;
+          const duplicate = (existingItems || []).find(
+            (existing) =>
+              existing?.code &&
+              existing.code.toString().trim().toLowerCase() === value.toLowerCase() &&
+              String(existing.id ?? '') !== String(currentItemId ?? '')
+          );
+
+          if (duplicate) {
+            updateField('barcodeMessage', `Barcode "${value}" is already used in this transfer.`);
+            clearMaterialFields(updateField);
+            return;
+          }
+
+          const res = await BarcodeService.getByBarcodeWithMaterial(value);
+
+          if (res.error || !res.data) {
+            updateField('barcodeMessage', 'Barcode not found.');
+            clearMaterialFields(updateField);
+            return;
+          }
+
+          const data = res.data;
+          const material = data.material || {};
+          const rack = data.rack || {};
+
+          // Verify the scanned material actually has available balance/stock
+          // for this transfer (materialOptions is built upstream per direction).
+          const matched = (materialOptions || []).find(
+            (m) => String(m.value) === String(data.materialId)
+          );
+
+          if (!matched) {
+            updateField(
+              'barcodeMessage',
+              `"${material.code ? `${material.code} - ` : ''}${material.name || data.materialId}" is not available for this transfer.`
+            );
+            clearMaterialFields(updateField);
+            return;
+          }
+
+          updateField('materialId', data.materialId);
+          updateField('name', material.name || matched.name || '');
+          updateField('uom', material.unitOfMeasure || material.purchaseUnitOfMeasure || matched.uom || '');
+
+          if (isWarehouseToProject) {
+            updateField('rackId', rack.id || 0);
+            updateField('rackDisplay', rack.code ? `${rack.code} - ${rack.name || ''}`.trim() : (rack.name || ''));
+          }
+
+          updateField('barcodeMessage', `Matched: ${material.code ? `${material.code} - ` : ''}${material.name || ''}`);
+          updateField('quantity', 1);
+        }, 400);
+      },
+    },
+
+    { name: 'name', label: 'Name', type: 'text', readonly: true },
+
+    // Rack id feeds the save payload; rackDisplay is what the user sees.
+    { name: 'rackId', label: 'rackId', type: 'number', hidden: true, initialvalue: 0 },
+    // { name: 'rackDisplay', label: 'Rack', type: 'text', readonly: true, span: 'span2', hidden: isProjectToWarehouse },
+
+    {
+      name: 'quantity',
+      label: 'Quantity',
+      type: 'number',
+      readonly: false,
+      initialvalue: 1,
+      validator: Yup.number()
+        .required('Quantity is required')
+        .typeError('Quantity must be a number')
+        .positive('Quantity must be greater than 0.')
+        .min(1, 'Quantity must be greater than 0.'),
+    },
+
+    { name: 'uom', label: 'Unit of Measure', type: 'text', readonly: true },
+    { name: 'remarks', label: 'Remarks', type: 'text' },
+  ];
+};
 
 export default { INITIAL_MATERIAL_TRANSFER, FormFields, TableColumns, ItemsFields };

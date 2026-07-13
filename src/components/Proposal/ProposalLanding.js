@@ -38,8 +38,6 @@ const baseColumns = [
       </div>
     ),
   },
-  // { header: 'Updated By', key: 'updatedBy' },
-  // { header: 'Updated Date', key: 'updatedAt', render: (item) => (item.updatedAt ? new Date(item.updatedAt).toLocaleString() : '') },
 ];
 
 export default function ProposalLanding() {
