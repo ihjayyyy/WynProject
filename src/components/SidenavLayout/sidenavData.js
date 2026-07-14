@@ -237,6 +237,12 @@ export const sidenavItems = [
         name: 'Inventory.InventoryMovement',
       },
       {
+        label: 'Barcodes',
+        icon: FiCpu,
+        href: '/inventory/barcode',
+        name: 'Inventory.Barcode',
+      },
+      {
         label: 'Deliveries',
         icon: FiTruck,
         href: '/purchase/deliveries',
