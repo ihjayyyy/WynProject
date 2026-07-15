@@ -172,12 +172,12 @@ export default function CollectionForm() {
       id: item.id ?? 0,
       parentId: item.parentId ?? 0,
       collectionId: item.collectionId ?? 0,
+      amount: item.amount ?? 0,        // add this
       amountPaid: item.amountPaid ?? 0,
       totalAmountPaid: item.totalAmountPaid ?? 0,
       withholdingTax: item.withholdingTax ?? 0,
       balance: item.balance ?? 0,
       billingId: item.billingId ?? 0,
-      account: item.account ?? '',
     });
 
     const mergedCollection = { ...collection, ...entity };

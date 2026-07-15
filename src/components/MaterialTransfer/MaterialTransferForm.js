@@ -34,9 +34,10 @@ const toDateInputValue = (date) => {
 
 /**
  * Collapses items that share the same materialId into a single row, summing
- * quantity across them. Used only for the read-only / non-editable table
- * display — the underlying raw items (one per scanned barcode) are always
- * what's actually saved and what the edit/add-item flow operates on.
+ * quantity across them. Used for the read-only / non-editable table display,
+ * AND for the edit-mode totals summary panel. The underlying raw items
+ * (one per scanned barcode) are always what's actually saved and what the
+ * edit/add-item flow operates on — this is purely a derived view.
  *
  * Each merged row keeps the first underlying item's fields (name, uom, etc.)
  * and is flagged with `_merged: true` when it represents more than one
@@ -294,6 +295,15 @@ export default function MaterialTransferForm() {
     };
   }, [tableData, isEditable]);
 
+  // Totals-per-material summary, independent of the editable/raw table.
+  // This lets edit mode keep showing individual per-barcode rows (needed
+  // for per-barcode remarks/removal) while still surfacing the merged
+  // total quantity per material, the same number view mode would show.
+  const materialTotals = useMemo(
+    () => groupItemsByMaterial(tableData.items),
+    [tableData.items]
+  );
+
   const formTitle = useMemo(() => {
     const title = formData?.name || 'New Material Transfer';
     return (
@@ -478,15 +488,66 @@ export default function MaterialTransferForm() {
     : null
     }
 
-  // ── Balance summary panel (shown when Warehouse ⇄ Project and options loaded) ─
+  // ── Combined summary panel (Balances + Totals) ───────────────────────────────
+  // Merges what used to be two separate panels (BalanceSummary and
+  // MaterialTotalsSummary) into a single panel keyed by materialId:
+  //   - "Balance" column: available balance/stock for the destination or
+  //     source, from materialRequestOptions/balanceMap (shown whenever
+  //     options are loaded, in both view and edit mode).
+  //   - "Transfer Qty" column: the quantity currently on this transfer for
+  //     that material (from materialTotals), shown only while editable,
+  //     since that's the only time the raw/editable table below it applies.
+  // Rows are based on materialRequestOptions (has code/name/uom); any
+  // material already on the transfer but missing from that list (edge case,
+  // e.g. stale options) is appended with balance shown as "—".
 
-  const BalanceSummary = () => {
+  const SummaryPanel = () => {
     const isWarehouseToProject = transferFromType === 'Warehouse' && transferToType === 'Project';
     const isProjectToWarehouse = transferFromType === 'Project' && transferToType === 'Warehouse';
     if (!isWarehouseToProject && !isProjectToWarehouse) return null;
-    if (!materialRequestOptions.length) return null;
+
+    const showTotals = isEditable && materialTotals.length > 0;
+    if (!materialRequestOptions.length && !showTotals) return null;
 
     const heading = isWarehouseToProject ? 'Available Balances' : 'Available Stock';
+
+    const totalsByMaterialId = new Map(
+      materialTotals.map((t) => [String(t.materialId ?? t.code), t])
+    );
+
+    const rows = materialRequestOptions.map((opt) => {
+      const key = String(opt.value);
+      const totalItem = totalsByMaterialId.get(key);
+      totalsByMaterialId.delete(key);
+      return {
+        key: opt.value,
+        code: opt.code,
+        name: opt.name,
+        uom: opt.uom,
+        balance: balanceMap[opt.value] ?? 0,
+        hasBalance: true,
+        transferQty: totalItem ? totalItem.quantity : 0,
+        merged: totalItem?._merged,
+        mergedCount: totalItem?._sourceIds?.length,
+      };
+    });
+
+    // Materials on the transfer but not present in materialRequestOptions
+    totalsByMaterialId.forEach((totalItem, key) => {
+      rows.push({
+        key,
+        code: totalItem.code,
+        name: totalItem.name,
+        uom: totalItem.uom,
+        balance: 0,
+        hasBalance: false,
+        transferQty: totalItem.quantity,
+        merged: totalItem._merged,
+        mergedCount: totalItem._sourceIds?.length,
+      });
+    });
+
+    if (!rows.length) return null;
 
     return (
       <div style={{
@@ -506,26 +567,63 @@ export default function MaterialTransferForm() {
         }}>
           {heading}
         </p>
+
         <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-          {materialRequestOptions.map((opt) => (
-            <div key={opt.value} style={{
+          <div style={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            fontSize: '11px',
+            fontWeight: 600,
+            color: 'var(--color-text-secondary, #94a3b8)',
+            textTransform: 'uppercase',
+            letterSpacing: '0.03em',
+          }}>
+            <span>Material</span>
+            <span style={{ display: 'flex', gap: '20px' }}>
+              {showTotals && <span style={{ minWidth: '70px', textAlign: 'right' }}>Transfer Qty</span>}
+              <span style={{ minWidth: '70px', textAlign: 'right' }}>Balance</span>
+            </span>
+          </div>
+
+          {rows.map((r) => (
+            <div key={r.key} style={{
               display: 'flex',
               justifyContent: 'space-between',
               alignItems: 'center',
               fontSize: '13px',
             }}>
               <span style={{ color: 'var(--color-text, #1e293b)' }}>
-                {opt.code ? `${opt.code} - ${opt.name}` : opt.name}
+                {r.code ? `${r.code} - ${r.name}` : r.name}
+                {r.merged && (
+                  <span style={{ color: '#999', fontSize: '11px', marginLeft: 6 }}>
+                    ({r.mergedCount} items)
+                  </span>
+                )}
               </span>
-              <span style={{
-                fontWeight: 600,
-                color: (balanceMap[opt.value] || 0) > 0
-                  ? 'var(--color-success, #16a34a)'
-                  : 'var(--color-danger, #dc2626)',
-                minWidth: '60px',
-                textAlign: 'right',
-              }}>
-                {balanceMap[opt.value] ?? 0} {opt.uom}
+              <span style={{ display: 'flex', gap: '20px' }}>
+                {showTotals && (
+                  <span style={{
+                    fontWeight: 600,
+                    minWidth: '70px',
+                    textAlign: 'right',
+                    color: r.transferQty > 0 ? 'var(--color-text, #1e293b)' : '#cbd5e1',
+                  }}>
+                    {r.transferQty} {r.uom}
+                  </span>
+                )}
+                <span style={{
+                  fontWeight: 600,
+                  minWidth: '70px',
+                  textAlign: 'right',
+                  color: !r.hasBalance
+                    ? '#999'
+                    : (r.balance > 0
+                      ? 'var(--color-success, #16a34a)'
+                      : 'var(--color-danger, #dc2626)'),
+                }}>
+                  {r.hasBalance ? `${r.balance} ${r.uom}` : '—'}
+                </span>
               </span>
             </div>
           ))}
@@ -558,7 +656,8 @@ export default function MaterialTransferForm() {
               initialValues={formData}
             extraContent={
               <div className={EntityStyle.extraContentContainer}>
-                <BalanceSummary />
+                <SummaryPanel />
+                
                 <DetailsTable
                   itemModalHeader="Transfer Items"
                   parentId={formId}

@@ -151,6 +151,10 @@ export default function ExpensesTab({ projectId = 0, editable = true, projectSta
         (raw || []).map((scope) => ({
           value: String(scope.id),
           label: scope.description || scope.name || scope.code || String(scope.id),
+          // Kept separately (not just folded into `label`) so the expense
+          // payload can pull the scope's real name/code when it's saved.
+          name: scope.name || scope.description || scope.code || '',
+          code: scope.code || '',
         }))
       );
     })();
@@ -251,15 +255,19 @@ export default function ExpensesTab({ projectId = 0, editable = true, projectSta
             return;
           }
 
+          // name/code aren't editable fields on this form (the scope picker
+          // stands in for them) — pull them from the selected scope's data
+          // instead of the submitted `value`, which never carries them.
+          const selectedScope = scopeOptions.find((scope) => scope.value === String(value.scopeId));
+
           const payload = {
-            name: value.name || '',
-            code: value.code || '',
+            name: selectedScope?.name || '',
+            code: selectedScope?.code || '',
             projectId: Number(projectId) || 0,
             scopeId: Number(value.scopeId) || 0,
             amount: Number(value.amount) || 0,
-            referenceNumber: Number(value.referenceNumber) || 0,
+referenceNumber: value.referenceNumber || '',
             description: value.description || '',
-            desciption: value.description || '',
           };
 
           if (!value.id || value.id === 0) {

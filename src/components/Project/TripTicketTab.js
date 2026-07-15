@@ -230,24 +230,6 @@ export default function TripTicketTab({ projectId = 0, editable = true, projectS
             title="Edit"
             onClick={() => { setEditing(item); setIsModalOpen(true); }}
           />
-          <Button
-            size="sm"
-            variant="danger"
-            icon={<FiTrash2 />}
-            title="Delete"
-            onClick={() => {
-              const title = 'Remove trip ticket?';
-              const message = item?.name
-                ? `Remove trip ticket for "${item.name}" on ${formatDate(item.date)}?`
-                : 'Remove this trip ticket?';
-              const confirmText = 'Remove';
-              const variant = 'danger';
-              const action = async () => {
-                await handleDelete(item?.id);
-              };
-              confirmModal.show(title, message, confirmText, variant, action);
-            }}
-          />
         </div>
       ) : null,
     },

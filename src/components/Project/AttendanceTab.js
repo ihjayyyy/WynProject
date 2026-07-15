@@ -145,14 +145,12 @@ const BASE_COLUMNS = [
 
 export default function AttendanceTab({ projectId = 0, editable = true, projectStatus = '' }) {  const PageName = 'Projects.Projects';
   const { isAllowed } = useContext(AccessContext);
-  const [defaultDateRange] = useState(getCurrentWorkingWeek);
   const [items, setItems] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editing, setEditing] = useState(null);
   const [staffOptions, setStaffOptions] = useState([]);
-  const [startDate, setStartDate] = useState(defaultDateRange.startDate);
-  const [endDate, setEndDate] = useState(defaultDateRange.endDate);
+
   const toast = useToast();
   const confirmModal = useConfirmModal();
 
@@ -333,7 +331,7 @@ export default function AttendanceTab({ projectId = 0, editable = true, projectS
 
   const loadData = useCallback(async () => {
     if (!projectId) return;
-    const response = await getAttendanceByProjectId(projectId, startDate, endDate);
+    const response = await getAttendanceByProjectId(projectId);
     if (response?.error) {
       setItems([]);
       return;
@@ -341,8 +339,8 @@ export default function AttendanceTab({ projectId = 0, editable = true, projectS
 
     const raw = Array.isArray(response.data) ? response.data : (response.data ? [response.data] : []);
     setItems(raw);
-  }, [endDate, projectId, startDate]);
-
+  }, [projectId]);
+  
   useEffect(() => {
     loadData();
   }, [loadData]);
@@ -421,22 +419,6 @@ export default function AttendanceTab({ projectId = 0, editable = true, projectS
             icon={<FiEdit2 />}
             title="Edit"
             onClick={() => { setEditing(item); setIsModalOpen(true); }}
-          />
-          <Button
-            size="sm"
-            variant="danger"
-            icon={<FiTrash2 />}
-            title="Delete"
-            onClick={() => {
-              const title = 'Remove attendance?';
-              const message = item?.name
-                ? `Remove attendance for "${item.name}" on ${formatDate(item.date)}?`
-                : 'Remove this attendance record?';
-              const confirmText = 'Remove';
-              const variant = 'danger';
-              const action = async () => { await handleDelete(item?.id); };
-              confirmModal.show(title, message, confirmText, variant, action);
-            }}
           />
         </div>
       ) : null,

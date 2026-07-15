@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import Landing from '../ui/Landing/Landing';
+import Landing, { applyLandingFilters } from '../ui/Landing/Landing';
 import ConfirmModal from '../ui/ConfirmModal/ConfirmModal';
 import { useToast } from '../ui/Toast/Toast';
 import BarcodeService from '@/services/Barcode';
@@ -42,6 +42,17 @@ const baseColumns = [
 
 const getBarcodeKey = (item) => String(item?.id ?? item?.barcode ?? item?.materialInventoryId ?? '');
 
+// Used-column filter defaults to 'No' so the landing page opens showing
+// only unused barcodes; selecting 'All' (via Clear Filters) removes the
+// restriction.
+const DEFAULT_FILTER_VALUES = { isUsed: 'No' };
+
+const usedFilterOptions = [
+  { label: 'All', value: '' },
+  { label: 'Yes', value: 'Yes' },
+  { label: 'No', value: 'No' },
+];
+
 export default function BarcodeLanding() {
   const toast = useToast();
   const [barcodes, setBarcodes] = useState([]);
@@ -49,6 +60,33 @@ export default function BarcodeLanding() {
   const [isPrintModalOpen, setIsPrintModalOpen] = useState(false);
   const [isPrinting, setIsPrinting] = useState(false);
   const [selectedBarcodeKeys, setSelectedBarcodeKeys] = useState([]);
+  const [filterValues, setFilterValues] = useState(DEFAULT_FILTER_VALUES);
+
+  const landingFilters = useMemo(
+    () => [
+      {
+        key: 'isUsed',
+        label: 'Used',
+        type: 'select',
+        options: usedFilterOptions,
+        placeholder: 'All',
+        accessor: (item) => (item?.isUsed ? 'Yes' : 'No'),
+        match: 'equals',
+      },
+    ],
+    []
+  );
+
+  const filteredBarcodes = useMemo(
+    () => applyLandingFilters(barcodes, landingFilters, filterValues),
+    [barcodes, landingFilters, filterValues]
+  );
+
+  const hasActiveFilters = Object.values(filterValues).some((value) => String(value || '').trim() !== '');
+
+  const clearFilters = useCallback(() => {
+    setFilterValues({ isUsed: '' });
+  }, []);
 
   const selectedBarcodes = useMemo(() => {
     if (!selectedBarcodeKeys.length) return [];
@@ -56,9 +94,16 @@ export default function BarcodeLanding() {
     return barcodes.filter((item) => selectedSet.has(getBarcodeKey(item)));
   }, [barcodes, selectedBarcodeKeys]);
 
+  // "Select all" reflects and acts on the currently filtered/visible rows
+  // only — selections made under a different filter are preserved.
+  const visibleKeys = useMemo(
+    () => filteredBarcodes.map((item) => getBarcodeKey(item)).filter(Boolean),
+    [filteredBarcodes]
+  );
+
   const allSelected = useMemo(
-    () => barcodes.length > 0 && selectedBarcodeKeys.length === barcodes.length,
-    [barcodes.length, selectedBarcodeKeys.length]
+    () => visibleKeys.length > 0 && visibleKeys.every((key) => selectedBarcodeKeys.includes(key)),
+    [visibleKeys, selectedBarcodeKeys]
   );
 
   const loadBarcodes = useCallback(async () => {
@@ -135,11 +180,20 @@ export default function BarcodeLanding() {
 
   const toggleSelectAll = useCallback(() => {
     setSelectedBarcodeKeys((current) => {
-      if (barcodes.length === 0) return [];
-      if (current.length === barcodes.length) return [];
-      return barcodes.map((item) => getBarcodeKey(item)).filter(Boolean);
+      if (visibleKeys.length === 0) return current;
+      const currentSet = new Set(current);
+      const allVisibleSelected = visibleKeys.every((key) => currentSet.has(key));
+
+      if (allVisibleSelected) {
+        // Deselect only the visible rows, keep any other selections intact.
+        return current.filter((key) => !visibleKeys.includes(key));
+      }
+
+      // Select all visible rows, union with any existing selections.
+      visibleKeys.forEach((key) => currentSet.add(key));
+      return Array.from(currentSet);
     });
-  }, [barcodes]);
+  }, [visibleKeys]);
 
   const toggleBarcodeSelection = useCallback((item) => {
     const key = getBarcodeKey(item);
@@ -186,12 +240,14 @@ export default function BarcodeLanding() {
 
   const selectedCount = selectedBarcodeKeys.length;
 
+  // Stats reflect the currently filtered (visible) set, matching the
+  // Customers landing convention.
   const barcodeStats = useMemo(() => {
-    const total = barcodes.length;
-    const used = barcodes.filter((item) => Boolean(item?.isUsed)).length;
+    const total = filteredBarcodes.length;
+    const used = filteredBarcodes.filter((item) => Boolean(item?.isUsed)).length;
     const available = total - used;
     const uniqueMaterialCount = new Set(
-      barcodes.map((item) => item.materialId || item.materialInventoryId || item.code || item.id)
+      filteredBarcodes.map((item) => item.materialId || item.materialInventoryId || item.code || item.id)
     ).size;
 
     return [
@@ -217,7 +273,7 @@ export default function BarcodeLanding() {
         isPositive: used === 0,
       },
     ];
-  }, [barcodes]);
+  }, [filteredBarcodes]);
 
   const filterFn = (item, keyword) =>
     [
@@ -237,7 +293,7 @@ export default function BarcodeLanding() {
     <>
       <Landing
         title="Barcodes"
-        data={barcodes}
+        data={filteredBarcodes}
         columns={columns}
         stats={barcodeStats}
         searchPlaceholder="Search barcodes"
@@ -249,9 +305,20 @@ export default function BarcodeLanding() {
           }
           setIsPrintModalOpen(true);
         }}
-        emptyMessage={isLoading ? 'Loading barcodes...' : 'No barcodes found'}
+        emptyMessage={
+          isLoading
+            ? 'Loading barcodes...'
+            : hasActiveFilters
+            ? 'No barcodes found for the selected filters'
+            : 'No barcodes found'
+        }
         width="320px"
         filterFn={filterFn}
+        filters={landingFilters}
+        filterValues={filterValues}
+        onFilterChange={(key, value) => setFilterValues((prev) => ({ ...prev, [key]: value }))}
+        onClearFilters={clearFilters}
+        hasActiveFilters={hasActiveFilters}
         belowStatsAddon={
           <div style={{ color: '#334155', fontSize: '12px' }}>
             Selected: <b>{selectedCount}</b>

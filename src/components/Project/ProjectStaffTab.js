@@ -231,14 +231,6 @@ export default function ProjectStaffTab({ projectId = 0, editable = true }) {
             title="Edit"
             onClick={() => { setEditing(it); setIsModalOpen(true); }}
           />
-          <Button
-            size="sm"
-            variant="danger"
-            title="Delete"
-            onClick={() => { setConfirmTarget(it); setIsConfirmOpen(true); }}
-          >
-            Delete
-          </Button>
         </div>
       ) : null,
     },
