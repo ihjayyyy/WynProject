@@ -1,3 +1,5 @@
+import { handleOpenPdf } from "./Helper";
+
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL + "/Barcode";
 
 function unwrapResponse(json) {
@@ -86,15 +88,16 @@ async function printBarcodes(selectedBarcodes = []) {
       };
     }
 
-    const params = new URLSearchParams();
-    ids.forEach((id) => params.append('ids', String(id)));
+    // const params = new URLSearchParams();
+    // ids.forEach((id) => params.append('ids', String(id)));
 
-    const endpoint = `${API_BASE_URL}/PrintBarcodes?${params.toString()}`;
+    const endpoint = `${API_BASE_URL}/PrintBarcodes`;
     const getOptions = {
-      method: "GET",
+      method: "POST",
       headers: {
         Accept: "application/pdf, application/json, */*",
       },
+      body: JSON.stringify(ids),
     };
     let res = await fetch(endpoint, getOptions);
 
@@ -107,6 +110,7 @@ async function printBarcodes(selectedBarcodes = []) {
         },
       });
     }
+    handleOpenPdf(res);
 
     if (!res.ok) {
       const errorText = await res.text();
