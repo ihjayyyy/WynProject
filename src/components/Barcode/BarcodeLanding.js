@@ -3,6 +3,7 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import Landing, { applyLandingFilters } from '../ui/Landing/Landing';
 import ConfirmModal from '../ui/ConfirmModal/ConfirmModal';
+import Button from '../ui/Button/Button';
 import { useToast } from '../ui/Toast/Toast';
 import BarcodeService from '@/services/Barcode';
 
@@ -25,6 +26,16 @@ const baseColumns = [
     key: 'isUsed',
     render: (item) => (item.isUsed ? 'Yes' : 'No'),
   },
+  // {
+  //   header: 'In Transit', 
+  //   key: 'inTransit', 
+  //   render: (item) => (item.inTransit ? 'Yes' : 'No'),
+  // },
+  {
+    header: 'Printed', 
+    key: 'isPrinted', 
+    render: (item) => (item.isPrinted ? 'Yes' : 'No'),
+  },
   {
     header: 'Updated Date',
     key: 'updatedAt',
@@ -45,9 +56,13 @@ const getBarcodeKey = (item) => String(item?.id ?? item?.barcode ?? item?.materi
 // Used-column filter defaults to 'No' so the landing page opens showing
 // only unused barcodes; selecting 'All' (via Clear Filters) removes the
 // restriction.
-const DEFAULT_FILTER_VALUES = { isUsed: 'No' };
+const DEFAULT_FILTER_VALUES = {
+  isUsed: 'No',
+  isPrinted: 'No',
+  inTransit: '',
+};
 
-const usedFilterOptions = [
+const yesNoFilterOptions = [
   { label: 'All', value: '' },
   { label: 'Yes', value: 'Yes' },
   { label: 'No', value: 'No' },
@@ -62,20 +77,38 @@ export default function BarcodeLanding() {
   const [selectedBarcodeKeys, setSelectedBarcodeKeys] = useState([]);
   const [filterValues, setFilterValues] = useState(DEFAULT_FILTER_VALUES);
 
-  const landingFilters = useMemo(
-    () => [
-      {
-        key: 'isUsed',
-        label: 'Used',
-        type: 'select',
-        options: usedFilterOptions,
-        placeholder: 'All',
-        accessor: (item) => (item?.isUsed ? 'Yes' : 'No'),
-        match: 'equals',
-      },
-    ],
-    []
-  );
+const landingFilters = useMemo(
+  () => [
+    {
+      key: 'isUsed',
+      label: 'Used',
+      type: 'select',
+      options: yesNoFilterOptions,
+      placeholder: 'All',
+      accessor: (item) => (item?.isUsed ? 'Yes' : 'No'),
+      match: 'equals',
+    },
+    {
+      key: 'isPrinted',
+      label: 'Printed',
+      type: 'select',
+      options: yesNoFilterOptions,
+      placeholder: 'All',
+      accessor: (item) => (item?.isPrinted ? 'Yes' : 'No'),
+      match: 'equals',
+    },
+    {
+      key: 'inTransit',
+      label: 'In Transit',
+      type: 'select',
+      options: yesNoFilterOptions,
+      placeholder: 'All',
+      accessor: (item) => (item?.inTransit ? 'Yes' : 'No'),
+      match: 'equals',
+    },
+  ],
+  []
+);
 
   const filteredBarcodes = useMemo(
     () => applyLandingFilters(barcodes, landingFilters, filterValues),
@@ -85,7 +118,7 @@ export default function BarcodeLanding() {
   const hasActiveFilters = Object.values(filterValues).some((value) => String(value || '').trim() !== '');
 
   const clearFilters = useCallback(() => {
-    setFilterValues({ isUsed: '' });
+    setFilterValues({ isUsed: 'No', isPrinted: 'No', inTransit: '' });
   }, []);
 
   const selectedBarcodes = useMemo(() => {
@@ -135,6 +168,10 @@ export default function BarcodeLanding() {
     loadBarcodes();
   }, [loadBarcodes]);
 
+  const clearSelection = useCallback(() => {
+    setSelectedBarcodeKeys([]);
+  }, []);
+
   const handlePrintConfirm = useCallback(async () => {
     if (isPrinting || selectedBarcodes.length === 0) return;
 
@@ -157,6 +194,7 @@ export default function BarcodeLanding() {
       );
       setIsPrintModalOpen(false);
       setIsPrinting(false);
+      clearSelection();
       await loadBarcodes();
       return;
     }
@@ -175,8 +213,9 @@ export default function BarcodeLanding() {
 
     setIsPrintModalOpen(false);
     setIsPrinting(false);
+    clearSelection();
     await loadBarcodes();
-  }, [isPrinting, selectedBarcodes, loadBarcodes, toast]);
+  }, [isPrinting, selectedBarcodes, loadBarcodes, toast, clearSelection]);
 
   const toggleSelectAll = useCallback(() => {
     setSelectedBarcodeKeys((current) => {
@@ -320,8 +359,23 @@ export default function BarcodeLanding() {
         onClearFilters={clearFilters}
         hasActiveFilters={hasActiveFilters}
         belowStatsAddon={
-          <div style={{ color: '#334155', fontSize: '12px' }}>
-            Selected: <b>{selectedCount}</b>
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '12px',
+              color: '#334155',
+              fontSize: '12px',
+            }}
+          >
+            <span>
+              Selected: <b>{selectedCount}</b>
+            </span>
+            {selectedCount > 0 && (
+              <Button variant="transparent" size="sm" onClick={clearSelection}>
+                Clear Selection
+              </Button>
+            )}
           </div>
         }
       />

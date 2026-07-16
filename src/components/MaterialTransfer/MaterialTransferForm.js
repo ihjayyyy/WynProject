@@ -17,7 +17,7 @@ import StatusBadge from '../ui/StatusBadge/StatusBadge';
 import ConfirmModal from '../ui/ConfirmModal/ConfirmModal';
 import Input from '../ui/Input/Input';
 import { getWarehouses } from '@/services/Warehouse';
-import { getProjects } from '@/services/Project';
+import { getProjectsByStatus } from '@/services/Project';
 import { printMaterialRequests_byProject } from '@/services/MaterialRequest';
 import { getByProjectId } from '@/services/ProjectScope';
 import { getMaterialTransfer, createMaterialTransfer, updateMaterialTransfer, transferMaterialTransfer, printMaterialTransfer_byId } from '@/services/MaterialTransfer';
@@ -124,7 +124,7 @@ export default function MaterialTransferForm() {
     const fetchAll = async () => {
       const [wRes, pRes] = await Promise.all([
         getWarehouses(),
-        getProjects(),
+      getProjectsByStatus("Ongoing"),
       ]);
       if (wRes && !wRes.error) setWarehouses(wRes.data);
       if (pRes && !pRes.error) setProjects(pRes.data);

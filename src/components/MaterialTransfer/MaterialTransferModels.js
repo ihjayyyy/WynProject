@@ -19,6 +19,12 @@ const OPPOSITE_TYPE = {
   Project: 'Warehouse',
 };
 
+// Projects show their project number alongside the name; warehouses just show their name.
+const formatEntityLabel = (entity, type) =>
+  type === 'Project' && entity?.projectNo
+    ? `${entity.projectNo} - ${entity.name}`
+    : entity.name;
+
 export const FormFields = (warehouses = [], projects = [], onFieldChanged) => ([
   { name: 'name', label: 'Name', type: 'textbox', hidden: true },
   { name: 'code', label: 'Code', type: 'textbox', hidden: true },
@@ -61,11 +67,13 @@ export const FormFields = (warehouses = [], projects = [], onFieldChanged) => ([
     label: 'From',
     type: 'select',
     options: (values) => {
-      const list = values?.transferFromType === 'Warehouse' ? warehouses : projects;
-      return list.map((l) => ({ label: l.name, value: l.id }));
+      const type = values?.transferFromType;
+      const list = type === 'Warehouse' ? warehouses : projects;
+      return list.map((l) => ({ label: formatEntityLabel(l, type), value: l.id }));
     },
     searchable: true,
     span: 'span2',
+    disabled: (values) => !values?.transferFromType,
     onChange: (val, values, setValues) => {
       const list = values?.transferFromType === 'Warehouse' ? warehouses : projects;
       const selected = list.find((l) => String(l.id) === String(val));
@@ -112,10 +120,11 @@ export const FormFields = (warehouses = [], projects = [], onFieldChanged) => ([
     options: (values) => {
       const toType = OPPOSITE_TYPE[values?.transferFromType];
       const list = toType === 'Warehouse' ? warehouses : projects;
-      return list.map((l) => ({ label: l.name, value: l.id }));
+      return list.map((l) => ({ label: formatEntityLabel(l, toType), value: l.id }));
     },
     searchable: true,
     span: 'span2',
+    disabled: (values) => !values?.transferToType,
     onChange: (val, values, setValues) => {
       const toType = OPPOSITE_TYPE[values?.transferFromType];
       const list = toType === 'Warehouse' ? warehouses : projects;

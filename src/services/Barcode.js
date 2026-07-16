@@ -1,5 +1,3 @@
-import { handleOpenPdf } from "./Helper";
-
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL + "/Barcode";
 
 function unwrapResponse(json) {
@@ -78,7 +76,9 @@ async function getBarcodes() {
 async function printBarcodes(selectedBarcodes = []) {
   try {
     const ids = Array.isArray(selectedBarcodes)
-      ? selectedBarcodes.map((item) => item?.id).filter((id) => id !== undefined && id !== null)
+      ? selectedBarcodes
+          .map((item) => Number(item?.id))
+          .filter((id) => Number.isInteger(id) && id > 0)
       : [];
 
     if (ids.length === 0) {
@@ -88,41 +88,45 @@ async function printBarcodes(selectedBarcodes = []) {
       };
     }
 
-    // const params = new URLSearchParams();
-    // ids.forEach((id) => params.append('ids', String(id)));
-
     const endpoint = `${API_BASE_URL}/PrintBarcodes`;
-    const getOptions = {
+    const requestOptions = {
       method: "POST",
       headers: {
         Accept: "application/pdf, application/json, */*",
+        "Content-Type": "application/json",
       },
-      body: JSON.stringify(ids),
     };
-    let res = await fetch(endpoint, getOptions);
 
-    if (!res.ok && res.status === 415) {
+    // Prefer raw array for endpoints binding directly to Int32[], then fallback to named object.
+    const payloadCandidates = [ids, { ids }];
+    let res = null;
+
+    for (const payload of payloadCandidates) {
       res = await fetch(endpoint, {
-        ...getOptions,
-        headers: {
-          ...getOptions.headers,
-          "Content-Type": "application/json",
-        },
+        ...requestOptions,
+        body: JSON.stringify(payload),
       });
+
+      if (res.ok) {
+        break;
+      }
+
+      // If backend rejects media type or shape, try the fallback payload format.
+      const errorText = await res.clone().text();
+      const shouldTryFallback =
+        res.status === 415 ||
+        (res.status === 400 &&
+          (errorText.includes('ids field is required') ||
+            errorText.includes('could not be converted to System.Int32[]') ||
+            errorText.includes('could not be converted to System.Int32')));
+
+      if (!shouldTryFallback) {
+        break;
+      }
     }
-    handleOpenPdf(res);
 
     if (!res.ok) {
       const errorText = await res.text();
-      if (
-        res.status === 400 &&
-        errorText.includes('A non-empty request body is required') &&
-        errorText.includes('ids field is required')
-      ) {
-        throw new Error(
-          'API requires GET request body with ids, which browsers do not support. Backend should allow POST with body or GET query binding for ids.'
-        );
-      }
       throw new Error(errorText || `Barcode print failed with status ${res.status}`);
     }
 

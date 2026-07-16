@@ -494,6 +494,12 @@ export default function EntityForm({
             return false;
           })();
 
+          const fieldDisabled = (() => {
+            if (typeof f.disabled === 'function') return !!f.disabled(values);
+            if (typeof f.disabled === 'boolean') return f.disabled;
+            return false;
+          })();
+
           if (fieldReadOnly) {
             return (
               <div key={f.name} className={classes}>
@@ -571,7 +577,7 @@ export default function EntityForm({
                         placeholder={f.placeholder || f.label}
                         searchable={!!f.searchable}
                         className={`${f.className || ''} ${fieldError ? styles.inputError : ''}`}
-                        disabled={fieldReadOnly}
+                        disabled={fieldReadOnly || fieldDisabled}
                       />
                     );
                   })()}

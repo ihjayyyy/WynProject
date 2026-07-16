@@ -171,10 +171,32 @@ async function closeProject(projectId) {
     }
 }
 
+async function getProjectsByStatus(status) {
+    try {
+        const url = `${API_BASE_URL}/ByStatus/${encodeURIComponent(status)}`;
+        const res = await fetch(url, {
+            method: 'GET',
+            headers: { Accept: '*/*' },
+        });
+
+        const json = await res.json();
+        return {
+            data: json && json.value ? json.value : json,
+            error: null,
+        };
+    } catch (error) {
+        return {
+            data: null,
+            error: error?.message || error,
+        };
+    }
+}
+
 export {
     convertProposal,
     getProjectById,
     getProjects,
+    getProjectsByStatus,
     updateProject,
     printCompletion_byId,
     startProject,
