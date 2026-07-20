@@ -13,6 +13,7 @@ import {
   FormFields,
   TableColumns,
   ItemsFields,
+  computeLineAmounts,
 } from '../Invoice/InvoiceModels';
 import DetailsTable from '../ItemDetails/DetailsTable';
 import EntityForm from '../EntityForm/EntityForm';
@@ -97,24 +98,44 @@ export default function PurchaseInvoiceForm() {
   const loadOrders = async (orderId) => {
     const res = await GetPO(orderId);
 
-    const children = res.data.children.map((d) => ({
-      id: 0,
-      parentId: 0,
-      poChildId: d.id,
-      materialId: d.materialId,
-      code: d.code,
-      name: d.name,
-      uom: d.uom,
-      orderQuantity: Number(d.quantity) || 0,
-      quantity: Number(d.orderBalance) || 0,
-      previousBalance: Number(d.orderBalance) || 0,
-      remainingBalance: 0,
-      unitCost: Number(d.unitCost || 0),
-      discount: Number(d.discount || 0),
-      vat: Number(d.vat || 0),
-      totalAmount: Number(d.totalAmount ?? d.amount ?? 0),
-      remarks: '',
-    }));
+    // Use the invoice's current vatType (falls back to '' -> no VAT) so the
+    // amounts loaded from the PO match what the invoice will actually charge,
+    // instead of blindly trusting whatever vat/amount was stored on the PO
+    // child record (which may be 0 / stale / computed under a different
+    // vatType).
+    const vatType = formData && formData.vatType ? formData.vatType : '';
+
+    const children = res.data.children.map((d) => {
+      const quantity = Number(d.orderBalance) || 0;
+      const unitCost = Number(d.unitCost || 0);
+      const discount = Number(d.discount || 0);
+
+      const { vat, amount } = computeLineAmounts(
+        quantity,
+        unitCost,
+        discount,
+        vatType,
+      );
+
+      return {
+        id: 0,
+        parentId: 0,
+        poChildId: d.id,
+        materialId: d.materialId,
+        code: d.code,
+        name: d.name,
+        uom: d.uom,
+        orderQuantity: Number(d.quantity) || 0,
+        quantity,
+        previousBalance: quantity,
+        remainingBalance: 0,
+        unitCost,
+        discount,
+        vat,
+        totalAmount: amount,
+        remarks: '',
+      };
+    });
 
     const computedVAT = children.reduce(
       (sum, c) => sum + Number(c.vat || 0),
@@ -138,6 +159,8 @@ export default function PurchaseInvoiceForm() {
       amount: computedAmount,
     }));
 
+    // Keep tableData in sync with formData.children so validation (and the
+    // rendered table) always reflect the same set of rows.
     setTableData((prev) => ({ ...prev, items: children }));
   };
 
@@ -280,6 +303,12 @@ export default function PurchaseInvoiceForm() {
     formDataCopy.amount = totals.totalIncluded;
 
     setForm(formDataCopy);
+
+    // Previously tableData was never updated here, so it could fall out of
+    // sync with formData.children (which is what validation and save rely
+    // on). Keep them in lockstep.
+    setTableData({ items, deletedItems });
+
     if (Array.isArray(items) && items.length > 0) setTableError('');
   };
 
@@ -642,10 +671,11 @@ export default function PurchaseInvoiceForm() {
         fields={formFields}
         onValidate={async (values) => {
           const errors = {};
-          if (
-            !tableData.items ||
-            (Array.isArray(tableData.items) && tableData.items.length === 0)
-          ) {
+          // Validate against formData.children (the single source of truth
+          // that actually gets saved) rather than tableData.items, which
+          // could fall out of sync with what's rendered/edited in the table.
+          const items = formData.children;
+          if (!items || (Array.isArray(items) && items.length === 0)) {
             errors.supplierId = 'At least one invoice detail is required';
             setTableError(errors.supplierId);
           } else {

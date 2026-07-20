@@ -50,6 +50,8 @@ export const CollectionFields = (customers = [], onFieldChanged) => [
 export const CollectionDetailsColumns = [
   // { header: 'Collection No.', key: 'collectionNumber', width: '160px' },
   { header: 'Name', key: 'name', width: '180px' },
+  { header: 'Billing Number', key: 'salesBillingNo', width: '200px' },
+
   { header: 'Amount to Collect', key: 'amount', align: 'right', width: '130px', render: (it) => Number(it.amount || 0).toFixed(2) },
   {
     header: 'Amount Paid',
@@ -134,26 +136,41 @@ export const CollectionItemFields = (billings = [], withholdingTaxPercent = 0) =
   },
   // { name: 'collectionNumber', label: 'Collection Number', type: 'text' },
   { name: 'amount', label: 'Amount to Collect', type: 'number', readonly: true, initialvalue: 0, validator: Yup.number().typeError('Amount must be a number').min(0, 'Amount cannot be negative').required('Amount is required') },
-  {
-    name: 'amountPaid',
-    label: 'Amount Paid',
-    type: 'number',
-    initialvalue: 0,
-    onChange: (target, updateField, nextFields) => {
-      const paid = Number(target.value) || 0;
-      const tax = parseFloat((paid * (withholdingTaxPercent / 100)).toFixed(2));
-      const total = parseFloat((paid - tax).toFixed(2));
-      const amountField = nextFields.find((f) => f.name === 'amount');
-      const amount = Number(amountField?.value) || 0;
-      updateField('withholdingTax', tax);
-      updateField('totalAmountPaid', total);
-      updateField('balance', parseFloat((amount - total).toFixed(2)));
-    },
-    validator: Yup.number()
-      .typeError('Amount Paid must be a number')
-      .min(0, 'Amount Paid cannot be negative')
-      .required('Amount Paid is required'),
+{
+  name: 'amountPaid',
+  label: 'Amount Paid',
+  type: 'number',
+  initialvalue: 0,
+  onChange: (target, updateField, nextFields) => {
+    const paid = Number(target.value) || 0;
+    const tax = parseFloat((paid * (withholdingTaxPercent / 100)).toFixed(2));
+    const total = parseFloat((paid - tax).toFixed(2));
+    const amountField = nextFields.find((f) => f.name === 'amount');
+    const amount = Number(amountField?.value) || 0;
+
+    updateField('withholdingTax', tax);
+    updateField('totalAmountPaid', total);
+    updateField('balance', parseFloat((amount - total).toFixed(2)));
   },
+  validator: Yup.number()
+    .typeError('Amount Paid must be a number')
+    .min(0, 'Amount Paid cannot be negative')
+    .required('Amount Paid is required')
+    .test(
+      'not-overpaid',
+      'Amount Paid cannot exceed the remaining balance',
+      function (value) {
+        const { amount } = this.parent;
+        const paid = Number(value) || 0;
+        const originalAmount = Number(amount) || 0;
+
+        const tax = paid * (Number(withholdingTaxPercent) || 0) / 100;
+        const totalPaid = paid - tax;
+
+        return totalPaid <= originalAmount;
+      }
+    ),
+},
   { name: 'withholdingTax', label: 'Withholding Tax', type: 'number', readonly: true, initialvalue: 0, validator: Yup.number().typeError('Withholding Tax must be a number').min(0, 'Withholding Tax cannot be negative').nullable() },
   { name: 'totalAmountPaid', label: 'Total Amount Paid', type: 'number', initialvalue: 0, readonly: true, validator: Yup.number().typeError('Total Amount Paid must be a number').min(0, 'Total Amount Paid cannot be negative').nullable() },
   { name: 'balance', label: 'Balance', type: 'number', initialvalue: 0, readonly: true, validator: Yup.number().typeError('Balance must be a number').nullable() },

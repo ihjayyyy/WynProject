@@ -678,18 +678,43 @@ label: canEditFinance ? 'Price (Editable)' : 'Price',
         },
       },
 
-      {
-        name: 'actualQuantity',
-        label: 'Actual Quantity (Editable)',
-        type: 'number',
+{
+  name: 'actualQuantity',
+  label: 'Actual Quantity (Editable)',
+  type: 'number',
 
-        value:
-          (Number(calculatedForm.quantity) || 0) -
-          (Number(calculatedForm.marginQuantity) || 0),
+  value:
+    (Number(calculatedForm.quantity) || 0) -
+    (Number(calculatedForm.marginQuantity) || 0),
 
+  validator: Yup.number().min(0).notRequired(),
 
-        validator: Yup.number().min(0).notRequired(),
-      },
+  onChange: (
+    item,
+    updateField,
+    itemFields,
+    nextValue
+  ) => {
+    const actualQty = Number(nextValue) || 0;
+
+    const marginQty =
+      Number(
+        itemFields.find(
+          (f) => f.name === 'marginQuantity'
+        )?.value
+      ) || 0;
+
+    const proposedQty = actualQty + marginQty;
+
+    updateField('quantity', proposedQty);
+
+    recomputeTotals(
+      updateField,
+      itemFields,
+      proposedQty
+    );
+  },
+},
 
       {
         name: 'marginQuantity',

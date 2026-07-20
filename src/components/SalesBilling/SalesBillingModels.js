@@ -81,7 +81,6 @@ export const SalesBillingFields = (
 export const SalesBillingDetailsColumns = [
   { header: 'Name', key: 'name', width: '200px' },
   { header: 'Description', key: 'description', width: '200px' },
-
   // { header: 'Quantity', key: 'quantity', align: 'right', width: '80px' },
   {
     header: 'Amount',
