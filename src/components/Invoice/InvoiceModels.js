@@ -1,5 +1,42 @@
 import * as Yup from 'yup';
 
+// ---------------------------------------------------------------------------
+// Shared VAT / Amount calculation.
+// This used to be copy-pasted inside every onChange handler below (and was
+// therefore skipped whenever a row was populated any other way, e.g. from a
+// Purchase Order). Centralizing it here means loadOrders() in
+// PurchaseInvoiceForm.js can reuse the exact same logic instead of trusting
+// whatever vat/amount the PO child record happened to have stored.
+// ---------------------------------------------------------------------------
+export const computeLineAmounts = (quantity, unitCost, discount, vatType) => {
+  const qty = Number(quantity || 0);
+  const cost = Number(unitCost || 0);
+  const disc = Number(discount || 0);
+
+  const subamount = qty * cost - disc;
+
+  let vat = 0;
+  let amount = subamount;
+
+  switch (vatType) {
+    case 'included':
+      vat = Math.round((subamount - subamount / 1.12) * 100) / 100;
+      break;
+    case 'notincluded':
+      vat = Math.round(subamount * 0.12 * 100) / 100;
+      amount = subamount + vat;
+      break;
+    case 'nonvat':
+      vat = 0;
+      break;
+    default:
+      vat = 0;
+      break;
+  }
+
+  return { vat, amount };
+};
+
 export const FormFields = (suppliers, orders, onFieldhanged) => [
   {
     name: 'supplierId',
@@ -182,7 +219,6 @@ export const ItemsFields = (materials, inv) => [
     validator: Yup.string().required(`Material is required`),
     onChange: (item, updateField, fields) => {
       const material = materials.find((a) => a.id == item.value);
-      console.log(material);
       const itemfields = [...fields];
 
       if (!material) {
@@ -199,31 +235,19 @@ export const ItemsFields = (materials, inv) => [
       updateField('code', material.code);
       updateField('name', material.name);
       updateField('uom', material.purchaseUnitOfMeasure);
+
       const quantity = itemfields.find((a) => a.name === 'quantity');
       const discount = itemfields.find((a) => a.name === 'discount');
       const quantityValue = Number(quantity?.value || 0);
       const discountValue = Number(discount?.value || 0);
-      const subamount =
-        quantityValue * Number(material.purchasePrice || 0) - discountValue;
 
-      let vat = 0;
-      let amount = subamount;
       const vatType = inv && inv.vatType ? inv.vatType : '';
-      switch (vatType) {
-        case 'included':
-          vat = Math.round((subamount - subamount / 1.12) * 100) / 100;
-          break;
-        case 'notincluded':
-          vat = Math.round(subamount * 0.12 * 100) / 100;
-          amount = subamount + vat;
-          break;
-        case 'nonvat':
-          vat = 0;
-          break;
-        default:
-          vat = 0;
-          break;
-      }
+      const { vat, amount } = computeLineAmounts(
+        quantityValue,
+        material.purchasePrice,
+        discountValue,
+        vatType,
+      );
 
       updateField('vat', vat);
       updateField('amount', amount);
@@ -247,26 +271,14 @@ export const ItemsFields = (materials, inv) => [
       const unitcost = itemfields.find((a) => a.name === 'unitCost');
       const discount = itemfields.find((a) => a.name === 'discount');
 
-      const subamount = item.value * unitcost.value - discount.value;
-      let amount = subamount;
-      let vat = 0;
-
       const vatType = inv && inv.vatType ? inv.vatType : '';
-      switch (vatType) {
-        case 'included':
-          vat = Math.round((subamount - subamount / 1.12) * 100) / 100;
-          break;
-        case 'notincluded':
-          vat = Math.round(subamount * 0.12 * 100) / 100;
-          amount = subamount + vat;
-          break;
-        case 'nonvat':
-          vat = 0;
-          break;
-        default:
-          vat = 0;
-          break;
-      }
+      const { vat, amount } = computeLineAmounts(
+        item.value,
+        unitcost.value,
+        discount.value,
+        vatType,
+      );
+
       updateField('vat', vat);
       updateField('totalAmount', amount);
     },
@@ -285,25 +297,14 @@ export const ItemsFields = (materials, inv) => [
       const quantity = itemfields.find((a) => a.name === 'quantity');
       const discount = itemfields.find((a) => a.name === 'discount');
 
-      const subamount = item.value * quantity.value - discount.value;
-      let amount = subamount;
-      let vat = 0;
       const vatType = inv && inv.vatType ? inv.vatType : '';
-      switch (vatType) {
-        case 'included':
-          vat = Math.round((subamount - subamount / 1.12) * 100) / 100;
-          break;
-        case 'notincluded':
-          vat = Math.round(subamount * 0.12 * 100) / 100;
-          amount = subamount + vat;
-          break;
-        case 'nonvat':
-          vat = 0;
-          break;
-        default:
-          vat = 0;
-          break;
-      }
+      const { vat, amount } = computeLineAmounts(
+        quantity.value,
+        item.value,
+        discount.value,
+        vatType,
+      );
+
       updateField('vat', vat);
       updateField('totalAmount', amount);
     },
@@ -321,25 +322,14 @@ export const ItemsFields = (materials, inv) => [
       const quantity = itemfields.find((a) => a.name === 'quantity');
       const unitcost = itemfields.find((a) => a.name === 'unitCost');
 
-      const subamount = quantity.value * unitcost.value - item.value;
-      let amount = subamount;
-      let vat = 0;
       const vatType = inv && inv.vatType ? inv.vatType : '';
-      switch (vatType) {
-        case 'included':
-          vat = Math.round((subamount - subamount / 1.12) * 100) / 100;
-          break;
-        case 'notincluded':
-          vat = Math.round(subamount * 0.12 * 100) / 100;
-          amount = subamount + vat;
-          break;
-        case 'nonvat':
-          vat = 0;
-          break;
-        default:
-          vat = 0;
-          break;
-      }
+      const { vat, amount } = computeLineAmounts(
+        quantity.value,
+        unitcost.value,
+        item.value,
+        vatType,
+      );
+
       updateField('vat', vat);
       updateField('totalAmount', amount);
     },
