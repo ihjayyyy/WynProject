@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useContext } from 'react';
 import * as Yup from 'yup';
 import {
   getProjectFinanceByProjectId,
@@ -10,12 +10,27 @@ import {
 } from '../../services/ProjectFinance';
 import { useRouter } from 'next/navigation';
 import { useConfirmModal } from '@/app/contextProviders/confirmModalContext';
+import { AccessContext } from '@/app/contextProviders/accessContext';
 import styles from './ProjectDetails.module.scss';
 import Button from '../ui/Button/Button';
 import Input from '../ui/Input/Input';
 import DataTable from '../ui/DataTable/DataTable';
 
 export default function ProjectFinanceTab({ projectId, project, projectStatus, editable }) {
+  // NOTE: adjust this string to whatever page key your AccessContext uses
+  // for this page (same pattern as PageName in ProposalForm, e.g. 'Projects.Proposal').
+  const PageName = 'Projects.Project';
+  const { isAllowed } = useContext(AccessContext);
+
+  // Finance permission - lowercase 'f'. Mirrors ProposalForm's canEditFinance.
+  const canEditFinance = isAllowed(PageName, 'f');
+  const isNotStarted = String(projectStatus).toUpperCase() === 'NOTSTARTED';
+
+  const canEdit =
+    Boolean(editable) &&
+    canEditFinance &&
+    isNotStarted;
+
   const router = useRouter();
   const confirmModal = useConfirmModal();
   const [finance, setFinance] = useState(null);
@@ -100,6 +115,11 @@ export default function ProjectFinanceTab({ projectId, project, projectStatus, e
   });
 
   const save = async () => {
+    // Safety net: editing should only ever become true via the gated Edit
+    // button below, but guard here too in case editing state is ever set
+    // through another path.
+    if (!canEdit) return;
+
     setLoading(true);
     let res;
     // Always update code and name from project if available
@@ -265,7 +285,7 @@ export default function ProjectFinanceTab({ projectId, project, projectStatus, e
             <Button className="save md" onClick={save}>Save</Button>
           </>
         )}
-        {!editing && editable && <Button className="md" onClick={() => setEditing(true)}>Edit</Button>}
+        {!editing && canEdit && <Button className="md" onClick={() => setEditing(true)}>Edit</Button>}
 
       </div>
     </div>

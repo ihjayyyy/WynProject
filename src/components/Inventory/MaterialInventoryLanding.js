@@ -92,8 +92,8 @@ export default function MaterialInventoryLanding() {
   const applyQuantityChange = async () => {
     if (qtySaving) return;
     const parsed = Number(qtyChange);
-    if (!Number.isFinite(parsed) || parsed === 0) {
-      toast.error('Enter a non-zero number. Use positive to add, negative to deduct.');
+    if (qtyChange === '' || !Number.isFinite(parsed) || parsed <= 0) {
+      toast.error('Enter a quantity greater than zero.');
       return;
     }
     if (!qtyTargetItem?.id) {
@@ -213,7 +213,10 @@ export default function MaterialInventoryLanding() {
         <Input
           type="number"
           value={qtyChange}
-          onChange={(e) => setQtyChange(e.target.value)}
+          onChange={(e) => {
+            const val = e.target.value;
+            if (val === '' || Number(val) > 0) setQtyChange(val);
+          }}
           placeholder="e.g. 5"
           min={1}
           step={1}

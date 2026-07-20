@@ -82,8 +82,8 @@ export default function ToolsInventoryLanding() {
   const applyQuantityChange = async () => {
     if (qtySaving) return;
     const parsed = Number(qtyChange);
-    if (!Number.isFinite(parsed) || parsed === 0) {
-      toast.error('Enter a non-zero number. Use positive to add, negative to deduct.');
+    if (qtyChange === '' || !Number.isFinite(parsed) || parsed <= 0) {
+      toast.error('Enter a quantity greater than zero.');
       return;
     }
     if (!qtyTargetItem?.id) {
@@ -166,7 +166,7 @@ export default function ToolsInventoryLanding() {
       <ConfirmModal
         open={isQtyModalOpen}
         title="Adjust Quantity"
-        message="Use positive number to add stock and negative number to deduct stock."
+        message="Enter the quantity to add to the current stock."
         confirmText={qtySaving ? 'Saving...' : 'Apply'}
         confirmVariant="primary"
         onConfirm={applyQuantityChange}
@@ -175,10 +175,13 @@ export default function ToolsInventoryLanding() {
           <Input
             type="number"
             value={qtyChange}
-            onChange={(e) => setQtyChange(e.target.value)}
-            placeholder="e.g. 5 or -3"
-            min={-999999}
-            max={999999}
+            onChange={(e) => {
+              const val = e.target.value;
+              if (val === '' || Number(val) > 0) setQtyChange(val);
+            }}
+            placeholder="e.g. 5"
+            min={1}
+            step={1}
             disabled={qtySaving}
           />
           {qtyTargetItem?.name ? (

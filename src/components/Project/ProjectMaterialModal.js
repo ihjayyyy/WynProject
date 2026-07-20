@@ -28,6 +28,7 @@ const DEFAULT_FORM = {
   scopeOfWork: '',
   remarks: '',
   laborPercentage: 0,
+  completedQuantity: 0,
 };
 
 export default function ProjectMaterialModal({ open, initial = {}, onCancel, onConfirm, keepOpenOnSave = false }) {
@@ -149,6 +150,11 @@ export default function ProjectMaterialModal({ open, initial = {}, onCancel, onC
     };
   }, [form, applyMaterialSelect]);
 
+  const isEditMode = Boolean(initial && initial.id);
+
+  // Completed quantity cannot be lowered below what's already been marked complete on this material.
+  const minQuantity = isEditMode ? (Number(calculatedForm.completedQuantity) || 0) : 0;
+
   const fields = useMemo(() => {
     const isService = materialCategory === 'Service';
     const categorySelected = materialCategory === 'Tool' || materialCategory === 'Material' || materialCategory === 'Service' || materialCategory === 'Assembly';
@@ -256,10 +262,12 @@ export default function ProjectMaterialModal({ open, initial = {}, onCancel, onC
     },
     {
       name: 'quantity',
-      label: 'Quantity (Editable)',
+      label: minQuantity > 0 ? `Quantity (Editable, min ${minQuantity})` : 'Quantity (Editable)',
       type: 'number',
       value: Number(calculatedForm.quantity) || 0,
-      validator: Yup.number().min(0).notRequired(),
+      validator: minQuantity > 0
+        ? Yup.number().min(minQuantity, `Quantity cannot be less than the completed quantity (${minQuantity})`).required('Quantity is required')
+        : Yup.number().min(0).notRequired(),
       onChange: (item, updateField, itemFields, nextValue) => {
         const uc = Number(itemFields.find((f) => f.name === 'unitCost')?.value) || 0;
         const pct = Number(itemFields.find((f) => f.name === 'laborPercentage')?.value) || 0;
@@ -317,10 +325,9 @@ export default function ProjectMaterialModal({ open, initial = {}, onCancel, onC
     { name: 'scopeOfWork', label: 'Scope Of Work', type: 'text', value: calculatedForm.scopeOfWork || '', hidden: true, validator: Yup.string().notRequired() },
     { name: 'remarks', label: 'Remarks', type: 'text', value: calculatedForm.remarks || '', hidden: true, validator: Yup.string().notRequired() },
     { name: 'laborPercentage', label: 'Labor Percentage', type: 'number', value: Number(calculatedForm.laborPercentage) || 0, hidden: true, validator: Yup.number().notRequired() },
+    { name: 'completedQuantity', label: 'Completed Quantity', type: 'number', value: Number(calculatedForm.completedQuantity) || 0, hidden: true, validator: Yup.number().notRequired() },
   ];
-  }, [calculatedForm, materials, applyMaterialSelect, materialCategory]);
-
-  const isEditMode = Boolean(initial && initial.id);
+  }, [calculatedForm, materials, applyMaterialSelect, materialCategory, minQuantity]);
 
   return (
     <ItemModal
@@ -346,6 +353,12 @@ export default function ProjectMaterialModal({ open, initial = {}, onCancel, onC
           return new Date().toISOString();
         };
 
+        const submittedQuantity = Number(val.quantity) || 0;
+        if (isEditMode && submittedQuantity < minQuantity) {
+          window.alert(`Quantity cannot be less than the completed quantity (${minQuantity}).`);
+          return;
+        }
+
         const payload = {
           id: Number(val.id) || 0,
           name: val.name || '',
@@ -355,7 +368,7 @@ export default function ProjectMaterialModal({ open, initial = {}, onCancel, onC
           materialType: val.materialType || '',
           uom: val.uom || '',
           unitCost: Number(val.unitCost) || 0,
-          quantity: Number(val.quantity) || 0,
+          quantity: submittedQuantity,
           vat: Number(val.vat) || 0,
           materialCost: Number(val.materialCost) || 0,
           margin: Number(val.margin) || 0,

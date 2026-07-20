@@ -151,7 +151,11 @@ export default function ProjectScopeModal({ open, initial = {}, onCancel, onConf
       label: 'Forecasted Duration (days)',
       type: 'number',
       value: Number(form.forecastedDuration) || 0,
-      validator: Yup.number().min(0).notRequired(),
+      validator: Yup.number()
+      .typeError('Forecasted Duration must be a number')
+      .integer('Forecasted Duration must be a whole number')
+      .min(0, 'Forecasted Duration cannot be negative')
+      .required('Forecasted Duration is required'),
       onChange: (item, updateField, itemFields, nextValue) => {
         const start = itemFields.find((f) => f.name === 'forecastedStartDate')?.value || '';
         const newEnd = addDays(start, Number(nextValue) || 0);
@@ -185,7 +189,11 @@ export default function ProjectScopeModal({ open, initial = {}, onCancel, onConf
       label: 'Actual Duration (days)',
       type: 'number',
       value: Number(form.actualDuration) || 0,
-      validator: Yup.number().min(0).notRequired(),
+      validator: Yup.number()
+      .typeError('Actual Duration must be a number')
+      .integer('Actual Duration must be a whole number')
+      .min(0, 'Actual Duration cannot be negative')
+      .required('Actual Duration is required'),
       onChange: (item, updateField, itemFields, nextValue) => {
         const start = itemFields.find((f) => f.name === 'actualStartDate')?.value || '';
         const newEnd = addDays(start, Number(nextValue) || 0);

@@ -42,6 +42,10 @@ export default function MaterialsLanding() {
   const [racks, setRacks] = useState([]);
   const [inventoryModal, setInventoryModal] = useState({ open: false, material: null });
 
+  // Rack options available for the Create Inventory modal (already-used racks filtered out)
+  const [inventoryRackOptions, setInventoryRackOptions] = useState([]);
+  const [inventoryRacksLoading, setInventoryRacksLoading] = useState(false);
+
   // Set Default modal state
   const [defaultModal, setDefaultModal] = useState({ open: false, material: null });
   const [defaultRackOptions, setDefaultRackOptions] = useState([]);
@@ -82,6 +86,26 @@ export default function MaterialsLanding() {
     (racks || []).map((r) => ({ label: `${r.warehouseName ? r.warehouseName + ' - ' : ''}${r.name}`, value: String(r.id) })),
     [racks]
   );
+
+  // Open Create Inventory modal and filter out racks already assigned to this material
+  const openInventoryModal = useCallback(async (item) => {
+    setInventoryModal({ open: true, material: item });
+    setInventoryRackOptions([]);
+    setInventoryRacksLoading(true);
+    try {
+      const res = await getRacksByMaterialId(item.id);
+      const usedRackIds = !res?.error
+        ? new Set((res.data || []).map((r) => String(r.rack?.id)).filter(Boolean))
+        : new Set();
+      const availableOptions = rackOptions.filter((opt) => !usedRackIds.has(opt.value));
+      setInventoryRackOptions(availableOptions);
+    } catch (e) {
+      // If the lookup fails, fall back to showing all racks rather than blocking the user
+      setInventoryRackOptions(rackOptions);
+    } finally {
+      setInventoryRacksLoading(false);
+    }
+  }, [rackOptions]);
 
   // Open Set Default modal and load racks for that material
   const openDefaultModal = useCallback(async (item) => {
@@ -143,22 +167,22 @@ export default function MaterialsLanding() {
       {
         name: 'rackId', label: 'Rack', type: 'select',
         value: '',
-        options: rackOptions,
+        options: inventoryRackOptions,
         validator: Yup.string().required('Rack is required'),
       },
-      { name: 'quantity', label: 'Quantity', type: 'number', value: 0, validator: Yup.number().min(0).required('Quantity is required') },
+      { name: 'quantity', label: 'Quantity', type: 'number', value: 0, hidden: true, validator: Yup.number().min(0).notRequired() },
       { name: 'stockLevel', label: 'Stock Level', type: 'number', value: 0, validator: Yup.number().min(0).notRequired() },
     ];
-  }, [inventoryModal.material, rackOptions]);
+  }, [inventoryModal.material, inventoryRackOptions]);
 
   const actionItems = useMemo(
     () => [
       { key: 'view', label: 'View', icon: <FiEye size={14} />, onClick: (item) => router.push(`/materialsSettings/materials/materialsForm?id=${item.id}`) },
       { key: 'edit', label: 'Edit', icon: <FiEdit2 size={14} />, onClick: (item) => router.push(`/materialsSettings/materials/materialsForm?id=${item.id}&mode=edit`) },
-      { key: 'createInventory', label: 'Create Inventory', icon: <FiPackage size={14} />, onClick: (item) => setInventoryModal({ open: true, material: item }) },
+      { key: 'createInventory', label: 'Create Inventory', icon: <FiPackage size={14} />, onClick: openInventoryModal },
       { key: 'setDefault', label: 'Set Default', icon: <FiStar size={14} />, onClick: openDefaultModal },
     ],
-    [router, openDefaultModal]
+    [router, openInventoryModal, openDefaultModal]
   );
 
   const columns = useMemo(() => [...baseColumns, { header: 'Action', key: 'actions', align: 'right', sortable: false, render: (item) => <DropdownAction item={item} items={actionItems} /> }], [actionItems]);
@@ -231,17 +255,22 @@ export default function MaterialsLanding() {
         itemIndex={-1}
         isOpen={inventoryModal.open}
         fields={inventoryFields}
+        loading={inventoryRacksLoading}
         onItemRemove={() => {}}
         onClose={async (val) => {
-          if (!val) { setInventoryModal({ open: false, material: null }); return; }
+          if (!val) {
+            setInventoryModal({ open: false, material: null });
+            setInventoryRackOptions([]);
+            return;
+          }
           try {
             const payload = {
               name: val.name || '',
               code: val.code || '',
               rackId: Number(val.rackId) || 0,
               materialId: Number(val.materialId) || 0,
-              quantity: Number(val.quantity) || 0,
-              stockLevel: Number(val.stockLevel ?? val.quantity) || 0,
+              quantity: 0,
+              stockLevel: Number(val.stockLevel) || 0,
               isDefault: true,
             };
             const result = await createMaterialInventory(payload);
@@ -251,6 +280,7 @@ export default function MaterialsLanding() {
             toast.error('Failed to create inventory record');
           } finally {
             setInventoryModal({ open: false, material: null });
+            setInventoryRackOptions([]);
           }
         }}
       />

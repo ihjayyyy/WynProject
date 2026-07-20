@@ -220,19 +220,23 @@ export default function MaterialRequestsTab({ projectId, editable = true }) {
         type: 'number',
         value: record.requestedQty || '',
         validator: Yup.number()
+          .typeError('Requested Quantity must be a number')
           .required('Requested Quantity is required')
-          .min(0)
+          .moreThan(0, 'Requested Quantity must be greater than 0')
           .test('max-remaining', 'Requested quantity exceeds remaining project quantity', function (value) {
             const pq = Number(this.parent?.projectQty) || 0;
             if (!pq) return true;
+
             // materialId on the in-progress form value may still be the
             // composite "id:scopeId" string; parse the numeric id out.
             const [midStr] = String(this.parent?.materialId || '').split(':');
             const materialId = Number(midStr) || this.parent?.materialId;
             const scopeId = this.parent?.scopeId;
+
             const alreadyRequested = getTotalRequestedQty(materialId, scopeId);
             const remaining = pq - alreadyRequested;
-            return Number(value || 0) <= remaining;
+
+            return Number(value) <= remaining;
           }),
         onChange: (item, updateField, itemFields, nextValue) => {
           const req = Number(nextValue) || 0;

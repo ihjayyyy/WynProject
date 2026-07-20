@@ -54,7 +54,7 @@ const ItemModal = ({ headerLabel, mode = "new", itemIndex = -1, isOpen, onClose,
     setFields([...fields]);
   }, [fields, isOpen]);
 
-  // Build schema only when itemFields structure changes (field names / validators)
+  // Build schema from the latest field config so dynamic validators stay in sync.
   const schema = useMemo(() => {
     const shape = {};
     itemFields.forEach(field => {
@@ -65,13 +65,17 @@ const ItemModal = ({ headerLabel, mode = "new", itemIndex = -1, isOpen, onClose,
           if (typeof originalValue === 'number' && Number.isNaN(originalValue)) return undefined;
           return currentValue;
         });
+      } else if (validator && field.type === 'select') {
+        shape[field.name] = validator.transform((currentValue, originalValue) => {
+          if (originalValue === '__loading__') return '';
+          return currentValue;
+        });
       } else {
         shape[field.name] = validator;
       }
     });
     return Yup.object().shape(shape);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [itemFields.map(f => f.name).join(',')]);
+  }, [itemFields]);
 
   const {
     register,
@@ -84,12 +88,7 @@ const ItemModal = ({ headerLabel, mode = "new", itemIndex = -1, isOpen, onClose,
 
   // Validate against schema; guarded by a ref so we only run when values truly change
   const [isValid, setIsValid] = useState(false);
-  const prevValidationKeyRef = useRef(null);
   useEffect(() => {
-    const key = JSON.stringify(itemFields.map(f => ({ name: f.name, value: f.value })));
-    if (prevValidationKeyRef.current === key) return;
-    prevValidationKeyRef.current = key;
-
     schema
       .validate(
         itemFields.reduce((acc, field) => ({ ...acc, [field.name]: field.value }), {}),
