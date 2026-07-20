@@ -11,6 +11,7 @@ import { useToast } from '../ui/Toast/Toast';
 
 const baseColumns = [
   { header: 'SPR No', key: 'requestNumber' },
+  { header: 'PR No', key: 'prNumber' },
   {
     header: 'Date',
     key: 'requestDate',

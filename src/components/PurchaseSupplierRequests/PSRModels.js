@@ -5,6 +5,7 @@ export const PSRFields = (
   onFieldChanged,
   purchaseRequests = [],
   onPRSelected,
+  isReadOnly = false,
 ) => [
   { name: 'code', label: 'Supplier Code', span: 'span1', readOnly: true },
   {
@@ -55,8 +56,6 @@ export const PSRFields = (
   { name: 'supplierName', hidden: true },
   { name: 'code', hidden: true },
   { name: 'name', hidden: true },
-
-  { name: 'purchaseRequestNumber', hidden: true },
   { name: 'spacer-2', type: 'spacer', span: 'span2' },
   {
     name: 'requestDate',
@@ -68,41 +67,48 @@ export const PSRFields = (
       .required('Request Date is required'),
   },
   { name: 'address', label: 'Address', span: 'span4' },
-  {
-    name: 'purchaseRequestId',
-    label: 'Purchase Request',
-    type: 'select',
-    options: purchaseRequests.map((r) => ({
-      label: r.requestNumber + (r.name ? ' - ' + r.name : ''),
-      value: r.id,
-    })),
-    searchable: true,
-    span: 'span2',
-    onChange: (val, values, setValues) => {
-      const found = purchaseRequests.find((p) => p.id === val);
-      if (!found) {
-        const cleared = {
-          ...values,
-          purchaseRequestNumber: '',
-          jobOrder: '',
-        };
-        setValues(cleared);
-        if (typeof onFieldChanged === 'function')
-          onFieldChanged('purchaseRequestId', val, cleared);
-        onPRSelected && onPRSelected(null, setValues, cleared);
-        return;
+  isReadOnly
+    ? {
+        name: 'purchaseRequestNumber',
+        label: 'Purchase Request',
+        span: 'span2',
+        readOnly: true,
       }
-      const copy = {
-        ...values,
-        purchaseRequestNumber: found.requestNumber,
-        jobOrder: found.jobOrder || '',
-      };
-      setValues(copy);
-      if (typeof onFieldChanged === 'function')
-        onFieldChanged('purchaseRequestId', val, copy);
-      onPRSelected && onPRSelected(found, setValues, copy);
-    },
-  },
+    : {
+        name: 'purchaseRequestId',
+        label: 'Purchase Request',
+        type: 'select',
+        options: purchaseRequests.map((r) => ({
+          label: r.requestNumber + (r.name ? ' - ' + r.name : ''),
+          value: r.id,
+        })),
+        searchable: true,
+        span: 'span2',
+        onChange: (val, values, setValues) => {
+          const found = purchaseRequests.find((p) => p.id === val);
+          if (!found) {
+            const cleared = {
+              ...values,
+              purchaseRequestNumber: '',
+              jobOrder: '',
+            };
+            setValues(cleared);
+            if (typeof onFieldChanged === 'function')
+              onFieldChanged('purchaseRequestId', val, cleared);
+            onPRSelected && onPRSelected(null, setValues, cleared);
+            return;
+          }
+          const copy = {
+            ...values,
+            purchaseRequestNumber: found.requestNumber,
+            jobOrder: found.jobOrder || '',
+          };
+          setValues(copy);
+          if (typeof onFieldChanged === 'function')
+            onFieldChanged('purchaseRequestId', val, copy);
+          onPRSelected && onPRSelected(found, setValues, copy);
+        },
+      },
   { name: 'supplierReferenceNo', label: 'Supplier PO', span: 'span2' },
   { name: 'contactPerson', label: 'Contact Person', span: 'span4' },
   { name: 'contactNumber', label: 'Contact Number', span: 'span2' },

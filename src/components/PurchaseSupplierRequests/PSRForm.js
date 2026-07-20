@@ -127,11 +127,16 @@ export default function PSRForm() {
     }
   };
 
+  const isReadOnly = useMemo(() => {
+    return validPSR ? mode === 'view' : true;
+  }, [validPSR, mode]);
+
   const psrFields = PSRFields(
     suppliers,
     onPSRChange,
     purchaseRequests,
     onPRSelected,
+    isReadOnly,
   );
   const psrDetailsColumns = PSRDetailsColumns;
   const [psrItemFields, setPSRItemFields] = useState(PSRItemsFields(materials));
@@ -170,6 +175,8 @@ export default function PSRForm() {
     if (requestId !== 0) {
       const getpsr = await Get(requestId);
       initPSR = getpsr.data;
+      initPSR.purchaseRequestNumber =
+        initPSR.purchaseRequestNumber ?? initPSR.prNumber ?? '';
 
       if (initPSR.requestDate) {
         const d = new Date(initPSR.requestDate);
@@ -195,10 +202,6 @@ export default function PSRForm() {
   useEffect(() => {
     GetPSR();
   }, [GetPSR]);
-
-  const isReadOnly = useMemo(() => {
-    return validPSR ? mode === 'view' : true;
-  }, [validPSR, mode]);
 
   const formTitle = useMemo(() => {
     const title =
@@ -249,6 +252,7 @@ export default function PSRForm() {
       ...psr,
       ...entity,
       jobOrder: psr.jobOrder,
+      prNumber: entity.purchaseRequestNumber || psr.purchaseRequestNumber || '',
     };
 
     let res = {};
