@@ -19,9 +19,8 @@ import DataTable from '../ui/DataTable/DataTable';
 export default function ProjectFinanceTab({ projectId, project, projectStatus, editable }) {
   // NOTE: adjust this string to whatever page key your AccessContext uses
   // for this page (same pattern as PageName in ProposalForm, e.g. 'Projects.Proposal').
-  const PageName = 'Projects.Project';
+  const PageName = 'Projects.Projects';
   const { isAllowed } = useContext(AccessContext);
-
   // Finance permission - lowercase 'f'. Mirrors ProposalForm's canEditFinance.
   const canEditFinance = isAllowed(PageName, 'f');
   const isNotStarted = String(projectStatus).toUpperCase() === 'NOTSTARTED';
