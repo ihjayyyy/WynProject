@@ -69,10 +69,10 @@ export default function SalesBillingForm() {
     }
   };
 
-  const billingFields = useMemo(() => 
-    SalesBillingFields(projects, customers, handleMainFieldChange), 
-    [projects, customers]
-  );
+const billingFields = useMemo(() => 
+  SalesBillingFields(projects, customers, handleMainFieldChange, billing?.customerId), 
+  [projects, customers, billing?.customerId]
+);
 
   // DYNAMIC FIX: useMemo ensures the fields (and labels) refresh whenever billing.vatType updates
   const billingItemFields = useMemo(() => {
