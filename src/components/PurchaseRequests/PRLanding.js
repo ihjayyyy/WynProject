@@ -171,6 +171,7 @@ export default function PRLanding() {
       item.createdDate,
       item.updatedBy,
       item.updatedAt,
+      item.prNumber,
       ...(item.items || []).map((it) => `${it.name} ${it.projectId}`),
     ]
       .filter(Boolean)

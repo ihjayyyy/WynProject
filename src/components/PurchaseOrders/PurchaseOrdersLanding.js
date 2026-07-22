@@ -138,14 +138,10 @@ export default function OrdersLanding() {
     const itemText = [
       item.id,
       item.orderNumber,
-      item.code,
-      item.name,
-      item.requestedBy,
-      item.createdBy,
-      item.createdDate,
-      item.updatedBy,
-      item.updatedAt,
-      item.supplier?.name,
+      item.supplierName,
+      item.supplierReferenceNo,
+      item.status,
+      item.amount,
       ...(item.items || []).map((it) => `${it.name} ${it.supplierId}`),
     ]
       .filter(Boolean)

@@ -265,9 +265,17 @@ export default function ProjectMaterialModal({ open, initial = {}, onCancel, onC
       label: minQuantity > 0 ? `Quantity (Editable, min ${minQuantity})` : 'Quantity (Editable)',
       type: 'number',
       value: Number(calculatedForm.quantity) || 0,
-      validator: minQuantity > 0
-        ? Yup.number().min(minQuantity, `Quantity cannot be less than the completed quantity (${minQuantity})`).required('Quantity is required')
-        : Yup.number().min(0).notRequired(),
+      validator:
+        minQuantity > 0
+          ? Yup.number()
+              .required('Quantity is required')
+              .min(
+                minQuantity,
+                `Quantity cannot be less than the completed quantity (${minQuantity})`
+              )
+          : Yup.number()
+              .required('Quantity is required')
+              .moreThan(0, 'Quantity must be greater than 0'),
       onChange: (item, updateField, itemFields, nextValue) => {
         const uc = Number(itemFields.find((f) => f.name === 'unitCost')?.value) || 0;
         const pct = Number(itemFields.find((f) => f.name === 'laborPercentage')?.value) || 0;
@@ -354,8 +362,12 @@ export default function ProjectMaterialModal({ open, initial = {}, onCancel, onC
         };
 
         const submittedQuantity = Number(val.quantity) || 0;
+
+        if (submittedQuantity <= 0) {
+          return;
+        }
+
         if (isEditMode && submittedQuantity < minQuantity) {
-          window.alert(`Quantity cannot be less than the completed quantity (${minQuantity}).`);
           return;
         }
 

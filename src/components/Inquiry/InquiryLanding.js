@@ -197,6 +197,7 @@ export default function InquiryLanding() {
       item.contactNumber,
       item.email,
       item.attention,
+      item.inquiryNo,
     ]
       .filter(Boolean)
       .some((value) => String(value).toLowerCase().includes(keyword));

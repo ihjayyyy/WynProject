@@ -178,6 +178,7 @@ export default function MaterialInventoryLanding() {
     return [
       it.id,
       it.name,
+      it.code,
       racksMap[it.rackId] && racksMap[it.rackId].name,
       materialsMap[it.materialId],
       (racksMap[it.rackId] && warehousesMap[racksMap[it.rackId].warehouseId]) || '',

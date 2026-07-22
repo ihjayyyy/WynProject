@@ -127,10 +127,8 @@ export default function DeliveryLanding() {
       item.name,
       item.orderId,
       item.status,
-      item.createdBy,
-      item.createdDate,
-      item.updatedBy,
-      item.updatedAt,
+      item.deliveryNumber,
+      item.orderNumber,
       ...(item.items || []).map((it) => `${it.name} ${it.supplierId}`),
     ]
       .filter(Boolean)

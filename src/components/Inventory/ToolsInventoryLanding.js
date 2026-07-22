@@ -145,7 +145,7 @@ export default function ToolsInventoryLanding() {
     const matName = materialsMap[it.materialId]?.name || '';
     const rackName = racksMap[it.rackId]?.name || '';
     const whName = warehousesMap[racksMap[it.rackId]?.warehouseId] || '';
-    return [it.id, it.name, matName, rackName, whName, it.createdBy].filter(Boolean).some((v) => String(v).toLowerCase().includes(k));
+    return [it.id, it.name, it.code, matName, rackName, whName, it.createdBy].filter(Boolean).some((v) => String(v).toLowerCase().includes(k));
   };
 
   return (

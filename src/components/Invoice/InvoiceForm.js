@@ -331,59 +331,80 @@ export default function PurchaseInvoiceForm() {
     confirmModal.show(title, message, confirmText, variant, action);
   };
 
-  const save = async (entity) => {
-    entity.children = (formData.children || []).map((child) => {
-      const { amount, ...rest } = child;
-      return {
-        ...rest,
-        quantity: Number(child.quantity || 0),
-        unitCost: Number(child.unitCost || 0),
-        discount: Number(child.discount || 0),
-        vat: Number(child.vat || 0),
-        totalAmount: Number(child.totalAmount ?? child.amount ?? 0),
-      };
-    });
-
-    entity.deletedChildren = (formData.deletedChildren || []).map((child) => {
-      const { amount, ...rest } = child;
-      return {
-        ...rest,
-        totalAmount: Number(child.totalAmount ?? child.amount ?? 0),
-      };
-    });
-
-    // ✅ Compute totals directly from children instead of relying on formData.vat/amount
-    const computedVat = entity.children.reduce(
-      (sum, child) => sum + Number(child.vat || 0),
-      0,
-    );
-    const computedAmount = entity.children.reduce(
-      (sum, child) => sum + Number(child.totalAmount ?? child.amount ?? 0),
-      0,
-    );
-
-    const updatedForm = {
-      ...formData,
-      ...entity,
-      vat: computedVat,
-      amount: computedAmount,
+const save = async (entity) => {
+  entity.children = (formData.children || []).map((child) => {
+    const { amount, ...rest } = child;
+    return {
+      ...rest,
+      quantity: Number(child.quantity || 0),
+      unitCost: Number(child.unitCost || 0),
+      discount: Number(child.discount || 0),
+      vat: Number(child.vat || 0),
+      totalAmount: Number(child.totalAmount ?? child.amount ?? 0),
     };
+  });
 
-    updatedForm.id = updatedForm.id ?? 0;
+  entity.deletedChildren = (formData.deletedChildren || []).map((child) => {
+    const { amount, ...rest } = child;
+    return {
+      ...rest,
+      totalAmount: Number(child.totalAmount ?? child.amount ?? 0),
+    };
+  });
 
-    let res = {};
-    updatedForm.id === 0
-      ? (res = await Create(updatedForm))
-      : (res = await Update(updatedForm.id, updatedForm));
+  // Compute totals
+  const computedVat = entity.children.reduce(
+    (sum, child) => sum + Number(child.vat || 0),
+    0,
+  );
 
-    if (res?.error) {
-      toast.error('Failed to save purchase Invoice.');
-      return null;
-    } else {
-      toast.success('Purchase Invoice has been saved.');
-      router.push(backPath);
-    }
+  const computedAmount = entity.children.reduce(
+    (sum, child) => sum + Number(child.totalAmount ?? child.amount ?? 0),
+    0,
+  );
+
+  const updatedForm = {
+    ...formData,
+    ...entity,
+    vat: computedVat,
+    amount: computedAmount,
   };
+
+  // Normalize numeric fields
+  updatedForm.terms = Number(updatedForm.terms || 0);
+
+  // Always compute Due Date from Invoice Date + Terms
+  const invoiceDate = updatedForm.invoiceDate
+    ? new Date(updatedForm.invoiceDate)
+    : new Date();
+
+  const dueDate = new Date(invoiceDate);
+  dueDate.setDate(dueDate.getDate() + updatedForm.terms);
+
+  updatedForm.dueDate = `${dueDate.getFullYear()}-${String(
+    dueDate.getMonth() + 1,
+  ).padStart(2, '0')}-${String(dueDate.getDate()).padStart(2, '0')}`;
+
+  updatedForm.id = Number(updatedForm.id || 0);
+
+  console.log('Saving Purchase Invoice:', updatedForm);
+
+  let res;
+
+  if (updatedForm.id === 0) {
+    res = await Create(updatedForm);
+  } else {
+    res = await Update(updatedForm.id, updatedForm);
+  }
+
+  if (res?.error) {
+    toast.error('Failed to save purchase Invoice.');
+    return;
+  }
+
+  toast.success('Purchase Invoice has been saved.');
+  router.push(backPath);
+};
 
   const handleCancelConfirm = () => {
     const title = 'Cancel Invoice';

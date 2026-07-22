@@ -30,6 +30,7 @@ const baseColumns = [
     </div>
   ) },
   { header: 'Payment Status', key: 'paymentStatus', render: (item) => <StatusBadge status={item.paymentStatus} /> },
+  { header: 'Billing Date', key: 'billingDate', render: (item) => item.billingDate ? new Date(item.billingDate).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: '2-digit' }) : '' },
 ];
 
 export default function SalesBillingLanding() {
@@ -252,7 +253,7 @@ export default function SalesBillingLanding() {
 
   const filterFn = (item, keyword) => {
     const itemText = [
-      item.billingNo,
+      item.salesBillingNo,
       item.customerName,
       item.status,
       item.paymentStatus,

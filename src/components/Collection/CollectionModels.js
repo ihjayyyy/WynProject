@@ -129,7 +129,7 @@ export const CollectionItemFields = (billings = [], withholdingTaxPercent = 0) =
         updateField('withholdingTax', tax);
         updateField('totalAmountPaid', total);
         // compute balance (should be ~0)
-        updateField('balance', round(amount - total));
+updateField('balance', Math.max(0, round(amount - total)));
       }
     },
     validator: Yup.number().typeError('Billing is required').required('Billing is required'),
@@ -143,14 +143,23 @@ export const CollectionItemFields = (billings = [], withholdingTaxPercent = 0) =
   initialvalue: 0,
   onChange: (target, updateField, nextFields) => {
     const paid = Number(target.value) || 0;
-    const tax = parseFloat((paid * (withholdingTaxPercent / 100)).toFixed(2));
+    const pct = Number(withholdingTaxPercent) || 0;
+
+    const tax = parseFloat((paid * (pct / 100)).toFixed(2));
     const total = parseFloat((paid - tax).toFixed(2));
+
     const amountField = nextFields.find((f) => f.name === 'amount');
     const amount = Number(amountField?.value) || 0;
 
+    // Never allow balance to become negative
+    const balance = Math.max(
+      0,
+      parseFloat((amount - total).toFixed(2))
+    );
+
     updateField('withholdingTax', tax);
     updateField('totalAmountPaid', total);
-    updateField('balance', parseFloat((amount - total).toFixed(2)));
+    updateField('balance', balance);
   },
   validator: Yup.number()
     .typeError('Amount Paid must be a number')
@@ -161,12 +170,15 @@ export const CollectionItemFields = (billings = [], withholdingTaxPercent = 0) =
       'Amount Paid cannot exceed the remaining balance',
       function (value) {
         const { amount } = this.parent;
+
         const paid = Number(value) || 0;
         const originalAmount = Number(amount) || 0;
+        const pct = Number(withholdingTaxPercent) || 0;
 
-        const tax = paid * (Number(withholdingTaxPercent) || 0) / 100;
+        const tax = paid * (pct / 100);
         const totalPaid = paid - tax;
 
+        // Prevent overpayment (negative balance)
         return totalPaid <= originalAmount;
       }
     ),

@@ -178,7 +178,7 @@ export default function PurchasePaymentsLanding() {
   }, [payments]);
 
   const filterFn = (item, keyword) => {
-    return [item.name, item.code]
+    return [item.name, item.code, item.paymentNumber, item.supplierReceiptNumber]
       .filter(Boolean)
       .some((value) => String(value).toLowerCase().includes(keyword));
   };

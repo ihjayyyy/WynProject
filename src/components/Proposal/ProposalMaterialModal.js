@@ -768,14 +768,13 @@ label: canEditFinance ? 'Price (Editable)' : 'Price',
         label: 'Proposed Quantity',
         type: 'number',
 
-        value:
-          Number(calculatedForm.quantity) || 0,
+        value: Number(calculatedForm.quantity) || 0,
 
         readonly: true,
 
         validator: Yup.number()
-          .min(0)
-          .notRequired(),
+          .required('Proposed Quantity is required')
+          .moreThan(0, 'Proposed Quantity must be greater than 0'),
       },
 
       {

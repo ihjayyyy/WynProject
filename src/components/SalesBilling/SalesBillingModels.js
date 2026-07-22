@@ -116,6 +116,7 @@ export const SalesBillingFields = (
       label: 'Project Contract Amount',
       type: 'number',
       span: 'span2',
+      readOnly: true,
       // Must have Project Contract Amount
       validator: Yup.number()
         .typeError('Project Contract Amount must be a number')

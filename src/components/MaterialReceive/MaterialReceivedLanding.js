@@ -169,7 +169,7 @@ return [
 
   const filterFn = (item, keyword) =>
     [item.id, item.name, item.code, item.transferFromType, item.transferToType,
-      item.transferFromName, item.transferToName, item.status, item.receivedBy]
+      item.transferFromName, item.transferToName, item.status, item.receivedBy, item.transferNumber]
       .filter(Boolean)
       .some((v) => String(v).toLowerCase().includes(keyword));
 

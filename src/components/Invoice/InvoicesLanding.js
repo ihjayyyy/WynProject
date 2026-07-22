@@ -218,24 +218,34 @@ export default function InvoicesLanding() {
     ];
   }, [invoices]);
 
-  const filterFn = (item, keyword) => {
-    const itemText = [
-      item.id,
-      item.code,
-      item.name,
-      item.orderId,
-      item.status,
-      item.createdBy,
-      item.createdDate,
-      item.updatedBy,
-      item.updatedAt,
-      ...(item.items || []).map((it) => `${it.name} ${it.supplierId}`),
-    ]
-      .filter(Boolean)
-      .some((v) => String(v).toLowerCase().includes(keyword));
+const formatLongDate = (date) => {
+  if (!date) return '';
 
-    return itemText;
-  };
+  return new Date(date)
+    .toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+    })
+    .toLowerCase();
+};
+
+const filterFn = (item, keyword) => {
+  keyword = keyword.toLowerCase();
+
+  return [
+    item.code,
+    item.name,
+    item.status,
+    item.paymentStatus,
+    item.invoiceNumber,
+    formatLongDate(item.invoiceDate),
+    formatLongDate(item.dueDate),
+    ...(item.items || []).map((it) => `${it.name} ${it.supplierId}`),
+  ]
+    .filter(Boolean)
+    .some((value) => String(value).toLowerCase().includes(keyword));
+};
 
   return (
     <Landing

@@ -74,6 +74,7 @@ export default function MaterialRequestLanding() {
     return [
       it.id,
       it.name,
+      it.rivNumber,
       it.code,
       it.requestedBy,
       it.status,
