@@ -119,7 +119,10 @@ export default function SuppliersForm() {
       supplierName: values.name || '',
       email: values.email || '',
       vatType: values.vatType || '',
-      terms: values.terms || 0,
+      terms:
+  values.terms === '' || values.terms == null
+    ? 0
+    : Number.parseInt(values.terms, 10),
     };
     if (!supplierId) {
       try {
