@@ -225,11 +225,33 @@ export default function ProjectMaterialModal({ open, initial = {}, onCancel, onC
   validator: !isService && categorySelected ? Yup.string().required('Material is required') : Yup.string().notRequired(),
   onChange: (item, updateField, itemFields, nextValue) => {
     const next = applyMaterialSelect(nextValue, itemFields);
+    const uc = Number(next.unitCost) || 0;
+    const qty = Number(itemFields.find((f) => f.name === 'quantity')?.value) || 0;
+    const pct = Number(itemFields.find((f) => f.name === 'laborPercentage')?.value) || 0;
+    const disc = Number(itemFields.find((f) => f.name === 'discount')?.value) || 0;
+
+    const base = uc * qty;
+    const materialBase = base - disc;
+    const vat = Number.isFinite(materialBase * 0.12)
+      ? Math.max(0, Number((materialBase * 0.12).toFixed(2)))
+      : 0;
+    const materialCost = Number((materialBase + vat).toFixed(2));
+    const laborCost = pct > 0
+      ? Number((materialCost * pct / 100).toFixed(2))
+      : Number(itemFields.find((f) => f.name === 'laborCost')?.value) || 0;
+    const total = Number((materialCost + laborCost).toFixed(2));
+
     updateField('materialId', next.materialId ? String(next.materialId) : '');
     updateField('uom', next.uom || '');
-    updateField('unitCost', Number(next.unitCost) || 0);
+    updateField('unitCost', uc);
     updateField('code', next.code || '');
     updateField('name', next.name || '');
+    updateField('vat', vat);
+    updateField('materialCost', materialCost);
+    updateField('laborCost', laborCost);
+    updateField('totalAmount', total);
+    updateField('extendedCost', total);
+    updateField('totalPrice', total);
   },
 },
     { name: 'code', label: materialCategory === 'Tool' ? 'Tool Code' : materialCategory === 'Service' ? 'Service Code' : materialCategory === 'Assembly' ? 'Assembly Code' : 'Material Code', type: 'text', value: calculatedForm.code || '', readonly: true, validator: Yup.string().notRequired() },
