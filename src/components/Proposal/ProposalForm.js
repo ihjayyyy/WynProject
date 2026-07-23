@@ -483,36 +483,6 @@ export default function ProposalForm() {
     { name: 'address', label: 'Address', span: 'span1', readOnly: isReviseMode },
     { name: 'spacer-7', type: 'spacer', span: 'span1' },
         (isReadOnly ? {
-      name: 'proposalTotal', label: 'Proposal Total', type: 'custom', span: 'span1',
-      render: ({ values, setValues }) => {
-        const v = Number(values.proposalTotal) || 0;
-        if (v !== totals.proposalTotal) setValues({ ...values, proposalTotal: totals.proposalTotal });
-        return (
-          <div className={inputStyles.field}>
-            <label>Proposal Total</label>
-            <Input id="proposalTotal" value={totals.proposalTotal} readOnly />
-          </div>
-        );
-      },
-    } : { name: 'spacer-proposalTotal', type: 'spacer', span: 'span1' }),
-    { name: 'email', label: 'Email', type: 'email', span: 'span1', readOnly: isReviseMode, validator: Yup.string().email('Invalid email').nullable() },
-    { name: 'spacer-11', type: 'spacer', span: 'span1' },
-        (isReadOnly ? {
-      name: 'laborCostTotal', label: 'Labor Cost Total', type: 'custom', span: 'span1',
-      render: ({ values, setValues }) => {
-        const v = Number(values.laborCostTotal) || 0;
-        if (v !== totals.laborCostTotal) setValues({ ...values, laborCostTotal: totals.laborCostTotal });
-        return (
-          <div className={inputStyles.field}>
-            <label>Labor Cost Total</label>
-            <Input id="laborCostTotal" value={totals.laborCostTotal} readOnly />
-          </div>
-        );
-      },
-    } : { name: 'spacer-laborCostTotal', type: 'spacer', span: 'span1' }),
-    { name: 'location', label: 'Location', span: 'span1', readOnly: isReviseMode },
-    { name: 'spacer-9', type: 'spacer', span: 'span1' },
-        (isReadOnly ? {
       name: 'materialCostTotal', label: 'Material Cost Total', type: 'custom', span: 'span1',
       render: ({ values, setValues }) => {
         const v = Number(values.materialCostTotal) || 0;
@@ -525,6 +495,40 @@ export default function ProposalForm() {
         );
       },
     } : { name: 'spacer-materialCostTotal', type: 'spacer', span: 'span1' }),
+
+    { name: 'email', label: 'Email', type: 'email', span: 'span1', readOnly: isReviseMode, validator: Yup.string().email('Invalid email').nullable() },
+    { name: 'spacer-7b', type: 'spacer', span: 'span1' },
+
+    (isReadOnly ? {
+      name: 'laborCostTotal', label: 'Labor Cost Total', type: 'custom', span: 'span1',
+      render: ({ values, setValues }) => {
+        const v = Number(values.laborCostTotal) || 0;
+        if (v !== totals.laborCostTotal) setValues({ ...values, laborCostTotal: totals.laborCostTotal });
+        return (
+          <div className={inputStyles.field}>
+            <label>Labor Cost Total</label>
+            <Input id="laborCostTotal" value={totals.laborCostTotal} readOnly />
+          </div>
+        );
+      },
+    } : { name: 'spacer-laborCostTotal', type: 'spacer', span: 'span1' }),
+
+    { name: 'location', label: 'Location', span: 'span1', readOnly: isReviseMode },
+    { name: 'spacer-11', type: 'spacer', span: 'span1' },
+    (isReadOnly ? {
+      name: 'proposalTotal', label: 'Proposal Total', type: 'custom', span: 'span1',
+      render: ({ values, setValues }) => {
+        const v = Number(values.proposalTotal) || 0;
+        if (v !== totals.proposalTotal) setValues({ ...values, proposalTotal: totals.proposalTotal });
+        return (
+          <div className={inputStyles.field}>
+            <label>Proposal Total</label>
+            <Input id="proposalTotal" value={totals.proposalTotal} readOnly />
+          </div>
+        );
+      },
+    } : { name: 'spacer-proposalTotal', type: 'spacer', span: 'span1' }),
+
     {
       // FINANCE FIELD: still shown, but non-editable without 'f' permission.
       name: 'margin', label: 'Margin (%)', type: 'number', span: 'span1',

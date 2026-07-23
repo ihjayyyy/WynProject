@@ -24,14 +24,10 @@ export default function ProposalMaterialsTable({
   editable = true,
   proposalId = 0,
   parentLaborPercentage = 0,
-  // Finance permission (lowercase 'f'). When false, finance-specific inputs
-  // (labor %, material/labor cost, margin) inside the scope/material modals
-  // should render as non-editable, even though the table itself and its
-  // non-finance fields remain fully usable.
   canEditFinance = true,
+  isAdmin = false,
 }) {
   const [localItems, setLocalItems] = useState([]);
-  const [isAdmin, setIsAdmin] = useState(true); // toggle to simulate admin view
   const [deletedChildren, setDeletedChildren] = useState([]);
   const [isScopeModalOpen, setIsScopeModalOpen] = useState(false);
   const [scopeEditing, setScopeEditing] = useState(null);
@@ -78,10 +74,8 @@ export default function ProposalMaterialsTable({
     { header: 'Unit Cost', key: 'unitCost', align: 'right', width: '120px', render: (it) => (((it && it.isTotalRow) || it.unitCost === '' || it.unitCost == null) ? '' : Number(it.unitCost).toLocaleString()) },
     { header: 'UoM', key: 'uom', width: '80px' },
     { header: 'Proposed Quantity', key: 'quantity', align: 'right', width: '80px' },
-    { header: 'VAT', key: 'vat', align: 'right', width: '100px', render: (it) => Number(it.vat || 0).toLocaleString() },
     { header: 'Material Cost', key: 'materialCost', align: 'right', width: '140px', render: (it) => Number(it.materialCost || 0).toLocaleString() },
     { header: 'Labor Cost', key: 'laborCost', align: 'right', width: '120px', render: (it) => Number(it.laborCost || 0).toLocaleString() },
-    { header: 'Margin', key: 'margin', align: 'right', width: '100px', render: (it) => (it && (it.margin !== undefined && it.margin !== null) ? Number(it.margin).toLocaleString() : '') },
     { header: 'Total', key: 'totalPrice', align: 'right', width: '140px', render: (it) => Number(it.totalPrice || it.totalAmount || 0).toLocaleString() },
   ];
 
