@@ -270,56 +270,46 @@ export default function ProposalMaterialModal({
     [form, materials]
   );
 
-  const calculatedForm = useMemo(() => {
-    const selected = applyMaterialSelect(
-      form.materialId
-    );
+const calculatedForm = useMemo(() => {
+  const uc = Number(form.unitCost) || 0;
+  const qty = Number(form.quantity) || 0;
+  const lab = Number(form.laborCost) || 0;
+  const disc = Number(form.discount) || 0;
 
-    const uc = Number(selected.unitCost) || 0;
-    const qty = Number(selected.quantity) || 0;
-    const lab = Number(selected.laborCost) || 0;
-    const disc = Number(selected.discount) || 0;
+  const base = uc * qty;
+  const materialBase = base - disc;
 
-    const base = uc * qty;
-    const materialBase = base - disc;
+  const rawVat = materialBase * 0.12;
+  const vatAmount = Number.isFinite(rawVat)
+    ? Math.max(0, Number(rawVat.toFixed(2)))
+    : 0;
 
-    const rawVat = materialBase * 0.12;
+  const materialCost = Number((materialBase + vatAmount).toFixed(2));
+  const totalPrice = Number((materialCost + lab).toFixed(2));
 
-    const vatAmount = Number.isFinite(rawVat)
-      ? Math.max(0, Number(rawVat.toFixed(2)))
-      : 0;
-
-    const materialCost = Number(
-      (materialBase + vatAmount).toFixed(2)
-    );
-
-    const totalPrice = Number(
-      (materialCost + lab).toFixed(2)
-    );
-
-    return {
-      ...selected,
-
-      vat: vatAmount,
-      materialCost,
-
-      totalAmount: totalPrice,
-      extendedCost: totalPrice,
-      totalPrice,
-    };
-  }, [form, applyMaterialSelect]);
+  return {
+    ...form,
+    vat: vatAmount,
+    materialCost,
+    totalAmount: totalPrice,
+    extendedCost: totalPrice,
+    totalPrice,
+  };
+}, [form]);
 
   const recomputeTotals = (
     updateField,
     itemFields,
-    qtyOverride = null
+    qtyOverride = null,
+    unitCostOverride = null
   ) => {
     const uc =
-      Number(
+      unitCostOverride ??
+      (Number(
         itemFields.find(
           (f) => f.name === 'unitCost'
         )?.value
-      ) || 0;
+      ) || 0);
 
     const disc =
       Number(
@@ -594,6 +584,9 @@ export default function ProposalMaterialModal({
             itemFields
           );
 
+          const newUnitCost =
+            Number(next.unitCost) || 0;
+
           updateField(
             'materialId',
             next.materialId
@@ -605,11 +598,22 @@ export default function ProposalMaterialModal({
 
           updateField(
             'unitCost',
-            Number(next.unitCost) || 0
+            newUnitCost
           );
 
           updateField('code', next.code || '');
           updateField('name', next.name || '');
+
+          // Recompute vat/materialCost/laborCost/totals using the new
+          // unitCost. itemFields here is still the array from before this
+          // onChange fired, so pass the new unitCost explicitly rather
+          // than relying on it being reflected in itemFields yet.
+          recomputeTotals(
+            updateField,
+            itemFields,
+            null,
+            newUnitCost
+          );
         },
       },
 
