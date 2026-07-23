@@ -105,7 +105,20 @@ export default function AssemblyForm() {
   const fields = [
     { name: 'code', label: 'Code', span: 'span2', validator: Yup.string().required('Code is required') },
     { name: 'name', label: 'Name', span: 'span2', validator: Yup.string().required('Name is required') },
-      { name: 'sellingPrice', label: 'Selling Price', type: 'number', span: 'span2', validator: Yup.number().min(0, 'Selling price must be 0 or more') },
+    {
+      name: 'sellingPrice',
+      label: 'Selling Price',
+      type: 'number',
+      span: 'span2',
+      onChange: (value, values, setValues) => {
+        setValues({
+          ...values,
+          sellingPrice: value,
+          purchasePrice: value,
+        });
+      },
+      validator: Yup.number().min(0, 'Selling price must be 0 or more'),
+    },
 
     {
       name: 'unitOfMeasure',
@@ -140,8 +153,6 @@ export default function AssemblyForm() {
           ...values,
           isAssembly: true,
           materialType: 'Material',
-          purchasePrice: 0,
-          sellingPrice: 0,
         },
         assemblyMaterials: processedAssemblyMaterials,
         deletedAssemblyMaterials,
@@ -154,8 +165,6 @@ export default function AssemblyForm() {
           ...values,
           isAssembly: true,
           materialType: 'Material',
-          purchasePrice: 0,
-          sellingPrice: 0,
         },
         assemblyMaterials: processedAssemblyMaterials,
         deletedAssemblyMaterials,
