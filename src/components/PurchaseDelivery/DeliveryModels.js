@@ -204,6 +204,7 @@ export const ItemsFields = (materials, dr) => ([
     name: 'materialId',
     label: 'Material',
     type: 'select',
+    searchable: true,
     options: materials.map(({ id, name, code }) => ({
       value: id,
       label: `${code ? `[${code}] ` : ''}${name || ''}`.trim(),
@@ -297,6 +298,7 @@ export const ItemsFields = (materials, dr) => ([
     name: 'rackId',
     label: 'Rack',
     type: 'select',
+    searchable: true, 
     options: [],
     readonly: false,
 

@@ -17,6 +17,7 @@ const sanitizeForApi = (arr) =>
       materialId: Number(item.materialId) || 0,
       quantity: Number(item.quantity) || 0,
       uom: item.uom || '',
+      sellingPrice: Number(item.sellingPrice) || 0,
     };
     if (item.id !== undefined) base.id = item.id;
     return base;
@@ -74,11 +75,56 @@ export default function AssemblyMaterialsTable({ items = [], onChange, editable 
 
   const columns = useMemo(() => {
     const base = [
-      { header: 'Name', key: 'name', width: '180px' },
-      { header: 'Code', key: 'code', width: '120px' },
-      { header: 'Material ID', key: 'materialId', width: '120px' },
-      { header: 'UOM', key: 'uom', width: '100px' },
-      { header: 'Quantity', key: 'quantity', align: 'right', width: '100px' },
+      {
+        header: 'Name',
+        key: 'name',
+        width: '180px',
+        render: (it) => (it.isTotalRow ? 'Total' : (it.name || '')),
+      },
+      {
+        header: 'Code',
+        key: 'code',
+        width: '120px',
+        render: (it) => (it.isTotalRow ? '' : (it.code || '')),
+      },
+      {
+        header: 'Material ID',
+        key: 'materialId',
+        width: '120px',
+        render: (it) => (it.isTotalRow ? '' : (it.materialId ?? '')),
+      },
+      {
+        header: 'UOM',
+        key: 'uom',
+        width: '100px',
+        render: (it) => (it.isTotalRow ? '' : (it.uom || '')),
+      },
+      {
+        header: 'Quantity',
+        key: 'quantity',
+        align: 'right',
+        width: '100px',
+        render: (it) => (it.isTotalRow ? '' : (it.quantity ?? '')),
+      },
+      {
+        header: 'Unit Price',
+        key: 'sellingPrice',
+        align: 'right',
+        width: '120px',
+        render: (it) => (it.isTotalRow ? '' : (Number(it.sellingPrice) || 0).toFixed(2)),
+      },
+      {
+        header: 'Total Price',
+        key: '__totalPrice',
+        align: 'right',
+        width: '120px',
+        render: (it) => {
+          if (it.isTotalRow) return Number(it.totalPrice || 0).toFixed(2);
+          const sellingPrice = Number(it.sellingPrice) || 0;
+          const quantity = Number(it.quantity) || 0;
+          return (sellingPrice * quantity).toFixed(2);
+        },
+      },
     ];
     if (editable) {
       base.push({
@@ -86,30 +132,51 @@ export default function AssemblyMaterialsTable({ items = [], onChange, editable 
         key: '__actions',
         align: 'right',
         width: '120px',
-        render: (it) => (
-          <div className={styles.actionCell}>
-            <Button
-              size="sm"
-              variant="outlinedPrimary"
-              icon={<FiEdit2 />}
-              title="Edit"
-              onClick={() => { setMaterialEditing(it); setIsMaterialModalOpen(true); }}
-            />
-            <Button
-              size="sm"
-              variant="danger"
-              icon={<FiTrash2 />}
-              title="Delete"
-              onClick={() => { setConfirmTarget(it); setIsConfirmOpen(true); }}
-            />
-          </div>
-        ),
+        render: (it) => {
+          if (it.isTotalRow) return null;
+          return (
+            <div className={styles.actionCell}>
+              <Button
+                size="sm"
+                variant="outlinedPrimary"
+                icon={<FiEdit2 />}
+                title="Edit"
+                onClick={() => { setMaterialEditing(it); setIsMaterialModalOpen(true); }}
+              />
+              <Button
+                size="sm"
+                variant="danger"
+                icon={<FiTrash2 />}
+                title="Delete"
+                onClick={() => { setConfirmTarget(it); setIsConfirmOpen(true); }}
+              />
+            </div>
+          );
+        },
       });
     }
     return base;
   }, [editable]);
 
-  const data = (filtered || []).map((r, idx) => ({ ...r, id: r.id || r._localId || idx }));
+  const data = useMemo(() => {
+    const rows = (filtered || []).map((r, idx) => ({ ...r, id: r.id || r._localId || idx }));
+
+    const grandTotal = (localItems || []).reduce((sum, it) => {
+      const sellingPrice = Number(it.sellingPrice) || 0;
+      const quantity = Number(it.quantity) || 0;
+      return sum + sellingPrice * quantity;
+    }, 0);
+
+    if (rows.length > 0) {
+      rows.push({
+        id: '__assembly-total',
+        isTotalRow: true,
+        totalPrice: grandTotal,
+      });
+    }
+
+    return rows;
+  }, [filtered, localItems]);
 
   const handleMaterialConfirm = (m, options = {}) => {
     // Flag as internal BEFORE the setState calls so the effect fires onChange

@@ -34,6 +34,8 @@ export default function AssemblyForm() {
     return () => { mounted = false; };
   }, []);
 
+
+
   const router = useRouter();
   const searchParams = useSearchParams();
   const materialId = searchParams.get('id');
@@ -41,12 +43,17 @@ export default function AssemblyForm() {
   const [isEditModeLocal, setIsEditModeLocal] = useState(false);
   const isEditMode = mode === 'edit' || isEditModeLocal;
   const toast = useToast();
-
   const [initialValues, setInitialValues] = useState({ ...AssemblyMaterialService.INITIAL_ASSEMBLY_MATERIAL.material, materialType: '', isAssembly: true });
   const [assemblyMaterials, setAssemblyMaterials] = useState([]);
   const [deletedAssemblyMaterials, setDeletedAssemblyMaterials] = useState([]);
   const [exists, setExists] = useState(false);
-  // No local modal state here; handled by AssemblyMaterialsTable
+  const assemblyTotal = useMemo(() => {
+  return (assemblyMaterials || []).reduce((sum, item) => {
+    const sellingPrice = Number(item.sellingPrice) || 0;
+    const quantity = Number(item.quantity) || 0;
+    return sum + sellingPrice * quantity;
+  }, 0);
+}, [assemblyMaterials]);
 
   useEffect(() => {
     let cancelled = false;
@@ -102,37 +109,29 @@ export default function AssemblyForm() {
     return 'View Assembly';
   }, [materialId, isEditMode]);
 
-  const fields = [
-    { name: 'code', label: 'Code', span: 'span2', validator: Yup.string().required('Code is required') },
-    { name: 'name', label: 'Name', span: 'span2', validator: Yup.string().required('Name is required') },
-    {
-      name: 'sellingPrice',
-      label: 'Selling Price',
-      type: 'number',
-      span: 'span2',
-      onChange: (value, values, setValues) => {
-        setValues({
-          ...values,
-          sellingPrice: value,
-          purchasePrice: value,
-        });
-      },
-      validator: Yup.number().min(0, 'Selling price must be 0 or more'),
+const fields = [
+  { name: 'code', label: 'Code', span: 'span2', validator: Yup.string().required('Code is required') },
+  { name: 'name', label: 'Name', span: 'span2', validator: Yup.string().required('Name is required') },
+  {
+    name: 'sellingPrice',
+    label: 'Selling Price',
+    type: 'number',
+    span: 'span2',
+    readOnly: true,
+    readOnlyDisplay: () => assemblyTotal.toFixed(2),
+  },
+  {
+    name: 'unitOfMeasure',
+    label: 'UOM',
+    type: 'select',
+    options: uomOptions,
+    span: 'span2',
+    onChange: (selected, values, setValues) => {
+      setValues({ ...values, unitOfMeasure: selected, purchaseUnitOfMeasure: selected });
     },
-
-    {
-      name: 'unitOfMeasure',
-      label: 'UOM',
-      type: 'select',
-      options: uomOptions,
-      span: 'span2',
-      onChange: (selected, values, setValues) => {
-        setValues({ ...values, unitOfMeasure: selected, purchaseUnitOfMeasure: selected });
-      },
-      validator: Yup.string().required('UOM is required'),
-    },
-    // { name: 'purchaseUnitOfMeasure', label: 'Default Purchase UOM', span: 'span2' },
-  ];
+    validator: Yup.string().required('UOM is required'),
+  },
+];
 
   // Handler for AssemblyMaterialsTable changes
   const handleAssemblyMaterialsChange = (updated, deleted) => {
@@ -140,64 +139,69 @@ export default function AssemblyForm() {
     setDeletedAssemblyMaterials(deleted);
   };
 
+const handleSubmit = async (values) => {
+  const finalValues = {
+    ...values,
+    sellingPrice: assemblyTotal,
+    purchasePrice: assemblyTotal,
+  };
 
+  let payload;
+  if (materialId) {
+    // Edit mode: Ensure new assembly materials have id: 0, existing keep their id
+    const processedAssemblyMaterials = assemblyMaterials.map(item => ({ ...item, id: item.id ? item.id : 0 }));
+    payload = {
+      material: {
+        ...finalValues,
+        isAssembly: true,
+        materialType: 'Material',
+      },
+      assemblyMaterials: processedAssemblyMaterials,
+      deletedAssemblyMaterials,
+    };
+  } else {
+    // Create mode: do not include id
+    const processedAssemblyMaterials = assemblyMaterials.map(({ id, ...rest }) => rest);
+    payload = {
+      material: {
+        ...finalValues,
+        isAssembly: true,
+        materialType: 'Material',
+      },
+      assemblyMaterials: processedAssemblyMaterials,
+      deletedAssemblyMaterials,
+    };
+  }
 
-  // Handler for form submit
-  const handleSubmit = async (values) => {
-    let payload;
-    if (materialId) {
-      // Edit mode: Ensure new assembly materials have id: 0, existing keep their id
-      const processedAssemblyMaterials = assemblyMaterials.map(item => ({ ...item, id: item.id ? item.id : 0 }));
-      payload = {
-        material: {
-          ...values,
-          isAssembly: true,
-          materialType: 'Material',
-        },
-        assemblyMaterials: processedAssemblyMaterials,
-        deletedAssemblyMaterials,
-      };
-    } else {
-      // Create mode: do not include id
-      const processedAssemblyMaterials = assemblyMaterials.map(({ id, ...rest }) => rest);
-      payload = {
-        material: {
-          ...values,
-          isAssembly: true,
-          materialType: 'Material',
-        },
-        assemblyMaterials: processedAssemblyMaterials,
-        deletedAssemblyMaterials,
-      };
-    }
-    if (!materialId) {
-      try {
-        const res = await AssemblyMaterialService.createAssemblyMaterial(payload);
-        if (res?.error) {
-          toast.error('Failed to create assembly');
-        } else {
-          toast.success('Assembly created');
-        }
-        router.push('/materialsSettings/assembly');
-      } catch (err) {
-        toast.error('Failed to create assembly');
-        router.push('/materialsSettings/assembly');
-      }
-      return;
-    }
+  if (!materialId) {
     try {
-      const res = await AssemblyMaterialService.updateAssemblyMaterial(materialId, payload);
+      const res = await AssemblyMaterialService.createAssemblyMaterial(payload);
       if (res?.error) {
-        toast.error('Failed to save assembly');
+        toast.error('Failed to create assembly');
       } else {
-        toast.success('Assembly saved');
+        toast.success('Assembly created');
       }
       router.push('/materialsSettings/assembly');
     } catch (err) {
-      toast.error('Failed to save assembly');
+      toast.error('Failed to create assembly');
       router.push('/materialsSettings/assembly');
     }
-  };
+    return;
+  }
+
+  try {
+    const res = await AssemblyMaterialService.updateAssemblyMaterial(materialId, payload);
+    if (res?.error) {
+      toast.error('Failed to save assembly');
+    } else {
+      toast.success('Assembly saved');
+    }
+    router.push('/materialsSettings/assembly');
+  } catch (err) {
+    toast.error('Failed to save assembly');
+    router.push('/materialsSettings/assembly');
+  }
+};
 
   return (
     <EntityForm

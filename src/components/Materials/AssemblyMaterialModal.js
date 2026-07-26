@@ -43,67 +43,76 @@ export default function AssemblyMaterialModal({ open, initial = {}, onCancel, on
     };
   }, [open]);
 
-  const fields = useMemo(() => {
-    return [
-      {
-        name: 'materialId',
-        label: 'Material',
-        type: 'select',
-        searchable: true,
-        value: form.materialId ? String(form.materialId) : '',
-options: materials.map((m) => ({
-  value: String(m.id),
-  label: `${m.code ? `[${m.code}] ` : ''}${m.name || ''}`.trim(),
-})),
-        validator: Yup.string().required('Material is required'),
-        onChange: (item, updateField, itemFields, nextValue) => {
-          const mat = materials.find((m) => String(m.id) === String(nextValue));
-          if (mat) {
-            updateField('materialId', String(mat.id));
-            updateField('name', mat.name || '');
-            updateField('code', mat.code || '');
-            updateField('uom', mat.unitOfMeasure || '');
-          } else {
-            updateField('materialId', '');
-          }
-        },
+const fields = useMemo(() => {
+  return [
+    {
+      name: 'materialId',
+      label: 'Material',
+      type: 'select',
+      searchable: true,
+      value: form.materialId ? String(form.materialId) : '',
+      options: materials.map((m) => ({
+        value: String(m.id),
+        label: `${m.code ? `[${m.code}] ` : ''}${m.name || ''}`.trim(),
+      })),
+      validator: Yup.string().required('Material is required'),
+      onChange: (item, updateField, itemFields, nextValue) => {
+        const mat = materials.find((m) => String(m.id) === String(nextValue));
+        if (mat) {
+          updateField('materialId', String(mat.id));
+          updateField('name', mat.name || '');
+          updateField('code', mat.code || '');
+          updateField('uom', mat.unitOfMeasure || '');
+          updateField('sellingPrice', mat.sellingPrice || 0);
+        } else {
+          updateField('materialId', '');
+          updateField('sellingPrice', 0);
+        }
       },
-      {
-        name: 'code',
-        label: 'Code',
-        type: 'text',
-        value: form.code || '',
-        readonly: true,
-        validator: Yup.string().required('Code is required'),
-      },
-      {
-        name: 'name',
-        label: 'Name',
-        type: 'text',
-        value: form.name || '',
-        readonly: true,
-        validator: Yup.string().required('Name is required'),
-      },
-      {
-        name: 'quantity',
-        label: 'Quantity',
-        type: 'number',
-        value: form.quantity || 0,
-        validator: Yup.number().min(0).required('Quantity is required'),
-      },
-      {
-        name: 'uom',
-        label: 'UOM',
-          type: 'text',
-          value: (() => {
-            const mat = materials.find((m) => String(m.id) === String(form.materialId));
-            return mat && mat.uom ? mat.uom : '';
-          })(),
-          readonly: true,
-          validator: Yup.string().required('UOM is required'),
-      },
-    ];
-  }, [form, materials]);
+    },
+    {
+      name: 'code',
+      label: 'Code',
+      type: 'text',
+      value: form.code || '',
+      readonly: true,
+      validator: Yup.string().required('Code is required'),
+    },
+    {
+      name: 'name',
+      label: 'Name',
+      type: 'text',
+      value: form.name || '',
+      readonly: true,
+      validator: Yup.string().required('Name is required'),
+    },
+    {
+      name: 'quantity',
+      label: 'Quantity',
+      type: 'number',
+      value: form.quantity || 0,
+      validator: Yup.number().min(0).required('Quantity is required'),
+    },
+    {
+      name: 'uom',
+      label: 'UOM',
+      type: 'text',
+      value: (() => {
+        const mat = materials.find((m) => String(m.id) === String(form.materialId));
+        return mat && mat.unitOfMeasure ? mat.unitOfMeasure : (form.uom || '');
+      })(),
+      readonly: true,
+      validator: Yup.string().required('UOM is required'),
+    },
+    {
+      name: 'sellingPrice',
+      label: 'Unit Price',
+      type: 'number',
+      value: form.sellingPrice ?? 0,
+      validator: Yup.number().min(0, 'Unit price must be 0 or more'),
+    },
+  ];
+}, [form, materials]);
 
   return (
     <ItemModal

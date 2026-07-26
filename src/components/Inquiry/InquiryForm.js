@@ -91,13 +91,13 @@ export default function InquiryForm() {
   }, [inquiryId, inquiries]);
 
   // Merge base values with any auto-fill overrides
-const initialValues = useMemo(() => ({
-  ...baseInitialValues,
-  date:
-    baseInitialValues?.date ||
-    new Date().toISOString().split('T')[0],
-  ...autoFillOverrides,
-}), [baseInitialValues, autoFillOverrides]);
+  const initialValues = useMemo(() => ({
+    ...baseInitialValues,
+    date:
+      baseInitialValues?.date ||
+      new Date().toISOString().split('T')[0],
+    ...autoFillOverrides,
+  }), [baseInitialValues, autoFillOverrides]);
 
   // Called when the customer dropdown changes.
   // We update the ref first so the value is immediately available when
@@ -137,14 +137,15 @@ const initialValues = useMemo(() => ({
     return { isReadOnly: readOnly, canEnterEditMode: exists && !nonEditable, isAcknowledge: acknowledge };
   }, [inquiryId, isEditMode, inquiries]);
 
-  // FIX: confirmModal callback must be a plain async function, not a thunk
+  // FIXED: confirmModal.show's 5th arg is a factory that runs immediately —
+  // it must return the real handler, not run the action directly.
   const handleCancel = async () => {
     confirmModal.show(
       'Cancel Inquiry',
       `Are you sure you want to cancel inquiry "${inquiryId}"?`,
       'Confirm',
       'primary',
-      async () => {
+      () => async () => {
         const res = await cancelInquiry(inquiryId);
         if (res?.error) {
           toast.error('Failed to cancel inquiry');
@@ -159,14 +160,14 @@ const initialValues = useMemo(() => ({
     );
   };
 
-  // FIX: same thunk issue fixed here
+  // FIXED: same double-thunk fix applied here
   const handleClose = async () => {
     confirmModal.show(
       'Close Inquiry',
       `Are you sure you want to close inquiry "${inquiryId}"?`,
       'Confirm',
       'primary',
-      async () => {
+      () => async () => {
         const res = await closeInquiry(inquiryId);
         if (res?.error) {
           toast.error('Failed to close inquiry');
