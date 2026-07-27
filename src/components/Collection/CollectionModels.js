@@ -68,7 +68,7 @@ export const CollectionDetailsColumns = [
     render: (it) => Number(it.withholdingTax || 0).toFixed(2),
   },
   {
-    header: 'Total Amount Paid',
+    header: 'Amount Tendered',
     key: 'totalAmountPaid',
     align: 'right',
     width: '140px',
@@ -111,25 +111,13 @@ export const CollectionItemFields = (billings = [], withholdingTaxPercent = 0) =
         const amount = rawBalance > 0 ? rawBalance : rawAmount;
         updateField('amount', amount);
 
-        // Calculate amountPaid so that balance becomes zero after withholding
-        const pct = Number(withholdingTaxPercent) || 0;
-        let paid = 0;
-        if (pct >= 100) {
-          paid = amount; // avoid division by zero; fallback
-        } else {
-          paid = amount / (1 - pct / 100);
-        }
-        // round to 2 decimals for currency-like values
-        const round = (n) => Math.round((Number(n) || 0) * 100) / 100;
-        const paidRounded = round(paid);
-        const tax = round(paidRounded * (pct / 100));
-        const total = round(paidRounded - tax);
-
-        updateField('amountPaid', paidRounded);
-        updateField('withholdingTax', tax);
-        updateField('totalAmountPaid', total);
-        // compute balance (should be ~0)
-updateField('balance', Math.max(0, round(amount - total)));
+        // Amount Paid is a manual user input - do not auto-derive it from
+        // the billing. Reset it (and everything computed from it) so the
+        // user starts from a clean slate for this billing.
+        updateField('amountPaid', 0);
+        updateField('withholdingTax', 0);
+        updateField('totalAmountPaid', 0);
+        updateField('balance', amount);
       }
     },
     validator: Yup.number().typeError('Billing is required').required('Billing is required'),
@@ -151,10 +139,11 @@ updateField('balance', Math.max(0, round(amount - total)));
     const amountField = nextFields.find((f) => f.name === 'amount');
     const amount = Number(amountField?.value) || 0;
 
-    // Never allow balance to become negative
+    // Balance = Amount to Collect - Amount Paid (gross, before withholding
+    // tax is netted out). Never allow balance to become negative.
     const balance = Math.max(
       0,
-      parseFloat((amount - total).toFixed(2))
+      parseFloat((amount - paid).toFixed(2))
     );
 
     updateField('withholdingTax', tax);
@@ -173,17 +162,13 @@ updateField('balance', Math.max(0, round(amount - total)));
 
         const paid = Number(value) || 0;
         const originalAmount = Number(amount) || 0;
-        const pct = Number(withholdingTaxPercent) || 0;
 
-        const tax = paid * (pct / 100);
-        const totalPaid = paid - tax;
-
-        // Prevent overpayment (negative balance)
-        return totalPaid <= originalAmount;
+        // Prevent overpayment (negative balance): balance = amount - paid
+        return paid <= originalAmount;
       }
     ),
 },
   { name: 'withholdingTax', label: 'Withholding Tax', type: 'number', readonly: true, initialvalue: 0, validator: Yup.number().typeError('Withholding Tax must be a number').min(0, 'Withholding Tax cannot be negative').nullable() },
-  { name: 'totalAmountPaid', label: 'Total Amount Paid', type: 'number', initialvalue: 0, readonly: true, validator: Yup.number().typeError('Total Amount Paid must be a number').min(0, 'Total Amount Paid cannot be negative').nullable() },
+  { name: 'totalAmountPaid', label: 'Amount Tendered', type: 'number', initialvalue: 0, readonly: true, validator: Yup.number().typeError('Amount Tendered must be a number').min(0, 'Amount Tendered cannot be negative').nullable() },
   { name: 'balance', label: 'Balance', type: 'number', initialvalue: 0, readonly: true, validator: Yup.number().typeError('Balance must be a number').nullable() },
 ];

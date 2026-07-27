@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useState, useMemo } from 'react';
-import { useSearchParams } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import * as Yup from 'yup';
 import EntityForm from '../EntityForm/EntityForm';
 import EntityStyle from '../EntityForm/EntityContainer.module.scss';
@@ -16,6 +16,7 @@ import { FiDownload } from 'react-icons/fi';
 export default function MaterialReceivedForm() {
   const backPath = '/inventory/materialreceived';
   const toast = useToast();
+  const router = useRouter();
 
   const [transfers, setTransfers] = useState([]);
   const searchParams = useSearchParams();
@@ -123,6 +124,22 @@ export default function MaterialReceivedForm() {
     [transferData]
   );
 
+  // True when every item currently has a received quantity of 0 — nothing to save yet.
+  const allReceivedZero = useMemo(() => {
+    const items = tableData.items || [];
+    if (items.length === 0) return true;
+    return items.every((it) => Number(it.receivedQuantity || 0) === 0);
+  }, [tableData.items]);
+
+  // True as soon as at least one item has received qty > 0 on this pass.
+  // Drives the remarks requirement for the other lines, independent of the
+  // transfer's server-side status (matters on the very first receive, before
+  // the transfer itself is marked "PartiallyReceived").
+  const anyReceivedThisPass = useMemo(
+    () => (tableData.items || []).some((it) => Number(it.receivedQuantity || 0) > 0),
+    [tableData.items]
+  );
+
   const formFields = useMemo(() => (
     [
       {
@@ -177,6 +194,7 @@ export default function MaterialReceivedForm() {
           toast.error('Failed to mark as received');
         } else {
           toast.success('Transfer marked as received');
+          router.push(backPath);
         }
       } catch (err) {
         console.error(err);
@@ -238,7 +256,7 @@ export default function MaterialReceivedForm() {
           errors.transferId = 'At least one receive item is required';
           setTableError(errors.transferId);
         } else if (
-          isPartiallyReceived &&
+          (isPartiallyReceived || anyReceivedThisPass) &&
           (tableData.items || []).some((it) => {
             const quantity = Number(it.quantity || 0);
             const received = Number(it.receivedQuantity || 0);
@@ -246,7 +264,7 @@ export default function MaterialReceivedForm() {
             return isLinePartiallyReceived && !String(it.remarks || '').trim();
           })
         ) {
-          errors.transferId = 'Remarks are required only for partially received items';
+          errors.transferId = 'Remarks are required for partially received items';
           setTableError(errors.transferId);
         } else {
           setTableError('');
@@ -262,7 +280,7 @@ export default function MaterialReceivedForm() {
           ) : (
             <>
               <Button variant="outlineDanger" onClick={() => { setMode(transferData ? 'view' : 'new'); }}>Cancel</Button>
-              <Button type="submit" variant="save" disabled={actionLoading || !selectedTransferId}>Save</Button>
+              <Button type="submit" variant="save" disabled={actionLoading || !selectedTransferId || allReceivedZero}>Save</Button>
             </>
           )}
         </div>

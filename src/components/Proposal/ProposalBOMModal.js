@@ -16,7 +16,14 @@ const columns = [
   { header: 'Quantity', key: 'quantity', align: 'right', width: '100px' },
 ];
 
-export default function ProposalBOMModal({ open, proposalId, proposalLabel = '', onClose }) {
+export default function ProposalBOMModal({
+  open,
+  proposalId,
+  proposalLabel = '',
+  proposalName = '',
+  companyName = '',
+  onClose,
+}) {
   const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -69,8 +76,19 @@ export default function ProposalBOMModal({ open, proposalId, proposalLabel = '',
     doc.text('Proposal BOM', 14, 16);
     doc.setFontSize(10);
 
+    // Left column: proposal label / name / company
+    let leftY = 22;
     if (proposalLabel) {
-      doc.text(`Proposal: ${proposalLabel}`, 14, 22);
+      doc.text(`Proposal: ${proposalLabel}`, 14, leftY);
+      leftY += 6;
+    }
+    if (proposalName) {
+      doc.text(`Proposal Name: ${proposalName}`, 14, leftY);
+      leftY += 6;
+    }
+    if (companyName) {
+      doc.text(`Company: ${companyName}`, 14, leftY);
+      leftY += 6;
     }
 
     doc.text(`Generated: ${new Date().toLocaleString()}`, pageWidth - 14, 16, {
@@ -93,8 +111,11 @@ export default function ProposalBOMModal({ open, proposalId, proposalLabel = '',
       })
     );
 
+    // Push table start down to accommodate the extra header lines
+    const startY = Math.max(leftY, 28) + 2;
+
     autoTable(doc, {
-      startY: 28,
+      startY,
       head: [pdfHeaders],
       body: pdfBody,
       styles: {
@@ -113,14 +134,12 @@ export default function ProposalBOMModal({ open, proposalId, proposalLabel = '',
         lineColor: [229, 231, 235],
         lineWidth: 0.2,
       },
-      columnStyles: {
-        0: { cellWidth: 74 },
-        1: { cellWidth: 56 },
-        2: { cellWidth: 90 },
-        3: { halign: 'right', cellWidth: 28 },
-      },
-      margin: { left: 14, right: 14 },
-      theme: 'grid',
+    columnStyles: {
+            3: { halign: 'right' },
+          },
+          tableWidth: 'auto',
+          margin: { left: 14, right: 14 },
+          theme: 'grid',
     });
 
     const safeLabel = (proposalLabel || `proposal-${proposalId}`)
@@ -149,6 +168,23 @@ export default function ProposalBOMModal({ open, proposalId, proposalLabel = '',
         </div>
 
         <div className={styles.body}>
+          {(proposalName || companyName) && (
+            <div className={styles.metaRow}>
+              {proposalName && (
+                <div className={styles.metaItem}>
+                  <span className={styles.metaLabel}>Proposal Name:</span>{' '}
+                  <span className={styles.metaValue}>{proposalName}</span>
+                </div>
+              )}
+              {companyName && (
+                <div className={styles.metaItem}>
+                  <span className={styles.metaLabel}>Company Name:</span>{' '}
+                  <span className={styles.metaValue}>{companyName}</span>
+                </div>
+              )}
+            </div>
+          )}
+
           {loading && <div className={styles.statusMsg}>Loading...</div>}
 
           {!loading && error && (

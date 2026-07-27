@@ -1082,6 +1082,8 @@ export default function ProposalForm() {
         open={isProposalBOMOpen}
         proposalId={proposalId}
         proposalLabel={initialValues?.proposalNo || initialValues?.name || initialValues?.code || ''}
+        proposalName={initialValues?.name || ''}
+        companyName={initialValues?.customerName || ''}
         onClose={() => setIsProposalBOMOpen(false)}
       />
     </>

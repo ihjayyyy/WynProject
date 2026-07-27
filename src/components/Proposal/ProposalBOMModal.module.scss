@@ -63,3 +63,26 @@
   padding: 14px 20px;
   border-top: 1px solid #e5e7eb;
 }
+
+.metaRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin-bottom: 12px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.metaItem {
+  font-size: 13px;
+}
+
+.metaLabel {
+  color: #6b7280;
+  font-weight: 500;
+}
+
+.metaValue {
+  color: #111827;
+  font-weight: 600;
+}
