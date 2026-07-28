@@ -210,12 +210,14 @@ export const TableColumns = [
  *      - Warehouse -> Project transfers (and any other direction) keep
  *        using BarcodeService.getByBarcodeWithMaterial(barcode).
  *      Both return the same { material, rack, materialId } shape, so the
- *      rest of the handling below is shared:
+ *      rest of the handling below is shared — including rack info, which is
+ *      now captured for BOTH directions (rack is wherever the scanned
+ *      item's stock physically sits, regardless of transfer direction):
  *      a. Verify the scanned material is part of this transfer's available
  *         balance (materialOptions — requested/allocated balance for
  *         Warehouse→Project, or project on-hand stock for Project→Warehouse).
  *         If not found, the scan is rejected.
- *      b. Auto-fill materialId, name, uom, rackId from the response.
+ *      b. Auto-fill materialId, name, uom, rackId, rackDisplay from the response.
  *      c. Default quantity to 1 (still editable/adjustable by the user).
  *
  * Quantity is only validated as "required, positive" here — there's no
@@ -340,10 +342,13 @@ export const ItemsFields = (materialOptions = [], isWarehouseToProject = false, 
           updateField('name', material.name || matched.name || '');
           updateField('uom', material.unitOfMeasure || material.purchaseUnitOfMeasure || matched.uom || '');
 
-          if (isWarehouseToProject) {
-            updateField('rackId', rack.id || 0);
-            updateField('rackDisplay', rack.code ? `${rack.code} - ${rack.name || ''}`.trim() : (rack.name || ''));
-          }
+          // Rack info reflects wherever the scanned item's stock physically
+          // sits, so it's captured for BOTH transfer directions (previously
+          // this was gated to isWarehouseToProject only, which meant
+          // Project -> Warehouse transfers always saved rackId as 0 even
+          // though getBarcodeWithProject returns a populated `rack` object).
+          updateField('rackId', rack.id || 0);
+          updateField('rackDisplay', rack.code ? `${rack.code} - ${rack.name || ''}`.trim() : (rack.name || ''));
 
           updateField('barcodeMessage', `Matched: ${material.code ? `${material.code} - ` : ''}${material.name || ''}`);
           updateField('quantity', 1);
@@ -355,7 +360,7 @@ export const ItemsFields = (materialOptions = [], isWarehouseToProject = false, 
 
     // Rack id feeds the save payload; rackDisplay is what the user sees.
     { name: 'rackId', label: 'rackId', type: 'number', hidden: true, initialvalue: 0 },
-    // { name: 'rackDisplay', label: 'Rack', type: 'text', readonly: true, span: 'span2', hidden: isProjectToWarehouse },
+    { name: 'rackDisplay', label: 'Rack', type: 'text', readonly: true, span: 'span2' },
 
     {
       name: 'quantity',
