@@ -202,7 +202,15 @@ export const TableColumns = [
  *      item in this transfer (existingItems). The item currently being
  *      edited is excluded from this check via its `id`, so re-saving an
  *      existing item doesn't flag against itself.
- *   2. Otherwise, look up the barcode via BarcodeService.getByBarcodeWithMaterial:
+ *   2. Otherwise, look up the barcode:
+ *      - Project -> Warehouse transfers use
+ *        BarcodeService.getBarcodeWithProject(barcode, projectId), which
+ *        validates the barcode against the *source* project's stock
+ *        (projectId is the transferFrom project id).
+ *      - Warehouse -> Project transfers (and any other direction) keep
+ *        using BarcodeService.getByBarcodeWithMaterial(barcode).
+ *      Both return the same { material, rack, materialId } shape, so the
+ *      rest of the handling below is shared:
  *      a. Verify the scanned material is part of this transfer's available
  *         balance (materialOptions — requested/allocated balance for
  *         Warehouse→Project, or project on-hand stock for Project→Warehouse).
@@ -216,7 +224,7 @@ export const TableColumns = [
  */
 const MIN_BARCODE_LENGTH = 6;
 
-export const ItemsFields = (materialOptions = [], isWarehouseToProject = false, isProjectToWarehouse = false, existingItems = []) => {
+export const ItemsFields = (materialOptions = [], isWarehouseToProject = false, isProjectToWarehouse = false, existingItems = [], projectId = 0) => {
   // Scoped to this ItemsFields() call, which the item-entry modal treats as one
   // in-flight item at a time — safe to share a single debounce timer here.
   let barcodeLookupTimer = null;
@@ -296,7 +304,12 @@ export const ItemsFields = (materialOptions = [], isWarehouseToProject = false, 
             return;
           }
 
-          const res = await BarcodeService.getByBarcodeWithMaterial(value);
+          // Project -> Warehouse transfers validate the barcode against the
+          // source project's stock; every other direction uses the plain
+          // material lookup.
+          const res = isProjectToWarehouse
+            ? await BarcodeService.getBarcodeWithProject(value, projectId)
+            : await BarcodeService.getByBarcodeWithMaterial(value);
 
           if (res.error || !res.data) {
             updateField('barcodeMessage', 'Barcode not found.');

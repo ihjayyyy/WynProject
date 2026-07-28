@@ -80,7 +80,7 @@ export default function MaterialTransferForm() {
   const [formData, setForm] = useState({});
   const [validForm, setValidForm] = useState(false);
   const [tableData, setTableData] = useState({ items: [], deletedItems: [] });
-  const [childFields, setChildFields] = useState(ItemsFields([], false, false, []));
+  const [childFields, setChildFields] = useState(ItemsFields([], false, false, [], 0));
   const [tableError, setTableError] = useState('');
 
   // Dedicated primitives so effects always have the latest values
@@ -261,12 +261,23 @@ export default function MaterialTransferForm() {
   // ── Rebuild child fields ─────────────────────────────────────────────────────
   // Also depends on tableData.items so the barcode "already used" check
   // inside ItemsFields always sees the current list of items in this transfer.
+  // For Project -> Warehouse transfers we also pass transferFromId as the
+  // projectId, so ItemsFields can validate scanned barcodes against that
+  // source project's stock via BarcodeService.getBarcodeWithProject.
 
   useEffect(() => {
     const isWarehouseToProject = transferFromType === 'Warehouse' && transferToType === 'Project';
     const isProjectToWarehouse = transferFromType === 'Project' && transferToType === 'Warehouse';
-    setChildFields(ItemsFields(materialRequestOptions, isWarehouseToProject, isProjectToWarehouse, tableData.items));
-  }, [materialRequestOptions, transferFromType, transferToType, tableData.items]);
+    setChildFields(
+      ItemsFields(
+        materialRequestOptions,
+        isWarehouseToProject,
+        isProjectToWarehouse,
+        tableData.items,
+        isProjectToWarehouse ? transferFromId : 0
+      )
+    );
+  }, [materialRequestOptions, transferFromType, transferToType, tableData.items, transferFromId]);
 
   // ── Form fields ──────────────────────────────────────────────────────────────
 

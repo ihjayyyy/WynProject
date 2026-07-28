@@ -13,7 +13,24 @@ import Select from '../ui/Select/Select';
 import inputStyles from '../ui/Input/Input.module.scss';
 import { useConfirmModal } from "@/app/contextProviders/confirmModalContext";
 
-const ItemModal = ({ headerLabel, mode = "new", itemIndex = -1, isOpen, onClose, fields, onItemRemove, closeOnOutsideClick = false, confirmOnClose = false }) => {
+const ItemModal = ({
+  headerLabel,
+  mode = "new",
+  itemIndex = -1,
+  isOpen,
+  onClose,
+  fields,
+  onItemRemove,
+  closeOnOutsideClick = false,
+  confirmOnClose = false,
+  // When true, the delete/trash button in the footer is hidden even in
+  // "edit" mode. Used for flows like Material Received where removing a
+  // line item from the modal doesn't make sense.
+  hideDeleteButton = false,
+  // Label for the primary action button. Defaults to "Save"; callers like
+  // Material Received pass "Receive" to better reflect the action taken.
+  saveButtonLabel = "Save",
+}) => {
 
   const confirmModal = useConfirmModal();
 
@@ -189,6 +206,11 @@ const ItemModal = ({ headerLabel, mode = "new", itemIndex = -1, isOpen, onClose,
     });
   }, [isOpen, itemFields]);
 
+  // Fields flagged `info: true` are rendered as a read-only summary block
+  // at the top of the modal (e.g. material code/name for Material Received)
+  // instead of as an editable input further down.
+  const infoFields = (itemFields || []).filter((field) => field.info && !field.hidden);
+
   const content = (
     <div className={modalstyle.itemModal} onClick={handleBackdropClick}>
       <div className={modalstyle.modalcontainer} onClick={(e) => e.stopPropagation()}>
@@ -199,8 +221,24 @@ const ItemModal = ({ headerLabel, mode = "new", itemIndex = -1, isOpen, onClose,
           </button>
         </div>
         <div className={modalstyle.modalBody}>
+          {infoFields.length > 0 && (
+            <div
+              className={modalstyle.infoContainer}
+              style={{
+                marginBottom: 16,
+                paddingBottom: 12,
+                borderBottom: '1px solid #eee',
+              }}
+            >
+              {infoFields.map((f) => (
+                <div key={f.name} style={{ fontSize: '0.95rem', marginBottom: 4 }}>
+                  <strong>{f.label}:</strong> {f.value ?? ''}
+                </div>
+              ))}
+            </div>
+          )}
           {itemFields.map((item) => (
-            item.hidden ? null : (
+            item.hidden || item.info ? null : (
               <div key={item.name} className={modalstyle.fieldContainer}>
                 {item.type === "currency" || item.type === "number" ? (
                   <Input
@@ -270,9 +308,9 @@ const ItemModal = ({ headerLabel, mode = "new", itemIndex = -1, isOpen, onClose,
             onClick={handleSave}
             disabled={!isValid}
           >
-            Save
+            {saveButtonLabel}
           </button>
-          {mode !== "new" && (
+          {mode !== "new" && !hideDeleteButton && (
             <Button size="lg" variant="danger" icon={<FiTrash2 />} title="Delete" onClick={() => { handleShowConfirm(itemIndex); }} />
           )}
         </div>

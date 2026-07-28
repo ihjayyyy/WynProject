@@ -17,6 +17,12 @@ export default function DetailsTable({
   parentId = 0,
   showActions = editable,
   allowAdd,
+  // Forwarded straight through to ItemModal. Lets a caller like Material
+  // Received hide the delete/trash button and relabel the primary action
+  // (e.g. "Receive" instead of "Save") without ItemModal needing to know
+  // anything about the specific entity using it.
+  hideDeleteButton = false,
+  saveButtonLabel = 'Save',
 }) {
   const [items, setItems] = useState([]);
   const [deleteditems, setDeletedItems] = useState([]);
@@ -219,6 +225,8 @@ export default function DetailsTable({
         onClose={close}
         fields={[...modalFields]}
         onItemRemove={deleteDataTableItem}
+        hideDeleteButton={hideDeleteButton}
+        saveButtonLabel={saveButtonLabel}
       />
     </div>
   );

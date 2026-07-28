@@ -163,8 +163,34 @@ async function printBarcodes(selectedBarcodes = []) {
   }
 }
 
+async function getBarcodeWithProject(barcode, projectId) {
+  try {
+    const url = `${API_BASE_URL}/GetBarcodeWithProject/${encodeURIComponent(barcode)}/${projectId}`;
+
+    const res = await fetch(url, {
+      method: "GET",
+      headers: {
+        Accept: "*/*",
+      },
+    });
+
+    const json = await res.json();
+
+    return {
+      data: unwrapResponse(json),
+      error: null,
+    };
+  } catch (error) {
+    return {
+      data: null,
+      error: error?.message || error,
+    };
+  }
+}
+
 const BarcodeService = {
   getByBarcodeWithMaterial,
+  getBarcodeWithProject,
   getBarcodes,
   printBarcodes,
   unwrapResponse,

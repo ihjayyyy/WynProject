@@ -46,10 +46,13 @@ export const ItemsFields = (status) => {
     { name: 'id', label: 'id', type: 'number', hidden: true, initialvalue: 0 },
     { name: 'parentId', label: 'parentId', type: 'number', hidden: true, initialvalue: 0 },
 
-    // Carried over from the original transfer — fixed already, not editable here
+    // Carried over from the original transfer — fixed already, not editable here.
+    // `info: true` renders these read-only at the top of the item modal
+    // instead of as hidden fields, so the user can see what material/rack
+    // they're receiving against.
     { name: 'materialId', label: 'materialId', type: 'number', hidden: true, initialvalue: 0 },
-    { name: 'code', label: 'Code', type: 'text', hidden: true },
-    { name: 'name', label: 'Name', type: 'text', hidden: true },
+    { name: 'code', label: 'Material Code', type: 'text', info: true },
+    { name: 'name', label: 'Material Name', type: 'text', info: true },
 
     { name: 'rackId', label: 'rackId', type: 'number', hidden: true, initialvalue: 0 },
     { name: 'rackCode', label: 'rackCode', type: 'text', hidden: true },
@@ -91,6 +94,12 @@ export const ItemsFields = (status) => {
         ? Yup.string().trim().required('Remarks are required for partially received items')
         : Yup.string(),
     },
+
+    // Flags consumed by ItemModal for this flow specifically:
+    // - hides the delete/trash button in the modal footer
+    // - relabels the primary action button from "Save" to "Receive"
+    // These aren't rendered as inputs; ItemModal reads them via itemModalProps
+    // passed down from DetailsTable / MaterialReceivedForm, not from this array.
   ];
 };
 

@@ -41,6 +41,11 @@ export default function MaterialReceivedForm() {
     }
   }, [selectedTransferId, searchParams]);
 
+  // Base list of transfers eligible to be received. This is the ONLY place
+  // that sets `transfers` — the currently-loaded transfer (which may no
+  // longer be "eligible", e.g. already PartiallyReceived) is merged in
+  // separately via `transferOptions` below instead of mutating this state,
+  // to avoid a race between the two async loads clobbering each other.
   useEffect(() => {
     (async () => {
       const res = await getTransferredMaterialTransfers();
@@ -70,17 +75,6 @@ export default function MaterialReceivedForm() {
       const data = res.data || null;
       setTransferData(data);
 
-      // Ensure the transfers options include the currently loaded transfer
-      setTransfers((prev) => {
-        try {
-          if (!data || !data.id) return prev || [];
-          if (Array.isArray(prev) && prev.find((p) => String(p.id) === String(data.id))) return prev;
-          return [data].concat(prev || []);
-        } catch (err) {
-          return prev || [];
-        }
-      });
-
       const children = Array.isArray(data?.children) ? data.children : [];
 
       // Pre-populate table items from transfer children, with receivedQuantity default 0.
@@ -107,6 +101,18 @@ export default function MaterialReceivedForm() {
       setItemFields(ReceivedItemsFields(data?.status));
     })();
   }, [selectedTransferId, toast]);
+
+  // Dropdown option source, derived rather than stored: base "eligible"
+  // transfers, plus the currently loaded transfer if it isn't already in
+  // that list (e.g. it's PartiallyReceived and no longer "eligible").
+  // Deriving this avoids the two-effect race that used to blank the select.
+  const transferOptions = useMemo(() => {
+    const list = Array.isArray(transfers) ? [...transfers] : [];
+    if (transferData?.id && !list.find((t) => String(t.id) === String(transferData.id))) {
+      list.unshift(transferData);
+    }
+    return list;
+  }, [transfers, transferData]);
 
   const isReceived = useMemo(
     () => String(transferData?.status || '').toLowerCase() === 'received',
@@ -146,15 +152,20 @@ export default function MaterialReceivedForm() {
         name: 'transferId',
         label: 'Material Transfer',
         type: 'select',
-        options: (values) => (Array.isArray(transfers) ? transfers.map(t => ({ value: t.id, label: `${ t.transferNumber || t.code || t.name || ''}` })) : []),
+        options: () => transferOptions.map(t => ({ value: t.id, label: `${t.transferNumber || t.code || t.name || ''}` })),
         searchable: true,
+        // Once a transfer is loaded (edit/view of an existing receipt), the
+        // dropdown is locked — you can't reassign which transfer a receipt
+        // is against. Only free to pick when starting a brand-new receipt.
+        readonly: !!transferData,
+        disabled: !!transferData,
         onChange: (val) => {
           setSelectedTransferId(Number(val) || 0);
         },
         validator: Yup.number().typeError('Material Transfer is required').required('Material Transfer is required'),
       }
     ]
-  ), [transfers]);
+  ), [transferOptions, transferData]);
 
   const detailsUpdated = (items, deletedItems) => {
     setTableData({ items, deletedItems });
@@ -243,6 +254,8 @@ export default function MaterialReceivedForm() {
             data={tableData}
             onChange={detailsUpdated}
             emptyMessage={selectedTransferId ? 'No items received yet' : 'Select a material transfer first'}
+            hideDeleteButton
+            saveButtonLabel="Receive"
           />
           {tableError ? <div style={{ color: 'red', marginTop: 8 }}>{tableError}</div> : null}
         </div>
