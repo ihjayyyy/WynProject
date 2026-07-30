@@ -4,7 +4,7 @@ import Image from 'next/image';
 import styles from './LoginForm.module.scss';
 import Button from '../ui/Button/Button';
 import Input from '../ui/Input/Input';
-import { FiUser, FiLock } from 'react-icons/fi';
+import { FiUser, FiLock, FiEye, FiEyeOff } from 'react-icons/fi';
 
 import Logo from '@/assets/logo.jpg';
 
@@ -13,6 +13,7 @@ export default function LoginForm({ onLogin, errorMessage, isLoading }) {
   const [password, setPassword] = useState('');
   const [remember, setRemember] = useState(false);
   const [localError, setLocalError] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -44,16 +45,27 @@ export default function LoginForm({ onLogin, errorMessage, isLoading }) {
         autoComplete="username"
         icon={<FiUser size={20} />}
       />
-      <Input
-        id="login-password"
-        type="password"
-        label="Password"
-        placeholder="••••••••"
-        value={password}
-        onChange={(e) => setPassword(e.target.value)}
-        autoComplete="current-password"
-        icon={<FiLock size={20} />}
-      />
+      <div style={{ position: 'relative' }}>
+        <Input
+          id="login-password"
+          type={showPassword ? 'text' : 'password'}
+          label="Password"
+          placeholder="••••••••"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          autoComplete="current-password"
+          icon={<FiLock size={20} />}
+        />
+        <button
+          type="button"
+          onClick={() => setShowPassword((prev) => !prev)}
+          aria-label={showPassword ? 'Hide password' : 'Show password'}
+          title={showPassword ? 'Hide password' : 'Show password'}
+          className={styles.togglePasswordBtn}
+        >
+          {showPassword ? <FiEyeOff size={20} /> : <FiEye size={20} />}
+        </button>
+      </div>
       <div className={styles.optionsRow}>
         <label className={styles.checkboxLabel}>
           <input

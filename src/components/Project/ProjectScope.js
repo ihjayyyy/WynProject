@@ -9,6 +9,7 @@ import ProjectScopeModal from './ProjectScopeModal';
 import ProjectMaterialModal from './ProjectMaterialModal';
 import ConfirmModal from '../ui/ConfirmModal/ConfirmModal';
 import ProjectBOMModal from './ProjectBOMModal';
+import DropdownAction from '../ui/DropdownAction/DropdownAction';
 import { getByProjectId, createProjectScope, updateProjectScope } from '../../services/ProjectScope';
 import { updateCompletedQuantity } from '../../services/ProjectMaterial';
 import { printCompletion_byId } from '@/services/Project';
@@ -115,6 +116,7 @@ export default function ProjectScope({ projectId = 0, editable = true, projectSt
   const [isCompletedQtyModalOpen, setIsCompletedQtyModalOpen] = useState(false);
   const [completedQtyTarget, setCompletedQtyTarget] = useState(null);
   const [completedQtyValue, setCompletedQtyValue] = useState(0);
+  const [completedQtyError, setCompletedQtyError] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
   const [localItems, setLocalItems] = useState([]);
   const [deletedChildren, setDeletedChildren] = useState([]);
@@ -130,6 +132,9 @@ export default function ProjectScope({ projectId = 0, editable = true, projectSt
   const [isBomModalOpen, setIsBomModalOpen] = useState(false);
 
   const [scopesList, setScopesList] = useState([]);
+
+  // The max a material's completed quantity is allowed to reach: its own project (ordered) quantity.
+  const completedQtyMax = completedQtyTarget ? (Number(completedQtyTarget.quantity) || 0) : 0;
 
   const loadData = useCallback(async () => {
     if (!projectId) return;
@@ -245,29 +250,50 @@ export default function ProjectScope({ projectId = 0, editable = true, projectSt
       header: 'Actions',
       key: '__actions',
       align: 'right',
-      width: '140px',
+      width: '60px',
       render: (it) => {
         if (!it || it.isTotalRow || it.fullRow) return null;
-        return (
-          <div className={styles.actionCell}>
-            <Button size="sm" variant="outlinedPrimary" icon={<FiEdit2 />} title="Edit" onClick={() => { setMaterialEditing(it); setMaterialScopeTarget(it.scopeOfWork || 'General'); setIsMaterialModalOpen(true); }} />
-            <Button size="sm" variant="danger" icon={<FiTrash2 />} title="Delete" onClick={() => {
+
+        const menuItems = [
+          {
+            key: 'edit',
+            label: 'Edit',
+            icon: <FiEdit2 />,
+            onClick: () => {
+              setMaterialEditing(it);
+              setMaterialScopeTarget(it.scopeOfWork || 'General');
+              setIsMaterialModalOpen(true);
+            },
+          },
+          {
+            key: 'delete',
+            label: 'Delete',
+            icon: <FiTrash2 />,
+            destructive: true,
+            onClick: () => {
               setConfirmTarget(it);
               setIsConfirmOpen(true);
-            }} />
-            {isOngoing && (
-              <Button
-                size="sm"
-                variant="success"
-                icon={<FiCheckCircle size={20} color="#22c55e" />} // Tailwind green-500
-                title="Update Completed Quantity"
-                onClick={() => {
-                  setCompletedQtyTarget(it);
-                  setCompletedQtyValue(it.completedQuantity ?? 0);
-                  setIsCompletedQtyModalOpen(true);
-                }}
-              />
-            )}
+            },
+          },
+        ];
+
+        if (isOngoing) {
+          menuItems.push({
+            key: 'update-qty',
+            label: 'Update Completed Qty',
+            icon: <FiCheckCircle color="#22c55e" />,
+            onClick: () => {
+              setCompletedQtyTarget(it);
+              setCompletedQtyValue(it.completedQuantity ?? 0);
+              setCompletedQtyError('');
+              setIsCompletedQtyModalOpen(true);
+            },
+          });
+        }
+
+        return (
+          <div className={styles.actionCell}>
+            <DropdownAction item={it} items={menuItems} />
           </div>
         );
       }
@@ -364,21 +390,32 @@ export default function ProjectScope({ projectId = 0, editable = true, projectSt
 <ConfirmModal
                 open={isCompletedQtyModalOpen}
                 title="Update Completed Quantity"
-                message={completedQtyTarget ? `Set completed quantity for \"${completedQtyTarget.name || completedQtyTarget.code || ''}\"` : ''}
+                message={completedQtyTarget ? `Set completed quantity for \"${completedQtyTarget.name || completedQtyTarget.code || ''}\" (max ${completedQtyMax})` : ''}
                 confirmText="Save"
                 confirmVariant="success"
-                onCancel={() => { setIsCompletedQtyModalOpen(false); setCompletedQtyTarget(null); }}
+                onCancel={() => { setIsCompletedQtyModalOpen(false); setCompletedQtyTarget(null); setCompletedQtyError(''); }}
                 onConfirm={async () => {
                   if (!isOngoing) {
                     window.alert('Project must be Ongoing to update completed quantity.');
                     setIsCompletedQtyModalOpen(false);
                     setCompletedQtyTarget(null);
+                    setCompletedQtyError('');
                     return;
                   }
                   if (completedQtyTarget) {
-                    const res = await updateCompletedQuantity(completedQtyTarget.id, Number(completedQtyValue));
+                    const nextVal = Number(completedQtyValue);
+                    if (!Number.isFinite(nextVal) || nextVal < 0) {
+                      setCompletedQtyError('Please enter a valid quantity.');
+                      return;
+                    }
+                    if (nextVal > completedQtyMax) {
+                      setCompletedQtyError(`Completed quantity cannot exceed the project quantity (${completedQtyMax}).`);
+                      return;
+                    }
+                    const res = await updateCompletedQuantity(completedQtyTarget.id, nextVal);
                     setIsCompletedQtyModalOpen(false);
                     setCompletedQtyTarget(null);
+                    setCompletedQtyError('');
                     if (!res.error) {
                       await loadData();
                       onCompletedQtyUpdated && onCompletedQtyUpdated();
@@ -390,11 +427,23 @@ export default function ProjectScope({ projectId = 0, editable = true, projectSt
                   <Input
                     type="number"
                     min={0}
+                    max={completedQtyMax}
                     value={completedQtyValue}
-                    onChange={e => setCompletedQtyValue(e.target.value)}
+                    onChange={e => {
+                      setCompletedQtyValue(e.target.value);
+                      if (completedQtyError) setCompletedQtyError('');
+                    }}
                     autoFocus
                     id="completed-qty-input"
                   />
+                  <div style={{ marginTop: '6px', fontSize: '0.85rem', color: '#8a8a8a' }}>
+                    Project quantity: {completedQtyMax}
+                  </div>
+                  {completedQtyError && (
+                    <div style={{ marginTop: '6px', fontSize: '0.85rem', color: '#e5484d' }}>
+                      {completedQtyError}
+                    </div>
+                  )}
                 </div>
               </ConfirmModal>
 

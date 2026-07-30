@@ -1,5 +1,8 @@
 import React, { useEffect, useState, useContext } from 'react';
 import * as Yup from 'yup';
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
+import { FiDownload } from 'react-icons/fi';
 import {
   getProjectFinanceByProjectId,
   updateProjectFinance,
@@ -193,9 +196,10 @@ export default function ProjectFinanceTab({ projectId, project, projectStatus, e
 
   const todayLabel = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: '2-digit' });
 
-  const renderFinancialStatement = () => {
-    if (statementLoading) return <div>Loading financial statement...</div>;
-    if (!statement) return <div>No financial statement available.</div>;
+  // Shared builder so both the on-screen table and the PDF export use
+  // identical rows/labels/values.
+  const getStatementRows = () => {
+    if (!statement) return [];
 
     const {
       totalContractPrice = 0,
@@ -207,6 +211,21 @@ export default function ProjectFinanceTab({ projectId, project, projectStatus, e
       net = 0,
     } = statement;
 
+    return [
+      { label: 'Total Contract Price', debit: totalContractPrice, credit: null },
+      { label: 'Less', debit: null, credit: null, bold: true },
+      { label: 'BOM', debit: null, credit: bom },
+      { label: 'Labor', debit: null, credit: labor },
+      { label: 'Trips', debit: null, credit: trips },
+      { label: 'Other Expenses', debit: null, credit: otherExpenses },
+      { label: '', debit: totalContractPrice, credit: total, isTotalRow: true },
+      { label: 'Net', debit: null, credit: net, bold: true },
+    ];
+  };
+
+  const renderFinancialStatement = () => {
+    if (statementLoading) return <div>Loading financial statement...</div>;
+    if (!statement) return <div>No financial statement available.</div>;
 
     const statementColumns = [
       {
@@ -235,21 +254,7 @@ export default function ProjectFinanceTab({ projectId, project, projectStatus, e
       },
     ];
 
-    const statementData = [
-      { label: 'Total Contract Price', debit: totalContractPrice, credit: null },
-      { label: 'Less', debit: null, credit: null, bold: true },
-      { label: 'BOM', debit: null, credit: bom },
-      { label: 'Labor', debit: null, credit: labor },
-      { label: 'Trips', debit: null, credit: trips },
-      { label: 'Other Expenses', debit: null, credit: otherExpenses },
-      { label: '', debit: totalContractPrice, credit: total, isTotalRow: true },
-      {
-        label: 'Net',
-        debit: null,
-        credit: net,
-        bold: true,
-      },
-    ];
+    const statementData = getStatementRows();
 
     return (
       <DataTable
@@ -260,6 +265,89 @@ export default function ProjectFinanceTab({ projectId, project, projectStatus, e
         emptyMessage="No financial statement available."
       />
     );
+  };
+
+  const handleDownloadStatementPdf = () => {
+    const statementData = getStatementRows();
+    if (!statementData.length) return;
+
+    const doc = new jsPDF({
+      orientation: 'portrait',
+      unit: 'mm',
+      format: 'a4',
+    });
+
+    const pageWidth = doc.internal.pageSize.getWidth();
+    const projectLabel = [project?.code, project?.name].filter(Boolean).join(' — ');
+
+    doc.setFontSize(16);
+    doc.text('Financial Statement', 14, 16);
+
+    doc.setFontSize(10);
+    if (projectLabel) {
+      doc.text(`Project: ${projectLabel}`, 14, 22);
+    }
+
+    doc.text(`As of: ${todayLabel}`, pageWidth - 14, 16, { align: 'right' });
+    doc.text(
+      `Generated: ${new Date().toLocaleString()}`,
+      pageWidth - 14,
+      22,
+      { align: 'right' }
+    );
+
+    const pdfHeaders = ['', 'Debit', 'Credit'];
+
+    const pdfBody = statementData.map((row) => [
+      row.label || '',
+      row.debit != null ? fmt(row.debit) : '',
+      row.credit != null ? fmt(row.credit) : '',
+    ]);
+
+    autoTable(doc, {
+      startY: 28,
+      head: [pdfHeaders],
+      body: pdfBody,
+      styles: {
+        fontSize: 9,
+        cellPadding: 2.5,
+        overflow: 'linebreak',
+        valign: 'middle',
+      },
+      headStyles: {
+        fillColor: [243, 244, 246],
+        textColor: [17, 24, 39],
+        lineColor: [209, 213, 219],
+        lineWidth: 0.2,
+      },
+      bodyStyles: {
+        lineColor: [229, 231, 235],
+        lineWidth: 0.2,
+      },
+      columnStyles: {
+        0: { cellWidth: 90 },
+        1: { halign: 'right', cellWidth: 45 },
+        2: { halign: 'right', cellWidth: 45 },
+      },
+      // Bold the "Less", the totals row, and "Net" to mirror the on-screen table
+      didParseCell: (data) => {
+        const rowData = statementData[data.row.index];
+        if (rowData && (rowData.bold || rowData.isTotalRow)) {
+          data.cell.styles.fontStyle = 'bold';
+        }
+        if (rowData && rowData.isTotalRow) {
+          data.cell.styles.lineWidth = { top: 0.4 };
+        }
+      },
+      margin: { left: 14, right: 14 },
+      theme: 'grid',
+    });
+
+    const safeLabel = (projectLabel || `project-${projectId}`)
+      .toString()
+      .replace(/[^a-z0-9-_]+/gi, '-');
+
+    doc.save(`financial-statement-${safeLabel}.pdf`);
   };
 
   if (loading) return <div>Loading...</div>;
@@ -428,6 +516,16 @@ export default function ProjectFinanceTab({ projectId, project, projectStatus, e
       <>
         <div className={styles.panelHeader}>
           <h3>Financial Statement</h3>
+          <div className={styles.panelActions}>
+            <Button
+              variant="secondary"
+              icon={<FiDownload size={14} />}
+              onClick={handleDownloadStatementPdf}
+              disabled={statementLoading || !statement}
+            >
+              Download PDF
+            </Button>
+          </div>
         </div>
         <div>
           {renderFinancialStatement()}

@@ -46,6 +46,7 @@ export default function Input({
       {label && <label htmlFor={id}>{label}</label>}
       <div className={styles.inputIconWrap}>
         {icon && <span className={styles.inputIcon}>{icon}</span>}
+
         {multiline ? (
           <textarea
             className={`${styles.input} ${inputClassName || ''}`}
@@ -66,13 +67,16 @@ export default function Input({
                 className={styles.fileButton}
                 onClick={() => inputRef.current && inputRef.current.click()}
                 aria-label="Upload file"
-                title="Upload file">
+                title="Upload file"
+              >
                 <FiUpload size={18} />
               </button>
             )}
+
             <span className={styles.fileName} title={fileName}>
               {fileName || 'No file chosen'}
             </span>
+
             <input
               ref={inputRef}
               className={`${styles.inputFile} ${inputClassName || ''}`}
@@ -89,7 +93,6 @@ export default function Input({
             className={`${styles.input} ${inputClassName || ''}`}
             id={id}
             type={type}
-            // For date inputs, prefer the provided value; fall back to today only when value is empty
             value={
               type === 'date'
                 ? value || today
@@ -98,16 +101,33 @@ export default function Input({
                 : value
             }
             onChange={onChange}
+            onWheel={
+              type === 'number'
+                ? (e) => e.target.blur()
+                : undefined
+            }
             onBlur={
               type === 'number'
                 ? (e) => {
                     setIsFocused(false);
                     const formatted = formatNumberValue(e.target.value);
+
                     if (onChange) {
-                      onChange({ target: { name: e.target.name, value: formatted } });
+                      onChange({
+                        target: {
+                          name: e.target.name,
+                          value: formatted,
+                        },
+                      });
                     }
+
                     if (onBlur) {
-                      onBlur({ target: { name: e.target.name, value: formatted } });
+                      onBlur({
+                        target: {
+                          name: e.target.name,
+                          value: formatted,
+                        },
+                      });
                     }
                   }
                 : onBlur
@@ -116,11 +136,17 @@ export default function Input({
               type === 'number'
                 ? (e) => {
                     setIsFocused(true);
+
                     if (Number(e.target.value) === 0) {
-                      onChange &&
-                        onChange({ target: { name: e.target.name, value: '' } });
+                      onChange?.({
+                        target: {
+                          name: e.target.name,
+                          value: '',
+                        },
+                      });
                     }
-                    if (props.onFocus) props.onFocus(e);
+
+                    props.onFocus?.(e);
                   }
                 : props.onFocus
             }

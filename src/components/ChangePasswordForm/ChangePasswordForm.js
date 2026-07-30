@@ -6,10 +6,12 @@ import Image from 'next/image';
 import styles from '../LoginForm/LoginForm.module.scss';
 import Button from '../ui/Button/Button';
 import Input from '../ui/Input/Input';
-import { FiMail, FiLock } from 'react-icons/fi';
+import { FiMail, FiLock, FiEye, FiEyeOff } from 'react-icons/fi';
 import { changePassword } from '../../services/User';
 
 import Logo from '@/assets/logo.jpg';
+
+
 
 export default function ChangePasswordForm() {
   const router = useRouter();
@@ -20,6 +22,8 @@ export default function ChangePasswordForm() {
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
+  const [showCurrentPassword, setShowCurrentPassword] = useState(false);
+  const [showNewPassword, setShowNewPassword] = useState(false);
 
   useEffect(() => {
     const initialEmail = searchParams.get('email');
@@ -99,26 +103,48 @@ export default function ChangePasswordForm() {
         autoComplete="username"
         icon={<FiMail size={20} />}
       />
-      <Input
-        id="current-password"
-        type="password"
-        label="Current password"
-        placeholder="••••••••"
-        value={password}
-        onChange={(e) => setPassword(e.target.value)}
-        autoComplete="current-password"
-        icon={<FiLock size={20} />}
-      />
-      <Input
-        id="new-password"
-        type="password"
-        label="New password"
-        placeholder="••••••••"
-        value={newPassword}
-        onChange={(e) => setNewPassword(e.target.value)}
-        autoComplete="new-password"
-        icon={<FiLock size={20} />}
-      />
+      <div style={{ position: 'relative' }}>
+        <Input
+          id="current-password"
+          type={showCurrentPassword ? 'text' : 'password'}
+          label="Current password"
+          placeholder="••••••••"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          autoComplete="current-password"
+          icon={<FiLock size={20} />}
+        />
+        <button
+          type="button"
+          onClick={() => setShowCurrentPassword((prev) => !prev)}
+          aria-label={showCurrentPassword ? 'Hide password' : 'Show password'}
+          title={showCurrentPassword ? 'Hide password' : 'Show password'}
+          className={styles.togglePasswordBtn}  
+        >
+          {showCurrentPassword ? <FiEyeOff size={20} /> : <FiEye size={20} />}
+        </button>
+      </div>
+      <div style={{ position: 'relative' }}>
+        <Input
+          id="new-password"
+          type={showNewPassword ? 'text' : 'password'}
+          label="New password"
+          placeholder="••••••••"
+          value={newPassword}
+          onChange={(e) => setNewPassword(e.target.value)}
+          autoComplete="new-password"
+          icon={<FiLock size={20} />}
+        />
+        <button
+          type="button"
+          onClick={() => setShowNewPassword((prev) => !prev)}
+          aria-label={showNewPassword ? 'Hide password' : 'Show password'}
+          title={showNewPassword ? 'Hide password' : 'Show password'}
+          className={styles.togglePasswordBtn}  
+        >
+          {showNewPassword ? <FiEyeOff size={20} /> : <FiEye size={20} />}
+        </button>
+      </div>
       <Button type="submit" className={styles.signinBtn} disabled={isLoading}>
         {isLoading ? 'Changing password…' : 'Change Password'}
       </Button>

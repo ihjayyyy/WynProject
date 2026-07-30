@@ -110,3 +110,16 @@
   font-size: $font-size-sm;
   text-align: center;
 }
+
+.togglePasswordBtn {
+  position: absolute;
+  right: 12px;
+  top: 38px;
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  color: #8a8a8a;
+  transition: color 0.2s; }

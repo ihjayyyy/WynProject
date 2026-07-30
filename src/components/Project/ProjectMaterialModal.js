@@ -1,8 +1,10 @@
 "use client";
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState, useContext } from 'react';
 import * as Yup from 'yup';
 import ItemModal from '../ItemDetails/itemModal';
 import { byTypeMaterials } from '../../services/Materials';
+import { AccessContext } from '@/app/contextProviders/accessContext';
+
 
 const DEFAULT_FORM = {
   id: 0,
@@ -33,10 +35,16 @@ const DEFAULT_FORM = {
 
 export default function ProjectMaterialModal({ open, initial = {}, onCancel, onConfirm, keepOpenOnSave = false }) {
   const [resetKey, setResetKey] = useState(0);
+  const PageName = 'Projects.Projects';
+
   const [form, setForm] = useState({
     ...DEFAULT_FORM,
     ...initial,
   });
+  const { isAllowed } = useContext(AccessContext);
+
+  // Permission flag: controls whether finance-sensitive fields (e.g. Discount) can be edited.
+  const canEditFinance = isAllowed(PageName, 'f');
 
   useEffect(() => {
     setForm({
@@ -284,7 +292,7 @@ export default function ProjectMaterialModal({ open, initial = {}, onCancel, onC
     },
     {
       name: 'quantity',
-      label: minQuantity > 0 ? `Quantity (Editable, min ${minQuantity})` : 'Quantity (Editable)',
+      label: minQuantity > 0 ? `Quantity (Editable, min ${minQuantity})` : 'Quantity',
       type: 'number',
       value: Number(calculatedForm.quantity) || 0,
       validator:
@@ -322,8 +330,10 @@ export default function ProjectMaterialModal({ open, initial = {}, onCancel, onC
       label: 'Discount (Editable)',
       type: 'number',
       value: Number(calculatedForm.discount) || 0,
+      readonly: !canEditFinance,
       validator: Yup.number().min(0).notRequired(),
       onChange: (item, updateField, itemFields, nextValue) => {
+        if (!canEditFinance) return; // guard against programmatic/keyboard edits when locked
         const uc = Number(itemFields.find((f) => f.name === 'unitCost')?.value) || 0;
         const qty = Number(itemFields.find((f) => f.name === 'quantity')?.value) || 0;
         const pct = Number(itemFields.find((f) => f.name === 'laborPercentage')?.value) || 0;
@@ -357,7 +367,7 @@ export default function ProjectMaterialModal({ open, initial = {}, onCancel, onC
     { name: 'laborPercentage', label: 'Labor Percentage', type: 'number', value: Number(calculatedForm.laborPercentage) || 0, hidden: true, validator: Yup.number().notRequired() },
     { name: 'completedQuantity', label: 'Completed Quantity', type: 'number', value: Number(calculatedForm.completedQuantity) || 0, hidden: true, validator: Yup.number().notRequired() },
   ];
-  }, [calculatedForm, materials, applyMaterialSelect, materialCategory, minQuantity]);
+  }, [calculatedForm, materials, applyMaterialSelect, materialCategory, minQuantity, canEditFinance]);
 
   return (
     <ItemModal
