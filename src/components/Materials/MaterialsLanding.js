@@ -247,6 +247,7 @@ export default function MaterialsLanding() {
         width="320px"
         filterFn={filterFn}
         belowStatsAddon={typeToggle}
+        loading={loadingMaterials}
       />
 
       <ItemModal

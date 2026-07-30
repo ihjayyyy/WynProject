@@ -43,13 +43,14 @@ const baseColumns = [
 export default function OrdersLanding() {
   const PageName = 'Purchase.Orders';
   const { isAllowed } = useContext(AccessContext);
-
+  const [loading, setLoading] = useState(true);
   const router = useRouter();
   const [orders, setOrders] = useState([]);
 
   const getPO = async () => {
     const pos = await GetAll();
     setOrders(pos.data);
+    setLoading(false);
   };
   useEffect(() => {
     getPO();
@@ -162,6 +163,7 @@ export default function OrdersLanding() {
       emptyMessage="No orders found"
       width="320px"
       filterFn={filterFn}
+      loading={loading}
     />
   ) : (
     <InvalidPage />

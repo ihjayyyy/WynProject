@@ -43,6 +43,7 @@ export default function InventoryMovementLanding() {
   const [movements, setMovements] = useState([]);
   const [racks, setRacks] = useState([]);
   const [materials, setMaterials] = useState([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     let cancelled = false;
@@ -70,6 +71,7 @@ export default function InventoryMovementLanding() {
 
       if (!materialRes?.error) setMaterials(Array.isArray(materialRes?.data) ? materialRes.data : []);
       else setMaterials([]);
+      setLoading(false);
     };
 
     loadData();
@@ -181,6 +183,7 @@ export default function InventoryMovementLanding() {
       emptyMessage="No inventory movements found"
       width="320px"
       filterFn={filterFn}
+      loading={loading}
     />
   );
 }

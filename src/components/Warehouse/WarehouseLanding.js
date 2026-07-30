@@ -89,6 +89,7 @@ export default function WarehouseLanding() {
       emptyMessage="No warehouses found"
       width="320px"
       filterFn={filterFn}
+      loading={loading}
     />
   );
 }

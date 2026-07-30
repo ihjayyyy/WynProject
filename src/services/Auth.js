@@ -17,7 +17,7 @@ export async function login(payload) {
 
 export function storeAuthData(authData) {
   try {
-    sessionStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(authData));
+    localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(authData));
     return { success: true, error: null };
   } catch (storageError) {
     console.warn('Unable to persist auth data:', storageError);
@@ -27,7 +27,7 @@ export function storeAuthData(authData) {
 
 export function getAuthData() {
   try {
-    const authData = sessionStorage.getItem(AUTH_STORAGE_KEY);
+    const authData = localStorage.getItem(AUTH_STORAGE_KEY);
     return authData ? JSON.parse(authData) : null;
   } catch (error) {
     console.warn('Unable to retrieve auth data:', error);
@@ -37,7 +37,7 @@ export function getAuthData() {
 
 export function clearAuthData() {
   try {
-    sessionStorage.removeItem(AUTH_STORAGE_KEY);
+    localStorage.removeItem(AUTH_STORAGE_KEY);
     return { success: true, error: null };
   } catch (error) {
     console.warn('Unable to clear auth data:', error);

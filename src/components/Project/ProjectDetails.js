@@ -112,7 +112,7 @@ export default function ProjectDetails() {
     return true;
   };
 
-  const tabs = ['Details', 'Finance', 'Project Scope & Materials', 'Expenses', 'Trip Tickets', 'Staff', 'Attendance', 'Material Requests', 'Billing & Collection'];
+  const tabs = ['Details', 'Finance', 'Scope & Materials', 'Expenses', 'Trip Tickets', 'Staff', 'Attendance', 'Material Requests', 'Billing & Collection'];
 
   return (
     <div className={styles.wrap}>
@@ -361,9 +361,9 @@ export default function ProjectDetails() {
     editable={canWrite && tabEditable('Finance')}
   />
 )}
-         {activeTab === 'Project Scope & Materials' && <ProjectScope
+         {activeTab === 'Scope & Materials' && <ProjectScope
                 projectId={project.id}
-                editable={canWrite && tabEditable('Project Scope & Materials')}
+                editable={canWrite && tabEditable('Scope & Materials')}
                 projectStatus={projectStatus}
                 onCompletedQtyUpdated={async () => {
                   try {

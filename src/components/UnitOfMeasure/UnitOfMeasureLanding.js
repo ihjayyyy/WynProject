@@ -70,6 +70,7 @@ export default function UnitOfMeasureLanding() {
       emptyMessage="No units found"
       width="320px"
       filterFn={filterFn}
+      loading={loading}
     />
   );
 }

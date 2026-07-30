@@ -22,9 +22,11 @@ const baseColumns = [
   { header: 'Name', key: 'name' },
   { header: 'Customer', key: 'customerName' },
   { header: 'Contact', key: 'contactNumber' },
-  { header: 'Total', key: 'proposalTotal', render: (item) => (
-    <div style={{ textAlign: 'right' }}>{item?.proposalTotal ?? ''}</div>
-  ) },
+  { header: 'Total', key: 'proposalTotal',  render: (item) => (
+    <div style={{ textAlign: 'right' }}>
+      {item.proposalTotal ? Number(item.proposalTotal).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : ''}
+    </div>
+  )},
   { header: 'Status', key: 'proposalStatus', render: (item) => <StatusBadge status={item.proposalStatus} /> },
   {
     header: 'Project Created',

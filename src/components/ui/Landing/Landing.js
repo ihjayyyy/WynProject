@@ -65,6 +65,29 @@ export function applyLandingFilters(data = [], filters = [], filterValues = {}) 
   });
 }
 
+// ── Skeleton pieces ──────────────────────────────────────────────
+
+function SkeletonStatsGrid({ count = 4, gridStyle }) {
+  return (
+    <div className={styles.statsSection} style={gridStyle}>
+      {Array.from({ length: count }).map((_, i) => (
+        <div key={i} className={styles.skeletonCard} />
+      ))}
+    </div>
+  );
+}
+
+function SkeletonTable({ rows = 6 }) {
+  return (
+    <div className={styles.skeletonTableWrap}>
+      <div className={styles.skeletonTableHeader} />
+      {Array.from({ length: rows }).map((_, i) => (
+        <div key={i} className={styles.skeletonRow} />
+      ))}
+    </div>
+  );
+}
+
 export default function Landing({
   title,
   data = [],
@@ -83,6 +106,10 @@ export default function Landing({
   onFilterChange,
   onClearFilters,
   hasActiveFilters = false,
+  loading = false,
+  statsLoading = loading,
+  tableLoading = loading,
+  skeletonRows = 6,
 }) {
   const [searchTerm, setSearchTerm] = useState('');
 
@@ -177,17 +204,25 @@ export default function Landing({
         </div>
       </div>
 
-      <div className={styles.statsSection} style={statsGridStyle}>
-        {stats.map((s) => (
-          <StatsCard key={s.key} number={s.number} label={s.label} change={s.change} isPositive={s.isPositive} />
-        ))}
-      </div>
+      {statsLoading ? (
+        <SkeletonStatsGrid count={Math.min(Math.max((stats || []).length, 1), 4)} gridStyle={statsGridStyle} />
+      ) : (
+        <div className={styles.statsSection} style={statsGridStyle}>
+          {stats.map((s) => (
+            <StatsCard key={s.key} number={s.number} label={s.label} change={s.change} isPositive={s.isPositive} />
+          ))}
+        </div>
+      )}
 
       {generatedFilters ? <div className={styles.belowStatsAddon}>{generatedFilters}</div> : null}
       {belowStatsAddon ? <div className={styles.belowStatsAddon}>{belowStatsAddon}</div> : null}
 
       <div className={styles.tableSection}>
-        <DataTable columns={columns} data={filtered} showActions={false} emptyMessage={emptyMessage} />
+        {tableLoading ? (
+          <SkeletonTable rows={skeletonRows} />
+        ) : (
+          <DataTable columns={columns} data={filtered} showActions={false} emptyMessage={emptyMessage} />
+        )}
       </div>
     </div>
   );

@@ -21,16 +21,20 @@ const baseColumns = [
 export default function StaffLanding() {
   const [staffs, setStaffs] = useState([]);
   const router = useRouter();
+  const [loading, setLoading] = useState(true);
 
   React.useEffect(() => {
+    setLoading(true);
     let mounted = true;
     (async () => {
       const res = await getStaffs();
       if (!mounted) return;
       if (res.error) {
         setStaffs([]);
+        setLoading(false);
       } else {
         setStaffs(res.data || []);
+        setLoading(false);
       }
     })();
     return () => (mounted = false);
@@ -83,6 +87,7 @@ export default function StaffLanding() {
       emptyMessage="No staff found"
       width="320px"
       filterFn={filterFn}
+      loading={loading}
     />
   );
 }

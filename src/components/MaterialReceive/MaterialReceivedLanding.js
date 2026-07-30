@@ -126,7 +126,6 @@ export default function MaterialReceivedLanding() {
               setIsConfirmOpen(true);
             }});
           }
-
           return <DropdownAction item={item} items={itemsFor} />;
         },
       },

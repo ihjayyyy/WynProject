@@ -20,9 +20,11 @@ const baseColumns = [
 export default function AssemblyLanding() {
   const router = useRouter();
   const [assemblies, setAssemblies] = useState([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     let cancelled = false;
+    setLoading(true);
     (async () => {
       try {
         const res = await byTypeMaterials({ isAssembly: true });
@@ -31,6 +33,7 @@ export default function AssemblyLanding() {
           setAssemblies(items);
         }
       } catch (e) {}
+      setLoading(false);
     })();
     return () => { cancelled = true; };
   }, []);
@@ -83,6 +86,7 @@ export default function AssemblyLanding() {
       emptyMessage="No assembly records found"
       width="320px"
       filterFn={filterFn}
+      loading={loading}
     />
   );
 }

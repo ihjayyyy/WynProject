@@ -35,6 +35,7 @@ const baseColumns = [
 
 export default function SalesBillingLanding() {
   const [billings, setBillings] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
   const router = useRouter();
   const confirmModal = useConfirmModal();
   const toast = useToast();
@@ -49,13 +50,17 @@ export default function SalesBillingLanding() {
   });
 
   useEffect(() => {
+    let mounted = true;
     SalesBillingService.getSalesBilling().then(({ data, error }) => {
+      if (!mounted) return;
       if (!error && Array.isArray(data)) {
         setBillings(data);
       } else if (!error && data) {
         setBillings(Array.isArray(data) ? data : [data]);
       }
+      setIsLoading(false);
     });
+    return () => { mounted = false; };
   }, []);
 
   const handleCancel = useCallback((item) => {
@@ -277,6 +282,7 @@ export default function SalesBillingLanding() {
         emptyMessage="No billings found"
         width="320px"
         filterFn={filterFn}
+        loading={isLoading}
       />
 
       <ConfirmModal

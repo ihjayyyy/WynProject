@@ -42,13 +42,14 @@ const baseColumns = [
 
 export default function MaterialRequestLanding() {
   const [requests, setRequests] = useState([]);
-
+  const [loading, setLoading] = useState(true);
   useEffect(() => {
     let cancelled = false;
     (async () => {
       try {
         const res = await getMaterialRequests();
         if (!cancelled && !res?.error) setRequests(res.data || []);
+        setLoading(false);
       } catch (e) {}
     })();
     return () => { cancelled = true; };
@@ -93,6 +94,7 @@ export default function MaterialRequestLanding() {
       width="320px"
       filterFn={filterFn}
       hideNewButton
+      loading={loading}
     />
   );
 }

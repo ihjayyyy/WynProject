@@ -12,9 +12,18 @@
 }
 
 .richTextGrid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 16px;
+  column-count: 2;
+  column-gap: 16px;
+  > * {
+    break-inside: avoid;
+    margin-bottom: 16px;
+    display: inline-block;
+    width: 100%;
+  }
+
+  @media (max-width: 900px) {
+    column-count: 1;
+  }
 }
 .fullRow {
   width: 100%;

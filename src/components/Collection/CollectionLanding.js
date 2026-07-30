@@ -42,16 +42,21 @@ const baseColumns = [
 
 export default function CollectionLanding() {
   const [collections, setCollections] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
   const router = useRouter();
   const confirmModal = useConfirmModal();
   const toast = useToast();
 
   useEffect(() => {
+    let mounted = true;
     CollectionService.getCollections().then(({ data, error }) => {
+      if (!mounted) return;
       if (!error && data) {
         setCollections(Array.isArray(data) ? data : [data]);
       }
+      setIsLoading(false);
     });
+    return () => { mounted = false; };
   }, []);
 
   const refetchCollections = useCallback(async () => {
@@ -253,6 +258,7 @@ export default function CollectionLanding() {
       emptyMessage="No collections found"
       width="320px"
       filterFn={filterFn}
+      loading={isLoading}
     />
   );
 }

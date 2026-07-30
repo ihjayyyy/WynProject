@@ -23,6 +23,7 @@ import RichTextEditor from '../ui/RichTextEditor/RichTextEditor';
 import formStyles from './ProposalForm.module.scss';
 import ProposalBOMModal from './ProposalBOMModal';
 import { useConfirmModal } from '@/app/contextProviders/confirmModalContext';
+import DropdownAction from '../ui/DropdownAction/DropdownAction';
 
 export default function ProposalForm() {
   const PageName = 'Projects.Proposal';
@@ -854,218 +855,257 @@ export default function ProposalForm() {
         showSubmitButton={false}
         readOnly={isReadOnly || !isAllowed(PageName, 'w')}
         headerActions={(() => {
-          const proposalStatus = String(initialValues?.proposalStatus || '').toLowerCase();
-          const isDraftStatus = proposalStatus === 'draft';
-          const isSubmitted = proposalStatus === 'submitted';
-          const isApproved = proposalStatus === 'approved';
-          const isRejected = proposalStatus === 'rejected';
-          const isWon = proposalStatus === 'won' || proposalStatus === 'win';
-          const shouldShowGenerateProject = isWon && initialValues?.isProjectCreated === false;
+  const proposalStatus = String(initialValues?.proposalStatus || '').toLowerCase();
+  const isDraftStatus = proposalStatus === 'draft';
+  const isSubmitted = proposalStatus === 'submitted';
+  const isApproved = proposalStatus === 'approved';
+  const isRejected = proposalStatus === 'rejected';
+  const isWon = proposalStatus === 'won' || proposalStatus === 'win';
+  const isCancelled = proposalStatus === 'cancelled';
+  const shouldShowGenerateProject = isWon && initialValues?.isProjectCreated === false;
 
-          // REVISE MODE: only Save/Cancel
-          if (isReviseMode) {
-            return (
-              <>
-                <Button variant="outlineDanger" onClick={() => router.push('/projects/proposal')}>Cancel</Button>
-                {isAllowed(PageName, 'w') ? <Button type="submit" variant="save">Save Revision</Button> : null}
-              </>
-            );
+  // ── Shared confirm-modal helper ──────────────────────────────────────
+  const confirmAndRun = (title, message, action, successMsg = 'Done', errorMsg = 'Action failed') => {
+  setConfirmTitle(title);
+  setConfirmMessage(message);
+  setConfirmCallback(() => async () => {
+    setActionLoading(true);
+    const res = await action();
+    if (res?.error) toast.error(errorMsg);
+    else {
+      toast.success(successMsg);
+      try { router.push('/projects/proposal'); } catch (err) {}
+    }
+    setActionLoading(false);
+  });
+  setIsConfirmOpen(true);
+};
+
+  // ── Document/reference actions — always available once a record exists,
+  // regardless of status, so they live in the overflow menu in every branch ──
+  const documentMenuItems = isAllowed(PageName, 'r')
+    ? [
+        {
+          key: 'view-bom',
+          label: 'View BOM',
+          icon: <FiFileText size={14} />,
+          disabled: () => !proposalId || actionLoading,
+          onClick: () => setIsProposalBOMOpen(true),
+        },
+        {
+          key: 'print',
+          label: 'Print',
+          icon: <FiPrinter size={14} />,
+          disabled: () => actionLoading,
+          onClick: async () => {
+            setActionLoading(true);
+            await printProposal_byId(proposalId);
+            setActionLoading(false);
+          },
+        },
+        {
+          key: 'print-breakdown',
+          label: 'Print Breakdown',
+          icon: <FiPrinter size={14} />,
+          disabled: () => actionLoading,
+          onClick: async () => {
+            setActionLoading(true);
+            await printProposalBreakdown_byId(proposalId);
+            setActionLoading(false);
+          },
+        },
+      ]
+    : [];
+
+  // ── REVISE MODE: only Save/Cancel — no menu needed ──────────────────────
+  if (isReviseMode) {
+    return (
+      <>
+        <Button variant="outlineDanger" onClick={() => router.push('/projects/proposal')}>Cancel</Button>
+        {isAllowed(PageName, 'w') ? <Button type="submit" variant="save">Save Revision</Button> : null}
+      </>
+    );
+  }
+
+  // ── COPY MODE ────────────────────────────────────────────────────────────
+  if (isCopyMode) {
+    return isAllowed(PageName, 'w') ? (
+      <>
+        <Button variant="outlineDanger" onClick={() => router.push('/projects/proposal')}>Cancel</Button>
+        <Button type="submit" variant="save">Create Copy</Button>
+      </>
+    ) : null;
+  }
+
+  // ── CREATE MODE (no proposalId yet) ─────────────────────────────────────
+  if (!proposalId) {
+    return isAllowed(PageName, 'w') ? <Button type="submit" variant="save">Create</Button> : null;
+  }
+
+  // ── EDIT MODE (form is currently editable) ──────────────────────────────
+  if (!isReadOnly) {
+    return (
+      <>
+        <Button variant="outlineDanger" onClick={() => {
+          if (mode === 'edit') {
+            router.push(`/projects/proposal/proposalform?id=${proposalId}`);
+            return;
           }
+          setIsEditModeLocal(false);
+        }}>Cancel</Button>
+        {isAllowed(PageName, 'w') ? <Button type="submit" variant="save">Save</Button> : null}
+        {documentMenuItems.length > 0 ? (
+          <DropdownAction item={initialValues} items={documentMenuItems} />
+        ) : null}
+      </>
+    );
+  }
 
-          // COPY MODE: allow creating a new proposal from this one
-          if (isCopyMode) {
-            return isAllowed(PageName, 'w') ? (
-              <>
-                <Button variant="outlineDanger" onClick={() => router.push('/projects/proposal')}>Cancel</Button>
-                {isAllowed(PageName, 'w') ? <Button type="submit" variant="save">Create Copy</Button> : null}
-              </>
-            ) : null;
-          }
+  // ── READ-ONLY VIEW: one primary action per status + everything else in the menu ──
+  const menuItems = [...documentMenuItems];
+  let primaryAction = null;
 
-          if (!proposalId) {
-            return isAllowed(PageName, 'w') ? <Button type="submit" variant="save">Create</Button> : null;
-          }
+  if (canEnterEditMode && isAllowed(PageName, 'w')) {
+    primaryAction = (
+      <Button variant="outlinedPrimary" onClick={() => setIsEditModeLocal(true)}>Edit</Button>
+    );
+  }
 
-          return (
-            <>
-              {isReadOnly ? (
-                <>
-                  {canEnterEditMode && isAllowed(PageName, 'w') ? (
-                    <Button variant="outlinedPrimary" onClick={() => setIsEditModeLocal(true)}>Edit</Button>
-                  ) : null}
-                  {isDraftStatus && isAllowed(PageName, 'w') ? (
-                    <Button variant="primary" disabled={actionLoading} onClick={() => {
-                      setConfirmTitle('Submit proposal?');
-                      setConfirmMessage(`Submit proposal "${initialValues.name || initialValues.code || ''}"?`);
-                      setConfirmCallback(() => async () => {
-                        setActionLoading(true);
-                        const res = await submitProposal(proposalId);
-                        if (res?.error) toast.error('Failed to submit proposal');
-                        else { toast.success('Proposal submitted'); try { router.push('/projects/proposal'); } catch (err) {} }
-                        setActionLoading(false);
-                      });
-                      setIsConfirmOpen(true);
-                    }}><FiSend size={14} style={{ marginRight: 4 }} />Submit</Button>
-                  ) : null}
-                  {isSubmitted && isAllowed(PageName, 'a') ? (
-                    <>
-                      <Button variant="save" disabled={actionLoading} onClick={() => {
-                        setConfirmTitle('Approve proposal?');
-                        setConfirmMessage(`Approve proposal "${initialValues.name || initialValues.code || ''}"?`);
-                        setConfirmCallback(() => async () => {
-                          setActionLoading(true);
-                          const res = await approveProposal(proposalId);
-                          if (res?.error) toast.error('Failed to approve proposal');
-                          else { toast.success('Proposal approved'); try { router.push('/projects/proposal'); } catch (err) {} }
-                          setActionLoading(false);
-                        });
-                        setIsConfirmOpen(true);
-                      }}><FiCheck size={14} style={{ marginRight: 4 }} />Approve</Button>
-                      <Button variant="outlineDanger" disabled={actionLoading} onClick={() => {
-                        setConfirmTitle('Reject proposal?');
-                        setConfirmMessage(`Reject proposal "${initialValues.name || initialValues.code || ''}"?`);
-                        setConfirmCallback(() => async () => {
-                          setActionLoading(true);
-                          const res = await rejectProposal(proposalId);
-                          if (res?.error) toast.error('Failed to reject proposal');
-                          else { toast.success('Proposal rejected'); try { router.push('/projects/proposal'); } catch (err) {} }
-                          setActionLoading(false);
-                        });
-                        setIsConfirmOpen(true);
-                      }}><FiX size={14} style={{ marginRight: 4 }} />Reject</Button>
-                    </>
-                  ) : null}
-                  {isApproved && isAllowed(PageName, 'w') ? (
-                    <>
-                      <Button variant="save" disabled={actionLoading} onClick={() => {
-                        setConfirmTitle('Mark proposal as Won?');
-                        setConfirmMessage(`Mark proposal "${initialValues.name || initialValues.code || ''}" as Won?`);
-                        setConfirmCallback(() => async () => {
-                          setActionLoading(true);
-                          const res = await winProposal(proposalId);
-                          if (res?.error) toast.error('Failed to mark proposal as won');
-                          else { toast.success('Proposal marked as won'); try { router.push('/projects/proposal'); } catch (err) {} }
-                          setActionLoading(false);
-                        });
-                        setIsConfirmOpen(true);
-                      }}><FiCheck size={14} style={{ marginRight: 4 }} />Win</Button>
-                      <Button variant="outlineDanger" disabled={actionLoading} onClick={() => {
-                        setConfirmTitle('Mark proposal as Lost?');
-                        setConfirmMessage(`Mark proposal "${initialValues.name || initialValues.code || ''}" as Lost?`);
-                        setConfirmCallback(() => async () => {
-                          setActionLoading(true);
-                          const res = await loseProposal(proposalId);
-                          if (res?.error) toast.error('Failed to mark proposal as lost');
-                          else { toast.success('Proposal marked as lost'); try { router.push('/projects/proposal'); } catch (err) {} }
-                          setActionLoading(false);
-                        });
-                        setIsConfirmOpen(true);
-                      }}><FiX size={14} style={{ marginRight: 4 }} />Lose</Button>
-                    </>
-                  ) : null}
-                  {isRejected && isAllowed(PageName, 'w') ? (
-                    <Button variant="outlineDanger" disabled={actionLoading} onClick={() => {
-                      setConfirmTitle('Mark proposal as Lost?');
-                      setConfirmMessage(`Mark proposal "${initialValues.name || initialValues.code || ''}" as Lost?`);
-                      setConfirmCallback(() => async () => {
-                        setActionLoading(true);
-                        const res = await loseProposal(proposalId);
-                        if (res?.error) toast.error('Failed to mark proposal as lost');
-                        else { toast.success('Proposal marked as lost'); try { router.push('/projects/proposal'); } catch (err) {} }
-                        setActionLoading(false);
-                      });
-                      setIsConfirmOpen(true);
-                    }}><FiX size={14} style={{ marginRight: 4 }} />Lose</Button>
-                  ) : null}
-                  {shouldShowGenerateProject && isAllowed(PageName, 'w') ? (
-                    <Button variant="primary" disabled={actionLoading} onClick={() => {
-                      setConfirmTitle('Generate Project?');
-                      setConfirmMessage(`Create a project from proposal "${initialValues.name || initialValues.code || ''}"?`);
-                      setConfirmCallback(() => async () => {
-                        setActionLoading(true);
-                        const res = await convertProposal(proposalId);
-                        if (res?.error) toast.error('Failed to create project from proposal');
-                        else { toast.success('Project created from proposal'); try { router.push('/projects/proposal'); } catch (err) {} }
-                        setActionLoading(false);
-                      });
-                      setIsConfirmOpen(true);
-                    }}><FiCheck size={14} style={{ marginRight: 4 }} />Generate Project</Button>
-                  ) : null}
-                  {proposalId && isAllowed(PageName, 'w') && !['cancelled', 'closed'].includes(String(initialValues?.proposalStatus || '').toLowerCase()) ? (
-                    <Button variant="outlineDanger" icon={<FiXCircle size={14} />} disabled={actionLoading} onClick={() => {
-                      setConfirmTitle('Cancel Proposal?');
-                      setConfirmMessage(`Are you sure you want to cancel proposal "${initialValues.name || initialValues.code || ''}"?`);
-                      setConfirmCallback(() => async () => {
-                        setActionLoading(true);
-                        const res = await cancelProposal(proposalId);
-                        if (res?.error) toast.error('Failed to cancel proposal');
-                        else {
-                          toast.success('Proposal cancelled');
-                          const refreshed = await getProposalById(proposalId);
-                          if (!refreshed.error) setItems(refreshed.data || []);
-                        }
-                        setActionLoading(false);
-                      });
-                      setIsConfirmOpen(true);
-                    }}>Cancel Proposal</Button>
-                  ) : null}
-                  {proposalId && isAllowed(PageName, 'w') && String(initialValues?.proposalStatus || '').toLowerCase() === 'cancelled' ? (
-                    <Button variant="primary" icon={<FiArchive size={14} />} disabled={actionLoading} onClick={() => {
-                      setConfirmTitle('Close Proposal?');
-                      setConfirmMessage(`Are you sure you want to close proposal "${initialValues.name || initialValues.code || ''}"?`);
-                      setConfirmCallback(() => async () => {
-                        setActionLoading(true);
-                        const res = await closeProposal(proposalId);
-                        if (res?.error) toast.error('Failed to close proposal');
-                        else { toast.success('Proposal closed'); router.push('/projects/proposal'); }
-                        setActionLoading(false);
-                      });
-                      setIsConfirmOpen(true);
-                    }}>Close Proposal</Button>
-                  ) : null}
-                </>
-              ) : (
-                <>
-                  <Button variant="outlineDanger" onClick={() => {
-                    if (mode === 'edit') {
-                      router.push(`/projects/proposal/proposalform?id=${proposalId}`);
-                      return;
-                    }
-                    setIsEditModeLocal(false);
-                  }}>Cancel</Button>
-                  {isAllowed(PageName, 'w') ? <Button type="submit" variant="save">Save</Button> : null}
-                </>
-              )}
-              {( <>
-                {
-                  // Documents
-                  isAllowed(PageName, 'r') && isReadOnly ? 
-                  <>
-                  <Button
-                    variant="primary"
-                    icon={<FiFileText size={14} />}
-                    disabled={actionLoading || !proposalId}
-                    onClick={() => setIsProposalBOMOpen(true)}
-                  >
-                    View BOM
-                  </Button>
-                  <Button variant="primary" icon={<FiPrinter size={14} />} disabled={actionLoading} onClick={async () => {
-                    setActionLoading(true);
-                    await printProposal_byId(proposalId);
-                    setActionLoading(false);
-                    }}>Print</Button>
-                  <Button variant="primary" icon={<FiPrinter size={14} />} disabled={actionLoading} onClick={async () => {
-                    setActionLoading(true);
-                    await printProposalBreakdown_byId(proposalId);
-                    setActionLoading(false);
-                    }}>Print Breakdown</Button>
-                  </>
-                  : null
-                }
-              </> )}
-            </>
-          );
-        })()}
+  if (isDraftStatus && isAllowed(PageName, 'w')) {
+    primaryAction = (
+      <Button variant="primary" disabled={actionLoading} onClick={() => confirmAndRun(
+        'Submit proposal?',
+        `Submit proposal "${initialValues.name || initialValues.code || ''}"?`,
+        () => submitProposal(proposalId),
+        { successMsg: 'Proposal submitted' },
+      )}>
+        <FiSend size={14} style={{ marginRight: 4 }} />Submit
+      </Button>
+    );
+    if (isAllowed(PageName, 'w') && !isCancelled) {
+      menuItems.push({
+        key: 'cancel',
+        label: 'Cancel Proposal',
+        icon: <FiXCircle size={14} />,
+        destructive: true,
+        disabled: () => actionLoading,
+        onClick: () => confirmAndRun(
+          'Cancel Proposal?',
+          `Are you sure you want to cancel proposal "${initialValues.name || initialValues.code || ''}"?`,
+          async () => {
+            const res = await cancelProposal(proposalId);
+            if (!res?.error) {
+              const refreshed = await getProposalById(proposalId);
+              if (!refreshed.error) setItems(refreshed.data || []);
+            }
+            return res;
+          },
+          { successMsg: 'Proposal cancelled' },
+        ),
+      });
+    }
+  }
+
+  if (isSubmitted && isAllowed(PageName, 'a')) {
+    primaryAction = (
+      <Button variant="save" disabled={actionLoading} onClick={() => confirmAndRun(
+        'Approve proposal?',
+        `Approve proposal "${initialValues.name || initialValues.code || ''}"?`,
+        () => approveProposal(proposalId),
+        { successMsg: 'Proposal approved' },
+      )}>
+        <FiCheck size={14} style={{ marginRight: 4 }} />Approve
+      </Button>
+    );
+    menuItems.push({
+      key: 'reject',
+      label: 'Reject Proposal',
+      icon: <FiX size={14} />,
+      destructive: true,
+      disabled: () => actionLoading,
+      onClick: () => confirmAndRun(
+        'Reject proposal?',
+        `Reject proposal "${initialValues.name || initialValues.code || ''}"?`,
+        () => rejectProposal(proposalId),
+        { successMsg: 'Proposal rejected' },
+      ),
+    });
+  }
+
+  if (isApproved && isAllowed(PageName, 'w')) {
+    primaryAction = (
+      <Button variant="save" disabled={actionLoading} onClick={() => confirmAndRun(
+        'Mark proposal as Won?',
+        `Mark proposal "${initialValues.name || initialValues.code || ''}" as Won?`,
+        () => winProposal(proposalId),
+        { successMsg: 'Proposal marked as won' },
+      )}>
+        <FiCheck size={14} style={{ marginRight: 4 }} />Win
+      </Button>
+    );
+    menuItems.push({
+      key: 'lose',
+      label: 'Mark as Lost',
+      icon: <FiX size={14} />,
+      destructive: true,
+      disabled: () => actionLoading,
+      onClick: () => confirmAndRun(
+        'Mark proposal as Lost?',
+        `Mark proposal "${initialValues.name || initialValues.code || ''}" as Lost?`,
+        () => loseProposal(proposalId),
+        { successMsg: 'Proposal marked as lost' },
+      ),
+    });
+  }
+
+  if (isRejected && isAllowed(PageName, 'w')) {
+    primaryAction = (
+      <Button variant="outlineDanger" disabled={actionLoading} onClick={() => confirmAndRun(
+        'Mark proposal as Lost?',
+        `Mark proposal "${initialValues.name || initialValues.code || ''}" as Lost?`,
+        () => loseProposal(proposalId),
+        { successMsg: 'Proposal marked as lost' },
+      )}>
+        <FiX size={14} style={{ marginRight: 4 }} />Lose
+      </Button>
+    );
+  }
+
+  if (shouldShowGenerateProject && isAllowed(PageName, 'w')) {
+    primaryAction = (
+      <Button variant="primary" disabled={actionLoading} onClick={() => confirmAndRun(
+        'Generate Project?',
+        `Create a project from proposal "${initialValues.name || initialValues.code || ''}"?`,
+        () => convertProposal(proposalId),
+        { successMsg: 'Project created from proposal' },
+      )}>
+        <FiCheck size={14} style={{ marginRight: 4 }} />Generate Project
+      </Button>
+    );
+  }
+
+  if (proposalId && isAllowed(PageName, 'w') && isCancelled) {
+    menuItems.push({
+      key: 'close-proposal',
+      label: 'Close Proposal',
+      icon: <FiArchive size={14} />,
+      disabled: () => actionLoading,
+      onClick: () => confirmAndRun(
+        'Close Proposal?',
+        `Are you sure you want to close proposal "${initialValues.name || initialValues.code || ''}"?`,
+        () => closeProposal(proposalId),
+        { successMsg: 'Proposal closed' },
+      ),
+    });
+  }
+
+  return (
+    <>
+      {primaryAction}
+      {menuItems.length > 0 ? <DropdownAction item={initialValues} items={menuItems} /> : null}
+    </>
+  );
+})()}
       />
       <ConfirmModal
         open={isConfirmOpen}

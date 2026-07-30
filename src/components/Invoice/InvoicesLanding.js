@@ -22,6 +22,8 @@ const baseColumns = [
           })
         : '—',
   },
+  { header: 'PO Number', key: 'purchaseOrderNumber' },
+  
   { header: 'Invoice Number', key: 'invoiceNumber' },
   { header: 'Name', key: 'name' },
   {
@@ -79,14 +81,16 @@ const baseColumns = [
 export default function InvoicesLanding() {
   const [invoices, setInvoices] = useState([]);
   const router = useRouter();
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchInvoices = async () => {
       const res = await GetAll();
-      console.log(res);
       if (res && !res.error) {
         setInvoices(res.data);
+        setLoading(false);
       }
+      setLoading(false);
     };
 
     fetchInvoices();
@@ -259,6 +263,7 @@ const filterFn = (item, keyword) => {
       emptyMessage="No invoices found"
       width="320px"
       filterFn={filterFn}
+      loading={loading}
     />
   );
 }

@@ -180,7 +180,7 @@ export default function UsersLanding() {
       onNew={() => router.push('/maintainance/users/usersform')}
       emptyMessage="No users found"
       filterFn={filterFn}
-      isLoading={isLoading}
+      loading={isLoading}
     />
   );
 }

@@ -192,8 +192,9 @@ export default function PurchasePaymentsLanding() {
       searchPlaceholder="Search payment"
       newButtonLabel="New payment"
       onNew={() => router.push('/purchase/payments/paymentsform')}
-      emptyMessage={isLoading ? 'Loading payments...' : 'No payments found'}
+      emptyMessage={'No payments found'}
       filterFn={filterFn}
+      loading={isLoading}
     />
   );
 }

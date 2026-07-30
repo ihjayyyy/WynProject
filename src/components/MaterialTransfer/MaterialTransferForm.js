@@ -520,7 +520,7 @@ export default function MaterialTransferForm() {
     const showTotals = isEditable && materialTotals.length > 0;
     if (!materialRequestOptions.length && !showTotals) return null;
 
-    const heading = isWarehouseToProject ? 'Available Balances' : 'Available Stock';
+    const heading = isWarehouseToProject ? 'Quantity for Release' : 'Available Stock';
 
     const totalsByMaterialId = new Map(
       materialTotals.map((t) => [String(t.materialId ?? t.code), t])
@@ -593,7 +593,7 @@ export default function MaterialTransferForm() {
             <span>Material</span>
             <span style={{ display: 'flex', gap: '20px' }}>
               {showTotals && <span style={{ minWidth: '70px', textAlign: 'right' }}>Transfer Qty</span>}
-              <span style={{ minWidth: '70px', textAlign: 'right' }}>Balance</span>
+              <span style={{ minWidth: '70px', textAlign: 'right' }}>for Release</span>
             </span>
           </div>
 

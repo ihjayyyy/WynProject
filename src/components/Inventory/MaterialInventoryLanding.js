@@ -200,6 +200,7 @@ export default function MaterialInventoryLanding() {
         width="320px"
         filterFn={filterFn}
         belowStatsAddon={typeToggle}
+        loading={loadingMaterials}
       />
 
       <ConfirmModal

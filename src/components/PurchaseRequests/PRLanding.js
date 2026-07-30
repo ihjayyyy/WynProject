@@ -39,7 +39,7 @@ const baseColumns = [
 export default function PRLanding() {
   const PageName = 'Purchase.Requests';
   const { isAllowed } = useContext(AccessContext);
-
+  const [loading, setLoading] = useState(true);
   const router = useRouter();
   const [prList, setprList] = useState([]);
 
@@ -47,6 +47,7 @@ export default function PRLanding() {
     const prs = await GetAll();
     console.log(prs.data);
     setprList(prs.data);
+    setLoading(false);
   };
   useEffect(() => {
     getPR();
@@ -192,6 +193,7 @@ export default function PRLanding() {
       emptyMessage="No orders found"
       width="320px"
       filterFn={filterFn}
+      loading={loading}
     />
   ) : (
     <InvalidPage />

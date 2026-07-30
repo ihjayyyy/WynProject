@@ -203,8 +203,6 @@ export default function InquiryLanding() {
       .some((value) => String(value).toLowerCase().includes(keyword));
   };
 
-  if (loading) return <div>Loading...</div>;
-
   return (
     <>
       <Landing
@@ -223,6 +221,7 @@ export default function InquiryLanding() {
         onFilterChange={(key, value) => setFilterValues((prev) => ({ ...prev, [key]: value }))}
         onClearFilters={clearFilters}
         hasActiveFilters={hasActiveFilters}
+        loading={loading}
       />
 
       <ConfirmModal

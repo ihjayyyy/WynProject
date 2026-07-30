@@ -132,4 +132,42 @@
     margin-left: 0;
   }
 }
-    
+
+// ── Skeleton loaders ────────────────────────────────────────────
+
+.skeletonCard {
+  height: 90px;
+  border-radius: 8px;
+  background: linear-gradient(90deg, #f0f0f0 25%, #e4e4e4 50%, #f0f0f0 75%);
+  background-size: 200% 100%;
+  animation: landingShimmer 1.4s infinite;
+}
+
+.skeletonTableWrap {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.skeletonTableHeader {
+  height: 20px;
+  width: 30%;
+  border-radius: 4px;
+  margin-bottom: 4px;
+  background: linear-gradient(90deg, #f0f0f0 25%, #e4e4e4 50%, #f0f0f0 75%);
+  background-size: 200% 100%;
+  animation: landingShimmer 1.4s infinite;
+}
+
+.skeletonRow {
+  height: 37px;
+  border-radius: 6px;
+  background: linear-gradient(90deg, #f0f0f0 25%, #e4e4e4 50%, #f0f0f0 75%);
+  background-size: 200% 100%;
+  animation: landingShimmer 1.4s infinite;
+}
+
+@keyframes landingShimmer {
+  0%   { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}

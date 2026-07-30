@@ -687,7 +687,6 @@ export default function ReportsLanding() {
     </div>
   );
 
-  if (loading) return <div>Loading...</div>;
 
   return (
     <Landing
@@ -703,6 +702,7 @@ export default function ReportsLanding() {
       filters={reportFilters}
       filterValues={reportFilterValues}
       onFilterChange={handleFilterChange}
+      loading={loading}
     />
   );
 }

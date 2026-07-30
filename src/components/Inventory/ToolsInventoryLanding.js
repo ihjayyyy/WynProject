@@ -14,16 +14,12 @@ import { getRacks } from '../../services/Rack';
 import { getWarehouses } from '../../services/Warehouse';
 
 const baseColumns = [
-  // { header: 'Id', key: 'id' },
   { header: 'Name', key: 'name', render: (item) => (<><b>{item.code}</b> - {item.name}</>) },
-  // { header: 'Name', key: 'name' },
   { header: 'Warehouse', key: 'warehouse' },
   { header: 'Rack Name', key: 'rackId' },
-  // { header: 'Material Name', key: 'materialId' },
   { header: 'Quantity', key: 'quantity' },
   { header: 'Updated By', key: 'updatedBy' },
-    { header: 'Updated Date', key: 'updatedAt', render: (item) => (item.updatedAt ? new Date(item.updatedAt).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: '2-digit' }) : '') },
-
+  { header: 'Updated Date', key: 'updatedAt', render: (item) => (item.updatedAt ? new Date(item.updatedAt).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: '2-digit' }) : '') },
 ];
 
 export default function ToolsInventoryLanding() {
@@ -33,13 +29,16 @@ export default function ToolsInventoryLanding() {
   const [materials, setMaterials] = useState([]);
   const [warehouses, setWarehouses] = useState([]);
   const [inventory, setInventory] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [isQtyModalOpen, setIsQtyModalOpen] = useState(false);
   const [qtyTargetItem, setQtyTargetItem] = useState(null);
   const [qtyChange, setQtyChange] = useState('');
   const [qtySaving, setQtySaving] = useState(false);
 
-  const loadInventoryData = async (cancelled = false) => {
+  const loadInventoryData = async (cancelled = false, showLoading = true) => {
     try {
+      if (showLoading && !cancelled) setIsLoading(true);
+
       const res = await getRacks();
       if (!cancelled && !res?.error) setRacks(res.data || []);
       const res2 = await getWarehouses();
@@ -56,7 +55,10 @@ export default function ToolsInventoryLanding() {
           setInventory([]);
         }
       }
-    } catch (e) {}
+    } catch (e) {
+    } finally {
+      if (!cancelled) setIsLoading(false);
+    }
   };
 
   useEffect(() => {
@@ -97,7 +99,7 @@ export default function ToolsInventoryLanding() {
       if (res?.error) throw new Error(res.error);
       toast.success('Quantity updated successfully.');
       closeQuantityModal();
-      await loadInventoryData(false);
+      await loadInventoryData(false, false);
     } catch (error) {
       toast.error('Failed to update quantity.');
     } finally {
@@ -110,8 +112,6 @@ export default function ToolsInventoryLanding() {
   const racksMap = useMemo(() => (racks || []).reduce((acc, r) => { acc[r.id] = r; return acc; }, {}), [racks]);
 
   const warehousesMap = useMemo(() => (warehouses || []).reduce((acc, w) => { acc[w.id] = w.name || w.code || w.id; return acc; }, {}), [warehouses]);
-
-  
 
   const actionItems = useMemo(
     () => [
@@ -161,6 +161,7 @@ export default function ToolsInventoryLanding() {
         emptyMessage="No tool inventory records found"
         width="320px"
         filterFn={filterFn}
+        loading={isLoading}
       />
 
       <ConfirmModal

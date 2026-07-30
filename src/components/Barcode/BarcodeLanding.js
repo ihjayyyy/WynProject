@@ -345,9 +345,7 @@ const landingFilters = useMemo(
           setIsPrintModalOpen(true);
         }}
         emptyMessage={
-          isLoading
-            ? 'Loading barcodes...'
-            : hasActiveFilters
+          hasActiveFilters
             ? 'No barcodes found for the selected filters'
             : 'No barcodes found'
         }
@@ -358,6 +356,7 @@ const landingFilters = useMemo(
         onFilterChange={(key, value) => setFilterValues((prev) => ({ ...prev, [key]: value }))}
         onClearFilters={clearFilters}
         hasActiveFilters={hasActiveFilters}
+        loading={isLoading}
         belowStatsAddon={
           <div
             style={{

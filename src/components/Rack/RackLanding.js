@@ -19,6 +19,7 @@ const baseColumns = [
 
 export default function RackLanding() {
   const [racks, setRacks] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [warehouses, setWarehouses] = useState([]);
   useEffect(() => {
     let cancelled = false;
@@ -29,6 +30,7 @@ export default function RackLanding() {
         const res2 = await getWarehouses();
         if (!cancelled && !res2?.error) setWarehouses(res2.data || []);
       } catch (e) {}
+      setLoading(false);
     })();
     return () => { cancelled = true; };
   }, []);
@@ -113,6 +115,7 @@ export default function RackLanding() {
       emptyMessage="No racks found"
       width="320px"
       filterFn={filterFn}
+      loading={loading}
     />
   );
 }

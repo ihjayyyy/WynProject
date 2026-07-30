@@ -63,7 +63,6 @@ export default function MaterialInventoryReportLanding() {
     return [it.materialCode, it.materialName].filter(Boolean).some((v) => String(v).toLowerCase().includes(ks));
   };
 
-  if (loading) return <div>Loading...</div>;
 
   return (
     <Landing
@@ -77,6 +76,7 @@ export default function MaterialInventoryReportLanding() {
       filterFn={filterFn}
       onNew={printMaterialReport_byId}
       newButtonLabel={"Print Materials Report"}
+      loading={loading}
     />
   );
 }

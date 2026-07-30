@@ -27,19 +27,23 @@ export default function SuppliersLanding() {
     vatType: '',
     terms: '',
   });
+  const [loading, setLoading] = useState(true);
   const router = useRouter();
 
   useEffect(() => {
     let mounted = true;
+    setLoading(true);
     async function load() {
       const res = await getSuppliers();
       if (!mounted) return;
       if (res.error || !res.data) {
         console.error('Failed to load suppliers', res.error);
         setSuppliers([]);
+        setLoading(false);
         return;
       }
       setSuppliers(res.data || []);
+      setLoading(false);
     }
     load();
     return () => { mounted = false; };
@@ -171,6 +175,7 @@ export default function SuppliersLanding() {
       onFilterChange={(key, value) => setFilterValues((prev) => ({ ...prev, [key]: value }))}
       onClearFilters={clearFilters}
       hasActiveFilters={hasActiveFilters}
+      loading={loading}
     />
   );
 }

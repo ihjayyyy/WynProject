@@ -134,8 +134,6 @@ export default function CustomersLanding() {
       .some((value) => String(value).toLowerCase().includes(keyword));
   };
 
-  if (loading) return <div>Loading...</div>;
-
   return (
     <Landing
       title="Customers"
@@ -153,6 +151,7 @@ export default function CustomersLanding() {
       onFilterChange={(key, value) => setFilterValues((prev) => ({ ...prev, [key]: value }))}
       onClearFilters={clearFilters}
       hasActiveFilters={hasActiveFilters}
+      loading={loading}
     />
   );
 }

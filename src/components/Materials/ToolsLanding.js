@@ -214,6 +214,7 @@ export default function ToolsLanding() {
         emptyMessage="No tool records found"
         width="320px"
         filterFn={filterFn}
+        loading={defaultLoading}
       />
 
       <ItemModal

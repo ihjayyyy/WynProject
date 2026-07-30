@@ -90,8 +90,9 @@ export default function RolesLanding() {
       searchPlaceholder="Search role"
       // newButtonLabel="Add Role"
       // onNew={() => router.push('/maintainance/roles/rolesform')}
-      emptyMessage={isLoading ? 'Loading roles...' : 'No roles found'}
+      emptyMessage={'No roles found'}
       filterFn={filterFn}
+      loading={isLoading}
     />
   );
 }
