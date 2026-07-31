@@ -96,31 +96,35 @@ export default function InvoicesLanding() {
     fetchInvoices();
   }, []);
 
-  const actionItems = useMemo(
-    () => [
-      {
-        key: 'view',
-        label: 'View',
-        icon: <FiEye size={14} />,
-        onClick: (item) =>
-          router.push(`/purchase/invoices/invoiceform?id=${item.id}`),
+const actionItems = useMemo(
+  () => [
+    {
+      key: 'view',
+      label: 'View',
+      icon: <FiEye size={14} />,
+      onClick: (item) =>
+        router.push(`/purchase/invoices/invoiceform?id=${item.id}`),
+    },
+    {
+      key: 'edit',
+      label: 'Edit',
+      icon: <FiEdit2 size={14} />,
+      onClick: (item) =>
+        router.push(`/purchase/invoices/invoiceform?id=${item.id}&mode=edit`),
+      hidden: (item) => {
+        const status = String(item?.status || '').toLowerCase();
+        return status === 'invoiced';
       },
-      {
-        key: 'edit',
-        label: 'Edit',
-        icon: <FiEdit2 size={14} />,
-        onClick: (item) =>
-          router.push(`/purchase/invoices/invoiceform?id=${item.id}&mode=edit`),
-      },
-      {
-        key: 'viewpdf',
-        label: 'Print Invoice',
-        icon: <FiFileText size={14} />,
-        onClick: (item) => printPurchaseInvoice_byId(item.id),
-      },
-    ],
-    [router],
-  );
+    },
+    {
+      key: 'viewpdf',
+      label: 'Print Invoice',
+      icon: <FiFileText size={14} />,
+      onClick: (item) => printPurchaseInvoice_byId(item.id),
+    },
+  ],
+  [router],
+);
 
   const columns = useMemo(
     () => [

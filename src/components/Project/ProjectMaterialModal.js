@@ -262,8 +262,30 @@ export default function ProjectMaterialModal({ open, initial = {}, onCancel, onC
     updateField('totalPrice', total);
   },
 },
-    { name: 'code', label: materialCategory === 'Tool' ? 'Tool Code' : materialCategory === 'Service' ? 'Service Code' : materialCategory === 'Assembly' ? 'Assembly Code' : 'Material Code', type: 'text', value: calculatedForm.code || '', readonly: true, validator: Yup.string().notRequired() },
-    { name: 'materialType', label: 'Type', type: 'text', value: calculatedForm.materialType || '', hidden: true, validator: Yup.string().notRequired() },
+{
+  name: 'code',
+  label:
+    materialCategory === 'Tool'
+      ? 'Tool Code'
+      : materialCategory === 'Service'
+      ? 'Service Code'
+      : materialCategory === 'Assembly'
+      ? 'Assembly Code'
+      : 'Material Code',
+  type: 'text',
+  value: calculatedForm.code || '',
+  readonly: true,
+  hidden: true,
+  validator: Yup.string().notRequired(),
+},
+{
+  name: 'materialType',
+  label: 'Type',
+  type: 'text',
+  value: calculatedForm.materialType || '',
+  hidden: true,
+  validator: Yup.string().notRequired(),
+  },
     { name: 'uom', label: 'UoM', type: 'text', value: calculatedForm.uom || '', readonly: true, validator: Yup.string().notRequired() },
     {
       name: 'unitCost',

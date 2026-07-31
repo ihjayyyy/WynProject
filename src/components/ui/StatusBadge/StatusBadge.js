@@ -46,9 +46,16 @@ export default function StatusBadge({ status, className = '' }) {
       case 'RECEIVED':
       case 'RECEIVE':
         return styles.received;
-      
+          case 'INTRANSIT':
+    case 'IN TRANSIT':
+    case 'IN_TRANSIT':
+      return styles.pending;
       case 'APPROVED':
         return styles.approved;
+
+      case 'Invoiced':
+        return styles.received;
+
       case 'FORAPPROVAL':
       case 'FOR APPROVAL':
       case 'FOR_APPROVAL':

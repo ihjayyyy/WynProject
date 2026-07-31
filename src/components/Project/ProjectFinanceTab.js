@@ -198,30 +198,37 @@ export default function ProjectFinanceTab({ projectId, project, projectStatus, e
 
   // Shared builder so both the on-screen table and the PDF export use
   // identical rows/labels/values.
-  const getStatementRows = () => {
-    if (!statement) return [];
+const getStatementRows = () => {
+  if (!statement) return [];
 
-    const {
-      totalContractPrice = 0,
-      bom = 0,
-      labor = 0,
-      trips = 0,
-      otherExpenses = 0,
-      total = 0,
-      net = 0,
-    } = statement;
+  const {
+    totalContractPrice = 0,
+    bom = 0,
+    returnedBOM = 0,   // add this
+    labor = 0,
+    trips = 0,
+    otherExpenses = 0,
+    total = 0,
+    net = 0,
+  } = statement;
 
-    return [
-      { label: 'Total Contract Price', debit: totalContractPrice, credit: null },
-      { label: 'Less', debit: null, credit: null, bold: true },
-      { label: 'BOM', debit: null, credit: bom },
-      { label: 'Labor', debit: null, credit: labor },
-      { label: 'Trips', debit: null, credit: trips },
-      { label: 'Other Expenses', debit: null, credit: otherExpenses },
-      { label: '', debit: totalContractPrice, credit: total, isTotalRow: true },
-      { label: 'Net', debit: null, credit: net, bold: true },
-    ];
-  };
+  return [
+    { label: 'Total Contract Price', debit: totalContractPrice, credit: null },
+    { label: 'Less', debit: null, credit: null, bold: true },
+
+    // Returned BOM shown in the Debit column
+    { label: 'Returned BOM', debit: returnedBOM, credit: null },
+
+    // BOM and other expenses remain in the Credit column
+    { label: 'BOM', debit: null, credit: bom },
+    { label: 'Labor', debit: null, credit: labor },
+    { label: 'Trips', debit: null, credit: trips },
+    { label: 'Other Expenses', debit: null, credit: otherExpenses },
+
+    { label: '', debit: totalContractPrice, credit: total, isTotalRow: true },
+    { label: 'Net', debit: null, credit: net, bold: true },
+  ];
+};
 
   const renderFinancialStatement = () => {
     if (statementLoading) return <div>Loading financial statement...</div>;
@@ -358,7 +365,7 @@ export default function ProjectFinanceTab({ projectId, project, projectStatus, e
         <h3>Finance</h3>
         <div className={styles.panelActions}>
         {!editing &&
-          projectStatus === 'ONGOING' &&
+          ['ONGOING', 'NOTSTARTED'].includes(String(projectStatus).toUpperCase()) &&
           finance &&
           !finance.hasDownpayment &&
           Number(finance.downPayment) > 0 && (
