@@ -407,15 +407,21 @@ export default function SidenavLayout({ children }) {
           <div
             className={styles.userProfile}
             onClick={(e) => {
-              if (isCollapsed) return;
-              // if click is already on the dropdown trigger/menu, let it handle itself
+              // Expand sidebar when collapsed
+              if (isCollapsed) {
+                setIsCollapsed(false);
+                return;
+              }
+
+              // If click is already on the dropdown trigger/menu, let it handle itself
               if (
                 footerDropdownRef.current &&
                 footerDropdownRef.current.contains(e.target)
-              )
+              ) {
                 return;
-              // open/toggle the dropdown by clicking its trigger button;
-              // containsRef on DropdownAction ensures the original click doesn't cause onDoc to close it
+              }
+
+              // Open/toggle the dropdown
               const btn = footerDropdownRef.current?.querySelector('button');
               if (btn) btn.click();
             }}
