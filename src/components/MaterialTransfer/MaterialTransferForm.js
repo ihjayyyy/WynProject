@@ -20,6 +20,7 @@ import { getWarehouses } from '@/services/Warehouse';
 import { getProjectsByStatus } from '@/services/Project';
 import { printMaterialRequests_byProject } from '@/services/MaterialRequest';
 import { getByProjectId } from '@/services/ProjectScope';
+import { getMaterialInventoryByMaterialId } from '@/services/MaterialInventory';
 import { getMaterialTransfer, createMaterialTransfer, updateMaterialTransfer, transferMaterialTransfer, printMaterialTransfer_byId } from '@/services/MaterialTransfer';
 import { useToast } from '../ui/Toast/Toast';
 import InvalidPage from '@/components/InvalidPage/page';
@@ -77,6 +78,12 @@ export default function MaterialTransferForm() {
   const [materialRequestOptions, setMaterialRequestOptions] = useState([]);
   // balanceMap: { [materialId]: number } — total balance across all requests for that material
   const [balanceMap, setBalanceMap] = useState({});
+  // availableQtyMap: { [materialId]: number } — "real" available quantity.
+  // Only populated/used for Warehouse -> Project transfers: actual on-hand
+  // warehouse stock (summed across racks) from getMaterialInventoryByMaterialId,
+  // independent of the requested/allocated balance shown in balanceMap.
+  // Not used for Project -> Warehouse transfers.
+  const [availableQtyMap, setAvailableQtyMap] = useState({});
   const [formData, setForm] = useState({});
   const [validForm, setValidForm] = useState(false);
   const [tableData, setTableData] = useState({ items: [], deletedItems: [] });
@@ -188,12 +195,14 @@ export default function MaterialTransferForm() {
     if (!shouldFetch) {
       setMaterialRequestOptions([]);
       setBalanceMap({});
+      setAvailableQtyMap({});
       return;
     }
 
     (async () => {
       let opts = [];
       let newBalanceMap = {};
+      let newAvailableQtyMap = {};
 
       if (isWarehouseToProject && transferToId) {
         const res = await printMaterialRequests_byProject(transferToId);
@@ -219,6 +228,22 @@ export default function MaterialTransferForm() {
 
           opts = Object.values(byMaterialId);
           opts.forEach((o) => { newBalanceMap[o.value] = o.totalBalance; });
+
+          // "Available Qty" column for this direction only: real on-hand
+          // warehouse stock per material, summed across racks — separate
+          // from the requested/allocated balance above.
+          const inventoryResults = await Promise.all(
+            opts.map((o) => getMaterialInventoryByMaterialId(o.value))
+          );
+          if (!mounted) return;
+          opts.forEach((o, idx) => {
+            const invRes = inventoryResults[idx];
+            const rows = !invRes?.error && Array.isArray(invRes.data) ? invRes.data : [];
+            newAvailableQtyMap[o.value] = rows.reduce(
+              (sum, row) => sum + (Number(row.quantity) || 0),
+              0
+            );
+          });
         }
       } else if (isProjectToWarehouse && transferFromId) {
         const res = await getByProjectId(transferFromId);
@@ -246,12 +271,15 @@ export default function MaterialTransferForm() {
 
           opts = Object.values(byMaterialId);
           opts.forEach((o) => { newBalanceMap[o.value] = o.availableQuantity; });
+          // No "Available Qty" column for Project -> Warehouse; newAvailableQtyMap
+          // stays empty for this direction.
         }
       }
 
         if (mounted) {
           setMaterialRequestOptions(opts);
           setBalanceMap(newBalanceMap);
+          setAvailableQtyMap(newAvailableQtyMap);
         }
     })();
 
@@ -505,6 +533,9 @@ export default function MaterialTransferForm() {
   //   - "Balance" column: available balance/stock for the destination or
   //     source, from materialRequestOptions/balanceMap (shown whenever
   //     options are loaded, in both view and edit mode).
+  //   - "Available Qty" column: real on-hand warehouse stock, from
+  //     availableQtyMap — ONLY shown for Warehouse -> Project. Not shown
+  //     for Project -> Warehouse.
   //   - "Transfer Qty" column: the quantity currently on this transfer for
   //     that material (from materialTotals), shown only while editable,
   //     since that's the only time the raw/editable table below it applies.
@@ -520,7 +551,9 @@ export default function MaterialTransferForm() {
     const showTotals = isEditable && materialTotals.length > 0;
     if (!materialRequestOptions.length && !showTotals) return null;
 
-    const heading = isWarehouseToProject ? 'Quantity for Release' : 'Available Stock';
+    const heading = isWarehouseToProject
+  ? 'Inventory vs Requested'
+  : 'Project Returnable Stock';
 
     const totalsByMaterialId = new Map(
       materialTotals.map((t) => [String(t.materialId ?? t.code), t])
@@ -537,6 +570,7 @@ export default function MaterialTransferForm() {
         uom: opt.uom,
         balance: balanceMap[opt.value] ?? 0,
         hasBalance: true,
+        availableQty: availableQtyMap[opt.value] ?? 0,
         transferQty: totalItem ? totalItem.quantity : 0,
         merged: totalItem?._merged,
         mergedCount: totalItem?._sourceIds?.length,
@@ -552,6 +586,7 @@ export default function MaterialTransferForm() {
         uom: totalItem.uom,
         balance: 0,
         hasBalance: false,
+        availableQty: availableQtyMap[key] ?? 0,
         transferQty: totalItem.quantity,
         merged: totalItem._merged,
         mergedCount: totalItem._sourceIds?.length,
@@ -592,8 +627,22 @@ export default function MaterialTransferForm() {
           }}>
             <span>Material</span>
             <span style={{ display: 'flex', gap: '20px' }}>
-              {showTotals && <span style={{ minWidth: '70px', textAlign: 'right' }}>Transfer Qty</span>}
-              <span style={{ minWidth: '70px', textAlign: 'right' }}>for Release</span>
+              {showTotals && (
+                <span style={{ minWidth: '70px', textAlign: 'right' }}>
+                  Transfer Qty
+                </span>
+              )}
+
+              {isWarehouseToProject ? (
+                <>
+                  <span style={{ minWidth: '70px', textAlign: 'right' }}>Available Qty</span>
+                  <span style={{ minWidth: '70px', textAlign: 'right' }}>Requested</span>
+                </>
+              ) : (
+                <span style={{ minWidth: '120px', textAlign: 'right' }}>
+                  Remaining Stock in Project
+                </span>
+              )}
             </span>
           </div>
 
@@ -623,18 +672,44 @@ export default function MaterialTransferForm() {
                     {r.transferQty} {r.uom}
                   </span>
                 )}
-                <span style={{
-                  fontWeight: 600,
-                  minWidth: '70px',
-                  textAlign: 'right',
-                  color: !r.hasBalance
-                    ? '#999'
-                    : (r.balance > 0
-                      ? 'var(--color-success, #16a34a)'
-                      : 'var(--color-danger, #dc2626)'),
-                }}>
-                  {r.hasBalance ? `${r.balance} ${r.uom}` : '—'}
-                </span>
+{isWarehouseToProject ? (
+  <>
+    <span style={{
+      fontWeight: 600,
+      minWidth: '70px',
+      textAlign: 'right',
+      color: r.availableQty > 0 ? 'var(--color-text, #1e293b)' : '#cbd5e1',
+    }}>
+      {r.availableQty} {r.uom}
+    </span>
+
+    <span style={{
+      fontWeight: 600,
+      minWidth: '70px',
+      textAlign: 'right',
+      color: !r.hasBalance
+        ? '#999'
+        : (r.balance > 0
+          ? 'var(--color-success, #16a34a)'
+          : 'var(--color-danger, #dc2626)'),
+    }}>
+      {r.hasBalance ? `${r.balance} ${r.uom}` : '—'}
+    </span>
+  </>
+) : (
+  <span style={{
+    fontWeight: 600,
+    minWidth: '120px',
+    textAlign: 'right',
+    color: !r.hasBalance
+      ? '#999'
+      : (r.balance > 0
+        ? 'var(--color-success, #16a34a)'
+        : 'var(--color-danger, #dc2626)'),
+  }}>
+    {r.hasBalance ? `${r.balance} ${r.uom}` : '—'}
+  </span>
+)}
               </span>
             </div>
           ))}
