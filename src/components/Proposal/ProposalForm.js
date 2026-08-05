@@ -40,6 +40,7 @@ export default function ProposalForm() {
   // Finance permission - lowercase 'f'. When missing, finance fields
   // (Labor %, Margin) are still shown but rendered non-editable.
   const canEditFinance = isAllowed(PageName, 'f');
+  const canWinOrLose = isAllowed(PageName, 'f');
 
   // null = not yet loaded
   const [items, setItems] = useState(null);
@@ -1032,7 +1033,7 @@ export default function ProposalForm() {
     });
   }
 
-  if (isApproved && isAllowed(PageName, 'w')) {
+  if (isApproved && canWinOrLose) {
     primaryAction = (
       <Button variant="save" disabled={actionLoading} onClick={() => confirmAndRun(
         'Mark proposal as Won?',
@@ -1058,7 +1059,7 @@ export default function ProposalForm() {
     });
   }
 
-  if (isRejected && isAllowed(PageName, 'w')) {
+  if (isRejected && canWinOrLose) {
     primaryAction = (
       <Button variant="outlineDanger" disabled={actionLoading} onClick={() => confirmAndRun(
         'Mark proposal as Lost?',
