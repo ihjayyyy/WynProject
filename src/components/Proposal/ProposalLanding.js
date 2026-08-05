@@ -61,6 +61,8 @@ export default function ProposalLanding() {
     customerName: '',
   });
 
+  const canWinOrLose = isAllowed(PageName, 'f');
+
   const actionItems = useMemo(
     () => [
       ...(isAllowed(PageName, 'r') ? [{ key: 'view', label: 'View', icon: <FiEye size={14} />, onClick: (item) => router.push(`/projects/proposal/proposalform?id=${item.id}`) }] : []),
@@ -197,7 +199,7 @@ export default function ProposalLanding() {
       const isWon = proposalStatus === 'won' || proposalStatus === 'win';
       const shouldShowGenerateProject = isWon && item?.isProjectCreated === false;
 
-      if (isApproved && isAllowed(PageName, 'w')) {
+      if (isApproved && canWinOrLose) {
         itemsFor.push({ key: 'win', label: 'Win', icon: <FiCheck size={14} />, onClick: (it) => {
           setConfirmTarget(it);
           setConfirmTitle('Mark proposal as Won?');
@@ -233,7 +235,7 @@ export default function ProposalLanding() {
         }});
       }
 
-      if ((isApproved || isRejected) && isAllowed(PageName, 'w')) {
+      if ((isApproved || isRejected) && canWinOrLose) {
         itemsFor.push({ key: 'lose', label: 'Lose', icon: <FiX size={14} />, onClick: (it) => {
           setConfirmTarget(it);
           setConfirmTitle('Mark proposal as Lost?');
@@ -291,7 +293,7 @@ export default function ProposalLanding() {
       }
 
       return <DropdownAction item={item} items={itemsFor} />;
-    } }], [actionItems, isAllowed, loadProposals, toast]);
+    } }], [actionItems, canWinOrLose, isAllowed, loadProposals, toast]);
 
   const statusOptions = useMemo(() => {
     const uniqueStatuses = Array.from(
