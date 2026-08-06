@@ -92,3 +92,14 @@
   color: $color-text-primary-light;
   font-weight: $font-weight-bold;
 }
+
+.groupHeaderRow {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+  font-size: 0.9rem;
+}
+.groupHeaderCount {
+  color: #6b7280;
+  font-size: 0.8rem;
+}

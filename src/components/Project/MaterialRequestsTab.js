@@ -14,7 +14,7 @@ import { FiPrinter, FiEdit2 } from 'react-icons/fi';
 import StatusBadge from '../ui/StatusBadge/StatusBadge';
 import InvalidPage from '@/components/InvalidPage/page';
 
-export default function MaterialRequestsTab({ projectId, editable = true }) {
+export default function MaterialRequestsTab({ projectId, editable = true, projectNumber = '' }) {
   const PageName = 'Projects.Projects';
   const { isAllowed } = useContext(AccessContext);
   const [items, setItems] = useState([]);
@@ -23,6 +23,14 @@ export default function MaterialRequestsTab({ projectId, editable = true }) {
   const [editing, setEditing] = useState(null);
   const [materials, setMaterials] = useState([]);
   const toast = useToast();
+
+  // Prefixes a display value with the record's assemblyCode, e.g.
+  // "T8AFE4Y8 - Bolt, machine, 5/8\" x 12\"". Falls back to the plain
+  // value when no assemblyCode is present on the record.
+  const withAssembly = useCallback((item, value) => {
+    const v = value ?? '';
+    return item && item.assemblyCode ? `${item.assemblyCode} - ${v}` : v;
+  }, []);
 
   const loadData = useCallback(async () => {
     if (!projectId) return;
@@ -62,6 +70,7 @@ export default function MaterialRequestsTab({ projectId, editable = true }) {
             quantity: Number(c.quantity) || Number(c.initialQuantity) || 0,
             uom: c.uom || '',
             scopeId: resolvedScopeId,
+            assemblyCode: c.assemblyCode || '',
           });
         });
       });
@@ -120,13 +129,16 @@ export default function MaterialRequestsTab({ projectId, editable = true }) {
     .map((m) => {
       const alreadyRequested = getTotalRequestedQty(m.id, m.scopeId);
       const remaining = m.quantity - alreadyRequested;
+      const label = `${withAssembly(m, m.name)} (${remaining} ${m.uom || ''} left)`
+        .replace(/\s+left/, ' left')
+        .replace(/\(\s+/, '(');
       return {
         // IMPORTANT: composite "id:scopeId" value, must match the field's
         // controlled value below so the select can resolve the label.
         value: `${m.id}:${m.scopeId}`,
         // Show how much of this material can still be requested right in
-        // the dropdown label, e.g. "Bolt, single upset, 5/8\" x 12\" (15 pcs left)"
-        label: `${m.name} (${remaining} ${m.uom || ''} left)`.replace(/\s+left/, ' left').replace(/\(\s+/, '('),
+        // the dropdown label, e.g. "T8AFE4Y8 - Bolt, single upset, 5/8\" x 12\" (15 pcs left)"
+        label,
         materialId: m.id,
         scopeId: m.scopeId,
       };
@@ -156,6 +168,7 @@ export default function MaterialRequestsTab({ projectId, editable = true }) {
       { name: 'scopeId', label: 'Scope Id', type: 'number', value: (selectedMaterial && selectedMaterial.scopeId) || record.scopeId || 0, hidden: true },
       { name: 'name', label: 'Name', type: 'text', value: (selectedMaterial && selectedMaterial.name) || record.name || '', hidden: true },
       { name: 'code', label: 'Code', type: 'text', value: (selectedMaterial && selectedMaterial.code) || record.code || '', hidden: true },
+      { name: 'assemblyCode', label: 'Assembly Code', type: 'text', value: (selectedMaterial && selectedMaterial.assemblyCode) || record.assemblyCode || '', hidden: true },
       {
         name: 'materialId',
         label: 'Material',
@@ -185,6 +198,7 @@ export default function MaterialRequestsTab({ projectId, editable = true }) {
             updateField('code', mat.code || '');
             updateField('uom', mat.uom || '');
             updateField('scopeId', sid);
+            updateField('assemblyCode', mat.assemblyCode || '');
             // Recompute live — this field's initial `value` only reflects
             // whatever material was selected when the modal first opened
             // (or nothing, for a brand-new request), so it must be set
@@ -194,6 +208,7 @@ export default function MaterialRequestsTab({ projectId, editable = true }) {
             updateField('materialId', '');
             updateField('projectQty', 0);
             updateField('scopeId', 0);
+            updateField('assemblyCode', '');
             updateField('availableQty', '');
           }
         }
@@ -246,45 +261,119 @@ export default function MaterialRequestsTab({ projectId, editable = true }) {
       },
       { name: 'balance', label: 'Balance', type: 'number', value: record.balance || record.requestedQty || '', readonly: true },
       { name: 'uom', label: 'UOM', type: 'text', value: (selectedMaterial && selectedMaterial.uom) || record.uom || '', readonly: true },
-      { name: 'reasonOrProject', label: 'Reason/Project', type: 'text', value: record.reasonOrProject || '' },
+      {
+        name: 'reasonOrProject',
+        label: 'Reason/Project',
+        type: 'text',
+        // Default to the project number for brand-new requests only.
+        // If a saved record already has a value (or is blank because the
+        // user cleared it intentionally on an existing draft), we don't
+        // override it with the project number.
+        value: record.reasonOrProject || (record.id ? '' : projectNumber) || '',
+      },
       { name: 'requestedBy', label: 'Requested By', type: 'text', value: record.requestedBy || authName || '', required: true, hidden: true },
       { name: 'deadline', label: 'Deadline', type: 'date', value: fmt(record.deadline) || defaultDeadline },
       { name: 'requestDate', label: 'Request Date', type: 'date', value: fmt(record.requestDate) || today, hidden: true },
     ];
-  }, [editing, projectId, materialOptions, getTotalRequestedQty, materials]);
+  }, [editing, projectId, materialOptions, getTotalRequestedQty, materials, projectNumber]);
 
   const filtered = useMemo(() => {
     const keyword = (searchTerm || '').trim().toLowerCase();
     if (!keyword) return items;
     return items.filter((item) =>
-      [item.name, item.code, item.requestedBy, item.deadline]
+      [item.name, item.code, item.requestedBy, item.deadline, item.assemblyCode]
         .filter(Boolean)
         .some((value) => String(value).toLowerCase().includes(keyword))
     );
   }, [items, searchTerm]);
 
-const withAssembly = (item, value) =>
-  item.assemblyCode ? `${item.assemblyCode} - ${value ?? ''}` : (value ?? '')
+  // Group rows by assemblyCode. Items sharing an assemblyCode are sorted
+  // together (alphabetically by code, then by name within the group).
+  // Items with no assemblyCode are collected into a trailing "Ungrouped"
+  // section. A synthetic full-width header row (DataTable's `fullRow`
+  // support) is inserted before each group so the grouping is visible.
+  //
+  // NOTE: because DataTable owns its own click-to-sort behavior and would
+  // reorder these rows (including the injected header rows) if a column
+  // header were clicked, we disable per-column sorting and pagination
+  // below so the grouped order always stays intact.
+  const groupedRows = useMemo(() => {
+    const groups = new Map(); // assemblyCode -> items[]
+    const ungrouped = [];
+
+    filtered.forEach((item) => {
+      const code = (item.assemblyCode || '').trim();
+      if (!code) {
+        ungrouped.push(item);
+        return;
+      }
+      if (!groups.has(code)) groups.set(code, []);
+      groups.get(code).push(item);
+    });
+
+    const sortedGroupKeys = Array.from(groups.keys()).sort((a, b) =>
+      a.localeCompare(b, undefined, { numeric: true, sensitivity: 'base' })
+    );
+
+    const byName = (a, b) =>
+      String(a.name || '').localeCompare(String(b.name || ''), undefined, { numeric: true, sensitivity: 'base' });
+
+    const rows = [];
+
+    sortedGroupKeys.forEach((code) => {
+      const groupItems = [...groups.get(code)].sort(byName);
+      rows.push({
+        fullRow: true,
+        fullRowContent: (
+          <div className={styles.groupHeaderRow}>
+            <strong>Assembly: {code}</strong>
+            <span className={styles.groupHeaderCount}>
+              {groupItems.length} item{groupItems.length === 1 ? '' : 's'}
+            </span>
+          </div>
+        ),
+      });
+      rows.push(...groupItems);
+    });
+
+    if (ungrouped.length) {
+      const sortedUngrouped = [...ungrouped].sort(byName);
+      rows.push({
+        fullRow: true,
+        fullRowContent: (
+          <div className={styles.groupHeaderRow}>
+            <strong>Ungrouped</strong>
+            <span className={styles.groupHeaderCount}>
+              {sortedUngrouped.length} item{sortedUngrouped.length === 1 ? '' : 's'}
+            </span>
+          </div>
+        ),
+      });
+      rows.push(...sortedUngrouped);
+    }
+
+    return rows;
+  }, [filtered]);
 
   const tableColumns = useMemo(() => [
     {
-      header: 'Requested Date', key: 'requestDate', render: (item) =>
+      header: 'Requested Date', key: 'requestDate', sortable: false, render: (item) =>
         item.requestDate
           ? new Date(item.requestDate).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: '2-digit' })
           : '—',
     },
-    { header: 'RIV Number', key: 'rivNumber' },
-  { header: 'Name', key: 'name', render: (item) => withAssembly(item, item.name) },
-  { header: 'Code', key: 'code', render: (item) => withAssembly(item, item.code) },
-    { header: 'UOM', key: 'uom' },
-    { header: 'Status', key: 'status', render: (item) => <StatusBadge status={item.status} /> },
-    { header: 'Project Qty', key: 'projectQty' },
-    { header: 'Requested Qty', key: 'requestedQty' },
-    { header: 'Delivered Qty', key: 'deliveredQuantity' },
-    { header: 'Balance', key: 'balance' },
-    { header: 'Requested By', key: 'requestedBy' },
+    { header: 'RIV Number', key: 'rivNumber', sortable: false },
+    { header: 'Name', key: 'name', sortable: false, render: (item) => withAssembly(item, item.name) },
+    { header: 'Code', key: 'code', sortable: false, render: (item) => withAssembly(item, item.code) },
+    { header: 'UOM', key: 'uom', sortable: false },
+    { header: 'Status', key: 'status', sortable: false, render: (item) => <StatusBadge status={item.status} /> },
+    { header: 'Project Qty', key: 'projectQty', sortable: false },
+    { header: 'Requested Qty', key: 'requestedQty', sortable: false },
+    { header: 'Delivered Qty', key: 'deliveredQuantity', sortable: false },
+    { header: 'Balance', key: 'balance', sortable: false },
+    { header: 'Requested By', key: 'requestedBy', sortable: false },
     {
-      header: 'Deadline', key: 'deadline', render: (item) =>
+      header: 'Deadline', key: 'deadline', sortable: false, render: (item) =>
         item.deadline
           ? new Date(item.deadline).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: '2-digit' })
           : '—',
@@ -292,6 +381,7 @@ const withAssembly = (item, value) =>
     {
       header: 'Actions',
       key: '__actions',
+      sortable: false,
       render: (item) => editable && isAllowed(PageName, 'w') ? (
         <div>
           {((item.status || '').toLowerCase().includes('draft')) && (
@@ -347,7 +437,13 @@ const withAssembly = (item, value) =>
       </div>
 
       <div className={styles.tableSection}>
-        <DataTable columns={tableColumns} data={filtered} showActions={false} emptyMessage="No material requests found" />
+        <DataTable
+          columns={tableColumns}
+          data={groupedRows}
+          showActions={false}
+          emptyMessage="No material requests found"
+          pagination={false}
+        />
       </div>
 
       <ItemModal
@@ -392,13 +488,14 @@ const withAssembly = (item, value) =>
             ...value,
             name: value.name || matchedMaterial?.name || '',
             code: value.code || matchedMaterial?.code || '',
+            assemblyCode: value.assemblyCode || matchedMaterial?.assemblyCode || '',
             materialId: numericMaterialId,
             projectId: Number(projectId) || 0,
             scopeId: numericScopeId,
             projectQty: value.projectQty !== undefined ? Number(value.projectQty) : 0,
             requestedQty: value.requestedQty !== undefined ? Number(value.requestedQty) : 0,
             balance: value.balance !== undefined ? Number(value.balance) : 0,
-            reasonOrProject: value.reasonOrProject || '',
+            reasonOrProject: value.reasonOrProject || (value.id ? '' : projectNumber) || '',
             requestedBy: value.requestedBy || authName || '',
             deadline: value.deadline || '',
             requestDate: value.requestDate || today,

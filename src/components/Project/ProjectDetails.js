@@ -380,7 +380,13 @@ export default function ProjectDetails() {
 {activeTab === 'Trip Tickets' && <TripTicketTab projectId={project.id} editable={canWrite && tabEditable('Trip Tickets')} projectStatus={projectStatus} />}
 {activeTab === 'Staff' && <ProjectStaffTab projectId={project.id} editable={canWrite && tabEditable('Staff')} />}
 {activeTab === 'Attendance' && <AttendanceTab projectId={project.id} editable={canWrite && tabEditable('Attendance')} projectStatus={projectStatus} />}
-              {activeTab === 'Material Requests' && <MaterialRequestsTab projectId={project.id} editable={canWrite && tabEditable('Material Requests')} />}
+{activeTab === 'Material Requests' && (
+  <MaterialRequestsTab
+    projectId={project.id}
+    projectNumber={project.projectNo || project.code}
+    editable={canWrite && tabEditable('Material Requests')}
+  />
+)}
               {activeTab === 'Billing & Collection' && <ProjectBillingCollectionTab projectId={project.id} editable={canWrite && tabEditable('Billing & Collection')} overallProgress={project.overallProgress} />}
           </div>
         )}
