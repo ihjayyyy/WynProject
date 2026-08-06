@@ -14,7 +14,70 @@ import {
 import styles from './Dashboard.module.scss';
 
 const MODULE_PATH_REGISTRY = {
+  Dashboard: '/dashboard',
+  Customers: '/customers',
+  Suppliers: '/suppliers',
+  Inquiry: '/inquiry',
+
+  Projects: '/projects/proposal',
+  'Projects.Proposal': '/projects/proposal',
   'Projects.Projects': '/projects/project',
+
+  Purchase: '/purchase/requests',
+  'Purchase.Requests': '/purchase/requests',
+  'Purchase.SupplierRequests': '/purchase/supplier-requests',
+  'Purchase.Orders': '/purchase/orders',
+  'Purchase.Deliveries': '/purchase/deliveries',
+  'Purchase.Invoices': '/purchase/invoices',
+  'Purchase.Payments': '/purchase/payments',
+
+  Finance: '/finance/billings',
+  'Finance.Billings': '/finance/billings',
+  'Finance.Collections': '/finance/collections',
+
+  Materials: '/materialsSettings/materials',
+  'Materials.Materials': '/materialsSettings/materials',
+  'Materials.ToolsEquipment': '/materialsSettings/tools',
+  'Materials.Assembly': '/materialsSettings/assembly',
+
+  Inventory: '/inventory/material-inventory',
+  'Inventory.MaterialInventory': '/inventory/material-inventory',
+  'Inventory.ToolsInventory': '/inventory/tools-inventory',
+  'Inventory.MaterialRequests': '/inventory/material-request',
+  'Inventory.MaterialTransfer': '/inventory/materialtransfer',
+  'Inventory.MaterialReceived': '/inventory/materialreceived',
+  'Inventory.InventoryMovement': '/inventory/inventory-movement',
+  'Inventory.Barcode': '/inventory/barcode',
+  'Inventory.Report': '/inventory/inventory-report',
+
+  Reports: '/reports',
+
+  Maintenance: '/maintainance/users',
+  'Maintenance.Users': '/maintainance/users',
+  'Maintenance.Roles': '/maintainance/roles',
+  'Maintenance.UOM': '/maintainance/UOM',
+  'Maintenance.UOMConversion': '/maintainance/UOMConvertion',
+
+  Storage: '/storagesettings/warehouse',
+  'Storage.Warehouse': '/storagesettings/warehouse',
+  'Storage.Rack': '/storagesettings/rack',
+
+  Staff: '/staff',
+
+  // Common backend naming variants
+  'Purchase.SupplierRequest': '/purchase/supplier-requests',
+  'Purchase.Request': '/purchase/requests',
+  'Purchase.Order': '/purchase/orders',
+  'Purchase.Delivery': '/purchase/deliveries',
+  'Purchase.Invoice': '/purchase/invoices',
+  'Purchase.Payment': '/purchase/payments',
+  'Finance.Collection': '/finance/collections',
+  'Inventory.MaterialRequest': '/inventory/material-request',
+  'Inventory.MaterialTransfers': '/inventory/materialtransfer',
+  'Inventory.MaterialReceives': '/inventory/materialreceived',
+  'Inventory.Movement': '/inventory/inventory-movement',
+  'Maintenance.User': '/maintainance/users',
+  'Maintenance.Role': '/maintainance/roles',
 };
 
 function moduleToPath(moduleName) {
@@ -233,7 +296,7 @@ export default function Dashboard() {
     })();
 
     return () => { mounted = false; };
-  }, [loadingModules, allModules]);
+  }, [loadingModules, allModules, modules]);
 
   return (
     <div className={styles.dashboardWrap}>

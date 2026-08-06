@@ -8,11 +8,12 @@ import React, {
   useCallback,
 } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { FiInbox, FiPrinter } from 'react-icons/fi';
+import { FiInbox, FiPrinter, FiSend, FiEdit2, FiX, FiCheck, FiArchive, FiXCircle } from 'react-icons/fi';
 import { FormFields, TableColumns, ItemsFields } from './PRModels';
 import DetailsTable from '../ItemDetails/DetailsTable';
 import EntityForm from '../EntityForm/EntityForm';
 import Button from '../ui/Button/Button';
+import DropdownAction from '../ui/DropdownAction/DropdownAction';
 import { getProjects } from '@/services/Project';
 import { getMaterials } from '@/services/Materials';
 import EntityStyle from '../EntityForm/EntityContainer.module.scss';
@@ -348,138 +349,110 @@ export default function PRForm() {
     }
   };
 
-  //buttons
-  const CreateButton = () => {
-    return isAllowed(PageName, 'w') && !formId ? (
-      <Button type="submit" variant="save">
-        Save
-      </Button>
-    ) : null;
-  };
+  const headerActions = (() => {
+    const status = String(formData?.status || '').toLowerCase();
+    const canWrite = isAllowed(PageName, 'w');
+    const canApprove = isAllowed(PageName, 'a');
+    const canRead = isAllowed(PageName, 'r');
+    const canPrint = canRead && isReadOnly && formId;
 
-  const ViewButton = () => {
-    return isAllowed(PageName, 'w') && formId && mode === 'view' ? (
-      <div className={EntityStyle.buttonsContainer}>
-        {formData &&
-          formData.status &&
-          (formData.status.toLowerCase() === 'draft' ||
-            formData.status.toLowerCase() === 'rejected') && (
-            <Button onClick={() => setMode('edit')} variant="save">
-              Edit
-            </Button>
-          )}
-        {formData &&
-          formData.status &&
-          formData.status.toLowerCase() === 'draft' && (
-            <Button onClick={handleSubmitConfirm} variant="save">
-              Submit For Approval
-            </Button>
-          )}
-      </div>
-    ) : null;
-  };
+    // Create mode
+    if (!formId) {
+      return canWrite ? <Button type="submit" variant="save">Save</Button> : null;
+    }
 
-  const CanceButton = () => {
-    return isAllowed(PageName, 'w') && formId && mode === 'view' ? (
-      <div className={EntityStyle.buttonsContainer}>
-        {formData &&
-          formData.status &&
-          formData.status.toLowerCase() !== 'ordered' &&
-          formData.status.toLowerCase() !== 'cancelled' &&
-          formData.status.toLowerCase() !== 'archived' && (
-            <Button onClick={handleCancelConfirm} variant="danger">
-              Cancel PR
-            </Button>
-          )}
-      </div>
-    ) : null;
-  };
+    // Edit mode
+    if (mode === 'edit') {
+      return canWrite ? (
+        <>
+          <Button variant="outlineDanger" onClick={handleCanceEditConfirm}>Cancel</Button>
+          <Button type="submit" variant="save">Save</Button>
+        </>
+      ) : null;
+    }
 
-  const CRUDButton = () => {
-    return isAllowed(PageName, 'w') && formId && mode === 'edit' ? (
-      <div className={EntityStyle.buttonsContainer}>
-        <Button variant="outlineDanger" onClick={handleCanceEditConfirm}>
-          Cancel
+    // Read-only mode
+    const menuItems = [];
+    let primaryAction = null;
+
+    if (canPrint) {
+      menuItems.push({
+        key: 'print',
+        label: 'Print',
+        icon: <FiPrinter size={14} />,
+        onClick: async () => {
+          await printPurchaseRequest_byId(formId);
+        },
+      });
+    }
+
+    const canCancel = canWrite && status && !['ordered', 'cancelled', 'archived'].includes(status);
+    if (canCancel) {
+      menuItems.push({
+        key: 'cancel-pr',
+        label: 'Cancel PR',
+        icon: <FiXCircle size={14} />,
+        destructive: true,
+        onClick: handleCancelConfirm,
+      });
+    }
+
+    const canArchive = canWrite && ['ordered', 'approved', 'rejected', 'cancelled'].includes(status);
+    if (canArchive) {
+      menuItems.push({
+        key: 'archive',
+        label: 'Archive',
+        icon: <FiArchive size={14} />,
+        onClick: handleArchiveConfirm,
+      });
+    }
+
+    if (status === 'draft' && canWrite) {
+      primaryAction = (
+        <Button onClick={handleSubmitConfirm} variant="save">
+          <FiSend size={14} style={{ marginRight: 4 }} />Submit For Approval
         </Button>
-        <Button type="submit" variant="save">
-          Save
+      );
+      menuItems.push({
+        key: 'edit',
+        label: 'Edit',
+        icon: <FiEdit2 size={14} />,
+        onClick: () => setMode('edit'),
+      });
+    } else if (status === 'submitted' && canApprove) {
+      primaryAction = (
+        <Button variant="save" onClick={handleApproveConfirm}>
+          <FiCheck size={14} style={{ marginRight: 4 }} />Approve
         </Button>
-      </div>
-    ) : null;
-  };
-
-  const ApprovalButton = () => {
-    return isAllowed(PageName, 'a') &&
-      formId &&
-      formData.status &&
-      formData.status.toLowerCase() === 'submitted' ? (
-      <div className={EntityStyle.buttonsContainer}>
-        {formData &&
-          formData.status &&
-          formData.status.toLowerCase() === 'submitted' &&
-          mode === 'view' && (
-            <Button onClick={() => setMode('edit')} variant="save">
-              Edit
-            </Button>
-          )}
-        {mode === 'view' && (
-          <Button variant="outlineDanger" onClick={handleRejectConfirm}>
-            Reject
-          </Button>
-        )}
-        {mode === 'view' && (
-          <Button variant="save" onClick={handleApproveConfirm}>
-            Approve
-          </Button>
-        )}
-      </div>
-    ) : null;
-  };
-
-  // const OrderButton = () => {
-  //   return isAllowed(PageName, 'ww') &&
-  //     formId &&
-  //     formData.status &&
-  //     formData.status.toLowerCase() === 'approved' ? (
-  //     <div className={EntityStyle.buttonsContainer}>
-  //       <Button variant="save" onClick={handleApproveConfirm}>
-  //         Order
-  //       </Button>
-  //     </div>
-  //   ) : null;
-  // };
-
-  const ArchiveButton = () => {
-    return isAllowed(PageName, 'w') &&
-      mode === 'view' &&
-      formId &&
-      formData.status &&
-      (formData.status.toLowerCase() === 'ordered' ||
-        formData.status.toLowerCase() === 'approved' ||
-        formData.status.toLowerCase() === 'rejected' ||
-        formData.status.toLowerCase() === 'cancelled') ? (
-      <div className={EntityStyle.buttonsContainer}>
-        <Button variant="primary" onClick={handleArchiveConfirm}>
-          Archive
+      );
+      menuItems.push({
+        key: 'reject',
+        label: 'Reject',
+        icon: <FiX size={14} />,
+        destructive: true,
+        onClick: handleRejectConfirm,
+      });
+      menuItems.push({
+        key: 'edit-submitted',
+        label: 'Edit',
+        icon: <FiEdit2 size={14} />,
+        onClick: () => setMode('edit'),
+      });
+    } else if (status === 'rejected' && canWrite) {
+      primaryAction = (
+        <Button onClick={() => setMode('edit')} variant="save">
+          <FiEdit2 size={14} style={{ marginRight: 4 }} />Edit
         </Button>
-      </div>
-    ) : null;
-  };
+      );
+    }
 
-  const PrintButton = () => {
-    return isAllowed(PageName, 'r') && isReadOnly && formId ? (
+    return (
       <>
-        <Button
-          variant="primary"
-          icon={<FiPrinter size={14} />}
-          onClick={async () => {
-            await printPurchaseRequest_byId(formId);
-          }}>
-          Print
-        </Button>
+        {primaryAction}
+        {menuItems.length > 0 ? <DropdownAction item={formData} items={menuItems} /> : null}
       </>
-    ) : null;
-  };
+    );
+  })();
 
   return isAllowed(PageName, 'r') ? (
     formValid ? (
@@ -524,18 +497,7 @@ export default function PRForm() {
         width="100%"
         showSubmitButton={false}
         readOnly={isReadOnly}
-        headerActions={
-          <div className={EntityStyle.buttonsContainer}>
-            <CreateButton />
-            <CanceButton />
-            <ViewButton />
-            <CRUDButton />
-            <ApprovalButton />
-            {/* <OrderButton /> */}
-            <ArchiveButton />
-            <PrintButton />
-          </div>
-        }
+        headerActions={<div className={EntityStyle.buttonsContainer}>{headerActions}</div>}
       />
     ) : (
       <InvalidPage message="Purchase Request not found." />

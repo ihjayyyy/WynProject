@@ -263,6 +263,9 @@ export default function MaterialRequestsTab({ projectId, editable = true }) {
     );
   }, [items, searchTerm]);
 
+const withAssembly = (item, value) =>
+  item.assemblyCode ? `${item.assemblyCode} - ${value ?? ''}` : (value ?? '')
+
   const tableColumns = useMemo(() => [
     {
       header: 'Requested Date', key: 'requestDate', render: (item) =>
@@ -271,8 +274,8 @@ export default function MaterialRequestsTab({ projectId, editable = true }) {
           : '—',
     },
     { header: 'RIV Number', key: 'rivNumber' },
-    { header: 'Name', key: 'name' },
-    { header: 'Code', key: 'code' },
+  { header: 'Name', key: 'name', render: (item) => withAssembly(item, item.name) },
+  { header: 'Code', key: 'code', render: (item) => withAssembly(item, item.code) },
     { header: 'UOM', key: 'uom' },
     { header: 'Status', key: 'status', render: (item) => <StatusBadge status={item.status} /> },
     { header: 'Project Qty', key: 'projectQty' },
