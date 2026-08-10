@@ -6,6 +6,7 @@ import * as Yup from 'yup';
 import EntityForm from '../EntityForm/EntityForm';
 import EntityStyle from '../EntityForm/EntityContainer.module.scss';
 import Button from '../ui/Button/Button';
+import DropdownAction from '../ui/DropdownAction/DropdownAction';
 import DetailsTable from '../ItemDetails/DetailsTable';
 import { getTransferredMaterialTransfers, getMaterialTransfer, receiveMaterialTransfer } from '@/services/MaterialTransfer';
 import { useConfirmModal } from '@/app/contextProviders/confirmModalContext';
@@ -232,6 +233,22 @@ export default function MaterialReceivedForm() {
     return null;
   };
 
+  const headerActions = (() => {
+    if (isReadOnly) {
+      const menuItems = !isReceived
+        ? [{ key: 'edit', label: 'Edit', onClick: () => setMode('edit') }]
+        : [];
+      return menuItems.length > 0 ? <DropdownAction item={transferData || {}} items={menuItems} /> : null;
+    }
+
+    return (
+      <>
+        <Button variant="outlineDanger" onClick={() => { setMode(transferData ? 'view' : 'new'); }}>Cancel</Button>
+        <Button type="submit" variant="save" disabled={actionLoading || !selectedTransferId || allReceivedZero}>Save</Button>
+      </>
+    );
+  })();
+
   return (
     <EntityForm
       title={transferData ? `Receive for ${transferData.name || transferData.code || ''}` : 'New Material Received'}
@@ -286,18 +303,7 @@ export default function MaterialReceivedForm() {
       }}
       showSubmitButton={false}
       readOnly={isReadOnly}
-      headerActions={(
-        <div className={EntityStyle.buttonsContainer}>
-          {isReadOnly ? (
-            !isReceived && <Button variant="outline" onClick={() => setMode('edit')}>Edit</Button>
-          ) : (
-            <>
-              <Button variant="outlineDanger" onClick={() => { setMode(transferData ? 'view' : 'new'); }}>Cancel</Button>
-              <Button type="submit" variant="save" disabled={actionLoading || !selectedTransferId || allReceivedZero}>Save</Button>
-            </>
-          )}
-        </div>
-      )}
+      headerActions={headerActions}
     />
   );
 }

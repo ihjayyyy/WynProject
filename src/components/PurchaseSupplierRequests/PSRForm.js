@@ -2,11 +2,12 @@
 
 import React, { useMemo, useState, useEffect, useContext } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { FiFileText, FiPrinter } from 'react-icons/fi';
+import { FiFileText } from 'react-icons/fi';
 import { PSRFields, PSRDetailsColumns, PSRItemsFields } from './PSRModels';
 import DetailsTable from '../ItemDetails/DetailsTable';
 import EntityForm from '../EntityForm/EntityForm';
 import Button from '../ui/Button/Button';
+import DropdownAction from '../ui/DropdownAction/DropdownAction';
 import { getSuppliers } from '@/services/Supplier';
 import { getMaterials } from '@/services/Materials';
 import {
@@ -23,7 +24,6 @@ import {
   Approve,
   Reject,
   SetStatus,
-  printPSR_byId,
 } from '@/services/PurchaseSupplierRequest';
 import { useToast } from '../ui/Toast/Toast';
 import InvalidPage from '@/components/InvalidPage/page';
@@ -386,113 +386,105 @@ export default function PSRForm() {
     }
   };
 
-  // buttons
-  const CreateButton = () =>
-    isAllowed(PageName, 'w') && !requestId ? (
-      <Button type="submit" variant="save">
-        Save
-      </Button>
-    ) : null;
+  const headerActions = useMemo(() => {
+    const status = String(psr?.status || '').toLowerCase();
+    const canWrite = isAllowed(PageName, 'w');
+    const canApprove = isAllowed(PageName, 'a');
 
-  const ViewButton = () =>
-    isAllowed(PageName, 'w') && requestId && mode === 'view' ? (
-      <div className={PSRStyles.buttonsContainer}>
-        {psr &&
-          psr.status &&
-          (psr.status.toLowerCase() === 'draft' ||
-            psr.status.toLowerCase() === 'rejected') && (
-            <Button onClick={() => setMode('edit')} variant="save">
-              Edit
-            </Button>
-          )}
-        {psr && psr.status && psr.status.toLowerCase() === 'draft' && (
-          <Button onClick={handleSubmitConfirm} variant="save">
-            Submit For Approval
-          </Button>
-        )}
-      </div>
-    ) : null;
-
-  const CancelButton = () =>
-    isAllowed(PageName, 'w') && requestId && mode === 'view' ? (
-      <div className={PSRStyles.buttonsContainer}>
-        {psr &&
-          psr.status &&
-          psr.status.toLowerCase() !== 'cancelled' &&
-          psr.status.toLowerCase() !== 'archived' && (
-            <Button onClick={handleCancelConfirm} variant="danger">
-              Cancel
-            </Button>
-          )}
-      </div>
-    ) : null;
-
-  const CRUDButton = () =>
-    isAllowed(PageName, 'w') && requestId && mode === 'edit' ? (
-      <div className={PSRStyles.buttonsContainer}>
-        <Button variant="outlineDanger" onClick={handleCancelEditConfirm}>
-          Cancel
-        </Button>
+    if (!requestId) {
+      return canWrite ? (
         <Button type="submit" variant="save">
           Save
         </Button>
-      </div>
-    ) : null;
+      ) : null;
+    }
 
-  const ApprovalButton = () =>
-    isAllowed(PageName, 'a') &&
-    requestId &&
-    psr.status &&
-    psr.status.toLowerCase() === 'submitted' ? (
-      <div className={PSRStyles.buttonsContainer}>
-        {mode === 'view' && (
-          <Button onClick={() => setMode('edit')} variant="save">
-            Edit
+    if (mode === 'edit') {
+      return canWrite ? (
+        <>
+          <Button variant="outlineDanger" onClick={handleCancelEditConfirm}>
+            Cancel
           </Button>
-        )}
-        {mode === 'view' && (
-          <Button variant="outlineDanger" onClick={handleRejectConfirm}>
-            Reject
+          <Button type="submit" variant="save">
+            Save
           </Button>
-        )}
-        {mode === 'view' && (
-          <Button variant="save" onClick={handleApproveConfirm}>
-            Approve
-          </Button>
-        )}
-      </div>
-    ) : null;
+        </>
+      ) : null;
+    }
 
-  const ArchiveButton = () =>
-    isAllowed(PageName, 'w') &&
-    mode === 'view' &&
-    requestId &&
-    psr.status &&
-    (psr.status.toLowerCase() === 'approved' ||
-      psr.status.toLowerCase() === 'rejected' ||
-      psr.status.toLowerCase() === 'cancelled') ? (
-      <div className={PSRStyles.buttonsContainer}>
-        <Button variant="primary" onClick={handleArchiveConfirm}>
-          Archive
+    const menuItems = [];
+    let primaryAction = null;
+
+    if (canWrite && status && !['cancelled', 'archived'].includes(status)) {
+      menuItems.push({
+        key: 'cancel',
+        label: 'Cancel',
+        destructive: true,
+        onClick: handleCancelConfirm,
+      });
+    }
+
+    if (canWrite && ['approved', 'rejected', 'cancelled'].includes(status)) {
+      menuItems.push({
+        key: 'archive',
+        label: 'Archive',
+        onClick: handleArchiveConfirm,
+      });
+    }
+
+    if (canWrite && (status === 'draft' || status === 'rejected')) {
+      menuItems.push({
+        key: 'edit',
+        label: 'Edit',
+        onClick: () => setMode('edit'),
+      });
+    }
+
+    if (status === 'draft' && canWrite) {
+      primaryAction = (
+        <Button onClick={handleSubmitConfirm} variant="save">
+          Submit For Approval
         </Button>
-      </div>
-    ) : null;
+      );
+    }
 
-  const PrintButton = () =>
-    isAllowed(PageName, 'r') &&
-    isReadOnly &&
-    requestId &&
-    psr.status &&
-    psr.status.toLowerCase() === 'approved' ? (
-      <Button
-        variant="primary"
-        icon={<FiPrinter size={14} />}
-        onClick={async () => {
-          await printPSR_byId(requestId);
-        }}>
-        Print
-      </Button>
-    ) : null;
+    if (status === 'submitted' && canApprove) {
+      primaryAction = (
+        <Button variant="save" onClick={handleApproveConfirm}>
+          Approve
+        </Button>
+      );
+      menuItems.push({
+        key: 'reject',
+        label: 'Reject',
+        destructive: true,
+        onClick: handleRejectConfirm,
+      });
+      menuItems.push({
+        key: 'edit-submitted',
+        label: 'Edit',
+        onClick: () => setMode('edit'),
+      });
+    }
+
+    return (
+      <>
+        {primaryAction}
+        {menuItems.length > 0 ? <DropdownAction item={psr} items={menuItems} /> : null}
+      </>
+    );
+  }, [
+    psr,
+    requestId,
+    mode,
+    isAllowed,
+    handleCancelEditConfirm,
+    handleCancelConfirm,
+    handleArchiveConfirm,
+    handleSubmitConfirm,
+    handleApproveConfirm,
+    handleRejectConfirm,
+  ]);
 
   return isAllowed(PageName, 'r') ? (
     validPSR ? (
@@ -534,17 +526,7 @@ export default function PSRForm() {
         width="100%"
         showSubmitButton={false}
         readOnly={isReadOnly}
-        headerActions={
-          <div className={PSRStyles.buttonsContainer}>
-            <CreateButton />
-            <CancelButton />
-            <ViewButton />
-            <CRUDButton />
-            <ApprovalButton />
-            <ArchiveButton />
-            {/* <PrintButton /> */}
-          </div>
-        }
+        headerActions={headerActions}
       />
     ) : (
       <InvalidPage message="Purchase supplier request not found." />

@@ -32,6 +32,7 @@ import {
   PurchasePaymentItemFields,
 } from './PurchasePaymentsModel';
 import Button from '../ui/Button/Button';
+import DropdownAction from '../ui/DropdownAction/DropdownAction';
 import StatusBadge from '../ui/StatusBadge/StatusBadge';
 import PurchasePaymentsStyles from './PurchasePayments.module.scss';
 
@@ -385,6 +386,16 @@ export default function PurchasePaymentsForm() {
     );
   };
 
+  const handleCancelEdit = () => {
+    setTableData({
+      items: payment?.children || [],
+      deletedItems: payment?.deletedChildren || [],
+    });
+    setMode('view');
+    setFormKey((k) => k + 1);
+    if (payment?.supplierId) fetchInvoices(payment.supplierId);
+  };
+
   const savePayment = async (values) => {
     const supplier = suppliers.find(
       (s) => Number(s.id) === Number(values.supplierId),
@@ -447,6 +458,70 @@ export default function PurchasePaymentsForm() {
   }
 
   if (isLoading || loadingPayment) return null;
+
+  const headerActions = (() => {
+    const status = String(payment?.status || '').toLowerCase();
+    const canWrite = isAllowed(PageName, 'w');
+
+    if (mode !== 'view') {
+      return (
+        <>
+          {paymentId !== 0 ? (
+            <Button variant="outlineDanger" onClick={handleCancelEdit}>
+              Cancel
+            </Button>
+          ) : null}
+          {canWrite ? (
+            <Button type="submit" variant="save">
+              {paymentId !== 0 ? 'Save' : 'Create'}
+            </Button>
+          ) : null}
+        </>
+      );
+    }
+
+    const menuItems = [];
+    let primaryAction = null;
+
+    if (status === 'draft' && canWrite) {
+      primaryAction = (
+        <Button variant="primary" onClick={handleSubmitPayment}>
+          Mark as Paid
+        </Button>
+      );
+      menuItems.push({
+        key: 'edit',
+        label: 'Edit',
+        onClick: () => setMode('edit'),
+      });
+    }
+
+    if (canWrite && ['draft', 'partiallypaid', 'paid'].includes(status)) {
+      menuItems.push({
+        key: 'cancel-payment',
+        label: 'Cancel Payment',
+        destructive: true,
+        onClick: handleCancelPayment,
+      });
+    }
+
+    if (canWrite && status === 'cancelled') {
+      menuItems.push({
+        key: 'archive',
+        label: 'Archive',
+        onClick: handleArchivePayment,
+      });
+    }
+
+    return (
+      <>
+        {primaryAction}
+        {menuItems.length > 0 ? (
+          <DropdownAction item={payment || {}} items={menuItems} />
+        ) : null}
+      </>
+    );
+  })();
 
   return (
     <EntityForm
@@ -540,70 +615,7 @@ export default function PurchasePaymentsForm() {
       backPath="/purchase/payments"
       readOnly={mode === 'view'}
       showSubmitButton={false}
-      headerActions={
-        <div style={{ display: 'flex', gap: 8 }}>
-          {mode === 'view' &&
-            payment?.status === 'Draft' &&
-            isAllowed(PageName, 'w') && (
-              <Button variant="primary" onClick={() => setMode('edit')}>
-                Edit
-              </Button>
-            )}
-
-          {mode === 'view' &&
-            payment?.status === 'Draft' &&
-            isAllowed(PageName, 'w') && (
-              <Button variant="primary" onClick={handleSubmitPayment}>
-                Mark as Paid
-              </Button>
-            )}
-
-          {mode === 'view' &&
-            (payment?.status === 'Draft' ||
-              payment?.status === 'PartiallyPaid' ||
-              payment?.status === 'Paid') &&
-            isAllowed(PageName, 'w') && (
-              <Button variant="outlineDanger" onClick={handleCancelPayment}>
-                Cancel Payment
-              </Button>
-            )}
-
-          {mode === 'view' &&
-            payment?.status === 'Cancelled' &&
-            isAllowed(PageName, 'w') && (
-              <Button variant="primary" onClick={handleArchivePayment}>
-                Archive
-              </Button>
-            )}
-
-          {mode !== 'view' && (
-            <>
-              {paymentId !== 0 && (
-                <Button
-                  variant="outlineDanger"
-                  onClick={() => {
-                    // Cancel edit: if editing existing payment, revert to view and reset table data and form
-                    setTableData({
-                      items: payment?.children || [],
-                      deletedItems: payment?.deletedChildren || [],
-                    });
-                    setMode('view');
-                    setFormKey((k) => k + 1);
-                    if (payment?.supplierId) fetchInvoices(payment.supplierId);
-                  }}>
-                  Cancel
-                </Button>
-              )}
-
-              {isAllowed(PageName, 'w') && (
-                <Button type="submit" variant="save">
-                  {paymentId !== 0 ? 'Save' : 'Create'}
-                </Button>
-              )}
-            </>
-          )}
-        </div>
-      }
+      headerActions={headerActions}
     />
   );
 }

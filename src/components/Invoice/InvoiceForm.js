@@ -19,6 +19,7 @@ import DetailsTable from '../ItemDetails/DetailsTable';
 import EntityForm from '../EntityForm/EntityForm';
 import EntityStyle from '../EntityForm/EntityContainer.module.scss';
 import Button from '../ui/Button/Button';
+import DropdownAction from '../ui/DropdownAction/DropdownAction';
 import { getSuppliers } from '@/services/Supplier';
 import { getMaterials } from '@/services/Materials';
 import { Get as GetPO, GetOrdersBySupplier } from '@/services/PurchaseOrder';
@@ -550,138 +551,115 @@ const save = async (entity) => {
     }
   };
 
-  // Buttons
-  const CreateButton = () => {
-    return isAllowed(PageName, 'w') && !formId ? (
-      <Button type="submit" variant="save">
-        Save
-      </Button>
-    ) : null;
-  };
+  const headerActions = (() => {
+    const status = String(formData?.status || '').toLowerCase();
+    const canWrite = isAllowed(PageName, 'w');
+    const canApprove = isAllowed(PageName, 'a');
+    const canConfirm = isAllowed(PageName, 'ww');
+    const canRead = isAllowed(PageName, 'r');
 
-  const ViewButton = () => {
-    return isAllowed(PageName, 'w') && formId && mode === 'view' ? (
-      <div className={EntityStyle.buttonsContainer}>
-        {formData &&
-          formData.status &&
-          (formData.status.toLowerCase() === 'draft' ||
-            formData.status.toLowerCase() === 'rejected') && (
-            <Button onClick={() => setMode('edit')} variant="save">
-              Edit
-            </Button>
-          )}
-        {formData &&
-          formData.status &&
-          formData.status.toLowerCase() === 'draft' && (
-            <Button onClick={handleSubmitConfirm} variant="save">
-              Submit For Approval
-            </Button>
-          )}
-      </div>
-    ) : null;
-  };
-
-  const CancelButton = () => {
-    return isAllowed(PageName, 'w') && formId && mode === 'view' ? (
-      <div className={EntityStyle.buttonsContainer}>
-        {formData &&
-          formData.status &&
-          formData.status.toLowerCase() !== 'invoiced' &&
-          formData.status.toLowerCase() !== 'cancelled' &&
-          formData.status.toLowerCase() !== 'archived' && (
-            <Button onClick={handleCancelConfirm} variant="danger">
-              Cancel Invoice
-            </Button>
-          )}
-      </div>
-    ) : null;
-  };
-
-  const CRUDButton = () => {
-    return isAllowed(PageName, 'w') && formId && mode === 'edit' ? (
-      <div className={EntityStyle.buttonsContainer}>
-        <Button variant="outlineDanger" onClick={handleCanceEditConfirm}>
-          Cancel
-        </Button>
+    if (!formId) {
+      return canWrite ? (
         <Button type="submit" variant="save">
           Save
         </Button>
-      </div>
-    ) : null;
-  };
+      ) : null;
+    }
 
-  const ApprovalButton = () => {
-    return isAllowed(PageName, 'a') &&
-      formId &&
-      formData.status &&
-      formData.status.toLowerCase() === 'submitted' ? (
-      <div className={EntityStyle.buttonsContainer}>
-        {formData &&
-          formData.status &&
-          formData.status.toLowerCase() === 'submitted' &&
-          mode === 'view' && (
-            <Button onClick={() => setMode('edit')} variant="save">
-              Edit
-            </Button>
-          )}
-        {mode === 'view' && (
-          <Button variant="outlineDanger" onClick={handleRejectConfirm}>
-            Reject
+    if (mode === 'edit') {
+      return canWrite ? (
+        <>
+          <Button variant="outlineDanger" onClick={handleCanceEditConfirm}>
+            Cancel
           </Button>
-        )}
-        {mode === 'view' && (
-          <Button variant="save" onClick={handleApproveConfirm}>
-            Approve
+          <Button type="submit" variant="save">
+            Save
           </Button>
-        )}
-      </div>
-    ) : null;
-  };
+        </>
+      ) : null;
+    }
 
-  const ConfirmButton = () => {
-    return isAllowed(PageName, 'ww') &&
-      formId &&
-      formData.status &&
-      formData.status.toLowerCase() === 'approved' ? (
-      <div className={EntityStyle.buttonsContainer}>
+    const menuItems = [];
+    let primaryAction = null;
+
+    if (canRead && isReadOnly) {
+      menuItems.push({
+        key: 'print',
+        label: 'Print',
+        icon: <FiPrinter size={14} />,
+        onClick: async () => {
+          await printPurchaseInvoice_byId(formId);
+        },
+      });
+    }
+
+    if (canWrite && status && !['invoiced', 'cancelled', 'archived'].includes(status)) {
+      menuItems.push({
+        key: 'cancel-invoice',
+        label: 'Cancel Invoice',
+        destructive: true,
+        onClick: handleCancelConfirm,
+      });
+    }
+
+    if (canWrite && ['rejected', 'cancelled'].includes(status)) {
+      menuItems.push({
+        key: 'archive',
+        label: 'Archive',
+        onClick: handleArchiveConfirm,
+      });
+    }
+
+    if (canWrite && (status === 'draft' || status === 'rejected')) {
+      menuItems.push({
+        key: 'edit',
+        label: 'Edit',
+        onClick: () => setMode('edit'),
+      });
+    }
+
+    if (status === 'draft' && canWrite) {
+      primaryAction = (
+        <Button onClick={handleSubmitConfirm} variant="save">
+          Submit For Approval
+        </Button>
+      );
+    }
+
+    if (status === 'submitted' && canApprove) {
+      primaryAction = (
+        <Button variant="save" onClick={handleApproveConfirm}>
+          Approve
+        </Button>
+      );
+      menuItems.push({
+        key: 'reject',
+        label: 'Reject',
+        destructive: true,
+        onClick: handleRejectConfirm,
+      });
+      menuItems.push({
+        key: 'edit-submitted',
+        label: 'Edit',
+        onClick: () => setMode('edit'),
+      });
+    }
+
+    if (status === 'approved' && canConfirm) {
+      primaryAction = (
         <Button variant="save" onClick={handleInvoiceConfirm}>
           Confirm Invoice
         </Button>
-      </div>
-    ) : null;
-  };
+      );
+    }
 
-  const ArchiveButton = () => {
-    return isAllowed(PageName, 'w') &&
-      mode === 'view' &&
-      formId &&
-      formData.status &&
-      (formData.status.toLowerCase() === 'rejected' ||
-        formData.status.toLowerCase() === 'cancelled') ? (
-      <div className={EntityStyle.buttonsContainer}>
-        <Button variant="primary" onClick={handleArchiveConfirm}>
-          Archive
-        </Button>
-      </div>
-    ) : null;
-  };
-
-  const PrintButton = () => {
-    return isAllowed(PageName, 'r') && isReadOnly && formId ? (
+    return (
       <>
-        <Button
-          variant="primary"
-          icon={<FiPrinter size={14} />}
-          /*disabled={actionLoading}*/ onClick={async () => {
-            // setActionLoading(true);
-            await printPurchaseInvoice_byId(formId);
-            // setActionLoading(false);
-          }}>
-          Print
-        </Button>
+        {primaryAction}
+        {menuItems.length > 0 ? <DropdownAction item={formData} items={menuItems} /> : null}
       </>
-    ) : null;
-  };
+    );
+  })();
 
   return isAllowed(PageName, 'r') ? (
     validForm ? (
@@ -748,18 +726,7 @@ const save = async (entity) => {
         width="100%"
         showSubmitButton={false}
         readOnly={isReadOnly}
-        headerActions={
-          <div className={EntityStyle.buttonsContainer}>
-            <CreateButton />
-            <CancelButton />
-            <ViewButton />
-            <CRUDButton />
-            <ConfirmButton />
-            <ArchiveButton />
-            <ApprovalButton />
-            <PrintButton />
-          </div>
-        }
+        headerActions={headerActions}
       />
     ) : (
       <InvalidPage message="Purchase Invoice not found." />

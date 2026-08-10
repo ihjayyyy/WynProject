@@ -11,6 +11,7 @@ import {
 import DetailsTable from '../ItemDetails/DetailsTable';
 import EntityForm from '../EntityForm/EntityForm';
 import Button from '../ui/Button/Button';
+import DropdownAction from '../ui/DropdownAction/DropdownAction';
 import { getSuppliers } from '@/services/Supplier';
 import { getMaterials, getMaterial } from '@/services/Materials';
 import {
@@ -611,142 +612,128 @@ export default function PurchaseOrdersForm() {
     }
   };
 
-  // buttons
-  const CreateButton = () => {
-    return isAllowed(PageName, 'w') && !orderId ? (
-      <Button type="submit" variant="save">
-        Save
-      </Button>
-    ) : null;
-  };
+  const headerActions = useMemo(() => {
+    const status = String(po?.status || '').toLowerCase();
+    const canWrite = isAllowed(PageName, 'w');
+    const canApprove = isAllowed(PageName, 'a');
+    const canOrder = isAllowed(PageName, 'ww');
+    const canRead = isAllowed(PageName, 'r');
 
-  const ViewButton = () => {
-    return isAllowed(PageName, 'w') && orderId && mode === 'view' ? (
-      <div className={POStyles.buttonsContainer}>
-        {po &&
-          po.status &&
-          (po.status.toLowerCase() === 'draft' ||
-            po.status.toLowerCase() === 'rejected') && (
-            <Button onClick={() => setMode('edit')} variant="save">
-              Edit
-            </Button>
-          )}
-        {po && po.status && po.status.toLowerCase() === 'draft' && (
-          <Button onClick={handleSubmitConfirm} variant="save">
-            Submit For Approval
-          </Button>
-        )}
-      </div>
-    ) : null;
-  };
-
-  const CancePOButton = () => {
-    return isAllowed(PageName, 'w') && orderId && mode === 'view' ? (
-      <div className={POStyles.buttonsContainer}>
-        {po &&
-          po.status &&
-          po.status.toLowerCase() !== 'ordered' &&
-          po.status.toLowerCase() !== 'cancelled' &&
-          po.status.toLowerCase() !== 'archived' && (
-            <Button onClick={handleCancelPOConfirm} variant="danger">
-              Cancel PO
-            </Button>
-          )}
-      </div>
-    ) : null;
-  };
-
-  const CRUDButton = () => {
-    return isAllowed(PageName, 'w') && orderId && mode === 'edit' ? (
-      <div className={POStyles.buttonsContainer}>
-        <Button variant="outlineDanger" onClick={handleCanceEditConfirm}>
-          Cancel
-        </Button>
+    if (!orderId) {
+      return canWrite ? (
         <Button type="submit" variant="save">
           Save
         </Button>
-      </div>
-    ) : null;
-  };
+      ) : null;
+    }
 
-  const ApprovalButton = () => {
-    return isAllowed(PageName, 'a') &&
-      orderId &&
-      po.status &&
-      po.status.toLowerCase() === 'submitted' ? (
-      <div className={POStyles.buttonsContainer}>
-        {po &&
-          po.status &&
-          po.status.toLowerCase() === 'submitted' &&
-          mode === 'view' && (
-            <Button onClick={() => setMode('edit')} variant="save">
-              Edit
-            </Button>
-          )}
-        {mode === 'view' && (
-          <Button variant="outlineDanger" onClick={handleRejectConfirm}>
-            Reject
+    if (mode === 'edit') {
+      return canWrite ? (
+        <>
+          <Button variant="outlineDanger" onClick={handleCanceEditConfirm}>
+            Cancel
           </Button>
-        )}
-        {mode === 'view' && (
-          <Button variant="save" onClick={handleApproveConfirm}>
-            Approve
+          <Button type="submit" variant="save">
+            Save
           </Button>
-        )}
-      </div>
-    ) : null;
-  };
+        </>
+      ) : null;
+    }
 
-  const OrderButton = () => {
-    return isAllowed(PageName, 'ww') &&
-      orderId &&
-      po.status &&
-      po.status.toLowerCase() === 'approved' ? (
-      <div className={POStyles.buttonsContainer}>
+    const menuItems = [];
+    let primaryAction = null;
+
+    if (canRead && isReadOnly && (status === 'ordered' || status === 'approved')) {
+      menuItems.push({
+        key: 'print',
+        label: 'Print',
+        icon: <FiPrinter size={14} />,
+        onClick: async () => {
+          await printPurchaseOrder_byId(orderId);
+        },
+      });
+    }
+
+    if (canWrite && status && !['ordered', 'cancelled', 'archived'].includes(status)) {
+      menuItems.push({
+        key: 'cancel-po',
+        label: 'Cancel PO',
+        destructive: true,
+        onClick: handleCancelPOConfirm,
+      });
+    }
+
+    if (canWrite && ['ordered', 'approved', 'rejected', 'cancelled'].includes(status)) {
+      menuItems.push({
+        key: 'archive',
+        label: 'Archive',
+        onClick: handleArchiveConfirm,
+      });
+    }
+
+    if (canWrite && (status === 'draft' || status === 'rejected')) {
+      menuItems.push({
+        key: 'edit',
+        label: 'Edit',
+        onClick: () => setMode('edit'),
+      });
+    }
+
+    if (status === 'draft' && canWrite) {
+      primaryAction = (
+        <Button onClick={handleSubmitConfirm} variant="save">
+          Submit For Approval
+        </Button>
+      );
+    }
+
+    if (status === 'submitted' && canApprove) {
+      primaryAction = (
+        <Button variant="save" onClick={handleApproveConfirm}>
+          Approve
+        </Button>
+      );
+      menuItems.push({
+        key: 'reject',
+        label: 'Reject',
+        destructive: true,
+        onClick: handleRejectConfirm,
+      });
+      menuItems.push({
+        key: 'edit-submitted',
+        label: 'Edit',
+        onClick: () => setMode('edit'),
+      });
+    }
+
+    if (status === 'approved' && canOrder) {
+      primaryAction = (
         <Button variant="save" onClick={handleOrderConfirm}>
           Order
         </Button>
-      </div>
-    ) : null;
-  };
+      );
+    }
 
-  const ArchiveButton = () => {
-    return isAllowed(PageName, 'w') &&
-      mode === 'view' &&
-      orderId &&
-      po.status &&
-      (po.status.toLowerCase() === 'ordered' ||
-        po.status.toLowerCase() === 'approved' ||
-        po.status.toLowerCase() === 'rejected' ||
-        po.status.toLowerCase() === 'cancelled') ? (
-      <div className={POStyles.buttonsContainer}>
-        <Button variant="primary" onClick={handleArchiveConfirm}>
-          Archive
-        </Button>
-      </div>
-    ) : null;
-  };
-
-  const PrintButton = () => {
-    return isAllowed(PageName, 'r') &&
-      isReadOnly &&
-      orderId &&
-      (po.status.toLowerCase() === 'ordered' ||
-        po.status.toLowerCase() === 'approved') ? (
+    return (
       <>
-        <Button
-          variant="primary"
-          icon={<FiPrinter size={14} />}
-          /*disabled={actionLoading}*/ onClick={async () => {
-            // setActionLoading(true);
-            await printPurchaseOrder_byId(orderId);
-            // setActionLoading(false);
-          }}>
-          Print
-        </Button>
+        {primaryAction}
+        {menuItems.length > 0 ? <DropdownAction item={po} items={menuItems} /> : null}
       </>
-    ) : null;
-  };
+    );
+  }, [
+    po,
+    orderId,
+    mode,
+    isReadOnly,
+    isAllowed,
+    handleCanceEditConfirm,
+    handleCancelPOConfirm,
+    handleArchiveConfirm,
+    handleSubmitConfirm,
+    handleApproveConfirm,
+    handleRejectConfirm,
+    handleOrderConfirm,
+  ]);
 
   return isAllowed(PageName, 'r') ? (
     validPO ? (
@@ -814,18 +801,7 @@ export default function PurchaseOrdersForm() {
         width="100%"
         showSubmitButton={false}
         readOnly={isReadOnly}
-        headerActions={
-          <div className={POStyles.buttonsContainer}>
-            <CreateButton />
-            <CancePOButton />
-            <ViewButton />
-            <CRUDButton />
-            <ApprovalButton />
-            <OrderButton />
-            <ArchiveButton />
-            <PrintButton />
-          </div>
-        }
+        headerActions={headerActions}
       />
     ) : (
       <InvalidPage message="Purchase order not found." />

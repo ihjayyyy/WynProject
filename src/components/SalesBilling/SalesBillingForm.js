@@ -14,6 +14,7 @@ import { SalesBillingFields, SalesBillingDetailsColumns, SalesBillingItemsFields
 import { getProjects } from '@/services/Project';
 import CustomerService from '@/services/Customer';
 import Button from '../ui/Button/Button';
+import DropdownAction from '../ui/DropdownAction/DropdownAction';
 import StatusBadge from '../ui/StatusBadge/StatusBadge';
 import SBStyles from './SalesBilling.module.scss';
 
@@ -321,23 +322,77 @@ const billingFields = useMemo(() =>
   if (!validBilling) return <InvalidPage message="Billing not found." />;
   if (billing === null) return null; // wait for getBilling to populate
 
-  const SaveButton = () =>
-    isAllowed(PageName, 'w') && !isReadOnly ? (
-      <Button type="submit" variant="save">{billing.id ? 'Save' : 'Create'}</Button>
-    ) : null;
+  const headerActions = (() => {
+    const status = String(billing?.status || '').toLowerCase();
+    const canWrite = isAllowed(PageName, 'w');
+    const canRead = isAllowed(PageName, 'r');
 
-  const PrintRequestPaymentButton = () => {
-    // Sales Billings
-    return isAllowed(PageName, 'r') && isReadOnly && billing.id ? 
-    <>
-    <Button variant="primary" icon={<FiPrinter size={14} />} /*disabled={actionLoading}*/ onClick={async () => {
-      // setActionLoading(true);
-      await SalesBillingService.printSalesBilling_byId(billing.id);
-      // setActionLoading(false);
-      }}>Print Request Letter</Button>
-    </>
-    : null
+    if (!isReadOnly) {
+      return (
+        <>
+          {billingId !== 0 ? (
+            <Button variant="outlineDanger" onClick={() => setMode('view')}>
+              Cancel
+            </Button>
+          ) : null}
+          {canWrite ? (
+            <Button type="submit" variant="save">{billing.id ? 'Save' : 'Create'}</Button>
+          ) : null}
+        </>
+      );
     }
+
+    const menuItems = [];
+    let primaryAction = null;
+
+    if (status === 'draft' && canWrite) {
+      primaryAction = (
+        <Button variant="primary" icon={<FiCheckCircle />} onClick={handleMarkAsBilled}>Mark as Billed</Button>
+      );
+      menuItems.push({
+        key: 'edit',
+        label: 'Edit',
+        onClick: () => setMode('edit'),
+      });
+    }
+
+    if (canWrite && billingId !== 0 && status !== 'cancelled') {
+      menuItems.push({
+        key: 'cancel-billing',
+        label: 'Cancel Billing',
+        icon: <FiXCircle size={14} />,
+        destructive: true,
+        onClick: handleCancel,
+      });
+    }
+
+    if (canWrite && billingId !== 0 && status === 'cancelled') {
+      menuItems.push({
+        key: 'close-billing',
+        label: 'Close Billing',
+        icon: <FiArchive size={14} />,
+        onClick: handleClose,
+      });
+    }
+
+    if (canRead && isReadOnly && billing.id) {
+      menuItems.push({
+        key: 'print',
+        label: 'Print Request Letter',
+        icon: <FiPrinter size={14} />,
+        onClick: async () => {
+          await SalesBillingService.printSalesBilling_byId(billing.id);
+        },
+      });
+    }
+
+    return (
+      <>
+        {primaryAction}
+        {menuItems.length > 0 ? <DropdownAction item={billing} items={menuItems} /> : null}
+      </>
+    );
+  })();
 
   return (
     <EntityForm
@@ -387,29 +442,7 @@ const billingFields = useMemo(() =>
       backPath="/finance/billings"
       readOnly={isReadOnly}
       showSubmitButton={false}
-      headerActions={
-        <div style={{ display: 'flex', gap: 8 }}>
-          {isReadOnly && billing?.status?.toLowerCase() === 'draft' && isAllowed(PageName, 'w') && (
-            <Button variant="primary" onClick={() => setMode('edit')}>Edit</Button>
-          )}
-          {isReadOnly && billingId !== 0 && billing?.status?.toLowerCase() === 'draft' && isAllowed(PageName, 'w') && (
-            <Button variant="primary" icon={<FiCheckCircle />} onClick={handleMarkAsBilled}>Mark as Billed</Button>
-          )}
-          {/* Cancel Billing - shown when not already cancelled */}
-          {isAllowed(PageName, 'w') && billingId !== 0 && (billing?.status || '').toLowerCase() !== 'cancelled' && (
-            <Button variant="outlineDanger" icon={<FiXCircle />} onClick={handleCancel}>Cancel Billing</Button>
-          )}
-          {/* Close Billing - only when already cancelled */}
-          {isAllowed(PageName, 'w') && billingId !== 0 && (billing?.status || '').toLowerCase() === 'cancelled' && (
-            <Button variant="primary" icon={<FiArchive />} onClick={handleClose}>Close Billing</Button>
-          )}
-          {!isReadOnly && billingId !== 0 && (
-            <Button variant="outlineDanger" onClick={() => setMode('view')}>Cancel</Button>
-          )}
-          <SaveButton />
-          <PrintRequestPaymentButton />
-        </div>
-      }
+      headerActions={headerActions}
     />
   );
 }

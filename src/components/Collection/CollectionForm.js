@@ -14,6 +14,7 @@ import { CollectionFields, CollectionDetailsColumns, CollectionItemFields } from
 import CustomerService from '@/services/Customer';
 import SalesBillingService from '@/services/SalesBilling';
 import Button from '../ui/Button/Button';
+import DropdownAction from '../ui/DropdownAction/DropdownAction';
 import CollectionStyles from './Collection.module.scss';
 
 export default function CollectionForm() {
@@ -274,22 +275,78 @@ export default function CollectionForm() {
   if (!validCollection) return <InvalidPage message="Collection not found." />;
   if (collection === null) return null;
 
-  const SaveButton = () =>
-    isAllowed(PageName, 'w') && !isReadOnly ? (
-      <Button type="submit" variant="save">{collection.id ? 'Save' : 'Create'}</Button>
-    ) : null;
+  const headerActions = (() => {
+    const status = String(collection?.status || '').toLowerCase();
+    const canWrite = isAllowed(PageName, 'w');
+    const canRead = isAllowed(PageName, 'r');
 
-  const PrintButton = () => {
-    return isAllowed(PageName, 'r') && isReadOnly && collectionId ? 
-    <>
-    <Button variant="primary" icon={<FiPrinter size={14} />} /*disabled={actionLoading}*/ onClick={async () => {
-      // setActionLoading(true);
-      await printSalesCollection_byId(collectionId);
-      // setActionLoading(false);
-      }}>Print Invoice</Button>
-    </>
-    : null
+    if (!isReadOnly) {
+      return (
+        <>
+          {collectionId !== 0 ? (
+            <Button variant="outlineDanger" onClick={() => setMode('view')}>Cancel</Button>
+          ) : null}
+          {canWrite ? (
+            <Button type="submit" variant="save">{collection.id ? 'Save' : 'Create'}</Button>
+          ) : null}
+        </>
+      );
     }
+
+    const menuItems = [];
+    let primaryAction = null;
+
+    if (status === 'draft' && canWrite) {
+      const hasPaidAmount = (Number(collection?.totalAmountPaid) || 0) !== 0;
+      if (hasPaidAmount) {
+        primaryAction = (
+          <Button variant="primary" icon={<FiCheckCircle />} onClick={handleMarkAsPaidCollection}>Mark as Paid</Button>
+        );
+      }
+      menuItems.push({
+        key: 'edit',
+        label: 'Edit',
+        onClick: () => setMode('edit'),
+      });
+    }
+
+    if (canWrite && collectionId !== 0 && status !== 'cancelled') {
+      menuItems.push({
+        key: 'cancel-collection',
+        label: 'Cancel Collection',
+        icon: <FiXCircle size={14} />,
+        destructive: true,
+        onClick: handleCancelCollection,
+      });
+    }
+
+    if (canWrite && collectionId !== 0 && status === 'cancelled') {
+      menuItems.push({
+        key: 'close-collection',
+        label: 'Close Collection',
+        icon: <FiArchive size={14} />,
+        onClick: handleCloseCollection,
+      });
+    }
+
+    if (canRead && isReadOnly && collectionId) {
+      menuItems.push({
+        key: 'print',
+        label: 'Print Invoice',
+        icon: <FiPrinter size={14} />,
+        onClick: async () => {
+          await printSalesCollection_byId(collectionId);
+        },
+      });
+    }
+
+    return (
+      <>
+        {primaryAction}
+        {menuItems.length > 0 ? <DropdownAction item={collection} items={menuItems} /> : null}
+      </>
+    );
+  })();
 
   return (
     <EntityForm
@@ -339,30 +396,7 @@ export default function CollectionForm() {
       backPath="/finance/collections"
       readOnly={isReadOnly}
       showSubmitButton={false}
-      headerActions={
-        <div style={{ display: 'flex', gap: 8 }}>
-          {isReadOnly && collection?.status?.toLowerCase() === 'draft' && isAllowed(PageName, 'w') && (
-            <Button variant="primary" onClick={() => setMode('edit')}>Edit</Button>
-          )}
-          {/* Mark as Paid - shown only when status is draft and totalAmountPaid is not 0 */}
-          {isAllowed(PageName, 'w') && collectionId !== 0 && (collection?.status || '').toLowerCase() === 'draft' && (Number(collection?.totalAmountPaid) || 0) !== 0 && (
-            <Button variant="primary" icon={<FiCheckCircle />} onClick={handleMarkAsPaidCollection}>Mark as Paid</Button>
-          )}
-          {/* Cancel Collection - shown when not already cancelled */}
-          {isAllowed(PageName, 'w') && collectionId !== 0 && (collection?.status || '').toLowerCase() !== 'cancelled' && (
-            <Button variant="outlineDanger" icon={<FiXCircle />} onClick={handleCancelCollection}>Cancel Collection</Button>
-          )}
-          {/* Close Collection - only when already cancelled */}
-          {isAllowed(PageName, 'w') && collectionId !== 0 && (collection?.status || '').toLowerCase() === 'cancelled' && (
-            <Button variant="primary" icon={<FiArchive />} onClick={handleCloseCollection}>Close Collection</Button>
-          )}
-          {!isReadOnly && collectionId !== 0 && (
-            <Button variant="outlineDanger" onClick={() => setMode('view')}>Cancel</Button>
-          )}
-          <SaveButton />
-          <PrintButton />
-        </div>
-      }
+      headerActions={headerActions}
     />
   );
 }

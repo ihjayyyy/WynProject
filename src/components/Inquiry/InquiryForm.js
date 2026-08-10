@@ -7,6 +7,7 @@ import { FiMessageSquare, FiXCircle, FiArchive, FiPrinter } from 'react-icons/fi
 import { useConfirmModal } from '@/app/contextProviders/confirmModalContext';
 import EntityForm from '../EntityForm/EntityForm';
 import Button from '../ui/Button/Button';
+import DropdownAction from '../ui/DropdownAction/DropdownAction';
 import { useToast } from '../ui/Toast/Toast';
 import { INITIAL_INQUIRY, getInquiries, createInquiry, updateInquiry, acknowledgeInquiry, cancelInquiry, closeInquiry, printInquirySlip_byId } from '../../services/Inquiry';
 import StatusBadge from '../ui/StatusBadge/StatusBadge';
@@ -276,6 +277,78 @@ export default function InquiryForm() {
     );
   };
 
+  const headerActions = (() => {
+    if (!inquiryId) {
+      return <Button type="submit" variant="save">Create</Button>;
+    }
+
+    if (!isReadOnly) {
+      return (
+        <>
+          <Button
+            variant="outlineDanger"
+            onClick={() => {
+              if (mode === 'edit') {
+                router.push(`/inquiry/inquiryform?id=${inquiryId}`);
+                return;
+              }
+              setIsEditModeLocal(false);
+            }}>
+            Cancel
+          </Button>
+          <Button type="submit" variant="save">Save</Button>
+        </>
+      );
+    }
+
+    const menuItems = [];
+    let primaryAction = null;
+    const lowerStatus = (status || '').toLowerCase();
+
+    if (canEnterEditMode) {
+      primaryAction = (
+        <Button variant="outlinedPrimary" onClick={() => setIsEditModeLocal(true)}>Edit</Button>
+      );
+    }
+
+    if (inquiryId && lowerStatus !== 'cancelled') {
+      menuItems.push({
+        key: 'cancel-inquiry',
+        label: 'Cancel Inquiry',
+        icon: <FiXCircle size={14} />,
+        destructive: true,
+        onClick: handleCancel,
+      });
+    }
+
+    if (inquiryId && lowerStatus === 'cancelled') {
+      menuItems.push({
+        key: 'close-inquiry',
+        label: 'Close Inquiry',
+        icon: <FiArchive size={14} />,
+        onClick: handleClose,
+      });
+    }
+
+    if (isReadOnly && inquiryId) {
+      menuItems.push({
+        key: 'print',
+        label: 'Print Inquiry Slip',
+        icon: <FiPrinter size={14} />,
+        onClick: async () => {
+          await printInquirySlip_byId(inquiryId);
+        },
+      });
+    }
+
+    return (
+      <>
+        {primaryAction}
+        {menuItems.length > 0 ? <DropdownAction item={initialValues} items={menuItems} /> : null}
+      </>
+    );
+  })();
+
   return (
     <EntityForm
       key={formKey}
@@ -333,42 +406,7 @@ export default function InquiryForm() {
       columns={3}
       showSubmitButton={false}
       readOnly={isReadOnly}
-      headerActions={
-        !inquiryId ? (
-          <Button type="submit" variant="save">Create</Button>
-        ) : (
-          <>
-            {inquiryId && (status || '').toLowerCase() !== 'cancelled' && (
-              <Button variant="outlineDanger" icon={<FiXCircle />} onClick={handleCancel}>Cancel Inquiry</Button>
-            )}
-            {inquiryId && (status || '').toLowerCase() === 'cancelled' && (
-              <Button variant="primary" icon={<FiArchive />} onClick={handleClose}>Close Inquiry</Button>
-            )}
-
-            {isReadOnly ? (
-              canEnterEditMode ? (
-                <Button variant="outlinedPrimary" onClick={() => setIsEditModeLocal(true)}>Edit</Button>
-              ) : null
-            ) : (
-              <>
-                <Button
-                  variant="outlineDanger"
-                  onClick={() => {
-                    if (mode === 'edit') {
-                      router.push(`/inquiry/inquiryform?id=${inquiryId}`);
-                      return;
-                    }
-                    setIsEditModeLocal(false);
-                  }}>
-                  Cancel
-                </Button>
-                <Button type="submit" variant="save">Save</Button>
-              </>
-            )}
-            <PrintButton />
-          </>
-        )
-      }
+      headerActions={headerActions}
     />
   );
 }
