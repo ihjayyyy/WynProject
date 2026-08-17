@@ -464,13 +464,14 @@ export default function ProposalForm() {
             {!isReadOnly && canEditFinance && (
               <Button
                 variant="secondary"
+                disabled={actionLoading}
                 onClick={() => {
                   const pct = Number(values.laborPercentage) || 0;
                   confirmModal.show(
                     'Apply Labor % to All',
                     `Apply ${pct}% labor to all scopes and materials? This will overwrite their existing values.`,
                     'Apply', 'primary',
-                    () => () => applyLaborPctToChildren(pct)
+                    () => applyLaborPctToChildren(pct)   // was: () => () => applyLaborPctToChildren(pct)
                   );
                 }}
               >
@@ -789,66 +790,75 @@ export default function ProposalForm() {
           </>
         }
         onSubmit={async (values) => {
-          const modelPayload = buildModelPayload(values);
+          // Guard against double-submits from fast double-clicks on the
+          // Save/Create/Copy/Revise buttons — mirrors the actionLoading
+          // guard already used for the status-transition buttons below.
+          if (actionLoading) return;
+          setActionLoading(true);
+          try {
+            const modelPayload = buildModelPayload(values);
 
-          // REVISE MODE
-          if (isReviseMode) {
+            // REVISE MODE
+            if (isReviseMode) {
+              const payload = {
+                ...modelPayload,
+                proposalNo: initialValues.proposalNo || '',
+                proposalStatus: initialValues.proposalStatus || 'draft',
+                version: initialValues.version || 1,
+                originalProposalId: Number(proposalId),
+                children: cleanChildren(childrenState, 0),
+                deletedChildren: cleanDeleted(deletedChildrenState, 0),
+              };
+              const res = await createRevisedProposal(payload);
+              if (res?.error) toast.error('Failed to create revised proposal');
+              else toast.success('Revised proposal created');
+              try { router.push('/projects/proposal'); } catch (err) {}
+              return '/projects/proposal';
+            }
+
+            // COPY MODE - create a new proposal from existing one
+            if (isCopyMode) {
+              const cleaned = cleanChildren(childrenState, 0).map((c) => ({ ...c, id: 0 }));
+              const payload = {
+                ...modelPayload,
+                children: cleaned,
+                deletedChildren: [],
+              };
+              const res = await createProposal(payload);
+              if (res?.error) toast.error('Failed to create proposal');
+              else toast.success('Proposal created');
+              try { router.push('/projects/proposal'); } catch (err) {}
+              return '/projects/proposal';
+            }
+
+            // CREATE MODE
+            if (!proposalId) {
+              const payload = {
+                ...modelPayload,
+                children: cleanChildren(childrenState, 0),
+                deletedChildren: cleanDeleted(deletedChildrenState, 0),
+              };
+              const res = await createProposal(payload);
+              if (res?.error) toast.error('Failed to create proposal');
+              else toast.success('Proposal created');
+              try { router.push('/projects/proposal'); } catch (err) {}
+              return '/projects/proposal';
+            }
+
+            // EDIT/UPDATE MODE
             const payload = {
               ...modelPayload,
-              proposalNo: initialValues.proposalNo || '',
-              proposalStatus: initialValues.proposalStatus || 'draft',
-              version: initialValues.version || 1,
-              originalProposalId: Number(proposalId),
-              children: cleanChildren(childrenState, 0),
-              deletedChildren: cleanDeleted(deletedChildrenState, 0),
+              children: cleanChildren(childrenState, Number(proposalId)),
+              deletedChildren: cleanDeleted(deletedChildrenState, Number(proposalId)),
             };
-            const res = await createRevisedProposal(payload);
-            if (res?.error) toast.error('Failed to create revised proposal');
-            else toast.success('Revised proposal created');
+            const res = await updateProposal(proposalId, payload);
+            if (res?.error) toast.error('Failed to save proposal');
+            else toast.success('Proposal saved');
             try { router.push('/projects/proposal'); } catch (err) {}
             return '/projects/proposal';
+          } finally {
+            setActionLoading(false);
           }
-
-          // COPY MODE - create a new proposal from existing one
-          if (isCopyMode) {
-            const cleaned = cleanChildren(childrenState, 0).map((c) => ({ ...c, id: 0 }));
-            const payload = {
-              ...modelPayload,
-              children: cleaned,
-              deletedChildren: [],
-            };
-            const res = await createProposal(payload);
-            if (res?.error) toast.error('Failed to create proposal');
-            else toast.success('Proposal created');
-            try { router.push('/projects/proposal'); } catch (err) {}
-            return '/projects/proposal';
-          }
-
-          // CREATE MODE
-          if (!proposalId) {
-            const payload = {
-              ...modelPayload,
-              children: cleanChildren(childrenState, 0),
-              deletedChildren: cleanDeleted(deletedChildrenState, 0),
-            };
-            const res = await createProposal(payload);
-            if (res?.error) toast.error('Failed to create proposal');
-            else toast.success('Proposal created');
-            try { router.push('/projects/proposal'); } catch (err) {}
-            return '/projects/proposal';
-          }
-
-          // EDIT/UPDATE MODE
-          const payload = {
-            ...modelPayload,
-            children: cleanChildren(childrenState, Number(proposalId)),
-            deletedChildren: cleanDeleted(deletedChildrenState, Number(proposalId)),
-          };
-          const res = await updateProposal(proposalId, payload);
-          if (res?.error) toast.error('Failed to save proposal');
-          else toast.success('Proposal saved');
-          try { router.push('/projects/proposal'); } catch (err) {}
-          return '/projects/proposal';
         }}
         backPath="/projects/proposal"
         width="100%"
@@ -866,10 +876,17 @@ export default function ProposalForm() {
   const shouldShowGenerateProject = isWon && initialValues?.isProjectCreated === false;
 
   // ── Shared confirm-modal helper ──────────────────────────────────────
-  const confirmAndRun = (title, message, action, successMsg = 'Done', errorMsg = 'Action failed') => {
+  // Called as confirmAndRun(title, message, action, { successMsg, errorMsg }) —
+  // the 4th arg is an options object, not a bare string.
+  const confirmAndRun = (title, message, action, options = {}) => {
+  const { successMsg = 'Done', errorMsg = 'Action failed' } = options;
   setConfirmTitle(title);
   setConfirmMessage(message);
   setConfirmCallback(() => async () => {
+    // Guard: ignore if an action is already in flight (e.g. the confirm
+    // modal's own button was double-clicked before the disabled state
+    // re-rendered).
+    if (actionLoading) return;
     setActionLoading(true);
     const res = await action();
     if (res?.error) toast.error(errorMsg);
@@ -899,6 +916,7 @@ export default function ProposalForm() {
           icon: <FiPrinter size={14} />,
           disabled: () => actionLoading,
           onClick: async () => {
+            if (actionLoading) return;
             setActionLoading(true);
             await printProposal_byId(proposalId);
             setActionLoading(false);
@@ -910,6 +928,7 @@ export default function ProposalForm() {
           icon: <FiPrinter size={14} />,
           disabled: () => actionLoading,
           onClick: async () => {
+            if (actionLoading) return;
             setActionLoading(true);
             await printProposalBreakdown_byId(proposalId);
             setActionLoading(false);
@@ -922,8 +941,8 @@ export default function ProposalForm() {
   if (isReviseMode) {
     return (
       <>
-        <Button variant="outlineDanger" onClick={() => router.push('/projects/proposal')}>Cancel</Button>
-        {isAllowed(PageName, 'w') ? <Button type="submit" variant="save">Save Revision</Button> : null}
+        <Button variant="outlineDanger" disabled={actionLoading} onClick={() => router.push('/projects/proposal')}>Cancel</Button>
+        {isAllowed(PageName, 'w') ? <Button type="submit" variant="save" disabled={actionLoading}>Save Revision</Button> : null}
       </>
     );
   }
@@ -932,29 +951,29 @@ export default function ProposalForm() {
   if (isCopyMode) {
     return isAllowed(PageName, 'w') ? (
       <>
-        <Button variant="outlineDanger" onClick={() => router.push('/projects/proposal')}>Cancel</Button>
-        <Button type="submit" variant="save">Create Copy</Button>
+        <Button variant="outlineDanger" disabled={actionLoading} onClick={() => router.push('/projects/proposal')}>Cancel</Button>
+        <Button type="submit" variant="save" disabled={actionLoading}>Create Copy</Button>
       </>
     ) : null;
   }
 
   // ── CREATE MODE (no proposalId yet) ─────────────────────────────────────
   if (!proposalId) {
-    return isAllowed(PageName, 'w') ? <Button type="submit" variant="save">Create</Button> : null;
+    return isAllowed(PageName, 'w') ? <Button type="submit" variant="save" disabled={actionLoading}>Create</Button> : null;
   }
 
   // ── EDIT MODE (form is currently editable) ──────────────────────────────
   if (!isReadOnly) {
     return (
       <>
-        <Button variant="outlineDanger" onClick={() => {
+        <Button variant="outlineDanger" disabled={actionLoading} onClick={() => {
           if (mode === 'edit') {
             router.push(`/projects/proposal/proposalform?id=${proposalId}`);
             return;
           }
           setIsEditModeLocal(false);
         }}>Cancel</Button>
-        {isAllowed(PageName, 'w') ? <Button type="submit" variant="save">Save</Button> : null}
+        {isAllowed(PageName, 'w') ? <Button type="submit" variant="save" disabled={actionLoading}>Save</Button> : null}
         {documentMenuItems.length > 0 ? (
           <DropdownAction item={initialValues} items={documentMenuItems} />
         ) : null}
@@ -968,7 +987,7 @@ export default function ProposalForm() {
 
   if (canEnterEditMode && isAllowed(PageName, 'w')) {
     primaryAction = (
-      <Button variant="outlinedPrimary" onClick={() => setIsEditModeLocal(true)}>Edit</Button>
+      <Button variant="outlinedPrimary" disabled={actionLoading} onClick={() => setIsEditModeLocal(true)}>Edit</Button>
     );
   }
 
@@ -1113,7 +1132,9 @@ export default function ProposalForm() {
         title={confirmTitle}
         message={confirmMessage}
         confirmText="Confirm"
+        confirmDisabled={actionLoading}
         onConfirm={async () => {
+          if (actionLoading) return;
           setIsConfirmOpen(false);
           if (confirmCallback) await confirmCallback();
         }}

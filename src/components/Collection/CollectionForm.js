@@ -37,6 +37,10 @@ export default function CollectionForm() {
   const [computedTotalWithholdingTax, setComputedTotalWithholdingTax] = useState(0);
   const [computedTotalAmountReceived, setComputedTotalAmountReceived] = useState(0);
   const [computedTotalAmountPaid, setComputedTotalAmountPaid] = useState(0);
+  // Tracks whether a save / status-change action is currently in flight, so
+  // header buttons and confirm-modal actions can be disabled to prevent
+  // double-click double-submits.
+  const [actionLoading, setActionLoading] = useState(false);
 
   useEffect(() => {
     CustomerService.getCustomers().then(({ data }) => setCustomers(Array.isArray(data) ? data : []));
@@ -160,66 +164,78 @@ export default function CollectionForm() {
   };
 
   const save = async (entity) => {
-    const ensureISODate = (val) => {
-      if (!val) return new Date().toISOString();
-      if (/\d{4}-\d{2}-\d{2}T\d{2}:\d{2}/.test(val)) return val;
-      if (/\d{4}-\d{2}-\d{2}/.test(val)) return new Date(val).toISOString();
-      return new Date().toISOString();
-    };
+    // Guard against double-submit from a fast double-click on Save/Create,
+    // or from the confirm modal's Save button being clicked twice.
+    if (actionLoading) return;
+    setActionLoading(true);
+    try {
+      const ensureISODate = (val) => {
+        if (!val) return new Date().toISOString();
+        if (/\d{4}-\d{2}-\d{2}T\d{2}:\d{2}/.test(val)) return val;
+        if (/\d{4}-\d{2}-\d{2}/.test(val)) return new Date(val).toISOString();
+        return new Date().toISOString();
+      };
 
-    const normalizeChild = (item) => ({
-      name: item.name ?? '',
-      code: item.code ?? '',
-      id: item.id ?? 0,
-      parentId: item.parentId ?? 0,
-      collectionId: item.collectionId ?? 0,
-      amount: item.amount ?? 0,        // add this
-      amountPaid: item.amountPaid ?? 0,
-      totalAmountPaid: item.totalAmountPaid ?? 0,
-      withholdingTax: item.withholdingTax ?? 0,
-      balance: item.balance ?? 0,
-      billingId: item.billingId ?? 0,
-    });
+      const normalizeChild = (item) => ({
+        name: item.name ?? '',
+        code: item.code ?? '',
+        id: item.id ?? 0,
+        parentId: item.parentId ?? 0,
+        collectionId: item.collectionId ?? 0,
+        amount: item.amount ?? 0,        // add this
+        amountPaid: item.amountPaid ?? 0,
+        totalAmountPaid: item.totalAmountPaid ?? 0,
+        withholdingTax: item.withholdingTax ?? 0,
+        balance: item.balance ?? 0,
+        billingId: item.billingId ?? 0,
+      });
 
-    const mergedCollection = { ...collection, ...entity };
+      const mergedCollection = { ...collection, ...entity };
 
-    const updatedCollection = {
-      ...mergedCollection,
-      amount: computedAmount,
-      totalWithholdingTax: computedTotalWithholdingTax,
-      totalAmountReceived: computedTotalAmountReceived,
-      totalAmountPaid: computedTotalAmountPaid,
-      children: (tableData.items || []).map(normalizeChild),
-      deletedChildren: (tableData.deletedItems || []).map(normalizeChild),
-      date: ensureISODate(mergedCollection.date),
-    };
+      const updatedCollection = {
+        ...mergedCollection,
+        amount: computedAmount,
+        totalWithholdingTax: computedTotalWithholdingTax,
+        totalAmountReceived: computedTotalAmountReceived,
+        totalAmountPaid: computedTotalAmountPaid,
+        children: (tableData.items || []).map(normalizeChild),
+        deletedChildren: (tableData.deletedItems || []).map(normalizeChild),
+        date: ensureISODate(mergedCollection.date),
+      };
 
-    let res;
-    if (!updatedCollection.id || updatedCollection.id === 0) {
-      res = await CollectionService.createCollection(updatedCollection);
-    } else {
-      res = await CollectionService.updateCollection(updatedCollection.id, updatedCollection);
-    }
+      let res;
+      if (!updatedCollection.id || updatedCollection.id === 0) {
+        res = await CollectionService.createCollection(updatedCollection);
+      } else {
+        res = await CollectionService.updateCollection(updatedCollection.id, updatedCollection);
+      }
 
-    if (res?.error) {
-      toast.error('Failed to save Collection.');
-    } else {
-      toast.success('Collection has been saved.');
-      router.push('/finance/collections');
+      if (res?.error) {
+        toast.error('Failed to save Collection.');
+      } else {
+        toast.success('Collection has been saved.');
+        router.push('/finance/collections');
+      }
+    } finally {
+      setActionLoading(false);
     }
   };
 
   const handleSaveConfirm = (entity) => {
+    if (actionLoading) return;
     confirmModal.show('Save Collection', 'Are you sure?', 'Save', 'primary', () => () => save(entity));
   };
 
   const handleCancelCollection = () => {
+    if (actionLoading) return;
     confirmModal.show(
       'Cancel Collection',
       `Are you sure you want to cancel collection "${collection?.collectionNo || collection?.id}"?`,
       'Confirm',
       'primary',
       () => async () => {
+        if (actionLoading) return;
+        setActionLoading(true);
         const { error } = await CollectionService.cancelCollection(collectionId);
         if (error) {
           toast.error('Failed to cancel collection.');
@@ -228,17 +244,21 @@ export default function CollectionForm() {
           setCollection((prev) => ({ ...prev, status: 'Cancelled' }));
           setMode('view');
         }
+        setActionLoading(false);
       }
     );
   };
 
   const handleMarkAsPaidCollection = () => {
+    if (actionLoading) return;
     confirmModal.show(
       'Mark as Paid',
       `Are you sure you want to mark collection "${collection?.collectionNo || collection?.id}" as paid?`,
       'Confirm',
       'primary',
       () => async () => {
+        if (actionLoading) return;
+        setActionLoading(true);
         const { error } = await CollectionService.markCollectionAsPaid(collectionId);
         if (error) {
           toast.error('Failed to mark collection as paid.');
@@ -247,17 +267,21 @@ export default function CollectionForm() {
           setCollection((prev) => ({ ...prev, status: 'Paid' }));
           setMode('view');
         }
+        setActionLoading(false);
       }
     );
   };
 
   const handleCloseCollection = () => {
+    if (actionLoading) return;
     confirmModal.show(
       'Close Collection',
       `Are you sure you want to close collection "${collection?.collectionNo || collection?.id}"?`,
       'Confirm',
       'primary',
       () => async () => {
+        if (actionLoading) return;
+        setActionLoading(true);
         const { error } = await CollectionService.closeCollection(collectionId);
         if (error) {
           toast.error('Failed to close collection.');
@@ -267,8 +291,19 @@ export default function CollectionForm() {
           setMode('view');
           router.push('/finance/collections');
         }
+        setActionLoading(false);
       }
     );
+  };
+
+  const handlePrintCollection = async () => {
+    if (actionLoading) return;
+    setActionLoading(true);
+    try {
+      await printSalesCollection_byId(collectionId);
+    } finally {
+      setActionLoading(false);
+    }
   };
 
   if (!isAllowed(PageName, 'r')) return <InvalidPage message="Access Denied" />;
@@ -284,10 +319,10 @@ export default function CollectionForm() {
       return (
         <>
           {collectionId !== 0 ? (
-            <Button variant="outlineDanger" onClick={() => setMode('view')}>Cancel</Button>
+            <Button variant="outlineDanger" disabled={actionLoading} onClick={() => setMode('view')}>Cancel</Button>
           ) : null}
           {canWrite ? (
-            <Button type="submit" variant="save">{collection.id ? 'Save' : 'Create'}</Button>
+            <Button type="submit" variant="save" disabled={actionLoading}>{collection.id ? 'Save' : 'Create'}</Button>
           ) : null}
         </>
       );
@@ -300,12 +335,13 @@ export default function CollectionForm() {
       const hasPaidAmount = (Number(collection?.totalAmountPaid) || 0) !== 0;
       if (hasPaidAmount) {
         primaryAction = (
-          <Button variant="primary" icon={<FiCheckCircle />} onClick={handleMarkAsPaidCollection}>Mark as Paid</Button>
+          <Button variant="primary" icon={<FiCheckCircle />} disabled={actionLoading} onClick={handleMarkAsPaidCollection}>Mark as Paid</Button>
         );
       }
       menuItems.push({
         key: 'edit',
         label: 'Edit',
+        disabled: () => actionLoading,
         onClick: () => setMode('edit'),
       });
     }
@@ -316,6 +352,7 @@ export default function CollectionForm() {
         label: 'Cancel Collection',
         icon: <FiXCircle size={14} />,
         destructive: true,
+        disabled: () => actionLoading,
         onClick: handleCancelCollection,
       });
     }
@@ -325,6 +362,7 @@ export default function CollectionForm() {
         key: 'close-collection',
         label: 'Close Collection',
         icon: <FiArchive size={14} />,
+        disabled: () => actionLoading,
         onClick: handleCloseCollection,
       });
     }
@@ -334,9 +372,8 @@ export default function CollectionForm() {
         key: 'print',
         label: 'Print Invoice',
         icon: <FiPrinter size={14} />,
-        onClick: async () => {
-          await printSalesCollection_byId(collectionId);
-        },
+        disabled: () => actionLoading,
+        onClick: handlePrintCollection,
       });
     }
 

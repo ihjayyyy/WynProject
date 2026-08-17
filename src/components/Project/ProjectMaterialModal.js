@@ -134,19 +134,53 @@ export default function ProjectMaterialModal({ open, initial = {}, onCancel, onC
     return { ...source, materialId: 0 };
   }, [form, materials]);
 
-  const calculatedForm = useMemo(() => {
-    const selected = applyMaterialSelect(form.materialId);
-    const uc = Number(selected.unitCost) || 0;
-    const qty = Number(selected.quantity) || 0;
-    const pct = Number(selected.laborPercentage) || 0;
-    const disc = Number(selected.discount) || 0;
+  // Edit mode = we're modifying an already-saved line item (has an id from the API).
+  // In this case we must NOT silently re-derive unitCost/name/code/uom from the current
+  // catalog record, since the catalog's sellingPrice may have changed since this line
+  // was originally priced/saved. The saved values are the source of truth until the
+  // user explicitly picks a different material from the dropdown.
+  const isEditMode = Boolean(initial && initial.id);
+
+  const recalc = (uc, qty, pct, disc, fallbackLaborCost) => {
     const base = uc * qty;
     const materialBase = base - disc;
     const rawVat = materialBase * 0.12;
     const vatAmount = Number.isFinite(rawVat) ? Math.max(0, Number(rawVat.toFixed(2))) : 0;
     const materialCost = Number((materialBase + vatAmount).toFixed(2));
-    const lab = pct > 0 ? Number((materialCost * pct / 100).toFixed(2)) : Number(selected.laborCost) || 0;
+    const lab = pct > 0 ? Number((materialCost * pct / 100).toFixed(2)) : Number(fallbackLaborCost) || 0;
     const totalPrice = Number((materialCost + lab).toFixed(2));
+    return { vatAmount, materialCost, lab, totalPrice };
+  };
+
+  const calculatedForm = useMemo(() => {
+    // EDIT MODE: trust the values already on `form` (originally seeded from `initial`,
+    // i.e. what's actually saved on the record). Do not overwrite unitCost/name/code/uom
+    // from the materials catalog just because the material list finished loading.
+    if (isEditMode) {
+      const uc = Number(form.unitCost) || 0;
+      const qty = Number(form.quantity) || 0;
+      const pct = Number(form.laborPercentage) || 0;
+      const disc = Number(form.discount) || 0;
+      const { vatAmount, materialCost, lab, totalPrice } = recalc(uc, qty, pct, disc, form.laborCost);
+      return {
+        ...form,
+        vat: vatAmount,
+        materialCost,
+        laborCost: lab,
+        totalAmount: totalPrice,
+        extendedCost: totalPrice,
+        totalPrice,
+      };
+    }
+
+    // NEW ITEM MODE: derive display fields from the currently selected catalog material,
+    // since there's no prior saved price to protect.
+    const selected = applyMaterialSelect(form.materialId);
+    const uc = Number(selected.unitCost) || 0;
+    const qty = Number(selected.quantity) || 0;
+    const pct = Number(selected.laborPercentage) || 0;
+    const disc = Number(selected.discount) || 0;
+    const { vatAmount, materialCost, lab, totalPrice } = recalc(uc, qty, pct, disc, selected.laborCost);
     return {
       ...selected,
       vat: vatAmount,
@@ -156,9 +190,7 @@ export default function ProjectMaterialModal({ open, initial = {}, onCancel, onC
       extendedCost: totalPrice,
       totalPrice,
     };
-  }, [form, applyMaterialSelect]);
-
-  const isEditMode = Boolean(initial && initial.id);
+  }, [form, applyMaterialSelect, isEditMode]);
 
   // Completed quantity cannot be lowered below what's already been marked complete on this material.
   const minQuantity = isEditMode ? (Number(calculatedForm.completedQuantity) || 0) : 0;
@@ -232,6 +264,9 @@ export default function ProjectMaterialModal({ open, initial = {}, onCancel, onC
         })),
   validator: !isService && categorySelected ? Yup.string().required('Material is required') : Yup.string().notRequired(),
   onChange: (item, updateField, itemFields, nextValue) => {
+    // User explicitly picked a (possibly different) material — this is the one place
+    // where we intentionally pull the live catalog price, even in edit mode, because
+    // the user is actively re-choosing the underlying item.
     const next = applyMaterialSelect(nextValue, itemFields);
     const uc = Number(next.unitCost) || 0;
     const qty = Number(itemFields.find((f) => f.name === 'quantity')?.value) || 0;
@@ -260,6 +295,23 @@ export default function ProjectMaterialModal({ open, initial = {}, onCancel, onC
     updateField('totalAmount', total);
     updateField('extendedCost', total);
     updateField('totalPrice', total);
+
+    // Keep local `form` state in sync so calculatedForm's edit-mode branch reflects
+    // the newly chosen material instead of the stale saved one.
+    setForm((f) => ({
+      ...f,
+      materialId: next.materialId || 0,
+      uom: next.uom || '',
+      unitCost: uc,
+      code: next.code || '',
+      name: next.name || '',
+      vat,
+      materialCost,
+      laborCost,
+      totalAmount: total,
+      extendedCost: total,
+      totalPrice: total,
+    }));
   },
 },
 {
@@ -310,6 +362,7 @@ export default function ProjectMaterialModal({ open, initial = {}, onCancel, onC
         updateField('totalAmount', total);
         updateField('extendedCost', total);
         updateField('totalPrice', total);
+        setForm((f) => ({ ...f, unitCost: uc, vat, materialCost, laborCost: lab, totalAmount: total, extendedCost: total, totalPrice: total }));
       },
     },
     {
@@ -345,6 +398,7 @@ export default function ProjectMaterialModal({ open, initial = {}, onCancel, onC
         updateField('totalAmount', total);
         updateField('extendedCost', total);
         updateField('totalPrice', total);
+        setForm((f) => ({ ...f, quantity: qty, vat, materialCost, laborCost: lab, totalAmount: total, extendedCost: total, totalPrice: total }));
       },
     },
     {
@@ -372,6 +426,7 @@ export default function ProjectMaterialModal({ open, initial = {}, onCancel, onC
         updateField('totalAmount', total);
         updateField('extendedCost', total);
         updateField('totalPrice', total);
+        setForm((f) => ({ ...f, discount: disc, vat, materialCost, laborCost: lab, totalAmount: total, extendedCost: total, totalPrice: total }));
       },
     },
     { name: 'vat', label: 'VAT', type: 'number', value: Number(calculatedForm.vat) || 0, readonly: true, validator: Yup.number().notRequired() },
