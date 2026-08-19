@@ -82,21 +82,31 @@ export default function MaterialReceivedForm() {
       // Any remarks already on the item (e.g. from a prior partial receive) are kept
       // separately in `existingRemarks` so they can be displayed read-only and merged
       // with new remarks on save, rather than being overwritten.
-      const preItems = children.map((c) => ({
-        id: c.id ?? c.transferDetailId ?? 0,
-        parentId: c.parentId ?? c.transferId ?? selectedTransferId,
-        materialId: c.materialId ?? (c.material ? c.material.id : 0),
-        code: c.code || (c.material && c.material.code) || '',
-        name: c.name || (c.material && c.material.name) || '',
-        rackId: c.rackId ?? (c.rack ? c.rack.id : 0),
-        rackCode: (c.rack && c.rack.code) || '',
-        rackName: (c.rack && c.rack.name) || '',
-        quantity: Number(c.quantity ?? c.qty ?? 0),
-        receivedQuantity: Number(c.receivedQuantity ?? 0),
-        uom: c.uom || (c.material && c.material.uom) || '',
-        existingRemarks: c.remarks || '',
-        remarks: '',
-      }));
+      const preItems = children.map((c) => {
+        const quantity = Number(c.quantity ?? c.qty ?? 0);
+        const receivedQuantity = Number(c.receivedQuantity ?? 0);
+
+        return {
+          id: c.id ?? c.transferDetailId ?? 0,
+          parentId: c.parentId ?? c.transferId ?? selectedTransferId,
+          materialId: c.materialId ?? (c.material ? c.material.id : 0),
+          code: c.code || (c.material && c.material.code) || '',
+          name: c.name || (c.material && c.material.name) || '',
+          rackId: c.rackId ?? (c.rack ? c.rack.id : 0),
+          rackCode: (c.rack && c.rack.code) || '',
+          rackName: (c.rack && c.rack.name) || '',
+          quantity,
+          receivedQuantity,
+          // Snapshot of what the backend already had for this line before this
+          // pass. Used on save to exclude lines that were already fully
+          // received previously, so they aren't resent in the payload, and
+          // used by ItemsFields to lock those lines from further editing.
+          originalReceivedQuantity: receivedQuantity,
+          uom: c.uom || (c.material && c.material.uom) || '',
+          existingRemarks: c.remarks || '',
+          remarks: '',
+        };
+      });
 
       setTableData({ items: preItems, deletedItems: [] });
       setItemFields(ReceivedItemsFields(data?.status));
@@ -189,11 +199,20 @@ export default function MaterialReceivedForm() {
       return null;
     }
 
-    const details = (tableData.items || []).map((it) => ({
-      transferDetailId: it.id || it.parentId || 0,
-      receivedQuantity: Number(it.receivedQuantity || 0),
-      remarks: combineRemarks(it.existingRemarks, it.remarks),
-    }));
+    const details = (tableData.items || [])
+      // Skip lines the backend already fully received in a prior pass —
+      // nothing changed for them, so they shouldn't be resent in the payload.
+      .filter((it) => {
+        const qty = Number(it.quantity || 0);
+        const originallyReceived = Number(it.originalReceivedQuantity || 0);
+        const alreadyFullyReceived = qty > 0 && originallyReceived >= qty;
+        return !alreadyFullyReceived;
+      })
+      .map((it) => ({
+        transferDetailId: it.id || it.parentId || 0,
+        receivedQuantity: Number(it.receivedQuantity || 0),
+        remarks: combineRemarks(it.existingRemarks, it.remarks),
+      }));
 
     const payload = { details };
 

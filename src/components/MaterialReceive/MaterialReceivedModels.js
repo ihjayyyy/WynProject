@@ -65,6 +65,11 @@ export const ItemsFields = (status) => {
       readonly: true,
     },
 
+    // Snapshot of the backend's receivedQuantity at load time. Hidden —
+    // used only to determine whether this line was already fully received
+    // in a prior pass (see isLineAlreadyFullyReceived above).
+    { name: 'originalReceivedQuantity', label: 'originalReceivedQuantity', type: 'number', hidden: true, initialvalue: 0 },
+
     {
       name: 'receivedQuantity',
       label: 'Received Quantity',
