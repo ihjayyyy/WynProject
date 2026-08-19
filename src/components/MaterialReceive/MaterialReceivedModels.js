@@ -1,4 +1,6 @@
+import React from "react";
 import * as Yup from "yup";
+import StatusBadge from "@/components/ui/StatusBadge/StatusBadge";
 
 export const TableColumns = [
   {
@@ -32,6 +34,15 @@ export const TableColumns = [
     render: (it) => (Number(it.receivedQuantity) || 0).toFixed(0),
   },
   { header: 'Remarks', key: 'remarks', width: '220px', render: (it) => it.existingRemarks || it.remarks || '' },
+  {
+    header: 'Status',
+    key: 'status',
+    width: '100px',
+    render: (it) =>
+      React.createElement(StatusBadge, {
+        status: Number(it.originalReceivedQuantity || 0) > 0 ? 'RECEIVED' : 'PENDING',
+      }),
+  },
 ];
 
 // status: the current MaterialTransfer status (e.g. transferData?.status).

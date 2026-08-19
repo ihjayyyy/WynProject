@@ -2,14 +2,14 @@
 
 import React, { useMemo, useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import { FiEdit2, FiEye, FiPackage, FiStar } from 'react-icons/fi';
+import { FiEdit2, FiEye, FiPackage, FiStar, FiTrash2 } from 'react-icons/fi';
 import * as Yup from 'yup';
 import DropdownAction from '../ui/DropdownAction/DropdownAction';
 import Landing from '../ui/Landing/Landing';
 import ItemModal from '../ItemDetails/itemModal';
 import ConfirmModal from '../ui/ConfirmModal/ConfirmModal';
 import Select from '../ui/Select/Select';
-import { byTypeMaterials } from '../../services/Materials';
+import { byTypeMaterials, deleteMaterial } from '../../services/Materials';
 import { getRacks } from '../../services/Rack';
 import { createMaterialInventory, getRacksByMaterialId, setDefaultMaterialInventory } from '../../services/MaterialInventory';
 import { useToast } from '../ui/Toast/Toast';
@@ -44,6 +44,8 @@ export default function ToolsLanding() {
   const [selectedInventoryId, setSelectedInventoryId] = useState('');
   const [defaultSaving, setDefaultSaving] = useState(false);
   const [defaultLoading, setDefaultLoading] = useState(false);
+  const [deleteModal, setDeleteModal] = useState({ open: false, material: null });
+  const [deleteLoading, setDeleteLoading] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -96,7 +98,7 @@ export default function ToolsLanding() {
   }, [rackOptions]);
 
   // Open Set Default modal and load racks for that material
-  const openDefaultModal = async (item) => {
+  const openDefaultModal = useCallback(async (item) => {
     setDefaultModal({ open: true, material: item });
     setSelectedInventoryId('');
     setDefaultRackOptions([]);
@@ -117,7 +119,7 @@ export default function ToolsLanding() {
     } finally {
       setDefaultLoading(false);
     }
-  };
+  }, [toast]);
 
   const closeDefaultModal = () => {
     setDefaultModal({ open: false, material: null });
@@ -141,6 +143,22 @@ export default function ToolsLanding() {
       toast.error('Failed to set default inventory.');
     } finally {
       setDefaultSaving(false);
+    }
+  };
+
+  const applyDelete = async () => {
+    if (deleteLoading || !deleteModal.material?.id) return;
+    try {
+      setDeleteLoading(true);
+      const res = await deleteMaterial(deleteModal.material.id);
+      if (res?.error) throw new Error(res.error);
+      setInventory((prev) => prev.filter((item) => String(item.id) !== String(deleteModal.material.id)));
+      toast.success('Tool deleted');
+      setDeleteModal({ open: false, material: null });
+    } catch (err) {
+      toast.error('Failed to delete tool');
+    } finally {
+      setDeleteLoading(false);
     }
   };
 
@@ -169,8 +187,9 @@ export default function ToolsLanding() {
       { key: 'edit', label: 'Edit', icon: <FiEdit2 size={14} />, onClick: (item) => router.push(`/materialsSettings/tools/toolsForm?id=${item.id}&mode=edit`) },
       { key: 'createInventory', label: 'Create Inventory', icon: <FiPackage size={14} />, onClick: openInventoryModal },
       { key: 'setDefault', label: 'Set Default', icon: <FiStar size={14} />, onClick: openDefaultModal },
+      { key: 'delete', label: 'Delete', icon: <FiTrash2 size={14} />, onClick: (item) => setDeleteModal({ open: true, material: item }) },
     ],
-    [router, openInventoryModal]
+    [router, openInventoryModal, openDefaultModal]
   );
 
   const columns = useMemo(() => [...baseColumns, { header: 'Action', key: 'actions', align: 'right', sortable: false, render: (item) => <DropdownAction item={item} items={actionItems} /> }], [actionItems]);
@@ -250,6 +269,18 @@ export default function ToolsLanding() {
             setInventoryModal({ open: false, material: null });
             setInventoryRackOptions([]);
           }
+        }}
+      />
+
+      <ConfirmModal
+        open={deleteModal.open}
+        title="Delete Tool"
+        message={`Are you sure you want to delete "${deleteModal.material?.name || deleteModal.material?.code || ''}"?`}
+        confirmText={deleteLoading ? 'Deleting...' : 'Delete'}
+        confirmVariant="danger"
+        onConfirm={applyDelete}
+        onCancel={() => {
+          if (!deleteLoading) setDeleteModal({ open: false, material: null });
         }}
       />
 

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useMemo, useState } from 'react';
+import React, { useContext, useMemo, useState } from 'react';
 import * as Yup from 'yup';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { FiUserCheck } from 'react-icons/fi';
@@ -8,8 +8,11 @@ import EntityForm from '../EntityForm/EntityForm';
 import Button from '../ui/Button/Button';
 import { useToast } from '../ui/Toast/Toast';
 import { INITIAL_STAFF, getStaffs, createStaff, updateStaff } from '@/services/Staff';
+import { AccessContext } from '@/app/contextProviders/accessContext';
 
 export default function StaffForm() {
+  const { isAllowed } = useContext(AccessContext);
+  const canEditRate = isAllowed('Staff', 'f');
   const router = useRouter();
   const searchParams = useSearchParams();
   const staffId = searchParams.get('id');
@@ -54,7 +57,14 @@ export default function StaffForm() {
     { name: 'name', label: 'Name', span: 'span2', validator: Yup.string().required('Name is required') },
     { name: 'job', label: 'Job', span: 'span2', validator: Yup.string().required('Job is required') },
     { name: 'department', label: 'Department', span: 'span2', validator: Yup.string().required('Department is required') },
-    { name: 'ratePerHour', label: 'Rate Per Hour', type: 'number', span: 'span2', validator: Yup.number().min(0, 'Rate per hour must be 0 or more') },
+    {
+      name: 'ratePerHour',
+      label: canEditRate ? 'Rate Per Hour (Editable)' : 'Rate Per Hour',
+      type: 'number',
+      span: 'span2',
+      readOnly: !canEditRate,
+      validator: Yup.number().min(0, 'Rate per hour must be 0 or more'),
+    },
   ];
 
   return (
@@ -70,7 +80,9 @@ export default function StaffForm() {
           code: values.code || '',
           job: values.job || '',
           department: values.department || '',
-          ratePerHour: Number(values.ratePerHour) || 0,
+          ratePerHour: canEditRate
+            ? (Number(values.ratePerHour) || 0)
+            : (Number(initialValues.ratePerHour) || 0),
         };
 
         if (!staffId) {

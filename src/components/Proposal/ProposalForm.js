@@ -164,7 +164,6 @@ export default function ProposalForm() {
     setChildrenState(initialValues?.children || []);
     setDeletedChildrenState([]);
 
-    console.log('Initial proposal values:', initialValues);
     if (initialValues.id === 0 && !isReviseMode) {
       getParameter('Proposal').then((res) => {
         if (res && res.data && Array.isArray(res.data)) {
@@ -397,7 +396,7 @@ export default function ProposalForm() {
     },
     { name: 'spacer-1', type: 'spacer', span: 'span1' },
     { name: 'proposalNo', label: 'Proposal Number', span: 'span1', readOnly: true },
-    { name: 'name', label: 'Proposal Name', span: 'span1', readOnly: isReviseMode, validator: Yup.string().typeError('Proposal Name is required').required('Proposal Name is required') },
+    { name: 'name', label: 'Proposal Name', span: 'span1', validator: Yup.string().typeError('Proposal Name is required').required('Proposal Name is required') },
     { name: 'spacer-2', type: 'spacer', span: 'span1' },
     { name: 'customerReferenceNumber', label: 'Customer Reference No.', span: 'span1', hidden: true },
     { name: 'requestDate', label: 'Proposal Date', type: 'date', span: 'span1', validator: Yup.date().typeError('Invalid date').required('Proposal Date is required') },

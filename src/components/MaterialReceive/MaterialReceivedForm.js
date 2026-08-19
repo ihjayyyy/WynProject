@@ -98,10 +98,16 @@ export default function MaterialReceivedForm() {
           quantity,
           receivedQuantity,
           // Snapshot of what the backend already had for this line before this
-          // pass. Used on save to exclude lines that were already fully
-          // received previously, so they aren't resent in the payload, and
-          // used by ItemsFields to lock those lines from further editing.
+          // pass. A line is only editable/receivable this pass if this is 0 —
+          // any line with a prior receivedQuantity (partial OR full) is locked,
+          // excluded from the save payload, and shown as read-only.
           originalReceivedQuantity: receivedQuantity,
+          // Best-effort flags for DetailsTable/ItemModal to gate row-level
+          // editing on, since the exact prop name they check isn't known here.
+          // Harmless if unused/unrecognized by those components.
+          readOnly: receivedQuantity > 0,
+          disabled: receivedQuantity > 0,
+          locked: receivedQuantity > 0,
           uom: c.uom || (c.material && c.material.uom) || '',
           existingRemarks: c.remarks || '',
           remarks: '',
@@ -141,20 +147,28 @@ export default function MaterialReceivedForm() {
     [transferData]
   );
 
-  // True when every item currently has a received quantity of 0 — nothing to save yet.
-  const allReceivedZero = useMemo(() => {
-    const items = tableData.items || [];
-    if (items.length === 0) return true;
-    return items.every((it) => Number(it.receivedQuantity || 0) === 0);
-  }, [tableData.items]);
-
-  // True as soon as at least one item has received qty > 0 on this pass.
-  // Drives the remarks requirement for the other lines, independent of the
-  // transfer's server-side status (matters on the very first receive, before
-  // the transfer itself is marked "PartiallyReceived").
-  const anyReceivedThisPass = useMemo(
-    () => (tableData.items || []).some((it) => Number(it.receivedQuantity || 0) > 0),
+  // Only lines untouched before this pass (originalReceivedQuantity 0) are
+  // editable this pass — locked (already-received) lines are excluded from
+  // these checks so they don't falsely enable Save or the remarks rule.
+  const editableItems = useMemo(
+    () => (tableData.items || []).filter((it) => Number(it.originalReceivedQuantity || 0) === 0),
     [tableData.items]
+  );
+
+  // True when every editable item currently has a received quantity of 0 —
+  // nothing new to save yet.
+  const allReceivedZero = useMemo(() => {
+    if (editableItems.length === 0) return true;
+    return editableItems.every((it) => Number(it.receivedQuantity || 0) === 0);
+  }, [editableItems]);
+
+  // True as soon as at least one editable item has received qty > 0 on this
+  // pass. Drives the remarks requirement for the other lines, independent of
+  // the transfer's server-side status (matters on the very first receive,
+  // before the transfer itself is marked "PartiallyReceived").
+  const anyReceivedThisPass = useMemo(
+    () => editableItems.some((it) => Number(it.receivedQuantity || 0) > 0),
+    [editableItems]
   );
 
   const formFields = useMemo(() => (
@@ -200,14 +214,10 @@ export default function MaterialReceivedForm() {
     }
 
     const details = (tableData.items || [])
-      // Skip lines the backend already fully received in a prior pass —
-      // nothing changed for them, so they shouldn't be resent in the payload.
-      .filter((it) => {
-        const qty = Number(it.quantity || 0);
-        const originallyReceived = Number(it.originalReceivedQuantity || 0);
-        const alreadyFullyReceived = qty > 0 && originallyReceived >= qty;
-        return !alreadyFullyReceived;
-      })
+      // Only lines that were untouched (receivedQuantity 0) before this pass
+      // are editable/receivable — anything with a prior receivedQuantity,
+      // partial or full, is locked and excluded from the payload.
+      .filter((it) => Number(it.originalReceivedQuantity || 0) === 0)
       .map((it) => ({
         transferDetailId: it.id || it.parentId || 0,
         receivedQuantity: Number(it.receivedQuantity || 0),
@@ -306,7 +316,7 @@ export default function MaterialReceivedForm() {
           setTableError(errors.transferId);
         } else if (
           (isPartiallyReceived || anyReceivedThisPass) &&
-          (tableData.items || []).some((it) => {
+          editableItems.some((it) => {
             const quantity = Number(it.quantity || 0);
             const received = Number(it.receivedQuantity || 0);
             const isLinePartiallyReceived = received < quantity;

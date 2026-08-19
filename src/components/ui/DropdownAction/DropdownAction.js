@@ -9,6 +9,7 @@ export default function DropdownAction({ item, items, containsRef }) {
   const [open, setOpen] = useState(false);
   const triggerRef = useRef(null);
   const menuRef = useRef(null);
+  const actionLockRef = useRef(false);
   const [menuStyle, setMenuStyle] = useState({ top: 0, left: 0, width: 160 });
 
   const close = useCallback(() => setOpen(false), []);
@@ -111,10 +112,18 @@ export default function DropdownAction({ item, items, containsRef }) {
           type="button"
           key={it.key || idx}
           className={cls}
-          onClick={(e) => {
+          onClick={async (e) => {
             e.stopPropagation();
+            if (actionLockRef.current) return;
+            actionLockRef.current = true;
             close();
-            if (it.onClick) it.onClick(item);
+            try {
+              await it.onClick?.(item);
+            } finally {
+              setTimeout(() => {
+                actionLockRef.current = false;
+              }, 300);
+            }
           }}
           disabled={disabled}
         >

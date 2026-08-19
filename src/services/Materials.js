@@ -135,5 +135,21 @@ async function updateMaterial(id, payload) {
     return { data: null, error: error?.message || error };
   }
 }
+async function deleteMaterial(id) {
+  try {
+    const url = `${API_BASE_URL}/${id}`;
+    const res = await fetch(url, {
+      method: 'DELETE',
+      headers: {
+        Accept: '*/*',
+      },
+    });
 
-export { getMaterials, getMaterial, byTypeMaterials, createMaterial, updateMaterial };
+    const json = await res.json();
+    return { data: unwrapResponse(json), error: null };
+  } catch (error) {
+    return { data: null, error: error?.message || error };
+  }
+}
+
+export { getMaterials, getMaterial, byTypeMaterials, createMaterial, updateMaterial, deleteMaterial };

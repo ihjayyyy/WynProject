@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useMemo, useState, useEffect } from 'react';
+import React, { useMemo, useState, useEffect, useContext } from 'react';
 import * as Yup from 'yup';
 import { useRouter,useSearchParams } from 'next/navigation';
 import { FiArchive } from 'react-icons/fi';
@@ -10,8 +10,10 @@ import { createMaterial, updateMaterial, getMaterial, INITIAL_MATERIAL } from '.
 import { getRacks } from '../../services/Rack';
 import { getSuppliers } from '../../services/Supplier';
 import { useToast } from '../ui/Toast/Toast';
+import { AccessContext } from '@/app/contextProviders/accessContext';
 
 export default function ToolsForm() {
+    const { isAllowed } = useContext(AccessContext);
     const [uomOptions, setUomOptions] = useState([]);
     // Load UOM options
     useEffect(() => {
@@ -28,6 +30,8 @@ export default function ToolsForm() {
       })();
       return () => { mounted = false; };
     }, []);
+      const canEditPrices = isAllowed('Materials.Materials', 'f');
+
   const router = useRouter();
   const searchParams = useSearchParams();
   const toolId = searchParams.get('id');
@@ -129,8 +133,22 @@ export default function ToolsForm() {
       searchable: true,
       validator: Yup.mixed().required('Supplier is required'),
     },
-    { name: 'purchasePrice', label: 'Purchase Price', type: 'number', span: 'span2', validator: Yup.number().min(0, 'Purchase price must be 0 or more') },
-    { name: 'sellingPrice', label: 'Selling Price', type: 'number', span: 'span2', validator: Yup.number().min(0, 'Selling price must be 0 or more') },
+    {
+      name: 'purchasePrice',
+      label: canEditPrices ? 'Purchase Price (Editable)' : 'Purchase Price',
+      type: 'number',
+      span: 'span2',
+      readOnly: !canEditPrices,
+      validator: Yup.number().min(0, 'Purchase price must be 0 or more'),
+    },
+    {
+      name: 'sellingPrice',
+      label: canEditPrices ? 'Selling Price (Editable)' : 'Selling Price',
+      type: 'number',
+      span: 'span2',
+      readOnly: !canEditPrices,
+      validator: Yup.number().min(0, 'Selling price must be 0 or more'),
+    },
     ...(!toolId
       ? [
           { name: 'rackId', label: 'Rack', span: 'span2', type: 'select', options: rackOptions, searchable: true, validator: Yup.mixed().required('Rack is required') },
@@ -168,8 +186,8 @@ export default function ToolsForm() {
         materialType: 'Tool',
         unitOfMeasure: values.uom || values.unitOfMeasure || '',
         purchaseUnitOfMeasure: values.defaultPurchaseUOM || values.purchaseUnitOfMeasure || '',
-        purchasePrice: Number(values.purchasePrice ?? values.unitCost) || 0,
-        sellingPrice: Number(values.sellingPrice) || 0,
+        purchasePrice: canEditPrices ? (Number(values.purchasePrice ?? values.unitCost) || 0) : 0,
+        sellingPrice: canEditPrices ? (Number(values.sellingPrice) || 0) : 0,
         referenceNumber: values.referenceNumber || '0',
         rackId: Number(values.rackId) || 0,
         initialQuantity: 0,
@@ -199,8 +217,12 @@ export default function ToolsForm() {
         materialType: 'Tool',
         unitOfMeasure: values.uom || values.unitOfMeasure || '',
         purchaseUnitOfMeasure: values.defaultPurchaseUOM || values.purchaseUnitOfMeasure || '',
-        purchasePrice: Number(values.purchasePrice ?? values.unitCost) || 0,
-        sellingPrice: Number(values.sellingPrice) || 0,
+        purchasePrice: canEditPrices
+          ? (Number(values.purchasePrice ?? values.unitCost) || 0)
+          : (Number(initialValues.purchasePrice) || 0),
+        sellingPrice: canEditPrices
+          ? (Number(values.sellingPrice) || 0)
+          : (Number(initialValues.sellingPrice) || 0),
         referenceNumber: values.referenceNumber || '0',
           stockLevel: Number(values.stockLevel) || 0,
         isAssembly: false,

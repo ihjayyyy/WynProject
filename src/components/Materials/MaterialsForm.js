@@ -3,6 +3,7 @@
 import React, { useMemo, useState, useEffect } from 'react';
 import * as Yup from 'yup';
 import { useRouter, useSearchParams } from 'next/navigation';
+import { useContext } from 'react';
 import { FiBox } from 'react-icons/fi';
 import EntityForm from '../EntityForm/EntityForm';
 import Button from '../ui/Button/Button';
@@ -11,6 +12,7 @@ import { getUnitsOfMeasure } from '../../services/UnitOfMeasure';
 import { getRacks } from '../../services/Rack';
 import { getSuppliers } from '../../services/Supplier';
 import { useToast } from '../ui/Toast/Toast';
+import { AccessContext } from '@/app/contextProviders/accessContext';
 
 const MATERIAL_TYPE_OPTIONS = [
   { label: 'Material', value: 'Material' },
@@ -18,6 +20,7 @@ const MATERIAL_TYPE_OPTIONS = [
 ];
 
 export default function MaterialsForm() {
+  const { isAllowed } = useContext(AccessContext);
   const router = useRouter();
   const searchParams = useSearchParams();
   const materialId = searchParams.get('id');
@@ -25,6 +28,7 @@ export default function MaterialsForm() {
   const [isEditModeLocal, setIsEditModeLocal] = useState(false);
   const isEditMode = mode === 'edit' || isEditModeLocal;
   const toast = useToast();
+  const canEditPrices = isAllowed('Materials.Materials', 'f');
 
   const [initialValues, setInitialValues] = useState({ ...INITIAL_MATERIAL, materialType: 'Material', isAssembly: false });
   const [exists, setExists] = useState(false);
@@ -154,18 +158,27 @@ export default function MaterialsForm() {
     },
     {
       name: 'purchasePrice',
-      label: 'Purchase Price',
+      label: canEditPrices ? 'Purchase Price (Editable)' : 'Purchase Price',
       type: 'number',
       span: 'span2',
+      readOnly: !canEditPrices,
       validator: Yup.number().min(0, 'Purchase price must be 0 or more'),
       // When the purchase price changes, mirror it into selling price.
       // The user can still edit selling price afterwards since this only
       // runs when purchasePrice itself changes.
       onChange: (value, values, setValues) => {
+        if (!canEditPrices) return;
         setValues({ ...values, purchasePrice: value, sellingPrice: value });
       },
     },
-    { name: 'sellingPrice', label: 'Selling Price', type: 'number', span: 'span2', validator: Yup.number().min(0, 'Selling price must be 0 or more') },
+    {
+      name: 'sellingPrice',
+      label: canEditPrices ? 'Selling Price (Editable)' : 'Selling Price',
+      type: 'number',
+      span: 'span2',
+      readOnly: !canEditPrices,
+      validator: Yup.number().min(0, 'Selling price must be 0 or more'),
+    },
     ...(!materialId
       ? [
           { name: 'rackId', label: 'Rack', span: 'span2', type: 'select', options: rackOptions, searchable: true, validator: Yup.mixed().required('Rack is required') },
@@ -203,8 +216,8 @@ export default function MaterialsForm() {
         materialType: values.materialType || 'Material',
         unitOfMeasure: values.uom || values.unitOfMeasure || '',
         purchaseUnitOfMeasure: values.defaultPurchaseUOM || values.purchaseUnitOfMeasure || '',
-        purchasePrice: Number(values.purchasePrice ?? values.unitCost) || 0,
-        sellingPrice: Number(values.sellingPrice) || 0,
+        purchasePrice: canEditPrices ? (Number(values.purchasePrice ?? values.unitCost) || 0) : 0,
+        sellingPrice: canEditPrices ? (Number(values.sellingPrice) || 0) : 0,
         referenceNumber: values.referenceNumber || '0',
         rackId: Number(values.rackId) || 0,
         initialQuantity: 0,
@@ -235,8 +248,12 @@ export default function MaterialsForm() {
         materialType: values.materialType || 'Material',
         unitOfMeasure: values.uom || values.unitOfMeasure || '',
         purchaseUnitOfMeasure: values.defaultPurchaseUOM || values.purchaseUnitOfMeasure || '',
-        purchasePrice: Number(values.purchasePrice ?? values.unitCost) || 0,
-        sellingPrice: Number(values.sellingPrice) || 0,
+        purchasePrice: canEditPrices
+          ? (Number(values.purchasePrice ?? values.unitCost) || 0)
+          : (Number(initialValues.purchasePrice) || 0),
+        sellingPrice: canEditPrices
+          ? (Number(values.sellingPrice) || 0)
+          : (Number(initialValues.sellingPrice) || 0),
         referenceNumber: values.referenceNumber || '0',
         stockLevel: Number(values.stockLevel) || 0,
         isAssembly: false,
