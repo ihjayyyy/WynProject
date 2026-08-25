@@ -111,7 +111,19 @@ export default function ProposalLanding() {
             return !(ps === 'won' || ps === 'win');
           }
         }] : []),
-      ...(isAllowed(PageName, 'w') ? [{ key: 'edit', label: 'Edit', icon: <FiEdit2 size={14} />, onClick: (item) => router.push(`/projects/proposal/proposalform?id=${item.id}&mode=edit`), hidden: (item) => { const s = String(item.proposalStatus || '').toLowerCase(); return s !== 'draft'; } }] : []),
+      ...(isAllowed(PageName, 'w') ? [{
+          key: 'edit',
+          label: 'Edit',
+          icon: <FiEdit2 size={14} />,
+          onClick: (item) => router.push(`/projects/proposal/proposalform?id=${item.id}&mode=edit`),
+          // hidden gets overridden per-row below in `columns`, based on the
+          // draft-or-approver-until-won rule; this default keeps the item
+          // safely hidden if that override is ever skipped.
+          hidden: (item) => {
+            const s = String(item.proposalStatus || '').toLowerCase();
+            return s !== 'draft';
+          }
+        }] : []),
     ],
     [isAllowed, router]
   );
@@ -139,9 +151,19 @@ export default function ProposalLanding() {
   const columns = useMemo(() => [...baseColumns, { header: 'Action', key: 'actions', sortable: false, align: 'right', render: (item) => {
       const proposalStatus = String(item?.proposalStatus || '').toLowerCase();
       const isDraft = item && String((item.proposalStatus || '').toLowerCase()) === 'draft';
+
+      // Editability rule (mirrors ProposalForm.js): Draft is always
+      // editable by anyone with 'w'. Approvers ('a') can also edit while
+      // the proposal is Submitted / Approved / Rejected — i.e. any point
+      // up until it's Won. Won, Cancelled, and Closed are never editable.
+      const isApprover = isAllowed(PageName, 'a');
+      const isWonStatus = proposalStatus === 'won' || proposalStatus === 'win';
+      const isTerminal = ['cancelled', 'closed'].includes(proposalStatus) || isWonStatus;
+      const canEditThis = isDraft || (isApprover && !isTerminal);
+
       const itemsFor = (actionItems || []).map((it) => ({
         ...it,
-        hidden: it.key === 'edit' ? !isDraft : it.hidden,
+        hidden: it.key === 'edit' ? !canEditThis : it.hidden,
       }));
 
       if (isDraft && isAllowed(PageName, 'w')) {

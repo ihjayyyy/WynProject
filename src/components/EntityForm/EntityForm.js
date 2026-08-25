@@ -485,15 +485,9 @@ export default function EntityForm({
             if (readOnly) return true;
             if (typeof f.readOnly === 'function') return !!f.readOnly(values);
             if (typeof f.readOnly === 'boolean') return f.readOnly;
-            try {
-              if (f && f.name === 'code' && values && (values.id || values.Guid))
-                return true;
-            } catch (err) {
-              // ignore
-            }
             return false;
           })();
-
+          
           const fieldDisabled = (() => {
             if (typeof f.disabled === 'function') return !!f.disabled(values);
             if (typeof f.disabled === 'boolean') return f.disabled;

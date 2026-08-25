@@ -3,7 +3,7 @@
 import React, { useContext, useMemo, useState, version } from 'react';
 import * as Yup from 'yup';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { FiCheck, FiSend, FiX, FiXCircle, FiArchive, FiFileText, FiPrinter } from 'react-icons/fi';
+import { FiCheck, FiSend, FiX, FiXCircle, FiArchive, FiFileText, FiPrinter, FiEdit2 } from 'react-icons/fi';
 import StatusBadge from '../ui/StatusBadge/StatusBadge';
 import EntityForm from '../EntityForm/EntityForm';
 import Input from '../ui/Input/Input';
@@ -306,6 +306,13 @@ export default function ProposalForm() {
     return Array.from(seen.values());
   };
 
+  // Editability rule:
+  // - Draft proposals: editable by anyone with 'w' access (unchanged behavior).
+  // - Submitted / Approved / Rejected proposals: editable by users with 'a'
+  //   (approver) access, so an approver can adjust a proposal at any point
+  //   in its review lifecycle, not just while it's still a Draft.
+  // - Won, Cancelled, and Closed proposals are never editable, regardless
+  //   of access level — "editable until win".
   const { isReadOnly, canEnterEditMode, isDraft } = useMemo(() => {
     if (isReviseMode) return { isReadOnly: false, canEnterEditMode: false, isDraft: true };
     if (isCopyMode) return { isReadOnly: false, canEnterEditMode: false, isDraft: true };
@@ -313,11 +320,17 @@ export default function ProposalForm() {
     const exists = Boolean(proposalId && (items || []).some((item) => String(item.id) === String(proposalId)));
     const selected = (items || []).find((item) => String(item.id) === String(proposalId));
     const status = selected && selected.proposalStatus ? String(selected.proposalStatus) : '';
-    const draft = status.toLowerCase() === 'draft';
-    const nonEditable = ['cancelled', 'closed'].includes(status.toLowerCase());
-    const readOnly = exists && (!isEditMode || !draft || nonEditable);
-    return { isReadOnly: readOnly, canEnterEditMode: exists && draft && !nonEditable, isDraft: draft };
-  }, [proposalId, isEditMode, items, isReviseMode, isCopyMode]);
+    const statusLower = status.toLowerCase();
+    const draft = statusLower === 'draft';
+    const isWonStatus = statusLower === 'won' || statusLower === 'win';
+    const nonEditable = ['cancelled', 'closed'].includes(statusLower) || isWonStatus;
+
+    const isApprover = isAllowed(PageName, 'a');
+    const editableStatus = draft || (isApprover && !nonEditable);
+
+    const readOnly = exists && (!isEditMode || !editableStatus);
+    return { isReadOnly: readOnly, canEnterEditMode: exists && editableStatus, isDraft: draft };
+  }, [proposalId, isEditMode, items, isReviseMode, isCopyMode, isAllowed]);
 
   const status = useMemo(() => {
     if (isReviseMode) return 'draft';
@@ -984,10 +997,17 @@ export default function ProposalForm() {
   const menuItems = [...documentMenuItems];
   let primaryAction = null;
 
-  if (canEnterEditMode && isAllowed(PageName, 'w')) {
-    primaryAction = (
-      <Button variant="outlinedPrimary" disabled={actionLoading} onClick={() => setIsEditModeLocal(true)}>Edit</Button>
-    );
+  // Edit action — available whenever canEnterEditMode says so (Draft for
+  // everyone with 'w', or Submitted/Approved/Rejected for approvers with
+  // 'a', per the editability rule above). Captured separately so we can
+  // tell below whether a later status-transition button (Submit/Approve/
+  // Win/etc.) took over the primary slot instead.
+  const editAction = (canEnterEditMode && isAllowed(PageName, 'w')) ? (
+    <Button variant="outlinedPrimary" disabled={actionLoading} onClick={() => setIsEditModeLocal(true)}>Edit</Button>
+  ) : null;
+
+  if (editAction) {
+    primaryAction = editAction;
   }
 
   if (isDraftStatus && isAllowed(PageName, 'w')) {
@@ -1115,6 +1135,20 @@ export default function ProposalForm() {
         () => closeProposal(proposalId),
         { successMsg: 'Proposal closed' },
       ),
+    });
+  }
+
+  // If a status-transition action (Submit/Approve/Win/Lose/Generate
+  // Project) claimed the primary slot instead of Edit, approvers don't
+  // lose the ability to edit — it's relocated into the overflow menu so
+  // it's still one click away.
+  if (editAction && primaryAction !== editAction) {
+    menuItems.push({
+      key: 'edit-inline',
+      label: 'Edit',
+      icon: <FiEdit2 size={14} />,
+      disabled: () => actionLoading,
+      onClick: () => setIsEditModeLocal(true),
     });
   }
 
