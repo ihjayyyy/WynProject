@@ -451,12 +451,12 @@ export async function registerUser(payload) {
   }
 }
 
-export async function deactivateActivateUser(email) {
+export async function deactivateActivateUser(employeeNumber) {
   try {
     const res = await fetch(`${API_BASE_URL}/DeactivateUser`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email }),
+      body: JSON.stringify({ employeeNumber }),
     });
 
     const text = await res.text();

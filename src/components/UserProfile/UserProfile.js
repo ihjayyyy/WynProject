@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import EntityForm from '../EntityForm/EntityForm';
 import Button from '../ui/Button/Button';
+import { useToast } from '../ui/Toast/Toast';
 import { getAuthData, storeAuthData } from '../../services/Auth';
 import { changePassword, updateUser } from '../../services/User';
 import styles from './UserProfile.module.scss';
@@ -11,11 +12,11 @@ export default function UserProfile() {
   const [authValues, setAuthValues] = useState(null);
   const [isEditMode, setIsEditMode] = useState(false);
   const [showPasswordFields, setShowPasswordFields] = useState(false);
-  const [statusMessage, setStatusMessage] = useState('');
-  const [errorMessage, setErrorMessage] = useState('');
+  const toast = useToast();
 
   useEffect(() => {
     const storedAuth = getAuthData();
+    console.log('Retrieved auth data from localStorage:', storedAuth);
     if (storedAuth) {
       setAuthValues({
         employeeNumber: storedAuth.employeeNumber ?? '',
@@ -24,40 +25,30 @@ export default function UserProfile() {
         email: storedAuth.email ?? '',
         role: storedAuth.role?.name ?? '',
         userId: storedAuth.userId ?? '',
+        roleId: storedAuth.role?.id ?? 0,
       });
     }
   }, []);
 
-  const resetMessages = () => {
-    setErrorMessage('');
-    setStatusMessage('');
-  };
-
   const handleProfileUpdate = async (values) => {
-    resetMessages();
-
     const payload = {
       employeeNumber: values.employeeNumber ?? '',
       firstName: values.firstName ?? '',
       lastName: values.lastName ?? '',
       email: values.email ?? '',
-      role: values.role ?? 0,
+      role: authValues?.roleId ?? 0,
       receiveNotification: true,
     };
 
     const response = await updateUser(authValues.userId, payload);
     if (response.error) {
-      setErrorMessage(
-        response.error || 'Unable to update profile. Please try again.',
-      );
+      toast.error(response.error || 'Unable to update profile. Please try again.');
       return;
     }
 
     const result = response.data;
     if (!result || result.isSuccess === false) {
-      setErrorMessage(
-        result?.error || result?.message || 'Profile update failed.',
-      );
+      toast.error(result?.error || result?.message || 'Profile update failed.');
       return;
     }
 
@@ -68,47 +59,40 @@ export default function UserProfile() {
       firstName: payload.firstName,
       lastName: payload.lastName,
       email: payload.email,
-      role: payload.role,
       userId: authValues.userId,
     };
 
     storeAuthData(updatedAuth);
     setAuthValues(updatedAuth);
-    setStatusMessage('Profile updated successfully.');
+    toast.success('Profile updated successfully.');
     setIsEditMode(false);
   };
 
   const handlePasswordChange = async (values) => {
-    resetMessages();
-
     const payload = {
-      email: values.email,
-      password: values.password,
+      employeeNumber: authValues.employeeNumber,
+      oldPassword: values.password,
       newPassword: values.newPassword,
     };
 
-    if (!payload.password || !payload.newPassword) {
-      setErrorMessage('Please enter both current and new password.');
+    if (!payload.oldPassword || !payload.newPassword) {
+      toast.error('Please enter both current and new password.');
       return;
     }
 
     const response = await changePassword(payload);
     if (response.error) {
-      setErrorMessage(
-        response.error || 'Unable to change password. Please try again.',
-      );
+      toast.error(response.error || 'Unable to change password. Please try again.');
       return;
     }
 
     const result = response.data;
     if (!result || result.isSuccess === false) {
-      setErrorMessage(
-        result?.error || result?.message || 'Password change failed.',
-      );
+      toast.error(result?.error || result?.message || 'Password change failed.');
       return;
     }
 
-    setStatusMessage('Password changed successfully.');
+    toast.success('Password changed successfully.');
     setShowPasswordFields(false);
   };
 
@@ -210,8 +194,6 @@ export default function UserProfile() {
               onClick={() => {
                 setIsEditMode(false);
                 setShowPasswordFields(false);
-                setErrorMessage('');
-                setStatusMessage('');
               }}>
               Cancel
             </Button>
@@ -220,16 +202,6 @@ export default function UserProfile() {
             </Button>
           </>
         ) : null
-      }
-      extraContent={
-        <div>
-          {errorMessage && (
-            <div className={styles.errorMessage}>{errorMessage}</div>
-          )}
-          {statusMessage && (
-            <div className={styles.statusMessage}>{statusMessage}</div>
-          )}
-        </div>
       }
     />
   );

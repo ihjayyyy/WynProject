@@ -18,6 +18,7 @@ export async function login(payload) {
 export function storeAuthData(authData) {
   try {
     localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(authData));
+    console.log('Auth data stored successfully:', authData);
     return { success: true, error: null };
   } catch (storageError) {
     console.warn('Unable to persist auth data:', storageError);

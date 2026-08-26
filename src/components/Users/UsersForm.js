@@ -169,7 +169,7 @@ export default function UsersForm() {
       return;
     }
 
-    const res = await deactivateActivateUser(user.email);
+    const res = await deactivateActivateUser(user.employeeNumber);
     if (res?.error) {
       toast.error(
         user.isActive
