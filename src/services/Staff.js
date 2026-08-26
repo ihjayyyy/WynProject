@@ -6,6 +6,7 @@ export const INITIAL_STAFF = {
   job: '',
   department: '',
   ratePerHour: 0,
+  email: '',
 };
 
 async function getStaffs() {

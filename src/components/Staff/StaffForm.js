@@ -58,6 +58,13 @@ export default function StaffForm() {
     { name: 'job', label: 'Job', span: 'span2', validator: Yup.string().required('Job is required') },
     { name: 'department', label: 'Department', span: 'span2', validator: Yup.string().required('Department is required') },
     {
+      name: 'email',
+      label: 'Email',
+      type: 'email',
+      span: 'span2',
+      validator: Yup.string().email('Enter a valid email address').required('Email is required'),
+    },
+    {
       name: 'ratePerHour',
       label: canEditRate ? 'Rate Per Hour (Editable)' : 'Rate Per Hour',
       type: 'number',
@@ -80,6 +87,7 @@ export default function StaffForm() {
           code: values.code || '',
           job: values.job || '',
           department: values.department || '',
+          email: values.email || '',
           ratePerHour: canEditRate
             ? (Number(values.ratePerHour) || 0)
             : (Number(initialValues.ratePerHour) || 0),
