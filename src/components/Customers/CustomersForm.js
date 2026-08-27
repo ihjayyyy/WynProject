@@ -85,7 +85,6 @@ export default function CustomersForm() {
       span: 'span2',
       validator: Yup.string()
         .required('Contact number is required')
-        .matches(/^[0-9+\-\s()]+$/, 'Enter a valid contact number'),
     },
     {
       name: 'email',
@@ -93,7 +92,6 @@ export default function CustomersForm() {
       type: 'email',
       span: 'span2',
       validator: Yup.string()
-        .required('Email is required')
         .email('Enter a valid email address'),
     },
     {
