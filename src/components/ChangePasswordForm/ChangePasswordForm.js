@@ -6,18 +6,16 @@ import Image from 'next/image';
 import styles from '../LoginForm/LoginForm.module.scss';
 import Button from '../ui/Button/Button';
 import Input from '../ui/Input/Input';
-import { FiMail, FiLock, FiEye, FiEyeOff } from 'react-icons/fi';
+import { FiHash, FiLock, FiEye, FiEyeOff } from 'react-icons/fi';
 import { changePassword } from '../../services/User';
 
 import Logo from '@/assets/logo.jpg';
 
-
-
 export default function ChangePasswordForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+  const [employeeNumber, setEmployeeNumber] = useState('');
+  const [oldPassword, setOldPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
@@ -26,15 +24,15 @@ export default function ChangePasswordForm() {
   const [showNewPassword, setShowNewPassword] = useState(false);
 
   useEffect(() => {
-    const initialEmail = searchParams.get('email');
-    if (initialEmail) {
-      setEmail(initialEmail);
+    const initialEmployeeNumber = searchParams.get('employeeNumber');
+    if (initialEmployeeNumber) {
+      setEmployeeNumber(initialEmployeeNumber);
     }
   }, [searchParams]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!email || !password || !newPassword) {
+    if (!employeeNumber || !oldPassword || !newPassword) {
       setErrorMessage('Please fill in all fields.');
       return;
     }
@@ -44,8 +42,8 @@ export default function ChangePasswordForm() {
     setIsLoading(true);
 
     const response = await changePassword({
-      email,
-      password,
+      employeeNumber,
+      oldPassword,
       newPassword,
     });
 
@@ -94,14 +92,14 @@ export default function ChangePasswordForm() {
         </div>
       )}
       <Input
-        id="change-email"
-        type="email"
-        label="Email address"
-        placeholder="you@example.com"
-        value={email}
-        onChange={(e) => setEmail(e.target.value)}
+        id="change-employee-number"
+        type="text"
+        label="Employee number"
+        placeholder="e.g. EMP-00123"
+        value={employeeNumber}
+        onChange={(e) => setEmployeeNumber(e.target.value)}
         autoComplete="username"
-        icon={<FiMail size={20} />}
+        icon={<FiHash size={20} />}
       />
       <div style={{ position: 'relative' }}>
         <Input
@@ -109,8 +107,8 @@ export default function ChangePasswordForm() {
           type={showCurrentPassword ? 'text' : 'password'}
           label="Current password"
           placeholder="••••••••"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
+          value={oldPassword}
+          onChange={(e) => setOldPassword(e.target.value)}
           autoComplete="current-password"
           icon={<FiLock size={20} />}
         />
@@ -119,7 +117,7 @@ export default function ChangePasswordForm() {
           onClick={() => setShowCurrentPassword((prev) => !prev)}
           aria-label={showCurrentPassword ? 'Hide password' : 'Show password'}
           title={showCurrentPassword ? 'Hide password' : 'Show password'}
-          className={styles.togglePasswordBtn}  
+          className={styles.togglePasswordBtn}
         >
           {showCurrentPassword ? <FiEyeOff size={20} /> : <FiEye size={20} />}
         </button>
@@ -140,7 +138,7 @@ export default function ChangePasswordForm() {
           onClick={() => setShowNewPassword((prev) => !prev)}
           aria-label={showNewPassword ? 'Hide password' : 'Show password'}
           title={showNewPassword ? 'Hide password' : 'Show password'}
-          className={styles.togglePasswordBtn}  
+          className={styles.togglePasswordBtn}
         >
           {showNewPassword ? <FiEyeOff size={20} /> : <FiEye size={20} />}
         </button>
