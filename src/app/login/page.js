@@ -16,6 +16,7 @@ export default function LoginPage() {
   const [confirmText, setConfirmText] = useState('');
   const [confirmVariant, setConfirmVariant] = useState('');
   const [confirmEmail, setConfirmEmail] = useState('');
+  const [confirmEmployeeNumber, setConfirmEmployeeNumber] = useState('');
 
   const handleLogin = async (credentials) => {
     setError('');
@@ -48,6 +49,7 @@ export default function LoginPage() {
       setConfirmText('Change Password');
       setConfirmVariant('primary');
       setConfirmEmail(authData.email || '');
+      setConfirmEmployeeNumber(authData.employeeNumber);
       setConfirmModal(true);
     } else {
       router.push('/dashboard');
@@ -56,7 +58,8 @@ export default function LoginPage() {
 
   const handleConfirm = () => {
     setConfirmModal(false);
-    router.push(`/changepassword?email=${encodeURIComponent(confirmEmail)}`);
+    router.push(`/changepassword?employeeNumber=${encodeURIComponent(confirmEmployeeNumber)}`);
+    // router.push(`/changepassword?email=${encodeURIComponent(confirmEmail)}`);
   };
 
   const handleCancel = () => {
