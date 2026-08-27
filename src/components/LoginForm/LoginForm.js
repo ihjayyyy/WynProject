@@ -1,6 +1,7 @@
 'use client';
 import React, { useState } from 'react';
 import Image from 'next/image';
+import Link from 'next/link';
 import styles from './LoginForm.module.scss';
 import Button from '../ui/Button/Button';
 import Input from '../ui/Input/Input';
@@ -75,9 +76,9 @@ export default function LoginForm({ onLogin, errorMessage, isLoading }) {
           />
           <span>Remember me</span>
         </label>
-        <a href="#" className={styles.forgot}>
+        <Link href="/forgotPassword" className={styles.forgot}>
           Forgot your password?
-        </a>
+        </Link>
       </div>
       <Button type="submit" className={styles.signinBtn} disabled={isLoading}>
         {isLoading ? 'Signing in…' : 'Sign in'}

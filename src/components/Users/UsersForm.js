@@ -14,6 +14,7 @@ import {
   getUserByGuid,
   updateUser,
   deactivateActivateUser,
+  resetPassword,
 } from '@/services/User';
 import { getAllRoles } from '@/services/Role';
 
@@ -38,8 +39,10 @@ export default function UsersForm() {
   const isViewMode = !isEditMode && userId;
 
   const [user, setUser] = useState(null);
-  const [roles, setRoles] = useState([]); // <-- new
+  const [roles, setRoles] = useState([]);
   const [showDeactivateModal, setShowDeactivateModal] = useState(false);
+  const [showResetModal, setShowResetModal] = useState(false);
+  const [isResetting, setIsResetting] = useState(false);
 
   useEffect(() => {
     // Fetch roles once on mount
@@ -100,7 +103,7 @@ export default function UsersForm() {
     {
       name: 'role',
       label: 'Role',
-      type: 'select', // <-- changed from 'number' to 'select'
+      type: 'select',
       span: 'span2',
       options: roleOptions,
       searchable: true,
@@ -188,6 +191,38 @@ export default function UsersForm() {
 
     setShowDeactivateModal(false);
   };
+  const handleResetPassword = async () => {
+    if (!user?.employeeNumber) {
+      toast.error('Employee number not found');
+      return;
+    }
+
+    setIsResetting(true);
+    const res = await resetPassword({ employeeNumber: user.employeeNumber });
+
+    if (res?.error) {
+      setIsResetting(false);
+      toast.error(res.error || 'Failed to reset password');
+      setShowResetModal(false);
+      return;
+    }
+
+    const result = res.data;
+    if (result && result.isSuccess === false) {
+      setIsResetting(false);
+      toast.error(result.error || result.message || 'Failed to reset password');
+      setShowResetModal(false);
+      return;
+    }
+
+    toast.success('Password reset successfully');
+    setShowResetModal(false);
+
+    const updatedRes = await getUserByGuid(userId);
+    if (!updatedRes.error) setUser(updatedRes.data || {});
+
+    setIsResetting(false);
+  };
 
   return (
     <>
@@ -222,6 +257,11 @@ export default function UsersForm() {
                         )
                       }>
                       Edit
+                    </Button>
+                    <Button
+                      variant="outlinedPrimary"
+                      onClick={() => setShowResetModal(true)}>
+                      Reset Password
                     </Button>
                     <Button
                       variant={
@@ -270,6 +310,17 @@ export default function UsersForm() {
         confirmVariant={user?.isActive ? 'danger' : 'primary'}
         onConfirm={handleDeactivateActivate}
         onCancel={() => setShowDeactivateModal(false)}
+      />
+      <ConfirmModal
+        open={showResetModal}
+        title="Reset Password"
+        message={`Reset password for ${user?.firstName || ''} ${
+          user?.lastName || ''
+        }? This will invalidate their current password.`}
+        confirmText={isResetting ? 'Resetting…' : 'Reset Password'}
+        confirmVariant="danger"
+        onConfirm={handleResetPassword}
+        onCancel={() => setShowResetModal(false)}
       />
     </>
   );

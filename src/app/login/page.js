@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import { login, storeAuthData } from '../../services/Auth';
 import ConfirmModal from '../../components/ui/ConfirmModal/ConfirmModal';
 
+
 export default function LoginPage() {
   const router = useRouter();
   const [error, setError] = useState('');
