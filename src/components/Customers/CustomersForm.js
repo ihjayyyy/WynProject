@@ -83,16 +83,12 @@ export default function CustomersForm() {
       label: 'Contact Number',
       type: 'tel',
       span: 'span2',
-      validator: Yup.string()
-        .required('Contact number is required')
     },
     {
       name: 'email',
       label: 'Email',
       type: 'email',
       span: 'span2',
-      validator: Yup.string()
-        .email('Enter a valid email address'),
     },
     {
       name: 'vatType',

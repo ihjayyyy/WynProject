@@ -90,8 +90,8 @@ export default function SuppliersForm() {
     { name: 'name', label: 'Company Name', span: 'span2', validator: Yup.string().required('Company Name is required') },
     // Contact Person as normal input
     { name: 'contactPerson', label: 'Contact Person', span: 'span2', validator: Yup.string().required('Contact person is required') },
-    { name: 'contactNumber', label: 'Contact Number', span: 'span2', validator: Yup.string().required('Contact number is required').matches(/^\+?[0-9\s\-()]{7,}$/, 'Invalid contact number') },
-    { name: 'email', label: 'Email', span: 'span2', validator: Yup.string().email('Invalid email').required('Email is required') },
+    { name: 'contactNumber', label: 'Contact Number', span: 'span2' },
+    { name: 'email', label: 'Email', span: 'span2' },
     // VAT Type select
     {
       name: 'vatType',

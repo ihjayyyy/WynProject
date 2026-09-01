@@ -245,11 +245,11 @@ export default function InquiryForm() {
     },
     { name: 'preparedBy', label: 'Prepared By', span: 'span1', hidden: true },
 
-    { name: 'email', label: 'Email', type: 'email', span: 'span1', validator: Yup.string().email('Invalid email') },
+    { name: 'email', label: 'Email', type: 'email', span: 'span1'},
     { name: 'spacer-3', type: 'spacer', span: 'span2' },
     { name: 'notedBy', label: 'Noted By', span: 'span1', hidden: true },
 
-    { name: 'contactNumber', label: 'Contact Number', type: 'tel', span: 'span1', validator: Yup.string().required('Contact number is required') },
+    { name: 'contactNumber', label: 'Contact Number', type: 'tel', span: 'span1', },
     { name: 'spacer-4', type: 'spacer', span: 'span2' },
 
     { name: 'attention', label: 'Attention', type: 'select', options: staffOptions, searchable: true, span: 'span1', validator: Yup.mixed().required('Attention is required') },

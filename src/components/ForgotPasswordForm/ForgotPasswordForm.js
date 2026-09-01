@@ -6,7 +6,7 @@ import Image from 'next/image';
 import styles from '../LoginForm/LoginForm.module.scss';
 import Button from '../ui/Button/Button';
 import Input from '../ui/Input/Input';
-import { FiHash, FiLock, FiEye, FiEyeOff, FiKey } from 'react-icons/fi';
+import { FiArrowLeft, FiHash, FiLock, FiEye, FiEyeOff, FiKey } from 'react-icons/fi';
 import { forgotPassword, verifyForgotPassword } from '../../services/User';
 
 import Logo from '@/assets/logo.jpg';
@@ -134,6 +134,15 @@ export default function ForgotPasswordForm() {
           ? 'Enter your employee number to receive an OTP.'
           : 'Enter the OTP sent to you and choose a new password.'}
       </div>
+
+      <button
+        type="button"
+        onClick={() => router.push('/login')}
+        className={styles.togglePasswordBtn}
+        style={{ position: 'static', alignSelf: 'flex-start' }}
+      >
+        <FiArrowLeft size={16} /> Back to login
+      </button>
 
       {(errorMessage || successMessage) && (
         <div className={successMessage ? styles.success : styles.error}>
