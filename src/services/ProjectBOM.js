@@ -1,3 +1,4 @@
+import { authenticatedFetch } from './Auth';
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL + "/ProjectBOM";
 
 async function parseResponse(res) {
@@ -14,7 +15,7 @@ async function getProjectBOMByProjectId(projectId) {
 
   try {
     const data = await parseResponse(
-      await fetch(`${API_BASE_URL}/ByProjectId/${projectId}`, {
+      await authenticatedFetch(`${API_BASE_URL}/ByProjectId/${projectId}`, {
         method: 'GET',
         headers: { Accept: '*/*' },
       })
@@ -31,7 +32,7 @@ async function getProposalBOM(proposalId) {
 
   try {
     const data = await parseResponse(
-      await fetch(`${API_BASE_URL}/GetProposalBOM/${proposalId}`, {
+      await authenticatedFetch(`${API_BASE_URL}/GetProposalBOM/${proposalId}`, {
         method: 'GET',
         headers: { Accept: '*/*' },
       })

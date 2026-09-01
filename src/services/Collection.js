@@ -1,3 +1,4 @@
+import { authenticatedFetch } from './Auth';
 import { handleOpenPdf } from "./Helper";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL + "/SalesCollection";
@@ -21,7 +22,7 @@ export const INITIAL_COLLECTION = {
 
 async function getCollections() {
   try {
-    const res = await fetch(API_BASE_URL, {
+    const res = await authenticatedFetch(API_BASE_URL, {
       method: 'GET',
       headers: { 'Content-Type': 'application/json' },
     });
@@ -38,7 +39,7 @@ async function getCollectionById(id) {
   try {
     const url = `${API_BASE_URL}/${id}`;
 
-    const res = await fetch(url, {
+    const res = await authenticatedFetch(url, {
       method: 'GET',
       headers: { 'Content-Type': 'application/json' },
     });
@@ -59,7 +60,7 @@ async function getCollectionById(id) {
 
 async function createCollection(payload) {
   try {
-    const res = await fetch(API_BASE_URL, {
+    const res = await authenticatedFetch(API_BASE_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload),
@@ -83,7 +84,7 @@ async function updateCollection(id, payload) {
   try {
     const url = `${API_BASE_URL}/${id}`;
 
-    const res = await fetch(url, {
+    const res = await authenticatedFetch(url, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload),
@@ -107,7 +108,7 @@ async function cancelCollection(salesCollectionId) {
   try {
     const url = `${API_BASE_URL}/${salesCollectionId}/cancel`;
 
-    const res = await fetch(url, {
+    const res = await authenticatedFetch(url, {
       method: 'PUT',
       headers: { Accept: '*/*' },
     });
@@ -136,7 +137,7 @@ async function closeCollection(salesCollectionId) {
   try {
     const url = `${API_BASE_URL}/${salesCollectionId}/close`;
 
-    const res = await fetch(url, {
+    const res = await authenticatedFetch(url, {
       method: 'PUT',
       headers: { Accept: '*/*' },
     });
@@ -165,7 +166,7 @@ async function markCollectionAsPaid(salesCollectionId) {
   try {
     const url = `${API_BASE_URL}/MarkAsPaid/${salesCollectionId}`;
 
-    const res = await fetch(url, {
+    const res = await authenticatedFetch(url, {
       method: 'PUT',
       headers: { Accept: '*/*' },
     });
@@ -201,7 +202,7 @@ async function printSalesCollection_byId(id) {
   try {
     const url = `${API_BASE_URL}/pdf/${id}`;
 
-    const res = await fetch(url, {
+    const res = await authenticatedFetch(url, {
       method: 'GET',
       headers: { Accept: '*/*' },
     });
@@ -226,7 +227,7 @@ async function getCollectionsByBillingId(billingId) {
   try {
     const url = `${API_BASE_URL}/ByBilling/${billingId}`;
 
-    const res = await fetch(url, {
+    const res = await authenticatedFetch(url, {
       method: 'GET',
       headers: { 'Content-Type': 'application/json' },
     });

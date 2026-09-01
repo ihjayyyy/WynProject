@@ -1,3 +1,4 @@
+import { authenticatedFetch } from './Auth';
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL + "/Report";
 
 async function parseResponse(res) {
@@ -30,7 +31,7 @@ async function getReports({
     const url = `${API_BASE_URL}/modules?${params.toString()}`;
 
     const data = await parseResponse(
-      await fetch(url, {
+      await authenticatedFetch(url, {
         method: "GET",
         headers: {
           Accept: "*/*",

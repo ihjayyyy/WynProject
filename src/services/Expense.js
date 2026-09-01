@@ -1,3 +1,4 @@
+import { authenticatedFetch } from './Auth';
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL + "/Expenses";
 
 export const INITIAL_EXPENSE = {
@@ -25,7 +26,7 @@ async function getExpensesByProjectId(projectId) {
 
   try {
     const data = await parseResponse(
-      await fetch(`${API_BASE_URL}/ByProjectId/${projectId}`, {
+      await authenticatedFetch(`${API_BASE_URL}/ByProjectId/${projectId}`, {
         method: 'GET',
         headers: { Accept: '*/*' },
       })
@@ -40,7 +41,7 @@ async function getExpensesByProjectId(projectId) {
 async function createExpense(payload) {
   try {
     const data = await parseResponse(
-      await fetch(API_BASE_URL, {
+      await authenticatedFetch(API_BASE_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
@@ -58,7 +59,7 @@ async function updateExpense(id, payload) {
 
   try {
     const data = await parseResponse(
-      await fetch(`${API_BASE_URL}/${id}`, {
+      await authenticatedFetch(`${API_BASE_URL}/${id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
@@ -76,7 +77,7 @@ async function deleteExpense(id) {
 
   try {
     const data = await parseResponse(
-      await fetch(`${API_BASE_URL}/${id}`, {
+      await authenticatedFetch(`${API_BASE_URL}/${id}`, {
         method: 'DELETE',
         headers: { Accept: '*/*' },
       })

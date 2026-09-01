@@ -1,3 +1,4 @@
+import { authenticatedFetch } from './Auth';
 import { handleOpenPdf } from "./Helper";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL + "/MaterialRequest";
@@ -18,7 +19,7 @@ export const INITIAL_MATERIAL_REQUEST = {
 
 async function getMaterialRequests() {
     try {
-        const res = await fetch(API_BASE_URL, {
+        const res = await authenticatedFetch(API_BASE_URL, {
             method: 'GET',
             headers: { Accept: '*/*' },
         });
@@ -31,7 +32,7 @@ async function getMaterialRequests() {
 
 async function createMaterialRequest(payload) {
     try {
-        const res = await fetch(API_BASE_URL, {
+        const res = await authenticatedFetch(API_BASE_URL, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(payload),
@@ -46,7 +47,7 @@ async function createMaterialRequest(payload) {
 async function printMaterialRequests_byProject(projectId) {
     try {
         const url = `${API_BASE_URL}/GetByProjectId/${projectId}`;
-        const res = await fetch(url, {
+        const res = await authenticatedFetch(url, {
             method: 'GET',
             headers: { Accept: '*/*' },
         });
@@ -60,7 +61,7 @@ async function printMaterialRequests_byProject(projectId) {
 async function updateMaterialRequest(id, payload) {
     try {
         const url = `${API_BASE_URL}/${id}`;
-        const res = await fetch(url, {
+        const res = await authenticatedFetch(url, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(payload),
@@ -77,7 +78,7 @@ async function printMaterialRequest_byId(projectId) {
   if (!projectId) return { data: null, error: 'Missing id' };
   try {
     const url = `${API_BASE_URL}/pdf/${projectId}`;
-    const res = await fetch(url, {
+    const res = await authenticatedFetch(url, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
     });
@@ -93,7 +94,7 @@ async function printMaterialRequest_byObj(item) {
   if (!item.rivNumber) return { data: null, error: 'Missing RIV Number' };
   try {
     const url = `${API_BASE_URL}/pdf/${item.projectId}/${item.rivNumber}`;
-    const res = await fetch(url, {
+    const res = await authenticatedFetch(url, {
       method: 'GET',
       headers: { 'Content-Type': 'application/json' },
     });

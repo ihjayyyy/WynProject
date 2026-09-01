@@ -1,3 +1,4 @@
+import { authenticatedFetch } from './Auth';
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL + "/UnitOfMeasure";
 
 export const INITIAL_UNIT_OF_MEASURE = {
@@ -17,7 +18,7 @@ async function parseResponse(res) {
 async function getUnitsOfMeasure() {
   try {
     const data = await parseResponse(
-      await fetch(`${API_BASE_URL}`, {
+      await authenticatedFetch(`${API_BASE_URL}`, {
         method: 'GET',
         headers: { Accept: '*/*' },
       })
@@ -31,7 +32,7 @@ async function getUnitsOfMeasure() {
 async function createUnitOfMeasure(payload) {
   try {
     const data = await parseResponse(
-      await fetch(API_BASE_URL, {
+      await authenticatedFetch(API_BASE_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
@@ -49,7 +50,7 @@ async function updateUnitOfMeasure(id, payload) {
 
   try {
     const data = await parseResponse(
-      await fetch(`${API_BASE_URL}/${id}`, {
+      await authenticatedFetch(`${API_BASE_URL}/${id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
@@ -66,7 +67,7 @@ async function deleteUnitOfMeasure(id) {
 
   try {
     const data = await parseResponse(
-      await fetch(`${API_BASE_URL}/${id}`, {
+      await authenticatedFetch(`${API_BASE_URL}/${id}`, {
         method: 'DELETE',
         headers: { Accept: '*/*' },
       })

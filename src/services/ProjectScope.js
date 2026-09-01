@@ -1,9 +1,10 @@
+import { authenticatedFetch } from './Auth';
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL + "/ProjectScope";
 
 async function getByProjectId(projectId) {
     try {
         const url = `${API_BASE_URL}/ByProjectId/${projectId}`;
-        const res = await fetch(url, {
+        const res = await authenticatedFetch(url, {
             method: 'GET',
             headers: { Accept: '*/*' },
         });
@@ -16,7 +17,7 @@ async function getByProjectId(projectId) {
 
 async function createProjectScope(payload) {
     try {
-        const res = await fetch(API_BASE_URL, {
+        const res = await authenticatedFetch(API_BASE_URL, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(payload),
@@ -31,7 +32,7 @@ async function createProjectScope(payload) {
 async function updateProjectScope(id, payload) {
     try {
         const url = `${API_BASE_URL}/${id}`;
-        const res = await fetch(url, {
+        const res = await authenticatedFetch(url, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(payload),

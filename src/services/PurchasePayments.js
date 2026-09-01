@@ -1,8 +1,9 @@
+import { authenticatedFetch } from './Auth';
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL + '/Payment';
 
 export async function getAllPayments() {
   try {
-    const res = await fetch(API_BASE_URL, {
+    const res = await authenticatedFetch(API_BASE_URL, {
       method: 'GET',
       headers: { 'Content-Type': 'application/json' },
     });
@@ -15,7 +16,7 @@ export async function getAllPayments() {
 
 export async function createPayment(payload) {
   try {
-    const res = await fetch(API_BASE_URL, {
+    const res = await authenticatedFetch(API_BASE_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload),
@@ -30,7 +31,7 @@ export async function createPayment(payload) {
 
 export async function getPaymentById(id) {
   try {
-    const res = await fetch(`${API_BASE_URL}/${id}`, {
+    const res = await authenticatedFetch(`${API_BASE_URL}/${id}`, {
       method: 'GET',
       headers: { 'Content-Type': 'application/json' },
     });
@@ -44,7 +45,7 @@ export async function getPaymentById(id) {
 
 export async function updatePayment(id, payload) {
   try {
-    const res = await fetch(`${API_BASE_URL}/${id}`, {
+    const res = await authenticatedFetch(`${API_BASE_URL}/${id}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload),
@@ -58,7 +59,7 @@ export async function updatePayment(id, payload) {
 
 export async function submitPayment(paymentId) {
   try {
-    const res = await fetch(`${API_BASE_URL}/${paymentId}/submit`, {
+    const res = await authenticatedFetch(`${API_BASE_URL}/${paymentId}/submit`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
     });
@@ -72,7 +73,7 @@ export async function submitPayment(paymentId) {
 
 export async function cancelPayment(paymentId) {
   try {
-    const res = await fetch(`${API_BASE_URL}/${paymentId}/cancel`, {
+    const res = await authenticatedFetch(`${API_BASE_URL}/${paymentId}/cancel`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
     });
@@ -86,7 +87,7 @@ export async function cancelPayment(paymentId) {
 
 export async function archivePayment(paymentId) {
   try {
-    const res = await fetch(`${API_BASE_URL}/${paymentId}/archive`, {
+    const res = await authenticatedFetch(`${API_BASE_URL}/${paymentId}/archive`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
     });

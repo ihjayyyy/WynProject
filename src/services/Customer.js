@@ -1,3 +1,4 @@
+import { authenticatedFetch } from './Auth';
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL + "/Customer";
 
 export const INITIAL_CUSTOMER = {
@@ -13,7 +14,7 @@ export const INITIAL_CUSTOMER = {
 
 async function getCustomers() {
     try {
-        const res = await fetch(API_BASE_URL, {
+        const res = await authenticatedFetch(API_BASE_URL, {
             method: 'GET',
             headers: { Accept: '*/*' },
         });
@@ -26,7 +27,7 @@ async function getCustomers() {
 
 async function createCustomer(payload) {
     try {
-        const res = await fetch(API_BASE_URL, {
+        const res = await authenticatedFetch(API_BASE_URL, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(payload),
@@ -41,7 +42,7 @@ async function createCustomer(payload) {
 async function updateCustomer(id, payload) {
     try {
         const url = `${API_BASE_URL}/${id}`;
-        const res = await fetch(url, {
+        const res = await authenticatedFetch(url, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(payload),

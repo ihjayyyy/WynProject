@@ -1,3 +1,4 @@
+import { authenticatedFetch } from './Auth';
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL + "/Rack";
 
 export const INITIAL_RACK = {
@@ -8,7 +9,7 @@ export const INITIAL_RACK = {
 
 async function getRacks() {
     try {
-        const res = await fetch(API_BASE_URL, {
+        const res = await authenticatedFetch(API_BASE_URL, {
             method: 'GET',
             headers: { Accept: '*/*' },
         });
@@ -21,7 +22,7 @@ async function getRacks() {
 
 async function createRack(payload) {
     try {
-        const res = await fetch(API_BASE_URL, {
+        const res = await authenticatedFetch(API_BASE_URL, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(payload),
@@ -36,7 +37,7 @@ async function createRack(payload) {
 async function updateRack(id, payload) {
     try {
         const url = `${API_BASE_URL}/${id}`;
-        const res = await fetch(url, {
+        const res = await authenticatedFetch(url, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(payload),

@@ -1,3 +1,4 @@
+import { authenticatedFetch } from './Auth';
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL + "/InventoryMovement";
 
 async function parseResponse(res) {
@@ -12,7 +13,7 @@ async function parseResponse(res) {
 async function getInventoryMovements() {
   try {
     const data = await parseResponse(
-      await fetch(API_BASE_URL, {
+      await authenticatedFetch(API_BASE_URL, {
         method: 'GET',
         headers: {
           Accept: '*/*',

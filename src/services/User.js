@@ -1,3 +1,4 @@
+import { authenticatedFetch } from './Auth';
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL + '/User';
 
 export const INITIAL_USER = {
@@ -11,7 +12,7 @@ export const INITIAL_USER = {
 
 // export async function getCurrentUser() {
 //   try {
-//     // const res = await fetch(API_BASE_URL, {
+//     // const res = await authenticatedFetch(API_BASE_URL, {
 //     //   method: 'GET',
 //     //   headers: { Accept: '*/*' },
 //     // });
@@ -246,7 +247,7 @@ export async function getCurrentUser() {
 //   ];
 
 //   try {
-//     // const res = await fetch(API_BASE_URL, {
+//     // const res = await authenticatedFetch(API_BASE_URL, {
 //     //   method: 'GET',
 //     //   headers: { Accept: '*/*' },
 //     // });
@@ -293,7 +294,7 @@ export async function getUserAccess() {
 
 export async function getAllUsers() {
   try {
-    const res = await fetch(`${API_BASE_URL}/GetAll`, {
+    const res = await authenticatedFetch(`${API_BASE_URL}/GetAll`, {
       method: 'GET',
       headers: { Accept: '*/' },
     });
@@ -306,7 +307,7 @@ export async function getAllUsers() {
 
 export async function getUserByGuid(guid) {
   try {
-    const res = await fetch(`${API_BASE_URL}/${guid}`, {
+    const res = await authenticatedFetch(`${API_BASE_URL}/${guid}`, {
       method: 'GET',
       headers: { Accept: '*/*' },
     });
@@ -342,7 +343,7 @@ export async function getUserByGuid(guid) {
 
 export async function changePassword(payload) {
   try {
-    const res = await fetch(`${API_BASE_URL}/ChangePassword`, {
+    const res = await authenticatedFetch(`${API_BASE_URL}/ChangePassword`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload),
@@ -379,7 +380,7 @@ export async function changePassword(payload) {
 
 export async function updateUser(userId, payload) {
   try {
-    const res = await fetch(`${API_BASE_URL}/Update/${userId}`, {
+    const res = await authenticatedFetch(`${API_BASE_URL}/Update/${userId}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload),
@@ -416,7 +417,7 @@ export async function updateUser(userId, payload) {
 
 export async function registerUser(payload) {
   try {
-    const res = await fetch(`${API_BASE_URL}/Register`, {
+    const res = await authenticatedFetch(`${API_BASE_URL}/Register`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload),
@@ -453,7 +454,7 @@ export async function registerUser(payload) {
 
 export async function deactivateActivateUser(employeeNumber) {
   try {
-    const res = await fetch(`${API_BASE_URL}/DeactivateUser`, {
+    const res = await authenticatedFetch(`${API_BASE_URL}/DeactivateUser`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ employeeNumber }),
@@ -490,7 +491,7 @@ export async function deactivateActivateUser(employeeNumber) {
 
 export async function forgotPassword(payload) {
   try {
-    const res = await fetch(`${API_BASE_URL}/ForgotPassword`, {
+    const res = await authenticatedFetch(`${API_BASE_URL}/ForgotPassword`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload),
@@ -527,7 +528,7 @@ export async function forgotPassword(payload) {
 
 export async function verifyForgotPassword(payload) {
   try {
-    const res = await fetch(`${API_BASE_URL}/ForgotPassword/verify`, {
+    const res = await authenticatedFetch(`${API_BASE_URL}/ForgotPassword/verify`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload),
@@ -564,7 +565,7 @@ export async function verifyForgotPassword(payload) {
 
 export async function resetPassword(payload) {
   try {
-    const res = await fetch(`${API_BASE_URL}/ResetPassword`, {
+    const res = await authenticatedFetch(`${API_BASE_URL}/ResetPassword`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload),

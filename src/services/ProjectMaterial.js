@@ -1,3 +1,4 @@
+import { authenticatedFetch } from './Auth';
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL + "/ProjectMaterial";
 
 /**
@@ -9,7 +10,7 @@ const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL + "/ProjectMaterial";
 async function updateCompletedQuantity(materialId, completedQuantity) {
     try {
         const url = `${API_BASE_URL}/UpdateCompletedQuantity/${materialId}`;
-        const res = await fetch(url, {
+        const res = await authenticatedFetch(url, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ completedQuantity }),

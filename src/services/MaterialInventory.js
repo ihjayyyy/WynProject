@@ -1,3 +1,4 @@
+import { authenticatedFetch } from './Auth';
 import { handleOpenPdf } from './Helper';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL + '/MaterialInventory';
@@ -21,7 +22,7 @@ async function getMaterialInventories(filters) {
       });
       url = `${url}?${params.toString()}`;
     }
-    const res = await fetch(url, {
+    const res = await authenticatedFetch(url, {
       method: 'GET',
       headers: { Accept: '*/*' },
     });
@@ -35,7 +36,7 @@ async function getMaterialInventories(filters) {
 async function getMaterialInventory(id) {
   try {
     const url = `${API_BASE_URL}/${id}`;
-    const res = await fetch(url, {
+    const res = await authenticatedFetch(url, {
       method: 'GET',
       headers: { Accept: '*/*' },
     });
@@ -50,7 +51,7 @@ async function getMaterialInventory(id) {
 async function getMaterialInventoryByMaterialId(materialId) {
   try {
     const url = `${API_BASE_URL}/ByMaterialId/${materialId}`;
-    const res = await fetch(url, {
+    const res = await authenticatedFetch(url, {
       method: 'GET',
       headers: { Accept: '*/*' },
     });
@@ -64,7 +65,7 @@ async function getMaterialInventoryByMaterialId(materialId) {
 async function getMaterialInventoryReportByMaterialId(materialId) {
   try {
     const url = `${API_BASE_URL}/GenerateReport/${materialId}`;
-    const res = await fetch(url, {
+    const res = await authenticatedFetch(url, {
       method: 'GET',
       headers: { Accept: '*/*' },
     });
@@ -78,7 +79,7 @@ async function getMaterialInventoryReportByMaterialId(materialId) {
 
 async function createMaterialInventory(payload) {
   try {
-    const res = await fetch(API_BASE_URL, {
+    const res = await authenticatedFetch(API_BASE_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload),
@@ -93,7 +94,7 @@ async function createMaterialInventory(payload) {
 async function updateMaterialInventory(id, payload) {
   try {
     const url = `${API_BASE_URL}/${id}`;
-    const res = await fetch(url, {
+    const res = await authenticatedFetch(url, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload),
@@ -109,7 +110,7 @@ async function generateMaterialInventoryReport() {
   try {
     const url = `${API_BASE_URL}/GenerateReport`;
 
-    const res = await fetch(url, {
+    const res = await authenticatedFetch(url, {
       method: 'GET',
       headers: {
         Accept: 'application/json',
@@ -132,7 +133,7 @@ async function generateMaterialInventoryReport() {
 async function printMaterialReport_byId() {
   try {
     const url = `${API_BASE_URL}/GenerateReport/pdf`;
-    const res = await fetch(url, {
+    const res = await authenticatedFetch(url, {
       method: 'GET',
       headers: { Accept: '*/*' },
     });
@@ -146,7 +147,7 @@ async function getRacksByMaterialId(materialId) {
   try {
     const url = `${API_BASE_URL}/Racks/ByMaterialId/${materialId}`;
 
-    const res = await fetch(url, {
+    const res = await authenticatedFetch(url, {
       method: 'GET',
       headers: { Accept: '*/*' },
     });
@@ -169,7 +170,7 @@ async function updateMaterialInventoryQuantity(id, quantityChange) {
   try {
     const url = `${API_BASE_URL}/UpdateQuantity/${id}`;
 
-    const res = await fetch(url, {
+    const res = await authenticatedFetch(url, {
       method: 'PUT',
       headers: {
         'Content-Type': 'application/json',
@@ -197,7 +198,7 @@ async function setDefaultMaterialInventory(inventoryId) {
   try {
     const url = `${API_BASE_URL}/SetDefault/${inventoryId}`;
 
-    const res = await fetch(url, {
+    const res = await authenticatedFetch(url, {
       method: 'PUT',
       headers: {
         Accept: '*/*',

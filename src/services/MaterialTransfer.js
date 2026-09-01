@@ -1,3 +1,4 @@
+import { authenticatedFetch } from './Auth';
 import { handleOpenPdf } from "./Helper";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL + "/Transfer";
@@ -18,7 +19,7 @@ export const INITIAL_MATERIAL_TRANSFER = {
 async function getMaterialTransfers() {
   try {
     let url = API_BASE_URL +'/list';
-    const res = await fetch(url, {
+    const res = await authenticatedFetch(url, {
       method: 'GET',
       headers: { Accept: '*/*' },
     });
@@ -32,7 +33,7 @@ async function getMaterialTransfers() {
 async function getMaterialTransfer(id) {
   try {
     const url = `${API_BASE_URL}/${id}`;
-    const res = await fetch(url, {
+    const res = await authenticatedFetch(url, {
       method: 'GET',
       headers: { Accept: '*/*' },
     });
@@ -45,7 +46,7 @@ async function getMaterialTransfer(id) {
 
 async function createMaterialTransfer(payload) {
   try {
-    const res = await fetch(API_BASE_URL, {
+    const res = await authenticatedFetch(API_BASE_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload),
@@ -60,7 +61,7 @@ async function createMaterialTransfer(payload) {
 async function updateMaterialTransfer(id, payload) {
   try {
     const url = `${API_BASE_URL}/${id}`;
-    const res = await fetch(url, {
+    const res = await authenticatedFetch(url, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload),
@@ -76,7 +77,7 @@ async function transferMaterialTransfer(id, payload) {
   try {
     const url = `${API_BASE_URL}/transferred/${id}`;
 
-    const res = await fetch(url, {
+    const res = await authenticatedFetch(url, {
       method: 'PUT',
       headers: {
         'Content-Type': 'application/json',
@@ -102,7 +103,7 @@ async function receiveMaterialTransfer(id, payload) {
   try {
     const url = `${API_BASE_URL}/receive/${id}`;
 
-    const res = await fetch(url, {
+    const res = await authenticatedFetch(url, {
       method: 'PUT',
       headers: {
         'Content-Type': 'application/json',
@@ -133,7 +134,7 @@ async function receiveMaterialTransfer(id, payload) {
 async function getReceivedMaterialTransfers() {
   try {
     const url = `${API_BASE_URL}/received`;
-    const res = await fetch(url, {
+    const res = await authenticatedFetch(url, {
       method: 'GET',
       headers: { Accept: '*/*' },
     });
@@ -147,7 +148,7 @@ async function getReceivedMaterialTransfers() {
 async function getTransferredMaterialTransfers() {
   try {
     const url = `${API_BASE_URL}/transferred`;
-    const res = await fetch(url, {
+    const res = await authenticatedFetch(url, {
       method: 'GET',
       headers: { Accept: '*/*' },
     });
@@ -163,7 +164,7 @@ async function printMaterialTransfer_byId(transferId) {
   if (!transferId) return { data: null, error: 'Missing id' };
   try {
     const url = `${API_BASE_URL}/pdf/${transferId}`;
-    const res = await fetch(url, {
+    const res = await authenticatedFetch(url, {
         method: 'GET',
         headers: { Accept: '*/*' },
     });

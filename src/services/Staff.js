@@ -1,3 +1,4 @@
+import { authenticatedFetch } from './Auth';
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL + "/Staff";
 
 export const INITIAL_STAFF = {
@@ -11,7 +12,7 @@ export const INITIAL_STAFF = {
 
 async function getStaffs() {
   try {
-    const res = await fetch(API_BASE_URL, {
+    const res = await authenticatedFetch(API_BASE_URL, {
       method: 'GET',
       headers: { Accept: '*/*' },
     });
@@ -24,7 +25,7 @@ async function getStaffs() {
 
 async function createStaff(payload) {
   try {
-    const res = await fetch(API_BASE_URL, {
+    const res = await authenticatedFetch(API_BASE_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload),
@@ -39,7 +40,7 @@ async function createStaff(payload) {
 async function updateStaff(id, payload) {
   try {
     const url = `${API_BASE_URL}/${id}`;
-    const res = await fetch(url, {
+    const res = await authenticatedFetch(url, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload),

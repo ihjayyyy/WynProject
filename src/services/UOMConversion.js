@@ -1,3 +1,4 @@
+import { authenticatedFetch } from './Auth';
 // src/services/UOMConversion.js
 // Service for handling Unit of Measure Conversion API requests
 
@@ -23,7 +24,7 @@ async function parseResponse(res) {
 async function getUOMConversions() {
   try {
     const data = await parseResponse(
-      await fetch(`${API_BASE_URL}`, {
+      await authenticatedFetch(`${API_BASE_URL}`, {
         method: 'GET',
         headers: { Accept: '*/*' },
       })
@@ -37,7 +38,7 @@ async function getUOMConversions() {
 async function createUOMConversion(payload) {
   try {
     const data = await parseResponse(
-      await fetch(API_BASE_URL, {
+      await authenticatedFetch(API_BASE_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
@@ -54,7 +55,7 @@ async function updateUOMConversion(id, payload) {
 
   try {
     const data = await parseResponse(
-      await fetch(`${API_BASE_URL}/${id}`, {
+      await authenticatedFetch(`${API_BASE_URL}/${id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
@@ -71,7 +72,7 @@ async function deleteUOMConversion(id) {
 
   try {
     const data = await parseResponse(
-      await fetch(`${API_BASE_URL}/${id}`, {
+      await authenticatedFetch(`${API_BASE_URL}/${id}`, {
         method: 'DELETE',
         headers: { Accept: '*/*' },
       })

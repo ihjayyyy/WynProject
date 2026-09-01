@@ -1,3 +1,4 @@
+import { authenticatedFetch } from './Auth';
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL + "/Attendance";
 
 export const INITIAL_ATTENDANCE = {
@@ -36,7 +37,7 @@ async function getAttendanceByProjectId(projectId, startDate, endDate) {
     const query = params.toString();
     const url = `${API_BASE_URL}/ByProjectId/${projectId}${query ? `?${query}` : ''}`;
     const data = await parseResponse(
-      await fetch(url, {
+      await authenticatedFetch(url, {
         method: 'GET',
         headers: { Accept: '*/*' },
       })
@@ -51,7 +52,7 @@ async function getAttendanceByProjectId(projectId, startDate, endDate) {
 async function createAttendance(payload) {
   try {
     const data = await parseResponse(
-      await fetch(API_BASE_URL, {
+      await authenticatedFetch(API_BASE_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
@@ -69,7 +70,7 @@ async function updateAttendance(id, payload) {
 
   try {
     const data = await parseResponse(
-      await fetch(`${API_BASE_URL}/${id}`, {
+      await authenticatedFetch(`${API_BASE_URL}/${id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
@@ -87,7 +88,7 @@ async function deleteAttendance(id) {
 
   try {
     const data = await parseResponse(
-      await fetch(`${API_BASE_URL}/${id}`, {
+      await authenticatedFetch(`${API_BASE_URL}/${id}`, {
         method: 'DELETE',
         headers: { Accept: '*/*' },
       })

@@ -36,6 +36,18 @@ export function getAuthData() {
   }
 }
 
+export function authenticatedFetch(input, init = {}) {
+  const authData = getAuthData();
+  const token = authData?.token || authData?.accessToken;
+  const headers = new Headers(init.headers);
+
+  if (token) {
+    headers.set('Authorization', `Bearer ${token}`);
+  }
+
+  return fetch(input, { ...init, headers });
+}
+
 export function clearAuthData() {
   try {
     localStorage.removeItem(AUTH_STORAGE_KEY);
@@ -46,4 +58,6 @@ export function clearAuthData() {
   }
 }
 
-export default { login, storeAuthData, getAuthData, clearAuthData };
+const authService = { login, storeAuthData, getAuthData, authenticatedFetch, clearAuthData };
+
+export default authService;

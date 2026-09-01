@@ -1,3 +1,4 @@
+import { authenticatedFetch } from './Auth';
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL + "/TripTicket";
 
 export const INITIAL_TRIP_TICKET = {
@@ -28,7 +29,7 @@ async function getTripTicketByProjectId(projectId) {
   try {
     const url = `${API_BASE_URL}/ByProjectId/${projectId}`;
     const data = await parseResponse(
-      await fetch(url, {
+      await authenticatedFetch(url, {
         method: 'GET',
         headers: { Accept: '*/*' },
       })
@@ -43,7 +44,7 @@ async function getTripTicketByProjectId(projectId) {
 async function createTripTicket(payload) {
   try {
     const data = await parseResponse(
-      await fetch(API_BASE_URL, {
+      await authenticatedFetch(API_BASE_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
@@ -61,7 +62,7 @@ async function updateTripTicket(id, payload) {
 
   try {
     const data = await parseResponse(
-      await fetch(`${API_BASE_URL}/${id}`, {
+      await authenticatedFetch(`${API_BASE_URL}/${id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
@@ -79,7 +80,7 @@ async function deleteTripTicket(id) {
 
   try {
     const data = await parseResponse(
-      await fetch(`${API_BASE_URL}/${id}`, {
+      await authenticatedFetch(`${API_BASE_URL}/${id}`, {
         method: 'DELETE',
         headers: { Accept: '*/*' },
       })

@@ -1,3 +1,4 @@
+import { authenticatedFetch } from './Auth';
 import { handleOpenPdf } from "./Helper";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL + "/PurchaseRequest";
@@ -28,7 +29,7 @@ const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL + "/PurchaseRequest";
 
 async function GetAll() {
     try {
-        const res = await fetch(API_BASE_URL, {
+        const res = await authenticatedFetch(API_BASE_URL, {
             method: 'GET',
             headers: { Accept: '*/*' },
         });
@@ -43,7 +44,7 @@ async function Get(id) {
     if (!id) return { data: null, error: 'Missing id' };
     try {
         const url = `${API_BASE_URL}/${id}`;
-        const res = await fetch(url, {
+        const res = await authenticatedFetch(url, {
             method: 'GET',
             headers: { Accept: '*/*' },
         });
@@ -58,7 +59,7 @@ async function Get(id) {
 async function Create(payload) {
     try {
          console.log(payload)
-        const res = await fetch(`${API_BASE_URL}`, {
+        const res = await authenticatedFetch(`${API_BASE_URL}`, {
             method: 'POST',
             headers: { 
                 'Content-Type': 'application/json' 
@@ -80,7 +81,7 @@ async function Create(payload) {
 async function Update(id, payload) {
     try {
         const url = `${API_BASE_URL}/${id}`;
-        const res = await fetch(url, {
+        const res = await authenticatedFetch(url, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(payload),
@@ -105,7 +106,7 @@ async function Reject(id) {
 async function SetStatus(status, id) {
     try {
         const url = `${API_BASE_URL}/${status}/${id}`;
-        const res = await fetch(url, {
+        const res = await authenticatedFetch(url, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
         });
@@ -120,7 +121,7 @@ async function printPurchaseRequest_byId(projectId) {
   if (!projectId) return { data: null, error: 'Missing id' };
   try {
     const url = `${API_BASE_URL}/pdf/${projectId}`;
-    const res = await fetch(url, {
+    const res = await authenticatedFetch(url, {
       method: 'GET',
       headers: { 'Content-Type': 'application/json' },
     });

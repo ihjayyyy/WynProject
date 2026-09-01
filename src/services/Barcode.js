@@ -1,3 +1,4 @@
+import { authenticatedFetch } from './Auth';
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL + "/Barcode";
 
 function unwrapResponse(json) {
@@ -29,7 +30,7 @@ async function getByBarcodeWithMaterial(barcode) {
   try {
     const url = `${API_BASE_URL}/ByBarcodeWithMaterial/${encodeURIComponent(barcode)}`;
 
-    const res = await fetch(url, {
+    const res = await authenticatedFetch(url, {
       method: "GET",
       headers: {
         Accept: "*/*",
@@ -52,7 +53,7 @@ async function getByBarcodeWithMaterial(barcode) {
 
 async function getBarcodes() {
   try {
-    const res = await fetch(API_BASE_URL, {
+    const res = await authenticatedFetch(API_BASE_URL, {
       method: "GET",
       headers: {
         Accept: "*/*",
@@ -102,7 +103,7 @@ async function printBarcodes(selectedBarcodes = []) {
     let res = null;
 
     for (const payload of payloadCandidates) {
-      res = await fetch(endpoint, {
+      res = await authenticatedFetch(endpoint, {
         ...requestOptions,
         body: JSON.stringify(payload),
       });
@@ -167,7 +168,7 @@ async function getBarcodeWithProject(barcode, projectId) {
   try {
     const url = `${API_BASE_URL}/GetBarcodeWithProject/${encodeURIComponent(barcode)}/${projectId}`;
 
-    const res = await fetch(url, {
+    const res = await authenticatedFetch(url, {
       method: "GET",
       headers: {
         Accept: "*/*",

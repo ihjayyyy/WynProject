@@ -1,3 +1,4 @@
+import { authenticatedFetch } from './Auth';
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL + "/Material";
 
 export const INITIAL_MATERIAL = {
@@ -56,7 +57,7 @@ function toApiPayload(payload = {}, { includeCreateOnlyFields = false } = {}) {
 
 async function getMaterials() {
   try {
-    const res = await fetch(API_BASE_URL, {
+    const res = await authenticatedFetch(API_BASE_URL, {
       method: 'GET',
       headers: { Accept: '*/*' },
     });
@@ -72,7 +73,7 @@ async function getMaterials() {
 async function getMaterial(id) {
   try {
     const url = `${API_BASE_URL}/${id}`;
-    const res = await fetch(url, {
+    const res = await authenticatedFetch(url, {
       method: 'GET',
       headers: { Accept: '*/*' },
     });
@@ -94,7 +95,7 @@ async function byTypeMaterials(filters) {
       });
       url = `${url}?${params.toString()}`;
     }
-    const res = await fetch(url, {
+    const res = await authenticatedFetch(url, {
       method: 'GET',
       headers: { Accept: '*/*' },
     });
@@ -109,7 +110,7 @@ async function byTypeMaterials(filters) {
 
 async function createMaterial(payload) {
   try {
-    const res = await fetch(API_BASE_URL, {
+    const res = await authenticatedFetch(API_BASE_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(toApiPayload(payload, { includeCreateOnlyFields: true })),
@@ -124,7 +125,7 @@ async function createMaterial(payload) {
 async function updateMaterial(id, payload) {
   try {
     const url = `${API_BASE_URL}/${id}`;
-    const res = await fetch(url, {
+    const res = await authenticatedFetch(url, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(toApiPayload(payload)),
@@ -138,7 +139,7 @@ async function updateMaterial(id, payload) {
 async function deleteMaterial(id) {
   try {
     const url = `${API_BASE_URL}/${id}`;
-    const res = await fetch(url, {
+    const res = await authenticatedFetch(url, {
       method: 'DELETE',
       headers: {
         Accept: '*/*',

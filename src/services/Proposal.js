@@ -1,3 +1,4 @@
+import { authenticatedFetch } from './Auth';
 import { handleOpenPdf } from "./Helper";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL + "/Proposal";
@@ -37,7 +38,7 @@ export const INITIAL_PROPOSAL = {
 
 async function getProposals() {
     try {
-        const res = await fetch(API_BASE_URL, {
+        const res = await authenticatedFetch(API_BASE_URL, {
             method: 'GET',
             headers: { Accept: '*/*' },
         });
@@ -52,7 +53,7 @@ async function getProposalById(id) {
     if (!id) return { data: null, error: 'Missing id' };
     try {
         const url = `${API_BASE_URL}/ByProposalId/${id}`;
-        const res = await fetch(url, {
+        const res = await authenticatedFetch(url, {
             method: 'GET',
             headers: { Accept: '*/*' },
         });
@@ -67,7 +68,7 @@ async function printProposal_byId(id) {
     if (!id) return { data: null, error: 'Missing id' };
     try {
         const url = `${API_BASE_URL}/pdf/${id}`;
-        const res = await fetch(url, {
+        const res = await authenticatedFetch(url, {
             method: 'GET',
             headers: { Accept: '*/*' },
         });
@@ -82,7 +83,7 @@ async function printProposalBreakdown_byId(id) {
     if (!id) return { data: null, error: 'Missing id' };
     try {
         const url = `${API_BASE_URL}/pdf/breakdown/${id}`;
-        const res = await fetch(url, {
+        const res = await authenticatedFetch(url, {
             method: 'GET',
             headers: { Accept: '*/*' },
         });
@@ -97,7 +98,7 @@ async function printJobOrder_byProposal(id) {
     if (!id) return { data: null, error: 'Missing id' };
     try {
         const url = `${API_BASE_URL}/pdf/joborder/${id}`;
-        const res = await fetch(url, {
+        const res = await authenticatedFetch(url, {
             method: 'GET',
             headers: { Accept: '*/*' },
         });
@@ -111,7 +112,7 @@ async function printJobOrder_byProposal(id) {
 
 async function createProposal(payload) {
     try {
-        const res = await fetch(`${API_BASE_URL}/Create`, {
+        const res = await authenticatedFetch(`${API_BASE_URL}/Create`, {
             method: 'POST',
             headers: { 
                 'Content-Type': 'application/json' 
@@ -129,7 +130,7 @@ async function createProposal(payload) {
 async function updateProposal(id, payload) {
     try {
         const url = `${API_BASE_URL}/Update/${id}`;
-        const res = await fetch(url, {
+        const res = await authenticatedFetch(url, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(payload),
@@ -144,7 +145,7 @@ async function updateProposal(id, payload) {
 async function submitProposal(id) {
     try {
         const url = `${API_BASE_URL}/Submit/${id}`;
-        const res = await fetch(url, {
+        const res = await authenticatedFetch(url, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
         });
@@ -158,7 +159,7 @@ async function submitProposal(id) {
 async function approveProposal(id) {
     try {
         const url = `${API_BASE_URL}/Approve/${id}`;
-        const res = await fetch(url, {
+        const res = await authenticatedFetch(url, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
         });
@@ -172,7 +173,7 @@ async function approveProposal(id) {
 async function rejectProposal(id) {
     try {
         const url = `${API_BASE_URL}/Reject/${id}`;
-        const res = await fetch(url, {
+        const res = await authenticatedFetch(url, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
         });
@@ -186,7 +187,7 @@ async function rejectProposal(id) {
 async function winProposal(id) {
     try {
         const url = `${API_BASE_URL}/Win/${id}`;
-        const res = await fetch(url, {
+        const res = await authenticatedFetch(url, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
         });
@@ -200,7 +201,7 @@ async function winProposal(id) {
 async function cancelProposal(id) {
     try {
         const url = `${API_BASE_URL}/Cancel/${id}`;
-        const res = await fetch(url, {
+        const res = await authenticatedFetch(url, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
         });
@@ -213,7 +214,7 @@ async function cancelProposal(id) {
 async function closeProposal(id) {
     try {
         const url = `${API_BASE_URL}/Close/${id}`;
-        const res = await fetch(url, {
+        const res = await authenticatedFetch(url, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
         });
@@ -227,7 +228,7 @@ async function closeProposal(id) {
 async function loseProposal(id) {
     try {
         const url = `${API_BASE_URL}/Lose/${id}`;
-        const res = await fetch(url, {
+        const res = await authenticatedFetch(url, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
         });
@@ -243,7 +244,7 @@ async function reviseProposal(proposalId) {
 
     try {
         const url = `${API_BASE_URL}/ReviseProposal/${proposalId}`;
-        const res = await fetch(url, {
+        const res = await authenticatedFetch(url, {
             method: 'GET',
             headers: { Accept: '*/*' },
         });
@@ -257,7 +258,7 @@ async function reviseProposal(proposalId) {
 
 async function createRevisedProposal(payload) {
     try {
-        const res = await fetch(`${API_BASE_URL}/CreateRevised`, {
+        const res = await authenticatedFetch(`${API_BASE_URL}/CreateRevised`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',

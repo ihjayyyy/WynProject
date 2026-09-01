@@ -1,3 +1,4 @@
+import { authenticatedFetch } from './Auth';
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL + "/Dashboard";
 
 async function parseResponse(res) {
@@ -14,7 +15,7 @@ async function getModulesByUser(userId) {
 
   try {
     const data = await parseResponse(
-      await fetch(`${API_BASE_URL}/Module/byUser/${userId}`, {
+      await authenticatedFetch(`${API_BASE_URL}/Module/byUser/${userId}`, {
         method: "GET",
         headers: { Accept: "*/*" },
       })
@@ -31,7 +32,7 @@ async function getSummaryByModule(moduleName) {
 
   try {
     const data = await parseResponse(
-      await fetch(`${API_BASE_URL}/Summary/byModule/${moduleName}`, {
+      await authenticatedFetch(`${API_BASE_URL}/Summary/byModule/${moduleName}`, {
         method: "GET",
         headers: { Accept: "*/*" },
       })
@@ -48,7 +49,7 @@ async function getForApprovalByModule(moduleName) {
 
   try {
     const data = await parseResponse(
-      await fetch(`${API_BASE_URL}/ForApproval/byModule/${moduleName}`, {
+      await authenticatedFetch(`${API_BASE_URL}/ForApproval/byModule/${moduleName}`, {
         method: "GET",
         headers: { Accept: "*/*" },
       })
@@ -65,7 +66,7 @@ async function getNeedsAttentionByModule(moduleName) {
 
   try {
     const data = await parseResponse(
-      await fetch(`${API_BASE_URL}/NeedsAttention/byModule/${moduleName}`, {
+      await authenticatedFetch(`${API_BASE_URL}/NeedsAttention/byModule/${moduleName}`, {
         method: "GET",
         headers: { Accept: "*/*" },
       })

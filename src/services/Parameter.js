@@ -1,3 +1,4 @@
+import { authenticatedFetch } from './Auth';
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL + "/Parameter";
 
 // No initial object since parameters are dynamic per module
@@ -5,7 +6,7 @@ const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL + "/Parameter";
 async function getParameter(moduleName) {
   try {
     const url = `${API_BASE_URL}/get/${moduleName}`;
-    const res = await fetch(url, {
+    const res = await authenticatedFetch(url, {
       method: 'GET',
       headers: { Accept: '*/*' },
     });
@@ -19,7 +20,7 @@ async function getParameter(moduleName) {
 async function getParameterByName(moduleName, paramName) {
   try {
     const url = `${API_BASE_URL}/get/${moduleName}/${paramName}`;
-    const res = await fetch(url, {
+    const res = await authenticatedFetch(url, {
       method: 'GET',
       headers: { Accept: '*/*' },
     });

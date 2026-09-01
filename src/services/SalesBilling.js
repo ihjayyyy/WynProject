@@ -1,3 +1,4 @@
+import { authenticatedFetch } from './Auth';
 import { handleOpenPdf } from "./Helper";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL + "/SalesBilling";
@@ -9,7 +10,7 @@ async function getSalesBillingById(id) {
   try {
     const url = `${API_BASE_URL}/${id}`;
 
-    const res = await fetch(url, {
+    const res = await authenticatedFetch(url, {
       method: 'GET',
       headers: { 'Content-Type': 'application/json' },
     });
@@ -60,7 +61,7 @@ async function parseResponse(res) {
 async function editSalesBilling(id, payload) {
   try {
     const data = await parseResponse(
-      await fetch(`${API_BASE_URL}/${id}`, {
+      await authenticatedFetch(`${API_BASE_URL}/${id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
@@ -82,7 +83,7 @@ async function printSalesBilling_byId(id) {
   try {
     const url = `${API_BASE_URL}/pdf/${id}`;
 
-    const res = await fetch(url, {
+    const res = await authenticatedFetch(url, {
       method: 'GET',
       headers: { Accept: '*/*' },
     });
@@ -105,7 +106,7 @@ async function markAsBilled(salesBillingId) {
   try {
     const url = `${API_BASE_URL}/MarkAsBilled/${salesBillingId}`;
 
-    const res = await fetch(url, {
+    const res = await authenticatedFetch(url, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
     });
@@ -135,7 +136,7 @@ async function cancelSalesBilling(salesBillingId) {
   try {
     const url = `${API_BASE_URL}/${salesBillingId}/cancel`;
 
-    const res = await fetch(url, {
+    const res = await authenticatedFetch(url, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
     });
@@ -165,7 +166,7 @@ async function closeSalesBilling(salesBillingId) {
   try {
     const url = `${API_BASE_URL}/${salesBillingId}/close`;
 
-    const res = await fetch(url, {
+    const res = await authenticatedFetch(url, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
     });
@@ -189,7 +190,7 @@ async function closeSalesBilling(salesBillingId) {
 async function createSalesBilling(payload) {
   try {
     const data = await parseResponse(
-      await fetch(API_BASE_URL, {
+      await authenticatedFetch(API_BASE_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
@@ -209,7 +210,7 @@ async function createSalesBilling(payload) {
 async function getSalesBilling() {
   try {
     const data = await parseResponse(
-      await fetch(API_BASE_URL, {
+      await authenticatedFetch(API_BASE_URL, {
         method: 'GET',
         headers: { 'Content-Type': 'application/json' },
       })
@@ -230,7 +231,7 @@ async function getSalesBillingByProjectId(projectId) {
 
   try {
     const data = await parseResponse(
-      await fetch(`${API_BASE_URL}/ByProjectId/${projectId}`, {
+      await authenticatedFetch(`${API_BASE_URL}/ByProjectId/${projectId}`, {
         method: 'GET',
         headers: { 'Content-Type': 'application/json' },
       })
@@ -251,7 +252,7 @@ async function getSalesBillingByCustomerId(customerId) {
 
   try {
     const data = await parseResponse(
-      await fetch(`${API_BASE_URL}/BilledByCustomerId/${customerId}`, {
+      await authenticatedFetch(`${API_BASE_URL}/BilledByCustomerId/${customerId}`, {
         method: 'GET',
         headers: { 'Content-Type': 'application/json' },
       })

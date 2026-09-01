@@ -1,3 +1,4 @@
+import { authenticatedFetch } from './Auth';
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL + "/ProjectFinance";
 
 export const INITIAL_PROJECT_FINANCE = {
@@ -16,7 +17,7 @@ export const INITIAL_PROJECT_FINANCE = {
 
 async function getProjectFinances() {
     try {
-        const res = await fetch(API_BASE_URL, {
+        const res = await authenticatedFetch(API_BASE_URL, {
             method: 'GET',
             headers: { Accept: '*/*' },
         });
@@ -30,7 +31,7 @@ async function getProjectFinances() {
 async function getProjectFinanceByProjectId(id) {
     try {
         const url = `${API_BASE_URL}/ByProjectId/${id}`;
-        const res = await fetch(url, {
+        const res = await authenticatedFetch(url, {
             method: 'GET',
             headers: { Accept: '*/*' },
         });
@@ -43,7 +44,7 @@ async function getProjectFinanceByProjectId(id) {
 
 async function createProjectFinance(payload) {
     try {
-        const res = await fetch(API_BASE_URL, {
+        const res = await authenticatedFetch(API_BASE_URL, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(payload),
@@ -58,7 +59,7 @@ async function createProjectFinance(payload) {
 async function updateProjectFinance(id, payload) {
     try {
         const url = `${API_BASE_URL}/${id}`;
-        const res = await fetch(url, {
+        const res = await authenticatedFetch(url, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(payload),
@@ -73,7 +74,7 @@ async function updateProjectFinance(id, payload) {
 async function generateProgressBilling(projectId) {
     try {
         const url = `${API_BASE_URL}/GenerateProgressBilling/${projectId}`;
-        const res = await fetch(url, {
+        const res = await authenticatedFetch(url, {
             method: 'POST',
             headers: { Accept: '*/*' },
         });
@@ -87,7 +88,7 @@ async function generateProgressBilling(projectId) {
 async function generateDownpaymentBilling(projectId) {
     try {
         const url = `${API_BASE_URL}/GenerateDownpaymentBilling/${projectId}`;
-        const res = await fetch(url, {
+        const res = await authenticatedFetch(url, {
             method: 'POST',
             headers: { Accept: '*/*' },
         });
@@ -101,7 +102,7 @@ async function generateDownpaymentBilling(projectId) {
 async function getFinancialStatement(projectId) {
     try {
         const url = `${API_BASE_URL}/FinancialStatement/${projectId}`;
-        const res = await fetch(url, {
+        const res = await authenticatedFetch(url, {
             method: 'GET',
             headers: { Accept: '*/*' },
         });

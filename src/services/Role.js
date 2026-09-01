@@ -1,8 +1,9 @@
+import { authenticatedFetch } from './Auth';
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL + '/Role';
 
 export async function getAllRoles() {
   try {
-    const res = await fetch(`${API_BASE_URL}`, {
+    const res = await authenticatedFetch(`${API_BASE_URL}`, {
       method: 'GET',
       headers: { Accept: '*/*' },
     });
@@ -16,7 +17,7 @@ export async function getAllRoles() {
 
 export async function getRoleByRoleId(role_id) {
   try {
-    const res = await fetch(`${API_BASE_URL}/${role_id}`, {
+    const res = await authenticatedFetch(`${API_BASE_URL}/${role_id}`, {
       method: 'GET',
       headers: { Accept: '*/*' },
     });

@@ -1,3 +1,4 @@
+import { authenticatedFetch } from './Auth';
 
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL + "/AssemblyMaterial";
@@ -42,7 +43,7 @@ function unwrapResponse(json) {
 
 async function createAssemblyMaterial(payload) {
   try {
-    const res = await fetch(`${API_BASE_URL}/Assembly`, {
+    const res = await authenticatedFetch(`${API_BASE_URL}/Assembly`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(toApiPayload(payload)),
@@ -57,7 +58,7 @@ async function createAssemblyMaterial(payload) {
 async function getAssemblyMaterial(materialId) {
   try {
     const url = `${API_BASE_URL}/Material/${materialId}`;
-    const res = await fetch(url, {
+    const res = await authenticatedFetch(url, {
       method: 'GET',
       headers: { Accept: '*/*' },
     });
@@ -71,7 +72,7 @@ async function getAssemblyMaterial(materialId) {
 async function updateAssemblyMaterial(materialId, payload) {
   try {
     const url = `${API_BASE_URL}/Assembly/${materialId}`;
-    const res = await fetch(url, {
+    const res = await authenticatedFetch(url, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(toApiPayload(payload)),
