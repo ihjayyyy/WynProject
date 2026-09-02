@@ -58,6 +58,20 @@ async function printMaterialRequests_byProject(projectId) {
     }
 }
 
+async function getRequested_byProject(projectId) {
+    try {
+        const url = `${API_BASE_URL}/Requested/${projectId}`;
+        const res = await authenticatedFetch(url, {
+            method: 'GET',
+            headers: { Accept: '*/*' },
+        });
+        const json = await res.json();
+        return { data: json && json.value ? json.value : json, error: null };
+    } catch (error) {
+        return { data: null, error: error?.message || error };
+    }
+}
+
 async function updateMaterialRequest(id, payload) {
     try {
         const url = `${API_BASE_URL}/${id}`;

@@ -205,7 +205,7 @@ export default function MaterialTransferForm() {
       let newAvailableQtyMap = {};
 
       if (isWarehouseToProject && transferToId) {
-        const res = await printMaterialRequests_byProject(transferToId);
+        const res = await getRequested_byProject(transferToId);
         if (!mounted) return;
         if (!res?.error && Array.isArray(res.data)) {
           // Deduplicate by materialId — sum up balance across all requests
