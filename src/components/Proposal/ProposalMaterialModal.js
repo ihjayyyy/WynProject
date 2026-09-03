@@ -710,6 +710,11 @@ label: canEditFinance ? 'Price (Editable)' : 'Price',
 
     const proposedQty = actualQty + marginQty;
 
+    setForm((currentForm) => ({
+      ...currentForm,
+      marginQuantity: marginQty,
+      quantity: proposedQty,
+    }));
     updateField('quantity', proposedQty);
 
     recomputeTotals(
@@ -754,6 +759,11 @@ label: canEditFinance ? 'Price (Editable)' : 'Price',
           const proposedQty =
             actualQty + marginQty;
 
+          setForm((currentForm) => ({
+            ...currentForm,
+            marginQuantity: marginQty,
+            quantity: proposedQty,
+          }));
           updateField(
             'quantity',
             proposedQty

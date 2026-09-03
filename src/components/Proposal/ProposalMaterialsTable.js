@@ -74,6 +74,8 @@ export default function ProposalMaterialsTable({
     { header: 'Unit Cost', key: 'unitCost', align: 'right', width: '120px', render: (it) => (((it && it.isTotalRow) || it.unitCost === '' || it.unitCost == null) ? '' : Number(it.unitCost).toLocaleString()) },
     { header: 'UoM', key: 'uom', width: '80px' },
     { header: 'Proposed Quantity', key: 'quantity', align: 'right', width: '80px' },
+    { header: 'Margin Quantity', key: 'marginQuantity', align: 'right', width: '80px' },
+    
     { header: 'Material Cost', key: 'materialCost', align: 'right', width: '140px', render: (it) => Number(it.materialCost || 0).toLocaleString() },
     { header: 'Labor Cost', key: 'laborCost', align: 'right', width: '120px', render: (it) => Number(it.laborCost || 0).toLocaleString() },
     { header: 'Total', key: 'totalPrice', align: 'right', width: '140px', render: (it) => Number(it.totalPrice || it.totalAmount || 0).toLocaleString() },
@@ -238,7 +240,7 @@ export default function ProposalMaterialsTable({
           // Strip finance-affecting fields from the submitted payload when
           // the user isn't allowed to edit them, so a modal bug (or a user
           // bypassing a disabled input) can't sneak a changed value through.
-          const financeKeys = ['unitCost', 'materialCost', 'laborCost', 'laborPercentage', 'margin', 'marginQuantity', 'vat', 'totalAmount', 'extendedCost', 'totalPrice'];
+          const financeKeys = ['unitCost', 'materialCost', 'laborCost', 'laborPercentage', 'margin', 'vat', 'totalAmount', 'extendedCost', 'totalPrice'];
           const safeM = canEditFinance
             ? m
             : Object.fromEntries(Object.entries(m || {}).filter(([k]) => !financeKeys.includes(k)));

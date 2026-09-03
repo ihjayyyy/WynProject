@@ -30,6 +30,30 @@ async function getMaterialRequests() {
     }
 }
 
+async function cancelMaterialRequest(id) {
+    try {
+        const url = `${API_BASE_URL}/Cancel/${id}`;
+        const res = await authenticatedFetch(url, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+        });
+
+        if (!res.ok) {
+            return { data: null, error: `Unable to cancel material request (${res.status})` };
+        }
+
+        let json = null;
+        try {
+            json = await res.json();
+        } catch {
+            // The cancel endpoint may successfully return 204 No Content.
+        }
+        return { data: json, error: null };
+    } catch (error) {
+        return { data: null, error: error?.message || error };
+    }
+}
+
 async function createMaterialRequest(payload) {
     try {
         const res = await authenticatedFetch(API_BASE_URL, {
@@ -118,5 +142,7 @@ async function printMaterialRequest_byObj(item) {
   }
 }
 
-export { getMaterialRequests, createMaterialRequest, updateMaterialRequest, printMaterialRequests_byProject, printMaterialRequest_byId, printMaterialRequest_byObj };
-export default { getMaterialRequests, createMaterialRequest, updateMaterialRequest, printMaterialRequests_byProject, printMaterialRequest_byId, printMaterialRequest_byObj };
+export { getMaterialRequests, createMaterialRequest, updateMaterialRequest, cancelMaterialRequest, printMaterialRequests_byProject, printMaterialRequest_byId, printMaterialRequest_byObj };
+const materialRequestService = { getMaterialRequests, createMaterialRequest, updateMaterialRequest, cancelMaterialRequest, printMaterialRequests_byProject, printMaterialRequest_byId, printMaterialRequest_byObj };
+
+export default materialRequestService;

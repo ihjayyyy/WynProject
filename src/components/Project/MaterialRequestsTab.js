@@ -4,13 +4,14 @@ import ItemModal from '../ItemDetails/itemModal';
 import SearchBar from '../ui/SearchBar/SearchBar';
 import Button from '../ui/Button/Button';
 import styles from './ProjectScope.module.scss';
-import { printMaterialRequests_byProject, createMaterialRequest, updateMaterialRequest, INITIAL_MATERIAL_REQUEST, printMaterialRequest_byId, printMaterialRequest_byObj } from '../../services/MaterialRequest';
+import { printMaterialRequests_byProject, createMaterialRequest, updateMaterialRequest, cancelMaterialRequest, INITIAL_MATERIAL_REQUEST, printMaterialRequest_byId, printMaterialRequest_byObj } from '../../services/MaterialRequest';
 import { getByProjectId as getScopesByProjectId } from '../../services/ProjectScope';
 import * as Yup from 'yup';
 import { getAuthData } from '../../services/Auth';
 import { useToast } from '../ui/Toast/Toast';
+import { useConfirmModal } from '@/app/contextProviders/confirmModalContext';
 import { AccessContext } from '@/app/contextProviders/accessContext';
-import { FiPrinter, FiEdit2 } from 'react-icons/fi';
+import { FiPrinter, FiEdit2, FiXCircle } from 'react-icons/fi';
 import StatusBadge from '../ui/StatusBadge/StatusBadge';
 import InvalidPage from '@/components/InvalidPage/page';
 
@@ -22,7 +23,9 @@ export default function MaterialRequestsTab({ projectId, editable = true, projec
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editing, setEditing] = useState(null);
   const [materials, setMaterials] = useState([]);
+  const [cancelingId, setCancelingId] = useState(null);
   const toast = useToast();
+  const confirmModal = useConfirmModal();
 
   // Prefixes a display value with the record's assemblyCode, e.g.
   // "T8AFE4Y8 - Bolt, machine, 5/8\" x 12\"". Falls back to the plain
@@ -355,6 +358,25 @@ export default function MaterialRequestsTab({ projectId, editable = true, projec
     return rows;
   }, [filtered]);
 
+  // Cancels a draft material request via the /Cancel/{id} endpoint, then
+  // reloads the table so the row picks up its new (canceled) status.
+  const handleCancel = useCallback(async (item) => {
+    if (!item?.id) return;
+    setCancelingId(item.id);
+    try {
+      const response = await cancelMaterialRequest(item.id);
+      if (response?.error) {
+        toast.error('Failed to cancel material request');
+      } else {
+        toast.success('Material request canceled');
+        await loadData();
+      }
+      return response;
+    } finally {
+      setCancelingId(null);
+    }
+  }, [toast, loadData]);
+
   const tableColumns = useMemo(() => [
     {
       header: 'Requested Date', key: 'requestDate', sortable: false, render: (item) =>
@@ -393,6 +415,25 @@ export default function MaterialRequestsTab({ projectId, editable = true, projec
               onClick={() => { setEditing(item); setIsModalOpen(true); }}
             />
           )}
+          {!((item.status || '').toLowerCase().includes('cancel')) && (
+            <Button
+              size="sm"
+              variant="outlineDanger"
+              icon={<FiXCircle size={14} />}
+              title="Cancel"
+              disabled={cancelingId === item.id}
+              onClick={() => {
+                confirmModal.show(
+                  'Cancel material request?',
+                  `Cancel material request "${item.name || item.code || ''}"?`,
+                  'Cancel Request',
+                  'danger',
+                  () => handleCancel(item)
+                );
+              }}
+              style={{ marginLeft: '6px' }}
+            />
+          )}
           {(item.rivNumber != "" && item.rivNumber != null) && (
             <Button
               size="sm"
@@ -406,7 +447,7 @@ export default function MaterialRequestsTab({ projectId, editable = true, projec
         </div>
       ) : null,
     },
-  ], [editable, isAllowed]);
+  ], [editable, isAllowed, cancelingId, confirmModal, handleCancel, withAssembly]);
 
   if (!isAllowed(PageName, 'r')) return <InvalidPage />;
 
@@ -452,6 +493,7 @@ export default function MaterialRequestsTab({ projectId, editable = true, projec
         itemIndex={editing?.id ? 0 : -1}
         isOpen={isModalOpen}
         fields={modalFields}
+        hideDeleteButton ={true}
         onItemRemove={() => {}}
         onClose={isAllowed(PageName, 'w') && editable ? async (value) => {
           if (!value) {
