@@ -289,7 +289,7 @@ export default function UsersLanding() {
   }, [users]);
 
   const filterFn = (item, keyword) => {
-    return [item.employeeNumber, item.firstName, item.lastName, item.email]
+    return [item.employeeNumber, item.firstName, item.lastName, item.email, item.role]
       .filter(Boolean)
       .some((value) => String(value).toLowerCase().includes(keyword));
   };

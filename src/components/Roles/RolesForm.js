@@ -247,6 +247,18 @@ export default function RolesForm() {
 
   const moduleRows = FLAT_MODULES.map((module) => ({ ...module, id: module.code }));
   const permissionColumns = [
+    {
+      key: 'name',
+      header: 'Name',
+      sortable: false,
+      render: (module) => (
+        <span
+          className={`${styles.moduleName} ${module.depth === 0 ? styles.parentModule : styles.childModule}`}
+          style={{ paddingLeft: module.depth * 20 }}>
+          {module.name}
+        </span>
+      ),
+    },
     ...PERMISSIONS.map((permission) => ({
       key: permission.key,
       header: (
@@ -273,18 +285,6 @@ export default function RolesForm() {
         />
       ),
     })),
-    {
-      key: 'name',
-      header: 'Name',
-      sortable: false,
-      render: (module) => (
-        <span
-          className={`${styles.moduleName} ${module.depth === 0 ? styles.parentModule : styles.childModule}`}
-          style={{ paddingLeft: module.depth * 20 }}>
-          {module.name}
-        </span>
-      ),
-    },
   ];
 
   return (
