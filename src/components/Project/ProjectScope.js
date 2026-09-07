@@ -224,7 +224,12 @@ export default function ProjectScope({ projectId = 0, editable = true, projectSt
     { header: 'Type', key: 'materialType', width: '100px' },
     // { header: 'Unit Cost', key: 'unitCost', align: 'right', width: '120px', render: (it) => (((it && it.isTotalRow) || it.unitCost === '' || it.unitCost == null) ? '' : Number(it.unitCost).toLocaleString()) },
     { header: 'UoM', key: 'uom', width: '80px' },
-    { header: 'Qty', key: 'quantity', align: 'right', width: '80px' },
+    // Project Quantity: ProjectMaterial.InitialQuantity — the originally quoted/ordered quantity.
+    // Pricing (materialCost/vat/laborCost/totalPrice) is always calculated off this value.
+    { header: 'Project Quantity', key: 'initialQuantity', align: 'right', width: '120px', render: (it) => (it && it.initialQuantity != null ? Number(it.initialQuantity).toLocaleString() : '') },
+    // Actual Quantity: ProjectMaterial.Quantity — the current/actual quantity tracked on the material,
+    // independent of pricing.
+    { header: 'Actual Quantity', key: 'quantity', align: 'right', width: '120px', render: (it) => (it && it.quantity != null ? Number(it.quantity).toLocaleString() : '') },
     // { header: 'VAT', key: 'vat', align: 'right', width: '100px', render: (it) => Number(it.vat || 0).toLocaleString() },
     // { header: 'Material Cost', key: 'materialCost', align: 'right', width: '140px', render: (it) => Number(it.materialCost || 0).toLocaleString() },
     // { header: 'Labor Cost', key: 'laborCost', align: 'right', width: '120px', render: (it) => Number(it.laborCost || 0).toLocaleString() },
@@ -518,8 +523,10 @@ export default function ProjectScope({ projectId = 0, editable = true, projectSt
             const { val, existing } = pendingScopeUpdate;
             const pct = Number(val.laborPercentage) || 0;
             try {
+              // Pricing is always derived from ProjectMaterial.InitialQuantity, not the
+              // (possibly since-changed) actual Quantity.
               const updatedChildren = (existing.children || []).map((child) => {
-                const matCost = Number(child.materialCost) || (Number(child.unitCost) * Number(child.quantity)) || 0;
+                const matCost = Number(child.materialCost) || (Number(child.unitCost) * Number(child.initialQuantity ?? child.quantity)) || 0;
                 const lab = Number((matCost * pct / 100).toFixed(2));
                 const total = Number((matCost + lab).toFixed(2));
                 return { ...child, laborPercentage: pct, laborCost: lab, totalAmount: total, extendedCost: total, totalPrice: total };

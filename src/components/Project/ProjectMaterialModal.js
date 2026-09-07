@@ -15,6 +15,7 @@ const DEFAULT_FORM = {
   materialType: '',
   uom: '',
   unitCost: 0,
+  initialQuantity: 0,
   quantity: 0,
   vat: 0,
   materialCost: 0,
@@ -101,9 +102,11 @@ export default function ProjectMaterialModal({ open, initial = {}, onCancel, onC
     return () => { mounted = false; };
   }, [open, materialCategory, getMaterialFilters]);
 
+  // Pricing is always derived from Project Quantity (initialQuantity), never from the
+  // Actual Quantity (quantity), which is tracked independently.
   useEffect(() => {
     const uc = Number(form.unitCost) || 0;
-    const qty = Number(form.quantity) || 0;
+    const qty = Number(form.initialQuantity) || 0;
     const pct = Number(form.laborPercentage) || 0;
     const disc = Number(form.discount) || 0;
     const base = uc * qty;
@@ -114,7 +117,7 @@ export default function ProjectMaterialModal({ open, initial = {}, onCancel, onC
     const lab = pct > 0 ? Number((materialCost * pct / 100).toFixed(2)) : Number(form.laborCost) || 0;
     const totalPrice = Number((materialCost + lab).toFixed(2));
     setForm((f) => ({ ...f, materialCost, laborCost: lab, totalPrice, totalAmount: totalPrice, extendedCost: totalPrice, vat: vatAmount }));
-  }, [form.unitCost, form.quantity, form.laborPercentage, form.discount, form.laborCost]);
+  }, [form.unitCost, form.initialQuantity, form.laborPercentage, form.discount, form.laborCost]);
 
   const applyMaterialSelect = useCallback((val, sourceFields = null) => {
     const id = Number(val) || 0;
@@ -156,9 +159,10 @@ export default function ProjectMaterialModal({ open, initial = {}, onCancel, onC
     // EDIT MODE: trust the values already on `form` (originally seeded from `initial`,
     // i.e. what's actually saved on the record). Do not overwrite unitCost/name/code/uom
     // from the materials catalog just because the material list finished loading.
+    // Pricing is calculated from initialQuantity (Project Quantity), not quantity (Actual Quantity).
     if (isEditMode) {
       const uc = Number(form.unitCost) || 0;
-      const qty = Number(form.quantity) || 0;
+      const qty = Number(form.initialQuantity) || 0;
       const pct = Number(form.laborPercentage) || 0;
       const disc = Number(form.discount) || 0;
       const { vatAmount, materialCost, lab, totalPrice } = recalc(uc, qty, pct, disc, form.laborCost);
@@ -174,10 +178,10 @@ export default function ProjectMaterialModal({ open, initial = {}, onCancel, onC
     }
 
     // NEW ITEM MODE: derive display fields from the currently selected catalog material,
-    // since there's no prior saved price to protect.
+    // since there's no prior saved price to protect. Pricing still uses initialQuantity.
     const selected = applyMaterialSelect(form.materialId);
     const uc = Number(selected.unitCost) || 0;
-    const qty = Number(selected.quantity) || 0;
+    const qty = Number(selected.initialQuantity) || 0;
     const pct = Number(selected.laborPercentage) || 0;
     const disc = Number(selected.discount) || 0;
     const { vatAmount, materialCost, lab, totalPrice } = recalc(uc, qty, pct, disc, selected.laborCost);
@@ -192,7 +196,7 @@ export default function ProjectMaterialModal({ open, initial = {}, onCancel, onC
     };
   }, [form, applyMaterialSelect, isEditMode]);
 
-  // Completed quantity cannot be lowered below what's already been marked complete on this material.
+  // Actual Quantity cannot be lowered below what's already been marked complete on this material.
   const minQuantity = isEditMode ? (Number(calculatedForm.completedQuantity) || 0) : 0;
 
   const fields = useMemo(() => {
@@ -225,6 +229,7 @@ export default function ProjectMaterialModal({ open, initial = {}, onCancel, onC
           code: isNextService ? 'SRVC' : '',
           uom: isNextService ? 'lot' : '',
           unitCost: 0,
+          initialQuantity: isNextService ? 1 : 0,
           quantity: isNextService ? 1 : 0,
           materialType: nextValue,
           isAssembly: isNextAssembly,
@@ -234,6 +239,7 @@ export default function ProjectMaterialModal({ open, initial = {}, onCancel, onC
         updateField('code', isNextService ? 'SRVC' : '');
         updateField('uom', isNextService ? 'lot' : '');
         updateField('unitCost', 0);
+        updateField('initialQuantity', isNextService ? 1 : 0);
         updateField('quantity', isNextService ? 1 : 0);
         updateField('materialType', nextValue);
         updateField('isAssembly', isNextAssembly);
@@ -269,7 +275,7 @@ export default function ProjectMaterialModal({ open, initial = {}, onCancel, onC
     // the user is actively re-choosing the underlying item.
     const next = applyMaterialSelect(nextValue, itemFields);
     const uc = Number(next.unitCost) || 0;
-    const qty = Number(itemFields.find((f) => f.name === 'quantity')?.value) || 0;
+    const qty = Number(itemFields.find((f) => f.name === 'initialQuantity')?.value) || 0;
     const pct = Number(itemFields.find((f) => f.name === 'laborPercentage')?.value) || 0;
     const disc = Number(itemFields.find((f) => f.name === 'discount')?.value) || 0;
 
@@ -347,7 +353,7 @@ export default function ProjectMaterialModal({ open, initial = {}, onCancel, onC
       validator: Yup.number().min(0).notRequired(),
       onChange: (item, updateField, itemFields, nextValue) => {
         const uc = Number(nextValue) || 0;
-        const qty = Number(itemFields.find((f) => f.name === 'quantity')?.value) || 0;
+        const qty = Number(itemFields.find((f) => f.name === 'initialQuantity')?.value) || 0;
         const pct = Number(itemFields.find((f) => f.name === 'laborPercentage')?.value) || 0;
         const disc = Number(itemFields.find((f) => f.name === 'discount')?.value) || 0;
         const base = uc * qty;
@@ -366,21 +372,13 @@ export default function ProjectMaterialModal({ open, initial = {}, onCancel, onC
       },
     },
     {
-      name: 'quantity',
-      label: minQuantity > 0 ? `Quantity (Editable, min ${minQuantity})` : 'Quantity',
+      name: 'initialQuantity',
+      label: 'Project Quantity',
       type: 'number',
-      value: Number(calculatedForm.quantity) || 0,
-      validator:
-        minQuantity > 0
-          ? Yup.number()
-              .required('Quantity is required')
-              .min(
-                minQuantity,
-                `Quantity cannot be less than the completed quantity (${minQuantity})`
-              )
-          : Yup.number()
-              .required('Quantity is required')
-              .moreThan(0, 'Quantity must be greater than 0'),
+      value: Number(calculatedForm.initialQuantity) || 0,
+      validator: Yup.number()
+        .required('Project Quantity is required')
+        .moreThan(0, 'Project Quantity must be greater than 0'),
       onChange: (item, updateField, itemFields, nextValue) => {
         const uc = Number(itemFields.find((f) => f.name === 'unitCost')?.value) || 0;
         const pct = Number(itemFields.find((f) => f.name === 'laborPercentage')?.value) || 0;
@@ -398,7 +396,30 @@ export default function ProjectMaterialModal({ open, initial = {}, onCancel, onC
         updateField('totalAmount', total);
         updateField('extendedCost', total);
         updateField('totalPrice', total);
-        setForm((f) => ({ ...f, quantity: qty, vat, materialCost, laborCost: lab, totalAmount: total, extendedCost: total, totalPrice: total }));
+        setForm((f) => ({ ...f, initialQuantity: qty, vat, materialCost, laborCost: lab, totalAmount: total, extendedCost: total, totalPrice: total }));
+      },
+    },
+    {
+      name: 'quantity',
+      label: minQuantity > 0 ? `Actual Quantity (Editable)` : 'Actual Quantity',
+      type: 'number',
+      value: Number(calculatedForm.quantity) || 0,
+      // Actual Quantity is tracked independently and does NOT affect pricing.
+      validator:
+        minQuantity > 0
+          ? Yup.number()
+              .required('Actual Quantity is required')
+              .min(
+                minQuantity,
+                `Actual Quantity cannot be less than the completed quantity (${minQuantity})`
+              )
+          : Yup.number()
+              .required('Actual Quantity is required')
+              .min(0, 'Actual Quantity cannot be negative'),
+      onChange: (item, updateField, itemFields, nextValue) => {
+        const qty = Number(nextValue) || 0;
+        updateField('quantity', qty);
+        setForm((f) => ({ ...f, quantity: qty }));
       },
     },
     {
@@ -411,7 +432,7 @@ export default function ProjectMaterialModal({ open, initial = {}, onCancel, onC
       onChange: (item, updateField, itemFields, nextValue) => {
         if (!canEditFinance) return; // guard against programmatic/keyboard edits when locked
         const uc = Number(itemFields.find((f) => f.name === 'unitCost')?.value) || 0;
-        const qty = Number(itemFields.find((f) => f.name === 'quantity')?.value) || 0;
+        const qty = Number(itemFields.find((f) => f.name === 'initialQuantity')?.value) || 0;
         const pct = Number(itemFields.find((f) => f.name === 'laborPercentage')?.value) || 0;
         const disc = Number(nextValue) || 0;
         const base = uc * qty;
@@ -470,12 +491,15 @@ export default function ProjectMaterialModal({ open, initial = {}, onCancel, onC
           return new Date().toISOString();
         };
 
+        const submittedInitialQuantity = Number(val.initialQuantity) || 0;
         const submittedQuantity = Number(val.quantity) || 0;
 
-        if (submittedQuantity <= 0) {
+        // Pricing depends on Project Quantity (initialQuantity) — it must be > 0.
+        if (submittedInitialQuantity <= 0) {
           return;
         }
 
+        // Actual Quantity cannot drop below what's already been marked complete.
         if (isEditMode && submittedQuantity < minQuantity) {
           return;
         }
@@ -490,6 +514,7 @@ export default function ProjectMaterialModal({ open, initial = {}, onCancel, onC
           uom: val.uom || '',
           unitCost: Number(val.unitCost) || 0,
           quantity: submittedQuantity,
+          initialQuantity: submittedInitialQuantity,
           vat: Number(val.vat) || 0,
           materialCost: Number(val.materialCost) || 0,
           margin: Number(val.margin) || 0,
