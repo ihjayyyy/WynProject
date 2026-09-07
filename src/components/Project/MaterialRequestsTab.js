@@ -70,10 +70,19 @@ export default function MaterialRequestsTab({ projectId, editable = true, projec
             id: c.materialId || c.id || 0,
             name: c.name || '',
             code: c.code || '',
-            quantity: Number(c.quantity) || Number(c.initialQuantity) || 0,
+            // ProjectMaterials.Quantity — the source value for the
+            // "Available to Request" calculation below.
+            quantity: Number(c.quantity) || 0,
             uom: c.uom || '',
             scopeId: resolvedScopeId,
             assemblyCode: c.assemblyCode || '',
+            // ProjectMaterials.DraftQuantity / RequestedQuantity / DeliveredQuantity /
+            // ReturnedQuantity — aggregate totals maintained by the backend across all
+            // material requests for this material, used to derive what's still available.
+            draftQuantity: Number(c.draftQuantity) || 0,
+            requestedQuantity: Number(c.requestedQuantity) || 0,
+            deliveredQuantity: Number(c.deliveredQuantity) || 0,
+            returnedQuantity: Number(c.returnedQuantity) || 0,
           });
         });
       });
@@ -83,46 +92,50 @@ export default function MaterialRequestsTab({ projectId, editable = true, projec
   }, [projectId]);
 
   /**
-   * Returns the total requestedQty already submitted for a given
-   * materialId + scopeId combination, excluding the item currently
-   * being edited (so editing doesn't double-count itself).
+   * Available to Request = ProjectMaterials.Quantity
+   *                         - PM.DraftQuantity
+   *                         - PM.RequestedQuantity
+   *                         - PM.DeliveredQuantity
+   *                         + PM.ReturnedQuantity
    *
-   * FIX: Uses a loose scopeId match — if either side is 0/null/undefined
-   * (i.e. the API returned an unscoped item), we still count it toward
-   * the total so the "Available to Request" correctly reflects prior
-   * requests for the same material regardless of scope discrepancies.
+   * These Draft/Requested/Delivered/Returned totals are aggregates the backend
+   * maintains on the material itself (across every request against it), so when
+   * editing an existing DRAFT request, that request's own requestedQty is already
+   * baked into the material's aggregate totals. We add it back here so editing a
+   * draft doesn't count it against itself.
    */
-  const getTotalRequestedQty = useCallback((materialId, scopeId) => {
-    return items
-      .filter((item) => {
-        const materialMatch = Number(item.materialId) === Number(materialId);
+  const getAvailableToRequest = useCallback((m) => {
+    if (!m) return 0;
+    const qty = Number(m.quantity) || 0;
+    const draft = Number(m.draftQuantity) || 0;
+    const requested = Number(m.requestedQuantity) || 0;
+    const delivered = Number(m.deliveredQuantity) || 0;
+    const returned = Number(m.returnedQuantity) || 0;
 
-        // Strict scope match OR either side is 0/null/undefined (unscoped)
-        const scopeMatch =
-          Number(item.scopeId) === Number(scopeId) ||
-          !item.scopeId ||
-          !scopeId;
+    let available = qty - draft - requested - delivered + returned;
 
-        const notCurrentEdit = item.id !== editing?.id;
+    const isCurrentEdit =
+      editing &&
+      Number(editing.materialId) === Number(m.id) &&
+      (Number(editing.scopeId) === Number(m.scopeId) || !editing.scopeId || !m.scopeId);
+    if (isCurrentEdit) {
+      available += Number(editing.requestedQty) || 0;
+    }
 
-        return materialMatch && scopeMatch && notCurrentEdit;
-      })
-      .reduce((sum, item) => sum + (Number(item.requestedQty) || 0), 0);
-  }, [items, editing]);
+    return available;
+  }, [editing]);
 
   /**
    * Build material options, excluding any materialId+scopeId combo
-   * that has already consumed its full project quantity.
+   * that has no quantity available to request.
    * When editing an existing request, always keep that material in the
-   * list (it was already selected, and its own qty is excluded from the
-   * alreadyRequested sum by getTotalRequestedQty).
+   * list (it was already selected, and its own qty is added back by
+   * getAvailableToRequest).
    */
   const materialOptions = materials
     .filter((m) => {
-      const alreadyRequested = getTotalRequestedQty(m.id, m.scopeId);
-      const remaining = m.quantity - alreadyRequested;
+      const remaining = getAvailableToRequest(m);
       // Always show the material that is currently being edited
-      // FIX: also use loose scopeId match here for consistency
       const isCurrentlyEditing =
         editing &&
         Number(editing.materialId) === Number(m.id) &&
@@ -130,8 +143,7 @@ export default function MaterialRequestsTab({ projectId, editable = true, projec
       return isCurrentlyEditing || remaining > 0;
     })
     .map((m) => {
-      const alreadyRequested = getTotalRequestedQty(m.id, m.scopeId);
-      const remaining = m.quantity - alreadyRequested;
+      const remaining = getAvailableToRequest(m);
       const label = `${withAssembly(m, m.name)} (${remaining} ${m.uom || ''} left)`
         .replace(/\s+left/, ' left')
         .replace(/\(\s+/, '(');
@@ -194,7 +206,6 @@ export default function MaterialRequestsTab({ projectId, editable = true, projec
             // parsed back out later (in modalFields' own 'projectQty'/etc.
             // lookups via findMaterial, and in the save payload in onClose).
             const pq = Number(mat.quantity) || 0;
-            const alreadyRequested = getTotalRequestedQty(mid, sid);
             updateField('materialId', nextValue);
             updateField('projectQty', pq);
             updateField('name', mat.name || '');
@@ -206,7 +217,7 @@ export default function MaterialRequestsTab({ projectId, editable = true, projec
             // whatever material was selected when the modal first opened
             // (or nothing, for a brand-new request), so it must be set
             // explicitly here whenever the user picks/changes a material.
-            updateField('availableQty', pq - alreadyRequested);
+            updateField('availableQty', getAvailableToRequest(mat));
           } else {
             updateField('materialId', '');
             updateField('projectQty', 0);
@@ -223,13 +234,12 @@ export default function MaterialRequestsTab({ projectId, editable = true, projec
         type: 'number',
         readonly: true,
         value: (() => {
-          const pq = Number((selectedMaterial && (selectedMaterial.quantity !== undefined ? selectedMaterial.quantity : selectedMaterial.projectQty)) || record.projectQty || 0);
-          if (!pq) return '';
-          const materialId = (selectedMaterial && selectedMaterial.id) || record.materialId;
-          const scopeId = (selectedMaterial && selectedMaterial.scopeId) || record.scopeId;
-          if (!materialId) return '';
-          const alreadyRequested = getTotalRequestedQty(materialId, scopeId);
-          return pq - alreadyRequested;
+          if (selectedMaterial) return getAvailableToRequest(selectedMaterial);
+          // Fallback for records whose material isn't in the current scope
+          // snapshot (e.g. removed since the request was made) — show the
+          // last-known project quantity with no further deductions.
+          const pq = Number(record.projectQty) || 0;
+          return pq || '';
         })(),
       },
       {
@@ -241,19 +251,17 @@ export default function MaterialRequestsTab({ projectId, editable = true, projec
           .typeError('Requested Quantity must be a number')
           .required('Requested Quantity is required')
           .moreThan(0, 'Requested Quantity must be greater than 0')
-          .test('max-remaining', 'Requested quantity exceeds remaining project quantity', function (value) {
-            const pq = Number(this.parent?.projectQty) || 0;
-            if (!pq) return true;
-
+          .test('max-remaining', 'Requested quantity exceeds available quantity', function (value) {
             // materialId on the in-progress form value may still be the
             // composite "id:scopeId" string; parse the numeric id out.
             const [midStr] = String(this.parent?.materialId || '').split(':');
             const materialId = Number(midStr) || this.parent?.materialId;
             const scopeId = this.parent?.scopeId;
 
-            const alreadyRequested = getTotalRequestedQty(materialId, scopeId);
-            const remaining = pq - alreadyRequested;
+            const mat = materials.find((m) => Number(m.id) === Number(materialId) && Number(m.scopeId) === Number(scopeId));
+            if (!mat) return true;
 
+            const remaining = getAvailableToRequest(mat);
             return Number(value) <= remaining;
           }),
         onChange: (item, updateField, itemFields, nextValue) => {
@@ -278,7 +286,7 @@ export default function MaterialRequestsTab({ projectId, editable = true, projec
       { name: 'deadline', label: 'Deadline', type: 'date', value: fmt(record.deadline) || defaultDeadline },
       { name: 'requestDate', label: 'Request Date', type: 'date', value: fmt(record.requestDate) || today, hidden: true },
     ];
-  }, [editing, projectId, materialOptions, getTotalRequestedQty, materials, projectNumber]);
+  }, [editing, projectId, materialOptions, getAvailableToRequest, materials, projectNumber]);
 
   const filtered = useMemo(() => {
     const keyword = (searchTerm || '').trim().toLowerCase();
@@ -530,7 +538,6 @@ export default function MaterialRequestsTab({ projectId, editable = true, projec
             ...value,
             name: value.name || matchedMaterial?.name || '',
             code: value.code || matchedMaterial?.code || '',
-            assemblyCode: value.assemblyCode || matchedMaterial?.assemblyCode || '',
             materialId: numericMaterialId,
             projectId: Number(projectId) || 0,
             scopeId: numericScopeId,
@@ -543,14 +550,14 @@ export default function MaterialRequestsTab({ projectId, editable = true, projec
             requestDate: value.requestDate || today,
           };
 
-          // Final guard: check cumulative requested qty for materialId + scopeId
+          // Final guard: check Available to Request for this materialId + scopeId
           // before hitting the API, in case Yup validation was bypassed.
-          const alreadyRequested = getTotalRequestedQty(payload.materialId, payload.scopeId);
-          const remaining = (payload.projectQty || 0) - alreadyRequested;
+          // Available to Request = Quantity - DraftQuantity - RequestedQuantity - DeliveredQuantity + ReturnedQuantity
+          const remaining = matchedMaterial ? getAvailableToRequest(matchedMaterial) : (payload.projectQty || 0);
           if (payload.requestedQty > remaining) {
             toast.error(
-              `Cannot request ${payload.requestedQty}. Only ${remaining} remaining for this material` +
-              ` (project qty: ${payload.projectQty}, already requested: ${alreadyRequested}).`
+              `Cannot request ${payload.requestedQty}. Only ${remaining} available for this material` +
+              ` (project qty: ${payload.projectQty}).`
             );
             return; // keep modal open so user can correct the value
           }
