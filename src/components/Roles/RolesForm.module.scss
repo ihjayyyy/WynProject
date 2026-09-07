@@ -1,0 +1,32 @@
+.permissionsSection {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding-top: 8px;
+}
+
+.sectionTitle {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.colHeader {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  font-weight: 600;
+}
+
+.moduleName {
+  display: block;
+}
+
+.parentModule {
+  font-weight: 600;
+}
+
+.childModule {
+  font-weight: 400;
+}
