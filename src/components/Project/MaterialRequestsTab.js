@@ -45,51 +45,50 @@ export default function MaterialRequestsTab({ projectId, editable = true, projec
     loadData();
   }, [loadData]);
 
-  useEffect(() => {
-    let mounted = true;
-    (async () => {
-      if (!projectId) return;
-      const res = await getScopesByProjectId(projectId);
-      if (!mounted) return;
-      const raw = Array.isArray(res.data) ? res.data : (res.data && Array.isArray(res.data.value) ? res.data.value : res.data || []);
-      if (!Array.isArray(raw)) {
-        setMaterials([]);
-        return;
-      }
-      // Flatten children across scopes and dedupe by materialId + scopeId pair
-      const mats = [];
-      const seen = new Set();
-      raw.forEach((scope) => {
-        const children = Array.isArray(scope.children) ? scope.children : [];
-        children.forEach((c) => {
-          const resolvedScopeId = scope.id ?? 0;
-          const key = `mat:${c.materialId || c.id}:scope:${resolvedScopeId}`;
-          if (seen.has(key)) return;
-          seen.add(key);
-          mats.push({
-            id: c.materialId || c.id || 0,
-            name: c.name || '',
-            code: c.code || '',
-            // ProjectMaterials.Quantity — the source value for the
-            // "Available to Request" calculation below.
-            quantity: Number(c.quantity) || 0,
-            uom: c.uom || '',
-            scopeId: resolvedScopeId,
-            assemblyCode: c.assemblyCode || '',
-            // ProjectMaterials.DraftQuantity / RequestedQuantity / DeliveredQuantity /
-            // ReturnedQuantity — aggregate totals maintained by the backend across all
-            // material requests for this material, used to derive what's still available.
-            draftQuantity: Number(c.draftQuantity) || 0,
-            requestedQuantity: Number(c.requestedQuantity) || 0,
-            deliveredQuantity: Number(c.deliveredQuantity) || 0,
-            returnedQuantity: Number(c.returnedQuantity) || 0,
-          });
+  const loadScopeMaterials = useCallback(async () => {
+    if (!projectId) return;
+    const res = await getScopesByProjectId(projectId);
+    const raw = Array.isArray(res.data) ? res.data : (res.data && Array.isArray(res.data.value) ? res.data.value : res.data || []);
+    if (!Array.isArray(raw)) {
+      setMaterials([]);
+      return;
+    }
+    // Flatten children across scopes and dedupe by materialId + scopeId pair
+    const mats = [];
+    const seen = new Set();
+    raw.forEach((scope) => {
+      const children = Array.isArray(scope.children) ? scope.children : [];
+      children.forEach((c) => {
+        const resolvedScopeId = scope.id ?? 0;
+        const key = `mat:${c.materialId || c.id}:scope:${resolvedScopeId}`;
+        if (seen.has(key)) return;
+        seen.add(key);
+        mats.push({
+          id: c.materialId || c.id || 0,
+          name: c.name || '',
+          code: c.code || '',
+          // ProjectMaterials.Quantity — the source value for the
+          // "Available to Request" calculation below.
+          quantity: Number(c.quantity) || 0,
+          uom: c.uom || '',
+          scopeId: resolvedScopeId,
+          assemblyCode: c.assemblyCode || '',
+          // ProjectMaterials.DraftQuantity / RequestedQuantity / DeliveredQuantity /
+          // ReturnedQuantity — aggregate totals maintained by the backend across all
+          // material requests for this material, used to derive what's still available.
+          draftQuantity: Number(c.draftQuantity) || 0,
+          requestedQuantity: Number(c.requestedQuantity) || 0,
+          deliveredQuantity: Number(c.deliveredQuantity) || 0,
+          returnedQuantity: Number(c.returnedQuantity) || 0,
         });
       });
-      setMaterials(mats);
-    })();
-    return () => { mounted = false; };
+    });
+    setMaterials(mats);
   }, [projectId]);
+
+  useEffect(() => {
+    loadScopeMaterials();
+  }, [loadScopeMaterials]);
 
   /**
    * Available to Request = ProjectMaterials.Quantity
@@ -378,12 +377,13 @@ export default function MaterialRequestsTab({ projectId, editable = true, projec
       } else {
         toast.success('Material request canceled');
         await loadData();
+        await loadScopeMaterials();
       }
       return response;
     } finally {
       setCancelingId(null);
     }
-  }, [toast, loadData]);
+  }, [toast, loadData, loadScopeMaterials]);
 
   const tableColumns = useMemo(() => [
     {
@@ -565,11 +565,11 @@ export default function MaterialRequestsTab({ projectId, editable = true, projec
           if (!value.id || value.id === 0) {
             const response = await createMaterialRequest(payload);
             if (response?.error) toast.error('Failed to add material request');
-            else { toast.success('Material request added'); await loadData(); }
+            else { toast.success('Material request added'); await loadData(); await loadScopeMaterials(); }
           } else {
             const response = await updateMaterialRequest(value.id, payload);
             if (response?.error) toast.error('Failed to update material request');
-            else { toast.success('Material request updated'); await loadData(); }
+            else { toast.success('Material request updated'); await loadData(); await loadScopeMaterials(); }
           }
 
           setIsModalOpen(false);
