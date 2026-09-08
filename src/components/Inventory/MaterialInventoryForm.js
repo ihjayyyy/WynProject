@@ -98,8 +98,8 @@ export default function MaterialInventoryForm() {
   const handleApplyQuantityChange = async () => {
     if (!inventoryId || qtySaving) return;
     const parsed = Number(qtyChange);
-    if (!Number.isFinite(parsed) || parsed === 0) {
-      toast.error('Enter a non-zero number. Use positive to add, negative to deduct.');
+    if (qtyChange === '' || !Number.isFinite(parsed) || parsed <= 0) {
+      toast.error('Enter a quantity greater than zero.');
       return;
     }
 
@@ -220,7 +220,7 @@ const materialOptions = useMemo(() => {
           return '/inventory/material-inventory';
         } catch (err) {
           console.error('Update inventory failed', err);
-          toast.error('Failed to update inventory record');
+          toast.error('Failed to save inventory record');
           try { router.push('/inventory/material-inventory'); } catch (e) {}
           return '/inventory/material-inventory';
         }
@@ -256,7 +256,7 @@ const materialOptions = useMemo(() => {
     <ConfirmModal
       open={isQtyModalOpen}
       title="Adjust Quantity"
-      message="Use positive number to add stock and negative number to deduct stock."
+      message="Enter the quantity to add to the current stock."
       confirmText={qtySaving ? 'Saving...' : 'Apply'}
       confirmVariant="primary"
       onConfirm={handleApplyQuantityChange}
@@ -265,10 +265,13 @@ const materialOptions = useMemo(() => {
         <Input
           type="number"
           value={qtyChange}
-          onChange={(e) => setQtyChange(e.target.value)}
-          placeholder="e.g. 5 or -3"
-          min={-999999}
-          max={999999}
+          onChange={(e) => {
+            const val = e.target.value;
+            if (val === '' || Number(val) > 0) setQtyChange(val);
+          }}
+          placeholder="e.g. 5"
+          min={1}
+          step={1}
           disabled={qtySaving}
         />
         {initialValues?.name ? (

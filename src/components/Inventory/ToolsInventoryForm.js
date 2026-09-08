@@ -87,8 +87,8 @@ export default function ToolsInventoryForm() {
   const handleApplyQuantityChange = async () => {
     if (!inventoryId || qtySaving) return;
     const parsed = Number(qtyChange);
-    if (!Number.isFinite(parsed) || parsed === 0) {
-      toast.error('Enter a non-zero number. Use positive to add, negative to deduct.');
+    if (qtyChange === '' || !Number.isFinite(parsed) || parsed <= 0) {
+      toast.error('Enter a quantity greater than zero.');
       return;
     }
 
@@ -235,7 +235,10 @@ const toolOptions = useMemo(() => {
         <Input
           type="number"
           value={qtyChange}
-          onChange={(e) => setQtyChange(e.target.value)}
+          onChange={(e) => {
+            const val = e.target.value;
+            if (val === '' || Number(val) > 0) setQtyChange(val);
+          }}
           placeholder="e.g. 5"
           min={1}
           step={1}
