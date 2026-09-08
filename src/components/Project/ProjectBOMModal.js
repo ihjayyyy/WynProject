@@ -23,6 +23,8 @@ const columns = [
   { header: 'Scope', key: 'scopeName', width: '160px' },
   { header: 'Code', key: 'code', width: '160px' },
   { header: 'Name', key: 'name', width: '160px' },
+  { header: 'Delivered Quantity', key: 'deliveredQuantity', width: '100px' },
+  { header: 'Returned Quantity', key: 'returnedQuantity', width: '160px' },
   { header: 'Quantity', key: 'quantity', align: 'right', width: '100px' },
 ];
 

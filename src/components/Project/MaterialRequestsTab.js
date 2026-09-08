@@ -3,6 +3,7 @@ import DataTable from '../ui/DataTable/DataTable';
 import ItemModal from '../ItemDetails/itemModal';
 import SearchBar from '../ui/SearchBar/SearchBar';
 import Button from '../ui/Button/Button';
+import Select from '../ui/Select/Select';
 import styles from './ProjectScope.module.scss';
 import { printMaterialRequests_byProject, createMaterialRequest, updateMaterialRequest, cancelMaterialRequest, INITIAL_MATERIAL_REQUEST, printMaterialRequest_byId, printMaterialRequest_byObj } from '../../services/MaterialRequest';
 import { getByProjectId as getScopesByProjectId } from '../../services/ProjectScope';
@@ -20,6 +21,7 @@ export default function MaterialRequestsTab({ projectId, editable = true, projec
   const { isAllowed } = useContext(AccessContext);
   const [items, setItems] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
+  const [statusFilter, setStatusFilter] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editing, setEditing] = useState(null);
   const [materials, setMaterials] = useState([]);
@@ -287,15 +289,36 @@ export default function MaterialRequestsTab({ projectId, editable = true, projec
     ];
   }, [editing, projectId, materialOptions, getAvailableToRequest, materials, projectNumber]);
 
+  // Distinct statuses present in the currently loaded data, plus an
+  // "All Statuses" option at the top. Rebuilds whenever items reload so
+  // newly-appearing statuses show up automatically.
+  const statusOptions = useMemo(() => {
+    const seen = new Set();
+    items.forEach((item) => {
+      const s = (item.status || '').trim();
+      if (s) seen.add(s);
+    });
+    const sorted = Array.from(seen).sort((a, b) =>
+      a.localeCompare(b, undefined, { sensitivity: 'base' })
+    );
+    return [
+      { value: '', label: 'All Statuses' },
+      ...sorted.map((s) => ({ value: s, label: s })),
+    ];
+  }, [items]);
+
   const filtered = useMemo(() => {
     const keyword = (searchTerm || '').trim().toLowerCase();
-    if (!keyword) return items;
-    return items.filter((item) =>
-      [item.name, item.code, item.requestedBy, item.deadline, item.assemblyCode]
+    return items.filter((item) => {
+      if (statusFilter && (item.status || '').toLowerCase() !== statusFilter.toLowerCase()) {
+        return false;
+      }
+      if (!keyword) return true;
+      return [item.name, item.code, item.requestedBy, item.deadline, item.assemblyCode]
         .filter(Boolean)
-        .some((value) => String(value).toLowerCase().includes(keyword))
-    );
-  }, [items, searchTerm]);
+        .some((value) => String(value).toLowerCase().includes(keyword));
+    });
+  }, [items, searchTerm, statusFilter]);
 
   // Group rows by assemblyCode. Items sharing an assemblyCode are sorted
   // together (alphabetically by code, then by name within the group).
@@ -408,13 +431,13 @@ export default function MaterialRequestsTab({ projectId, editable = true, projec
           ? new Date(item.deadline).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: '2-digit' })
           : '—',
     },
-    {
+        {
       header: 'Actions',
       key: '__actions',
       sortable: false,
       render: (item) => editable && isAllowed(PageName, 'w') ? (
         <div>
-          {((item.status || '').toLowerCase().includes('draft')) && (
+          {((item.status || '').toLowerCase().includes('draft')) && !item.assemblyCode && (
             <Button
               size="sm"
               variant="outlinedPrimary"
@@ -423,7 +446,8 @@ export default function MaterialRequestsTab({ projectId, editable = true, projec
               onClick={() => { setEditing(item); setIsModalOpen(true); }}
             />
           )}
-          {!((item.status || '').toLowerCase().includes('cancel')) && (
+          {!((item.status || '').toLowerCase().includes('cancel')) &&
+            !((item.status || '').toLowerCase().includes('requested')) && (
             <Button
               size="sm"
               variant="outlineDanger"
@@ -470,6 +494,14 @@ export default function MaterialRequestsTab({ projectId, editable = true, projec
             onChange={setSearchTerm}
             showFilter={false}
             width="280px"
+          />
+          <Select
+            id="materialRequestStatusFilter"
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value)}
+            options={statusOptions}
+            placeholder="All Statuses"
+            className={styles.statusFilterSelect}
           />
           {isAllowed(PageName, 'w') && filtered.find(itm => (itm.status || '').toLowerCase().includes("draft")) && (
             <Button onClick={async () => {
