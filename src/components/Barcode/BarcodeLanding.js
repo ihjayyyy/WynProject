@@ -77,6 +77,8 @@ export default function BarcodeLanding() {
   const [selectedBarcodeKeys, setSelectedBarcodeKeys] = useState([]);
   const [filterValues, setFilterValues] = useState(DEFAULT_FILTER_VALUES);
 
+  const [visibleBarcodes, setVisibleBarcodes] = useState([]);
+
 const landingFilters = useMemo(
   () => [
     {
@@ -127,11 +129,13 @@ const landingFilters = useMemo(
     return barcodes.filter((item) => selectedSet.has(getBarcodeKey(item)));
   }, [barcodes, selectedBarcodeKeys]);
 
-  // "Select all" reflects and acts on the currently filtered/visible rows
-  // only — selections made under a different filter are preserved.
+  // "Select all" reflects and acts on the currently visible rows only —
+  // that's dropdown filters AND the search box, since Landing applies
+  // both before rendering. Selections made under a different filter/search
+  // are preserved.
   const visibleKeys = useMemo(
-    () => filteredBarcodes.map((item) => getBarcodeKey(item)).filter(Boolean),
-    [filteredBarcodes]
+    () => visibleBarcodes.map((item) => getBarcodeKey(item)).filter(Boolean),
+    [visibleBarcodes]
   );
 
   const allSelected = useMemo(
@@ -279,8 +283,8 @@ const landingFilters = useMemo(
 
   const selectedCount = selectedBarcodeKeys.length;
 
-  // Stats reflect the currently filtered (visible) set, matching the
-  // Customers landing convention.
+  // Stats reflect the currently dropdown-filtered set (not narrowed further
+  // by the search box), matching the Customers landing convention.
   const barcodeStats = useMemo(() => {
     const total = filteredBarcodes.length;
     const used = filteredBarcodes.filter((item) => Boolean(item?.isUsed)).length;
@@ -314,19 +318,23 @@ const landingFilters = useMemo(
     ];
   }, [filteredBarcodes]);
 
-  const filterFn = (item, keyword) =>
-    [
-      item.id,
-      item.barcode,
-      item.code,
-      item.name,
-      item.source,
-      item.warehouseName,
-      item.rackName,
-      item.updatedBy,
-    ]
-      .filter((value) => value !== undefined && value !== null && value !== '')
-      .some((value) => String(value).toLowerCase().includes(keyword));
+
+  const filterFn = useCallback(
+    (item, keyword) =>
+      [
+        item.id,
+        item.barcode,
+        item.code,
+        item.name,
+        item.source,
+        item.warehouseName,
+        item.rackName,
+        item.updatedBy,
+      ]
+        .filter((value) => value !== undefined && value !== null && value !== '')
+        .some((value) => String(value).toLowerCase().includes(keyword)),
+    []
+  );
 
   return (
     <>
@@ -351,6 +359,7 @@ const landingFilters = useMemo(
         }
         width="320px"
         filterFn={filterFn}
+        onVisibleDataChange={setVisibleBarcodes}
         filters={landingFilters}
         filterValues={filterValues}
         onFilterChange={(key, value) => setFilterValues((prev) => ({ ...prev, [key]: value }))}

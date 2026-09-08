@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import SearchBar from '../SearchBar/SearchBar';
 import DataTable from '../DataTable/DataTable';
 import StatsCard from '../StatsCard/StatsCard';
@@ -110,6 +110,10 @@ export default function Landing({
   statsLoading = loading,
   tableLoading = loading,
   skeletonRows = 6,
+  // Called with the fully-resolved visible rows (dropdown filters + search)
+  // any time they change, so parents can implement things like
+  // "select all visible" against what the user actually sees on screen.
+  onVisibleDataChange,
 }) {
   const [searchTerm, setSearchTerm] = useState('');
 
@@ -126,6 +130,10 @@ export default function Landing({
         .some((v) => String(v).toLowerCase().includes(k))
     );
   }, [searchTerm, filterableData, filterFn]);
+
+  useEffect(() => {
+    onVisibleDataChange?.(filtered);
+  }, [filtered, onVisibleDataChange]);
 
   const statsGridStyle = useMemo(() => {
     const count = Math.min(Math.max((stats || []).length, 1), 4);

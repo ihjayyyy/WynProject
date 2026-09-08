@@ -270,38 +270,39 @@ export default function ProposalMaterialModal({
     [form, materials]
   );
 
-const calculatedForm = useMemo(() => {
-  const uc = Number(form.unitCost) || 0;
-  const qty = Number(form.quantity) || 0;
-  const lab = Number(form.laborCost) || 0;
-  const disc = Number(form.discount) || 0;
+  const calculatedForm = useMemo(() => {
+    const uc = Number(form.unitCost) || 0;
+    const qty = Number(form.quantity) || 0;
+    const lab = Number(form.laborCost) || 0;
+    const disc = Number(form.discount) || 0;
 
-  const base = uc * qty;
-  const materialBase = base - disc;
+    const base = uc * qty;
+    const materialBase = base - disc;
 
-  const rawVat = materialBase * 0.12;
-  const vatAmount = Number.isFinite(rawVat)
-    ? Math.max(0, Number(rawVat.toFixed(2)))
-    : 0;
+    const rawVat = materialBase * 0.12;
+    const vatAmount = Number.isFinite(rawVat)
+      ? Math.max(0, Number(rawVat.toFixed(2)))
+      : 0;
 
-  const materialCost = Number((materialBase + vatAmount).toFixed(2));
-  const totalPrice = Number((materialCost + lab).toFixed(2));
+    const materialCost = Number((materialBase + vatAmount).toFixed(2));
+    const totalPrice = Number((materialCost + lab).toFixed(2));
 
-  return {
-    ...form,
-    vat: vatAmount,
-    materialCost,
-    totalAmount: totalPrice,
-    extendedCost: totalPrice,
-    totalPrice,
-  };
-}, [form]);
+    return {
+      ...form,
+      vat: vatAmount,
+      materialCost,
+      totalAmount: totalPrice,
+      extendedCost: totalPrice,
+      totalPrice,
+    };
+  }, [form]);
 
   const recomputeTotals = (
     updateField,
     itemFields,
     qtyOverride = null,
-    unitCostOverride = null
+    unitCostOverride = null,
+    extraFormPatch = {}
   ) => {
     const uc =
       unitCostOverride ??
@@ -372,6 +373,22 @@ const calculatedForm = useMemo(() => {
     updateField('totalAmount', total);
     updateField('extendedCost', total);
     updateField('totalPrice', total);
+
+    // Mirror the recomputed values (plus any field-specific patch passed
+    // in by the caller, e.g. unitCost/discount/materialId/quantity) back
+    // into the parent `form` state so it never goes stale relative to
+    // itemFields.
+    setForm((f) => ({
+      ...f,
+      ...extraFormPatch,
+      vat,
+      materialCost,
+      laborCost: lab,
+      totalAmount: total,
+      extendedCost: total,
+      totalPrice: total,
+      ...(qtyOverride != null ? { quantity: qtyOverride } : {}),
+    }));
   };
 
   const fields = useMemo(() => {
@@ -521,6 +538,16 @@ const calculatedForm = useMemo(() => {
               'Service Name is required'
             )
           : Yup.string().notRequired(),
+
+        onChange: (
+          item,
+          updateField,
+          itemFields,
+          nextValue
+        ) => {
+          updateField('name', nextValue);
+          setForm((f) => ({ ...f, name: nextValue }));
+        },
       },
 
       {
@@ -604,6 +631,19 @@ const calculatedForm = useMemo(() => {
           updateField('code', next.code || '');
           updateField('name', next.name || '');
 
+          const formPatch = {
+            materialId: next.materialId || 0,
+            uom: next.uom || '',
+            unitCost: newUnitCost,
+            code: next.code || '',
+            name: next.name || '',
+          };
+
+          setForm((f) => ({
+            ...f,
+            ...formPatch,
+          }));
+
           // Recompute vat/materialCost/laborCost/totals using the new
           // unitCost. itemFields here is still the array from before this
           // onChange fired, so pass the new unitCost explicitly rather
@@ -612,7 +652,8 @@ const calculatedForm = useMemo(() => {
             updateField,
             itemFields,
             null,
-            newUnitCost
+            newUnitCost,
+            formPatch
           );
         },
       },
@@ -657,7 +698,7 @@ const calculatedForm = useMemo(() => {
 
       {
         name: 'unitCost',
-label: canEditFinance ? 'Price (Editable)' : 'Price',
+        label: canEditFinance ? 'Price (Editable)' : 'Price',
         type: 'number',
         value:
           Number(calculatedForm.unitCost) || 0,
@@ -672,58 +713,62 @@ label: canEditFinance ? 'Price (Editable)' : 'Price',
         onChange: (
           item,
           updateField,
-          itemFields
+          itemFields,
+          nextValue
         ) => {
           if (!canEditFinance) return;
+
+          const newUnitCost = Number(nextValue) || 0;
+
           recomputeTotals(
             updateField,
-            itemFields
+            itemFields,
+            null,
+            newUnitCost,
+            { unitCost: newUnitCost }
           );
         },
       },
 
-{
-  name: 'actualQuantity',
-  label: 'Actual Quantity (Editable)',
-  type: 'number',
+      {
+        name: 'actualQuantity',
+        label: 'Actual Quantity (Editable)',
+        type: 'number',
 
-  value:
-    (Number(calculatedForm.quantity) || 0) -
-    (Number(calculatedForm.marginQuantity) || 0),
+        value:
+          (Number(calculatedForm.quantity) || 0) -
+          (Number(calculatedForm.marginQuantity) || 0),
 
-  validator: Yup.number().min(0).notRequired(),
+        validator: Yup.number().min(0).notRequired(),
 
-  onChange: (
-    item,
-    updateField,
-    itemFields,
-    nextValue
-  ) => {
-    const actualQty = Number(nextValue) || 0;
+        onChange: (
+          item,
+          updateField,
+          itemFields,
+          nextValue
+        ) => {
+          const actualQty = Number(nextValue) || 0;
 
-    const marginQty =
-      Number(
-        itemFields.find(
-          (f) => f.name === 'marginQuantity'
-        )?.value
-      ) || 0;
+          const marginQty =
+            Number(
+              itemFields.find(
+                (f) => f.name === 'marginQuantity'
+              )?.value
+            ) || 0;
 
-    const proposedQty = actualQty + marginQty;
+          const proposedQty = actualQty + marginQty;
 
-    setForm((currentForm) => ({
-      ...currentForm,
-      marginQuantity: marginQty,
-      quantity: proposedQty,
-    }));
-    updateField('quantity', proposedQty);
+          updateField('quantity', proposedQty);
 
-    recomputeTotals(
-      updateField,
-      itemFields,
-      proposedQty
-    );
-  },
-},
+          recomputeTotals(
+            updateField,
+            itemFields,
+            proposedQty,
+            null,
+            { marginQuantity: marginQty, quantity: proposedQty }
+          );
+        },
+      },
 
       {
         name: 'marginQuantity',
@@ -759,11 +804,6 @@ label: canEditFinance ? 'Price (Editable)' : 'Price',
           const proposedQty =
             actualQty + marginQty;
 
-          setForm((currentForm) => ({
-            ...currentForm,
-            marginQuantity: marginQty,
-            quantity: proposedQty,
-          }));
           updateField(
             'quantity',
             proposedQty
@@ -772,7 +812,9 @@ label: canEditFinance ? 'Price (Editable)' : 'Price',
           recomputeTotals(
             updateField,
             itemFields,
-            proposedQty
+            proposedQty,
+            null,
+            { marginQuantity: marginQty, quantity: proposedQty }
           );
         },
       },
@@ -809,12 +851,19 @@ label: canEditFinance ? 'Price (Editable)' : 'Price',
         onChange: (
           item,
           updateField,
-          itemFields
+          itemFields,
+          nextValue
         ) => {
           if (!canEditFinance) return;
+
+          const newDiscount = Number(nextValue) || 0;
+
           recomputeTotals(
             updateField,
-            itemFields
+            itemFields,
+            null,
+            null,
+            { discount: newDiscount }
           );
         },
       },
@@ -918,9 +967,18 @@ label: canEditFinance ? 'Price (Editable)' : 'Price',
             'totalPrice',
             total
           );
+
+          setForm((f) => ({
+            ...f,
+            laborPercentage: pct,
+            laborCost: lab,
+            totalAmount: total,
+            extendedCost: total,
+            totalPrice: total,
+          }));
         },
       },
-      
+
       {
         name: 'laborCost',
         label: 'Labor Cost',
@@ -971,6 +1029,14 @@ label: canEditFinance ? 'Price (Editable)' : 'Price',
             'totalPrice',
             total
           );
+
+          setForm((f) => ({
+            ...f,
+            laborCost: lab,
+            totalAmount: total,
+            extendedCost: total,
+            totalPrice: total,
+          }));
         },
       },
 
