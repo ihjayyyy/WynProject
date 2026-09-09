@@ -329,7 +329,7 @@ export const ItemsFields = (materialOptions = [], isWarehouseToProject = false, 
             (m) => String(m.value) === String(data.materialId)
           );
 
-          if (!matched) {
+          if (!matched || matched.isAvailable === false) {
             updateField(
               'barcodeMessage',
               `"${material.code ? `${material.code} - ` : ''}${material.name || data.materialId}" is not available for this transfer.`

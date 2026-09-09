@@ -18,8 +18,8 @@ import ConfirmModal from '../ui/ConfirmModal/ConfirmModal';
 import Input from '../ui/Input/Input';
 import { getWarehouses } from '@/services/Warehouse';
 import { getProjectsByStatus } from '@/services/Project';
-import { printMaterialRequests_byProject } from '@/services/MaterialRequest';
-import { getByProjectId } from '@/services/ProjectScope';
+import { getRequested_byProject} from '@/services/MaterialRequest';
+import { getProjectBOMByProjectId } from '@/services/ProjectBOM';
 import { getMaterialInventoryByMaterialId } from '@/services/MaterialInventory';
 import { getMaterialTransfer, createMaterialTransfer, updateMaterialTransfer, transferMaterialTransfer, printMaterialTransfer_byId } from '@/services/MaterialTransfer';
 import { useToast } from '../ui/Toast/Toast';
@@ -245,36 +245,41 @@ export default function MaterialTransferForm() {
             );
           });
         }
-      } else if (isProjectToWarehouse && transferFromId) {
-        const res = await getByProjectId(transferFromId);
-        if (!mounted) return;
-        if (!res?.error && Array.isArray(res.data)) {
-          // Sum available quantity per materialId across all scopes
-          const byMaterialId = {};
-          res.data.forEach((scope) => {
-            (scope.children || []).forEach((child) => {
-              const mid = child.materialId;
-              if (!byMaterialId[mid]) {
-                byMaterialId[mid] = {
-                  value: mid,
-                  label: child.name || child.code || String(mid),
-                  code: child.code || '',
-                  name: child.name || '',
-                  uom: child.uom || '',
-                  scopeId: child.scopeId ?? 0,
-                  availableQuantity: 0,
-                };
-              }
-              byMaterialId[mid].availableQuantity += Number(child.quantity || child.initialQuantity || 0);
-            });
-          });
-
-          opts = Object.values(byMaterialId);
-          opts.forEach((o) => { newBalanceMap[o.value] = o.availableQuantity; });
-          // No "Available Qty" column for Project -> Warehouse; newAvailableQtyMap
-          // stays empty for this direction.
-        }
+     } else if (isProjectToWarehouse && transferFromId) {
+  const res = await getProjectBOMByProjectId(transferFromId);
+  if (!mounted) return;
+  if (!res?.error && Array.isArray(res.data)) {
+    // Sum the remaining project stock for each material across its scope
+    // rows. ProjectBOM's quantity is the stock allocated to the project;
+    // subtract amounts already returned to the warehouse.
+    const byMaterialId = {};
+    res.data.forEach((row) => {
+      const mid = row.materialId;
+      if (!byMaterialId[mid]) {
+        byMaterialId[mid] = {
+          value: mid,
+          label: row.name || row.code || String(mid),
+          code: row.code || row.material?.code || '',
+          name: row.name || row.material?.name || '',
+          uom: row.material?.unitOfMeasure || row.material?.purchaseUnitOfMeasure || '',
+          scopeId: row.projectScopeId ?? 0,
+          availableQuantity: 0,
+        };
       }
+      const deliveredquantity = Number(row.deliveredQuantity) || 0;
+      const returned = Number(row.returnedQuantity) || 0;
+      byMaterialId[mid].availableQuantity += (deliveredquantity - returned);
+    });
+
+    opts = Object.values(byMaterialId).map((option) => ({
+      ...option,
+      isAvailable: option.availableQuantity > 0,
+    }));
+    opts.forEach((o) => { newBalanceMap[o.value] = o.availableQuantity; });
+    // No "Available Qty" column for Project -> Warehouse; newAvailableQtyMap
+    // stays empty for this direction.
+  }
+}
 
         if (mounted) {
           setMaterialRequestOptions(opts);
@@ -546,6 +551,12 @@ export default function MaterialTransferForm() {
   const SummaryPanel = () => {
     const isWarehouseToProject = transferFromType === 'Warehouse' && transferToType === 'Project';
     const isProjectToWarehouse = transferFromType === 'Project' && transferToType === 'Warehouse';
+    const formatProjectStock = (row) => {
+      if (!row.hasBalance) return '—';
+      return row.balance > 0 ? `${row.balance} ${row.uom}` : 'No available';
+    };
+    const formatWarehouseStock = (row) =>
+      row.availableQty > 0 ? `${row.availableQty} ${row.uom}` : 'No available';
     if (!isWarehouseToProject && !isProjectToWarehouse) return null;
 
     const showTotals = isEditable && materialTotals.length > 0;
@@ -676,11 +687,11 @@ export default function MaterialTransferForm() {
   <>
     <span style={{
       fontWeight: 600,
-      minWidth: '70px',
+      minWidth: '90px',
       textAlign: 'right',
       color: r.availableQty > 0 ? 'var(--color-text, #1e293b)' : '#cbd5e1',
     }}>
-      {r.availableQty} {r.uom}
+      {formatWarehouseStock(r)}
     </span>
 
     <span style={{
@@ -707,7 +718,7 @@ export default function MaterialTransferForm() {
         ? 'var(--color-success, #16a34a)'
         : 'var(--color-danger, #dc2626)'),
   }}>
-    {r.hasBalance ? `${r.balance} ${r.uom}` : '—'}
+    {formatProjectStock(r)}
   </span>
 )}
               </span>

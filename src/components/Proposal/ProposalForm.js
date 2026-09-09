@@ -511,7 +511,7 @@ export default function ProposalForm() {
       },
     } : { name: 'spacer-materialCostTotal', type: 'spacer', span: 'span1' }),
 
-    { name: 'email', label: 'Email', type: 'email', span: 'span1', readOnly: isReviseMode, validator: Yup.string().email('Invalid email').nullable() },
+    { name: 'email', label: 'Email', type: 'email', span: 'span1', readOnly: isReviseMode},
     { name: 'spacer-7b', type: 'spacer', span: 'span1' },
 
     (isReadOnly ? {

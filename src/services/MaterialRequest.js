@@ -142,7 +142,7 @@ async function printMaterialRequest_byObj(item) {
   }
 }
 
-export { getMaterialRequests, createMaterialRequest, updateMaterialRequest, cancelMaterialRequest, printMaterialRequests_byProject, printMaterialRequest_byId, printMaterialRequest_byObj };
-const materialRequestService = { getMaterialRequests, createMaterialRequest, updateMaterialRequest, cancelMaterialRequest, printMaterialRequests_byProject, printMaterialRequest_byId, printMaterialRequest_byObj };
+export { getMaterialRequests, createMaterialRequest, updateMaterialRequest, cancelMaterialRequest, getRequested_byProject, printMaterialRequests_byProject, printMaterialRequest_byId, printMaterialRequest_byObj };
+const materialRequestService = { getMaterialRequests, createMaterialRequest, updateMaterialRequest, cancelMaterialRequest, getRequested_byProject, printMaterialRequests_byProject, printMaterialRequest_byId, printMaterialRequest_byObj };
 
 export default materialRequestService;
