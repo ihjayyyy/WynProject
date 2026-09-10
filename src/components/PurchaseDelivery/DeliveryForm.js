@@ -12,7 +12,7 @@ import { getSuppliers } from '@/services/Supplier';
 import { getMaterials } from '@/services/Materials';
 import { getRacksByMaterialId } from '@/services/MaterialInventory';
 import { Get as GetPO, GetOrdersBySupplier } from '@/services/PurchaseOrder';
-import { InitialData, Create, Get, Update, ConfirmDelivery, printDelivery_byId } from '@/services/PurchaseDelivery';
+import { InitialData, Create, Get, Update, ConfirmDelivery, printDelivery_byId, SetStatus, Cancel } from '@/services/PurchaseDelivery';
 import { useToast } from '../ui/Toast/Toast';
 import InvalidPage from '@/components/InvalidPage/page';
 import { AccessContext } from '@/app/contextProviders/accessContext';
@@ -307,7 +307,7 @@ export default function PurchaseDeliveryForm() {
 
   const CancelDelivery = async () => {
     setMode('view');
-    const res = await SetStatus('Cancel', formData.id);
+    const res = await Cancel(formData.id);
     if (res?.error) {
       toast.error('Failed to cancel purchase delivery.');
       return null;

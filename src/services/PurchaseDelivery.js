@@ -104,6 +104,24 @@ async function Update(id, payload) {
         return { data: null, error: error?.message || error };
     }
 }
+
+
+async function Cancel(id) {
+    try {
+        const url = `${API_BASE_URL}/Cancel/${id}`;
+        const res = await authenticatedFetch(url, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: {},
+        });
+        const json = await res.json();
+        console.log(json)
+        return { data: json, error: null };
+    } catch (error) {
+        return { data: null, error: error?.message || error };
+    }
+}
+
 async function SubmitForApproval(id) {
     return SetStatus('Submit',id)
 }
@@ -159,6 +177,7 @@ export {
     Approve,
     Reject,
     printDelivery_byId,
+    Cancel,
 }
 
 export default{
@@ -173,4 +192,5 @@ export default{
     Approve,
     Reject,
     printDelivery_byId,
+    Cancel,
 }
