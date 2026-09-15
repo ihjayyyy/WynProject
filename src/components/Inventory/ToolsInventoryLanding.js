@@ -4,7 +4,7 @@ import React, { useMemo, useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import DropdownAction from '../ui/DropdownAction/DropdownAction';
 import Landing from '../ui/Landing/Landing';
-import { FiEdit2, FiEye, FiPlusCircle } from 'react-icons/fi';
+import { FiEdit2, FiEye, FiPlusCircle, FiActivity } from 'react-icons/fi';
 import ConfirmModal from '../ui/ConfirmModal/ConfirmModal';
 import Input from '../ui/Input/Input';
 import { useToast } from '../ui/Toast/Toast';
@@ -12,6 +12,7 @@ import { getMaterialInventories, updateMaterialInventoryQuantity } from '../../s
 import { byTypeMaterials as fetchByTypeMaterials } from '../../services/Materials';
 import { getRacks } from '../../services/Rack';
 import { getWarehouses } from '../../services/Warehouse';
+import InventoryMovementModal from './InventoryMovementModal';
 
 const baseColumns = [
   { header: 'Name', key: 'name', render: (item) => (<><b>{item.code}</b> - {item.name}</>) },
@@ -30,10 +31,14 @@ export default function ToolsInventoryLanding() {
   const [warehouses, setWarehouses] = useState([]);
   const [inventory, setInventory] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
+
   const [isQtyModalOpen, setIsQtyModalOpen] = useState(false);
   const [qtyTargetItem, setQtyTargetItem] = useState(null);
   const [qtyChange, setQtyChange] = useState('');
   const [qtySaving, setQtySaving] = useState(false);
+
+  const [isMovementModalOpen, setIsMovementModalOpen] = useState(false);
+  const [movementTargetItem, setMovementTargetItem] = useState(null);
 
   const loadInventoryData = async (cancelled = false, showLoading = true) => {
     try {
@@ -107,6 +112,16 @@ export default function ToolsInventoryLanding() {
     }
   };
 
+  const openMovementModal = (item) => {
+    setMovementTargetItem(item);
+    setIsMovementModalOpen(true);
+  };
+
+  const closeMovementModal = () => {
+    setIsMovementModalOpen(false);
+    setMovementTargetItem(null);
+  };
+
   const materialsMap = useMemo(() => (materials || []).reduce((acc, m) => { acc[m.id] = m; return acc; }, {}), [materials]);
 
   const racksMap = useMemo(() => (racks || []).reduce((acc, r) => { acc[r.id] = r; return acc; }, {}), [racks]);
@@ -118,6 +133,7 @@ export default function ToolsInventoryLanding() {
       { key: 'view', label: 'View', icon: <FiEye size={14} />, onClick: (item) => router.push(`/inventory/tools-inventory/toolsInventoryForm?id=${item.id}`) },
       { key: 'edit', label: 'Edit', icon: <FiEdit2 size={14} />, onClick: (item) => router.push(`/inventory/tools-inventory/toolsInventoryForm?id=${item.id}&mode=edit`) },
       { key: 'adjustQuantity', label: 'Adjust Quantity', icon: <FiPlusCircle size={14} />, onClick: openQuantityModal },
+      { key: 'viewMovement', label: 'View Movement', icon: <FiActivity size={14} />, onClick: openMovementModal },
     ],
     [router]
   );
@@ -192,6 +208,14 @@ export default function ToolsInventoryLanding() {
           ) : null}
         </div>
       </ConfirmModal>
+
+      <InventoryMovementModal
+        open={isMovementModalOpen}
+        materialId={movementTargetItem?.materialId}
+        materialLabel={materialsMap[movementTargetItem?.materialId]?.name || movementTargetItem?.name}
+        rackMap={racksMap}
+        onClose={closeMovementModal}
+      />
     </>
   );
 }
