@@ -25,10 +25,14 @@
   background: $color-background-light;
   font-size: $font-size-md;
   font-weight: $font-weight-normal;
+  height: 42px;
   min-height: 42px;
   color: $color-text-primary-light;
   box-sizing: border-box;
   transition: all 0.15s ease;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .customSelect {
@@ -100,7 +104,9 @@
   list-style: none;
   padding: 0.25rem 0;
   max-height: 220px;
-  overflow: auto;
+  max-width: 320px;
+  overflow-y: auto;
+  overflow-x: hidden;
 }
 
 /* styles applied when dropdown is rendered in a portal */
@@ -113,6 +119,7 @@
   cursor: pointer;
   font-weight: $font-weight-normal;
   color: $color-text-primary-light;
+  white-space: nowrap;
 }
 
 .dropdownItem:hover {

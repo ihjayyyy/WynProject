@@ -1,12 +1,14 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { FiFilter, FiX } from 'react-icons/fi';
 import Button from '../ui/Button/Button';
 import Input from '../ui/Input/Input';
+import Select from '../ui/Select/Select';
 import DataTable from '../ui/DataTable/DataTable';
 import { getInventoryMovementsFilteredByMaterial } from '../../services/InventoryMovement';
 import styles from './InventoryMovementModal.module.scss';
+import inputStyles from '../ui/Input/Input.module.scss';
 
 const quantityFormat = (value) => {
   const num = Number(value);
@@ -53,6 +55,10 @@ export default function InventoryMovementModal({
   const [fromDate, setFromDate] = useState(toInputDateValue(initialFromDate));
   const [toDate, setToDate] = useState(toInputDateValue(initialToDate));
 
+  // FE-only filters (applied client-side against whatever rows are loaded).
+  const [actionTypeFilter, setActionTypeFilter] = useState('');
+  const [modeFilter, setModeFilter] = useState('');
+
   // Re-seed local dates whenever the modal is (re)opened with new prop defaults.
   useEffect(() => {
     if (open) {
@@ -60,6 +66,14 @@ export default function InventoryMovementModal({
       setToDate(toInputDateValue(initialToDate));
     }
   }, [open, initialFromDate, initialToDate]);
+
+  // Reset FE filters whenever the modal is reopened.
+  useEffect(() => {
+    if (open) {
+      setActionTypeFilter('');
+      setModeFilter('');
+    }
+  }, [open, materialId]);
 
   useEffect(() => {
     if (!open || (materialId === undefined || materialId === null)) return;
@@ -97,6 +111,36 @@ export default function InventoryMovementModal({
       mounted = false;
     };
   }, [open, materialId, fromDate, toDate]);
+
+  // Build dropdown options from whatever data is currently loaded.
+  const actionTypeOptions = useMemo(() => {
+    const unique = Array.from(
+      new Set(rows.map((r) => r.actionType).filter((v) => v !== undefined && v !== null && v !== ''))
+    );
+    return [
+      { value: '', label: 'All action types' },
+      ...unique.map((v) => ({ value: v, label: v })),
+    ];
+  }, [rows]);
+
+  const modeOptions = useMemo(() => {
+    const unique = Array.from(
+      new Set(rows.map((r) => r.mode).filter((v) => v !== undefined && v !== null && v !== ''))
+    );
+    return [
+      { value: '', label: 'All modes' },
+      ...unique.map((v) => ({ value: v, label: v })),
+    ];
+  }, [rows]);
+
+  // Apply FE-only filters on top of the server-loaded rows.
+  const filteredRows = useMemo(() => {
+    return rows.filter((r) => {
+      if (actionTypeFilter && String(r.actionType) !== String(actionTypeFilter)) return false;
+      if (modeFilter && String(r.mode) !== String(modeFilter)) return false;
+      return true;
+    });
+  }, [rows, actionTypeFilter, modeFilter]);
 
   if (!open) return null;
 
@@ -139,6 +183,13 @@ export default function InventoryMovementModal({
     setToDate('');
   };
 
+  const handleClearAllFilters = () => {
+    setFromDate('');
+    setToDate('');
+    setActionTypeFilter('');
+    setModeFilter('');
+  };
+
   return (
     <div className={styles.overlay} onClick={onClose}>
       <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
@@ -152,8 +203,8 @@ export default function InventoryMovementModal({
               type="button"
               className={`${styles.filterToggleBtn} ${showFilters ? styles.filterToggleBtnActive : ''}`}
               onClick={() => setShowFilters((prev) => !prev)}
-              aria-label="Toggle date filters"
-              title="Toggle date filters"
+              aria-label="Toggle filters"
+              title="Toggle filters"
             >
               <FiFilter size={16} />
             </button>
@@ -189,8 +240,30 @@ export default function InventoryMovementModal({
               onChange={(e) => setToDate(e.target.value)}
             />
 
-            <Button variant="secondary" onClick={handleClearDates}>
-              Clear dates
+            <div className={inputStyles.field}>
+              <label htmlFor="inventoryMovementActionType">Action Type</label>
+              <Select
+                id="inventoryMovementActionType"
+                value={actionTypeFilter}
+                onChange={(e) => setActionTypeFilter(e.target.value)}
+                options={actionTypeOptions}
+                placeholder="All action types"
+              />
+            </div>
+
+            <div className={inputStyles.field}>
+              <label htmlFor="inventoryMovementMode">Mode</label>
+              <Select
+                id="inventoryMovementMode"
+                value={modeFilter}
+                onChange={(e) => setModeFilter(e.target.value)}
+                options={modeOptions}
+                placeholder="All modes"
+              />
+            </div>
+
+            <Button variant="secondary" onClick={handleClearAllFilters}>
+              Clear filters
             </Button>
           </div>
         )}
@@ -205,7 +278,7 @@ export default function InventoryMovementModal({
           {!loading && !error && (
             <DataTable
               columns={columns}
-              data={rows}
+              data={filteredRows}
               showActions={false}
               emptyMessage="No inventory movements found"
             />

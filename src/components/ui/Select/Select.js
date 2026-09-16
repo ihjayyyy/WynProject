@@ -59,7 +59,7 @@ export default function Select({
         position: 'absolute',
         left: `${rect.left}px`,
         top: `${rect.bottom + window.scrollY}px`,
-        width: `${rect.width}px`,
+        minWidth: `${rect.width}px`,
         zIndex: 9999,
       });
     }
