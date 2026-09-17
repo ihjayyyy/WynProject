@@ -161,11 +161,14 @@ export default function ProposalForm() {
   }, [proposalId, items, isReviseMode, isCopyMode]);
 
   React.useEffect(() => {
+    let cancelled = false;
+
     setChildrenState(initialValues?.children || []);
     setDeletedChildrenState([]);
 
     if (initialValues.id === 0 && !isReviseMode) {
       getParameter('Proposal').then((res) => {
+        if (cancelled) return;
         if (res && res.data && Array.isArray(res.data)) {
           const paramMap = {};
           res.data.forEach((item) => { paramMap[item.name] = item.value; });
@@ -189,6 +192,7 @@ export default function ProposalForm() {
       // Dedicated fetch for the ExpiresIn parameter (module: Proposal, name: ExpiresIn).
       // Response shape: { value: { value: "30", module, code, id, name, updatedAt, updatedBy }, isSuccess, ... }
       getParameterByName('Proposal', 'ExpiresIn').then((res) => {
+        if (cancelled) return;
         if (!res.error && res.data !== null && res.data !== undefined && res.data !== '') {
           const days = Number(res.data);
           if (!isNaN(days)) setExpiresInDays(days);
@@ -200,6 +204,7 @@ export default function ProposalForm() {
       // "0.1" is a fraction representing 10% — multiply by 100 to get the whole-number
       // percentage this form's laborPercentage field expects.
       getParameterByName('ProposalScope', 'LaborPercent').then((res) => {
+        if (cancelled) return;
         if (!res.error && res.data !== null && res.data !== undefined && res.data !== '') {
           const fraction = Number(res.data);
           if (!isNaN(fraction)) setDefaultLaborPercentage(fraction * 100);
@@ -219,6 +224,8 @@ export default function ProposalForm() {
       });
       setParameterDefaultsLoaded(true);
     }
+
+    return () => { cancelled = true; };
   }, [initialValues]);
 
   // Normalize top-level date-only fields for inputs (YYYY-MM-DD)
