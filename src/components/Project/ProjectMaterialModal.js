@@ -129,7 +129,7 @@ export default function ProjectMaterialModal({ open, initial = {}, onCancel, onC
         materialId: Number(mat.id) || 0,
         materialType: mat.materialType || mat.materialTypeName || source.materialType,
         uom: mat.unitOfMeasure || mat.uom || source.uom,
-        unitCost: Number(mat.sellingPrice ?? mat.unitCost ?? mat.unitPrice ?? source.unitCost) || 0,
+        unitCost: Number(mat.sellingPrice) || 0,
         code: mat.code || source.code || '',
         name: mat.name || source.name || '',
       };
