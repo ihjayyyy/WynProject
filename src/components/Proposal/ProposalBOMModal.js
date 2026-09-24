@@ -1,12 +1,17 @@
 'use client';
 
 import React, { useEffect, useMemo, useState } from 'react';
-import jsPDF from 'jspdf';
-import autoTable from 'jspdf-autotable';
 import { FiDownload, FiX } from 'react-icons/fi';
 import Button from '../ui/Button/Button';
 import DataTable from '../ui/DataTable/DataTable';
 import { getProposalBOM } from '../../services/ProjectBOM';
+import {
+  createPdfDocument,
+  drawPdfHeader,
+  loadPdfLogo,
+  previewPdfDocument,
+  renderPdfTable,
+} from '../../utils/pdfTemplate';
 import styles from './ProposalBOMModal.module.scss';
 
 const columns = [
@@ -66,37 +71,30 @@ export default function ProposalBOMModal({
 
   if (!open) return null;
 
-  const handleDownloadPdf = () => {
+  const handleDownloadPdf = async () => {
     if (!rows.length) return;
 
-    const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
-    const pageWidth = doc.internal.pageSize.getWidth();
-
-    doc.setFontSize(16);
-    doc.text('Proposal BOM', 14, 16);
-    doc.setFontSize(10);
-
-    // Left column: proposal label / name / company
-    let leftY = 22;
-    if (proposalLabel) {
-      doc.text(`Proposal: ${proposalLabel}`, 14, leftY);
-      leftY += 6;
-    }
-    if (proposalName) {
-      doc.text(`Proposal Name: ${proposalName}`, 14, leftY);
-      leftY += 6;
-    }
-    if (companyName) {
-      doc.text(`Company: ${companyName}`, 14, leftY);
-      leftY += 6;
+    const doc = createPdfDocument({ orientation: 'portrait' });
+    let logoInfo = null;
+    try {
+      logoInfo = await loadPdfLogo();
+    } catch {
+      logoInfo = null;
     }
 
-    doc.text(`Generated: ${new Date().toLocaleString()}`, pageWidth - 14, 16, {
-      align: 'right',
-    });
-
-    doc.text(`Total Items: ${rows.length}`, pageWidth - 14, 22, {
-      align: 'right',
+    const leftDetails = [
+      proposalLabel && `Proposal: ${proposalLabel}`,
+      proposalName && `Proposal Name: ${proposalName}`,
+      companyName && `Company: ${companyName}`,
+    ].filter(Boolean);
+    const tableStartY = drawPdfHeader(doc, {
+      logoInfo,
+      title: 'PROPOSAL BOM',
+      leftDetails,
+      rightDetails: [
+        `Generated: ${new Date().toLocaleString()}`,
+        `Total Items: ${rows.length}`,
+      ],
     });
 
     const pdfHeaders = columns.map((column) => column.header);
@@ -112,10 +110,8 @@ export default function ProposalBOMModal({
     );
 
     // Push table start down to accommodate the extra header lines
-    const startY = Math.max(leftY, 28) + 2;
-
-    autoTable(doc, {
-      startY,
+    renderPdfTable(doc, {
+      startY: tableStartY,
       head: [pdfHeaders],
       body: pdfBody,
       styles: {
@@ -142,11 +138,7 @@ export default function ProposalBOMModal({
           theme: 'grid',
     });
 
-    const safeLabel = (proposalLabel || `proposal-${proposalId}`)
-      .toString()
-      .replace(/[^a-z0-9-_]+/gi, '-');
-
-    doc.save(`proposal-bom-${safeLabel}.pdf`);
+    previewPdfDocument(doc);
   };
 
   return (

@@ -1,11 +1,15 @@
 "use client";
 
 import React, { useEffect, useState, useMemo, useCallback } from "react";
-import jsPDF from "jspdf";
-import autoTable from "jspdf-autotable";
 import Landing from "../ui/Landing/Landing";
 import { generateMaterialInventoryReport } from "../../services/MaterialInventory";
-import logo from "../../assets/logo.jpg";
+import {
+  createPdfDocument,
+  drawPdfHeader,
+  loadPdfLogo,
+  previewPdfDocument,
+  renderPdfTable,
+} from "../../utils/pdfTemplate";
 
 const columns = [
   { header: "Code", key: "materialCode" },
@@ -17,35 +21,6 @@ const columns = [
   { header: "Ordered", key: "orderedQuantity", align: "right" },
   { header: "Effective", key: "effectiveQuantity", align: "right" },
 ];
-
-// Loads the imported logo into a base64 data URL, with a white
-// background painted in first so transparent PNGs don't turn black
-// when flattened to JPEG.
-function loadImageAsDataUrl(src) {
-  return new Promise((resolve, reject) => {
-    const img = new Image();
-    img.crossOrigin = "anonymous";
-    img.onload = () => {
-      const canvas = document.createElement("canvas");
-      canvas.width = img.naturalWidth;
-      canvas.height = img.naturalHeight;
-      const ctx = canvas.getContext("2d");
-
-      // Flatten transparency onto white before drawing the logo
-      ctx.fillStyle = "#ffffff";
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
-      ctx.drawImage(img, 0, 0);
-
-      resolve({
-        dataUrl: canvas.toDataURL("image/jpeg", 1.0),
-        width: img.naturalWidth,
-        height: img.naturalHeight,
-      });
-    };
-    img.onerror = reject;
-    img.src = typeof src === "string" ? src : src?.src || src;
-  });
-}
 
 export default function MaterialInventoryReportLanding() {
   const [items, setItems] = useState([]);
@@ -114,85 +89,23 @@ export default function MaterialInventoryReportLanding() {
 
     let logoInfo = null;
     try {
-      logoInfo = await loadImageAsDataUrl(logo);
+      logoInfo = await loadPdfLogo();
     } catch {
       logoInfo = null; // fall back to no-logo header if it fails to load
     }
 
-    const doc = new jsPDF({
+    const doc = createPdfDocument({
       orientation: "portrait",
       unit: "mm",
       format: "a4",
     });
 
-    const pageWidth = doc.internal.pageSize.getWidth();
     const marginLeft = 14;
     const marginRight = 14;
-
-    const issuedDate = new Date().toLocaleDateString("en-US", {
-      year: "numeric",
-      month: "long",
-      day: "numeric",
+    const tableStartY = drawPdfHeader(doc, {
+      logoInfo,
+      title: "MATERIAL INVENTORY REPORT",
     });
-
-    const drawUnderlinedText = (text, x, y, fontSize, align = "left") => {
-      doc.setFontSize(fontSize);
-      doc.text(text, x, y, { align });
-      const width = doc.getTextWidth(text);
-      const lineX = align === "center" ? x - width / 2 : x;
-      doc.setLineWidth(0.2);
-      doc.line(lineX, y + 1.2, lineX + width, y + 1.2);
-    };
-
-    // Letterhead + title — page 1 only. Later pages start straight into
-    // the table (autoTable repeats just the column head row for us).
-    const drawHeader = (pageNumber) => {
-      if (pageNumber !== 1) return;
-
-      doc.setFont(undefined, "bold");
-      doc.setFontSize(11);
-      doc.setTextColor(17, 24, 39);
-      doc.text("Wyn Power Corporation", marginLeft, 14);
-
-      doc.setFont(undefined, "normal");
-      doc.setFontSize(9);
-      doc.setTextColor(107, 114, 128);
-      doc.text("Internal Use", pageWidth - marginRight, 14, {
-        align: "right",
-      });
-
-      if (logoInfo) {
-        const logoHeight = 14;
-        const logoWidth = (logoInfo.width / logoInfo.height) * logoHeight;
-        doc.addImage(
-          logoInfo.dataUrl,
-          "JPEG",
-          marginLeft,
-          19,
-          logoWidth,
-          logoHeight
-        );
-      }
-
-      doc.setFont(undefined, "bold");
-      doc.setTextColor(17, 24, 39);
-      doc.setFontSize(18);
-      doc.text("MATERIAL INVENTORY REPORT", pageWidth / 2, 30, {
-        align: "center",
-      });
-
-      doc.setFont(undefined, "normal");
-      doc.setTextColor(55, 65, 81);
-      drawUnderlinedText(
-        `Issued on ${issuedDate}`,
-        pageWidth / 2,
-        38,
-        11,
-        "center"
-      );
-
-      doc.setTextColor(0, 0, 0);
-    };
 
     const pdfHeaders = [
       "Material Description",
@@ -267,11 +180,11 @@ export default function MaterialInventoryReportLanding() {
       return { lines, codeWidth };
     };
 
-    autoTable(doc, {
-      startY: 46,
+    renderPdfTable(doc, {
+      startY: tableStartY,
       head: [pdfHeaders],
       body: pdfBody,
-      margin: { left: marginLeft, right: marginRight, top: 40 },
+      margin: { left: marginLeft, right: marginRight, top: 14 },
       styles: {
         fontSize: 8,
         cellPadding: 2,
@@ -344,14 +257,16 @@ export default function MaterialInventoryReportLanding() {
         }
       },
       didDrawPage: (data) => {
-        drawHeader(data.pageNumber);
-        data.settings.margin.top = data.pageNumber === 1 ? 40 : 14;
+        if (data.pageNumber === 1) {
+          drawPdfHeader(doc, {
+            logoInfo,
+            title: "MATERIAL INVENTORY REPORT",
+          });
+        }
       },
     });
 
-    doc.save(
-      `material-inventory-report-${new Date().toISOString().slice(0, 10)}.pdf`
-    );
+    previewPdfDocument(doc);
   }, [items]);
 
   return (

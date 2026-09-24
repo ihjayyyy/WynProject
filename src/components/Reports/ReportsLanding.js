@@ -2,8 +2,6 @@
 
 import React, { useContext, useEffect, useMemo, useState } from 'react';
 import { FiDownload, FiFileText } from 'react-icons/fi';
-import jsPDF from 'jspdf';
-import autoTable from 'jspdf-autotable';
 import Landing from '../ui/Landing/Landing';
 import StatusBadge from '../ui/StatusBadge/StatusBadge';
 import Button from '../ui/Button/Button';
@@ -21,6 +19,13 @@ import {
 import { getReports } from '../../services/Reports';
 import { getSuppliers } from '../../services/Supplier';
 import { getRacks } from '../../services/Rack';
+import {
+  createPdfDocument,
+  drawPdfHeader,
+  loadPdfLogo,
+  previewPdfDocument,
+  renderPdfTable,
+} from '../../utils/pdfTemplate';
 import styles from './ReportsLanding.module.scss';
 
 const EMPTY_DATE = '0001-01-01T00:00:00';
@@ -608,29 +613,37 @@ export default function ReportsLanding() {
     URL.revokeObjectURL(url);
   };
 
-  const handleGeneratePdf = () => {
+  const handleGeneratePdf = async () => {
     if (!canExport) return;
-    const reportTitle = 'Reports';
-    const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
-    const pageWidth = doc.internal.pageSize.getWidth();
-
-    doc.setFontSize(18);
-    doc.text(reportTitle, 14, 16);
-    doc.setFontSize(10);
-    doc.text(`Generated: ${new Date().toLocaleString()}`, 14, 22);
-    doc.text(`Module: ${selectedModuleLabel}`, pageWidth - 14, 16, { align: 'right' });
-    doc.text(`Date From: ${dateFrom || '-'}`, pageWidth - 14, 22, { align: 'right' });
-    doc.text(`Date To: ${dateTo || '-'}`, pageWidth - 14, 28, { align: 'right' });
+    const doc = createPdfDocument({ orientation: 'portrait' });
 
     const totalLoaded = rows.length;
     const combinedAmount = rows.reduce((sum, item) => sum + (Number(item.amount) || 0), 0);
-    doc.setFontSize(9);
-    doc.text(`Total Records: ${totalCount}`, 14, 30);
-    doc.text(`Loaded Rows: ${totalLoaded}`, 14, 35);
-    doc.text(`Combined Amount: ${formatReportCurrency(combinedAmount)}`, 14, 40);
+    let logoInfo = null;
+    try {
+      logoInfo = await loadPdfLogo();
+    } catch {
+      logoInfo = null;
+    }
 
-    autoTable(doc, {
-      startY: 46,
+    const tableStartY = drawPdfHeader(doc, {
+      logoInfo,
+      title: 'REPORTS',
+      leftDetails: [
+        `Generated: ${new Date().toLocaleString()}`,
+        `Total Records: ${totalCount}`,
+        `Loaded Rows: ${totalLoaded}`,
+        `Combined Amount: ${formatReportCurrency(combinedAmount)}`,
+      ],
+      rightDetails: [
+        `Module: ${selectedModuleLabel}`,
+        `Date From: ${dateFrom || '-'}`,
+        `Date To: ${dateTo || '-'}`,
+      ],
+    });
+
+    renderPdfTable(doc, {
+      startY: tableStartY,
       head: [[
         'Module',
         'Reference No',
@@ -673,7 +686,7 @@ export default function ReportsLanding() {
       pageBreak: 'auto',
     });
 
-    doc.save(`reports-${selectedModule}-${dateFrom}-${dateTo}.pdf`);
+    previewPdfDocument(doc);
   };
 
   const reportActions = (

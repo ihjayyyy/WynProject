@@ -1,7 +1,5 @@
 import React, { useEffect, useState, useContext } from 'react';
 import * as Yup from 'yup';
-import jsPDF from 'jspdf';
-import autoTable from 'jspdf-autotable';
 import { FiDownload } from 'react-icons/fi';
 import {
   getProjectFinanceByProjectId,
@@ -18,6 +16,13 @@ import styles from './ProjectDetails.module.scss';
 import Button from '../ui/Button/Button';
 import Input from '../ui/Input/Input';
 import DataTable from '../ui/DataTable/DataTable';
+import {
+  createPdfDocument,
+  drawPdfHeader,
+  loadPdfLogo,
+  previewPdfDocument,
+  renderPdfTable,
+} from '../../utils/pdfTemplate';
 
 export default function ProjectFinanceTab({ projectId, project, projectStatus, editable }) {
   // NOTE: adjust this string to whatever page key your AccessContext uses
@@ -274,34 +279,33 @@ const getStatementRows = () => {
     );
   };
 
-  const handleDownloadStatementPdf = () => {
+  const handleDownloadStatementPdf = async () => {
     const statementData = getStatementRows();
     if (!statementData.length) return;
 
-    const doc = new jsPDF({
+    const doc = createPdfDocument({
       orientation: 'portrait',
       unit: 'mm',
       format: 'a4',
     });
 
-    const pageWidth = doc.internal.pageSize.getWidth();
     const projectLabel = [project?.code, project?.name].filter(Boolean).join(' — ');
-
-    doc.setFontSize(16);
-    doc.text('Financial Statement', 14, 16);
-
-    doc.setFontSize(10);
-    if (projectLabel) {
-      doc.text(`Project: ${projectLabel}`, 14, 22);
+    let logoInfo = null;
+    try {
+      logoInfo = await loadPdfLogo();
+    } catch {
+      logoInfo = null;
     }
 
-    doc.text(`As of: ${todayLabel}`, pageWidth - 14, 16, { align: 'right' });
-    doc.text(
-      `Generated: ${new Date().toLocaleString()}`,
-      pageWidth - 14,
-      22,
-      { align: 'right' }
-    );
+    const tableStartY = drawPdfHeader(doc, {
+      logoInfo,
+      title: 'FINANCIAL STATEMENT',
+      leftDetails: projectLabel ? [`Project: ${projectLabel}`] : [],
+      rightDetails: [
+        `As of: ${todayLabel}`,
+        `Generated: ${new Date().toLocaleString()}`,
+      ],
+    });
 
     const pdfHeaders = ['', 'Debit', 'Credit'];
 
@@ -311,8 +315,8 @@ const getStatementRows = () => {
       row.credit != null ? fmt(row.credit) : '',
     ]);
 
-    autoTable(doc, {
-      startY: 28,
+    renderPdfTable(doc, {
+      startY: tableStartY,
       head: [pdfHeaders],
       body: pdfBody,
       styles: {
@@ -350,11 +354,7 @@ const getStatementRows = () => {
       theme: 'grid',
     });
 
-    const safeLabel = (projectLabel || `project-${projectId}`)
-      .toString()
-      .replace(/[^a-z0-9-_]+/gi, '-');
-
-    doc.save(`financial-statement-${safeLabel}.pdf`);
+    previewPdfDocument(doc);
   };
 
   if (loading) return <div>Loading...</div>;

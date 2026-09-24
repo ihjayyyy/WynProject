@@ -1,12 +1,17 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import jsPDF from 'jspdf';
-import autoTable from 'jspdf-autotable';
 import { FiDownload, FiX } from 'react-icons/fi';
 import Button from '../ui/Button/Button';
 import DataTable from '../ui/DataTable/DataTable';
 import { getProjectBOMByProjectId } from '../../services/ProjectBOM';
+import {
+  createPdfDocument,
+  drawPdfHeader,
+  loadPdfLogo,
+  previewPdfDocument,
+  renderPdfTable,
+} from '../../utils/pdfTemplate';
 import styles from './ProjectBOMModal.module.scss';
 
 function formatDateTime(value) {
@@ -78,35 +83,30 @@ export default function ProjectBOMModal({
 
   if (!open) return null;
 
-  const handleDownloadPdf = () => {
+  const handleDownloadPdf = async () => {
     if (!rows.length) return;
 
-    const doc = new jsPDF({
-      orientation: 'landscape',
+    const doc = createPdfDocument({
+      orientation: 'portrait',
       unit: 'mm',
       format: 'a4',
     });
 
-    const pageWidth = doc.internal.pageSize.getWidth();
-
-    doc.setFontSize(16);
-    doc.text('Project BOM', 14, 16);
-
-    doc.setFontSize(10);
-
-    if (projectLabel) {
-      doc.text(`Project: ${projectLabel}`, 14, 22);
+    let logoInfo = null;
+    try {
+      logoInfo = await loadPdfLogo();
+    } catch {
+      logoInfo = null;
     }
 
-    doc.text(
-      `Generated: ${new Date().toLocaleString()}`,
-      pageWidth - 14,
-      16,
-      { align: 'right' }
-    );
-
-    doc.text(`Total Items: ${rows.length}`, pageWidth - 14, 22, {
-      align: 'right',
+    const tableStartY = drawPdfHeader(doc, {
+      logoInfo,
+      title: 'PROJECT BOM',
+      leftDetails: projectLabel ? [`Project: ${projectLabel}`] : [],
+      rightDetails: [
+        `Generated: ${new Date().toLocaleString()}`,
+        `Total Items: ${rows.length}`,
+      ],
     });
 
     const pdfHeaders = columns.map((column) => column.header);
@@ -121,8 +121,8 @@ export default function ProjectBOMModal({
       })
     );
 
-    autoTable(doc, {
-      startY: 28,
+    renderPdfTable(doc, {
+      startY: tableStartY,
       head: [pdfHeaders],
       body: pdfBody,
       styles: {
@@ -142,20 +142,18 @@ export default function ProjectBOMModal({
         lineWidth: 0.2,
       },
       columnStyles: {
-        0: { cellWidth: 56 },
-        1: { cellWidth: 56 },
-        2: { cellWidth: 56 },
-        3: { halign: 'right', cellWidth: 28 },
+        0: { cellWidth: 32 },
+        1: { cellWidth: 27 },
+        2: { cellWidth: 43 },
+        3: { halign: 'right', cellWidth: 24 },
+        4: { halign: 'right', cellWidth: 27 },
+        5: { halign: 'right', cellWidth: 22 },
       },
       margin: { left: 14, right: 14 },
       theme: 'grid',
     });
 
-    const safeLabel = (projectLabel || `project-${projectId}`)
-      .toString()
-      .replace(/[^a-z0-9-_]+/gi, '-');
-
-    doc.save(`project-bom-${safeLabel}.pdf`);
+    previewPdfDocument(doc);
   };
 
   return (
