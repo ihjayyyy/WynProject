@@ -6,7 +6,7 @@ import { FiCheck, FiCheckCircle, FiEdit2, FiEye, FiFileText, FiSend, FiX, FiXCir
 import DropdownAction from '../ui/DropdownAction/DropdownAction';
 import Landing, { applyLandingFilters } from '../ui/Landing/Landing';
 import StatusBadge from '../ui/StatusBadge/StatusBadge';
-import { getProposals, submitProposal, approveProposal, rejectProposal, winProposal, loseProposal, printProposal_byId as printProposal_byId, cancelProposal, closeProposal, printProposalBreakdown_byId as printProposalBreakdown_byId, printJobOrder_byProposal } from '../../services/Proposal';
+import { getProposals, submitProposal, approveProposal, rejectProposal, winProposal, loseProposal, printProposal_byId as printProposal_byId, cancelProposal, closeProposal, printProposalBreakdown_byId as printProposalBreakdown_byId, printJobOrder_byProposal, printProposalBreakdown_Simple_byId, printProposalBreakdown_Detailed_byId } from '../../services/Proposal';
 import { convertProposal } from '../../services/Project';
 import { useToast } from '../ui/Toast/Toast';
 import ConfirmModal from '../ui/ConfirmModal/ConfirmModal';
@@ -100,7 +100,8 @@ export default function ProposalLanding() {
         }
       }] : []),
       ...(isAllowed(PageName, 'r') ? [{ key: 'viewpdf', label: 'Print Document', icon: <FiFileText size={14} />, onClick: (item) => (printProposal_byId(item.id))}] : []),
-      ...(isAllowed(PageName, 'r') ? [{ key: 'viewpdfbreakdown', label: 'Print Breakdown', icon: <FiFileText size={14} />, onClick: (item) => (printProposalBreakdown_byId(item.id))}] : []),
+      ...(isAllowed(PageName, 'r') ? [{ key: 'viewpdfbreakdown', label: 'Print Breakdown (Simple)', icon: <FiFileText size={14} />, onClick: (item) => (printProposalBreakdown_Simple_byId(item.id))}] : []),
+      ...(isAllowed(PageName, 'r') ? [{ key: 'viewpdfbreakdowndetailed', label: 'Print Breakdown (Detailed)', icon: <FiFileText size={14} />, onClick: (item) => (printProposalBreakdown_Detailed_byId(item.id))}] : []),
       ...(isAllowed(PageName, 'r') ? [{
           key: 'viewpdfjoborder',
           label: 'Print Job Order',
