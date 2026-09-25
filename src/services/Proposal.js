@@ -94,6 +94,36 @@ async function printProposalBreakdown_byId(id) {
         return { data: null, error: error?.message || error };
     }
 }
+async function printProposalBreakdown_Simple_byId(id) {
+    if (!id) return { data: null, error: 'Missing id' };
+    try {
+        const url = `${API_BASE_URL}/pdf/breakdown/simple/${id}`;
+        const res = await authenticatedFetch(url, {
+            method: 'GET',
+            headers: { Accept: '*/*' },
+        });
+
+       handleOpenPdf(res);
+
+    } catch (error) {
+        return { data: null, error: error?.message || error };
+    }
+}
+async function printProposalBreakdown_Detailed_byId(id) {
+    if (!id) return { data: null, error: 'Missing id' };
+    try {
+        const url = `${API_BASE_URL}/pdf/breakdown/detailed/${id}`;
+        const res = await authenticatedFetch(url, {
+            method: 'GET',
+            headers: { Accept: '*/*' },
+        });
+
+       handleOpenPdf(res);
+
+    } catch (error) {
+        return { data: null, error: error?.message || error };
+    }
+}
 async function printJobOrder_byProposal(id) {
     if (!id) return { data: null, error: 'Missing id' };
     try {
@@ -288,7 +318,9 @@ export {
     cancelProposal,
     closeProposal,
     reviseProposal,
-    createRevisedProposal
+    createRevisedProposal,
+    printProposalBreakdown_Simple_byId,
+    printProposalBreakdown_Detailed_byId
 };
 const ProposalService = {
     getProposals,
@@ -307,6 +339,8 @@ const ProposalService = {
     closeProposal,
     reviseProposal,
     createRevisedProposal,
+    printProposalBreakdown_Simple_byId,
+    printProposalBreakdown_Detailed_byId
 };
 
 export default ProposalService;

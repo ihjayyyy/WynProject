@@ -11,7 +11,7 @@ import inputStyles from '../ui/Input/Input.module.scss';
 import ProposalMaterialsTable from './ProposalMaterialsTable';
 import Button from '../ui/Button/Button';
 import { useToast } from '../ui/Toast/Toast';
-import { INITIAL_PROPOSAL, getProposalById, createProposal, updateProposal, submitProposal, approveProposal, rejectProposal, winProposal, loseProposal, cancelProposal, closeProposal, reviseProposal, createRevisedProposal, printProposal_byId, printProposalBreakdown_byId } from '../../services/Proposal';
+import { INITIAL_PROPOSAL, getProposalById, createProposal, updateProposal, submitProposal, approveProposal, rejectProposal, winProposal, loseProposal, cancelProposal, closeProposal, reviseProposal, createRevisedProposal, printProposal_byId, printProposalBreakdown_byId, printProposalBreakdown_Detailed_byId, printProposalBreakdown_Simple_byId } from '../../services/Proposal';
 import { getParameter, getParameterByName } from '../../services/Parameter';
 import { convertProposal } from '../../services/Project';
 import ConfirmModal from '../ui/ConfirmModal/ConfirmModal';
@@ -943,13 +943,25 @@ export default function ProposalForm() {
         },
         {
           key: 'print-breakdown',
-          label: 'Print Breakdown',
+          label: 'Print Breakdown (Simple)',
           icon: <FiPrinter size={14} />,
           disabled: () => actionLoading,
           onClick: async () => {
             if (actionLoading) return;
             setActionLoading(true);
-            await printProposalBreakdown_byId(proposalId);
+            await printProposalBreakdown_Simple_byId(proposalId);
+            setActionLoading(false);
+          },
+        },
+        {
+          key: 'print-breakdown-detailed',
+          label: 'Print Breakdown (Detailed)',
+          icon: <FiPrinter size={14} />,
+          disabled: () => actionLoading,
+          onClick: async () => {
+            if (actionLoading) return;
+            setActionLoading(true);
+            await printProposalBreakdown_Detailed_byId(proposalId);
             setActionLoading(false);
           },
         },
