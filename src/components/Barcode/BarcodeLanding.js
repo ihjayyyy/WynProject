@@ -6,6 +6,7 @@ import ConfirmModal from '../ui/ConfirmModal/ConfirmModal';
 import Button from '../ui/Button/Button';
 import { useToast } from '../ui/Toast/Toast';
 import BarcodeService from '@/services/Barcode';
+import { openBarcodePrintPreview } from '@/utils/barcodePrint';
 
 const baseColumns = [
   { header: 'Barcode', key: 'barcode' },
@@ -176,50 +177,24 @@ const landingFilters = useMemo(
     setSelectedBarcodeKeys([]);
   }, []);
 
-  const handlePrintConfirm = useCallback(async () => {
+  const handlePrintConfirm = useCallback(() => {
     if (isPrinting || selectedBarcodes.length === 0) return;
 
     setIsPrinting(true);
-    const { data, error } = await BarcodeService.printBarcodes(selectedBarcodes);
+    const opened = openBarcodePrintPreview(selectedBarcodes);
 
-    if (error) {
-      const cleanError = String(error).replace(/^Error:\s*/i, '');
-      toast.error(`Failed to print barcodes. ${cleanError}`);
+    if (!opened) {
+      toast.error('The barcode preview could not be opened. Please allow pop-ups and try again.');
       setIsPrinting(false);
       return;
     }
 
-    if (data?.downloaded) {
-      const baseMessage = `Barcode PDF downloaded (${data.fileName || 'barcodes.pdf'}).`;
-      toast.success(
-        data.selectionApplied === false
-          ? `${baseMessage} Note: current API endpoint prints all barcodes and does not support selected filtering yet.`
-          : baseMessage
-      );
-      setIsPrintModalOpen(false);
-      setIsPrinting(false);
-      clearSelection();
-      await loadBarcodes();
-      return;
-    }
-
-    const printedCount = Array.isArray(data)
-      ? data.length
-      : Array.isArray(data?.value)
-      ? data.value.length
-      : null;
-
-    toast.success(
-      printedCount !== null
-        ? `Print request sent (${printedCount} barcode${printedCount === 1 ? '' : 's'}).`
-        : 'Print request sent successfully.'
-    );
+    toast.success(`Barcode preview opened for ${selectedBarcodes.length} label${selectedBarcodes.length === 1 ? '' : 's'}.`);
 
     setIsPrintModalOpen(false);
     setIsPrinting(false);
     clearSelection();
-    await loadBarcodes();
-  }, [isPrinting, selectedBarcodes, loadBarcodes, toast, clearSelection]);
+  }, [isPrinting, selectedBarcodes, toast, clearSelection]);
 
   const toggleSelectAll = useCallback(() => {
     setSelectedBarcodeKeys((current) => {
@@ -400,7 +375,7 @@ const landingFilters = useMemo(
         }}
       >
         <div style={{ marginTop: '8px', color: '#64748b', fontSize: '12px' }}>
-          This will call the barcode print endpoint and queue only the selected barcode output from the server.
+          A browser preview will open with three labels per row. Use the Print button in the preview to print or save as PDF.
         </div>
       </ConfirmModal>
     </>
