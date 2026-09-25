@@ -13,6 +13,7 @@ import { getRacks } from '../../services/Rack';
 import { getSuppliers } from '../../services/Supplier';
 import { useToast } from '../ui/Toast/Toast';
 import { AccessContext } from '@/app/contextProviders/accessContext';
+import { getParameterByName } from '@/services/Parameter';
 
 const MATERIAL_TYPE_OPTIONS = [
   { label: 'Material', value: 'Material' },
@@ -36,6 +37,8 @@ export default function MaterialsForm() {
   const [racks, setRacks] = useState([]);
   const [suppliers, setSuppliers] = useState([]);
 
+  const [param_SyncValue_PurchaseAndSellingPrice, setparam_SyncValue_PurchaseAndSellingPrice] = useState(false);
+
   // Holds the values that are pending submission while we wait for the user
   // to confirm they want to proceed with a selling price below purchase price.
   const [pendingSubmitValues, setPendingSubmitValues] = useState(null);
@@ -58,6 +61,21 @@ export default function MaterialsForm() {
       try {
         const res = await getSuppliers();
         if (!cancelled && !res?.error) setSuppliers(res.data || []);
+      } catch (e) {}
+    })();
+    return () => { cancelled = true; };
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        getParameterByName('Material', 'SyncValue_PurchaseAndSellingPrice').then((res) => {
+          if (cancelled) return;
+          if (!res.error && res.data !== null && res.data !== undefined && res.data !== '') {
+            setparam_SyncValue_PurchaseAndSellingPrice(res.data != '0' && res.data != null && res.data != undefined);
+          }
+      });
       } catch (e) {}
     })();
     return () => { cancelled = true; };
@@ -177,6 +195,7 @@ export default function MaterialsForm() {
       type: 'number',
       span: 'span2',
       readOnly: !canEditPrices,
+      hidden: param_SyncValue_PurchaseAndSellingPrice,
       validator: Yup.number().min(0, 'Selling price must be 0 or more'),
     },
     ...(!materialId

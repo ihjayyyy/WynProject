@@ -11,6 +11,7 @@ import { getRacks } from '../../services/Rack';
 import { getSuppliers } from '../../services/Supplier';
 import { useToast } from '../ui/Toast/Toast';
 import { AccessContext } from '@/app/contextProviders/accessContext';
+import { getParameterByName } from '@/services/Parameter';
 
 export default function ToolsForm() {
     const { isAllowed } = useContext(AccessContext);
@@ -44,6 +45,8 @@ export default function ToolsForm() {
   const [exists, setExists] = useState(false);
   const [racks, setRacks] = useState([]);
   const [suppliers, setSuppliers] = useState([]);
+
+  const [param_SyncValue_PurchaseAndSellingPrice, setparam_SyncValue_PurchaseAndSellingPrice] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -110,6 +113,22 @@ export default function ToolsForm() {
     return () => { cancelled = true; };
   }, [toolId]);
 
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        getParameterByName('Material', 'SyncValue_PurchaseAndSellingPrice').then((res) => {
+          if (cancelled) return;
+          if (!res.error && res.data !== null && res.data !== undefined && res.data !== '') {
+            setparam_SyncValue_PurchaseAndSellingPrice(res.data != '0' && res.data != null && res.data != undefined);
+          }
+      });
+      } catch (e) {}
+    })();
+    return () => { cancelled = true; };
+  }, []);
+
   const { isReadOnly, canEnterEditMode } = useMemo(() => {
     const readOnly = exists && !isEditMode;
     return { isReadOnly: readOnly, canEnterEditMode: exists };
@@ -147,6 +166,7 @@ export default function ToolsForm() {
       type: 'number',
       span: 'span2',
       readOnly: !canEditPrices,
+      hidden: param_SyncValue_PurchaseAndSellingPrice,
       validator: Yup.number().min(0, 'Selling price must be 0 or more'),
     },
     ...(!toolId
