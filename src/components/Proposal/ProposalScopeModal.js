@@ -9,7 +9,7 @@ export default function ProposalScopeModal({
   defaultLaborPercentage = 0,
   onCancel,
   onConfirm,
-  // Finance permission (lowercase 'f'). When false, Labor Percentage
+  // Finance permission (lowercase 'f'). When false, Labor Percentage (Margin of Profit)
   // renders read-only while Scope of Work and Duration stay editable.
   canEditFinance = true,
 }) {
@@ -27,7 +27,7 @@ export default function ProposalScopeModal({
     },
     {
       name: 'laborPercentage',
-      label: 'Labor Percentage (%)',
+      label: 'Margin of Profit (%)',
       type: 'number',
       value: laborPct,
       readonly: !canEditFinance,

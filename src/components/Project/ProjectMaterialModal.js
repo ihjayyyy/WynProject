@@ -452,7 +452,7 @@ export default function ProjectMaterialModal({ open, initial = {}, onCancel, onC
     },
     { name: 'vat', label: 'VAT', type: 'number', value: Number(calculatedForm.vat) || 0, readonly: true, validator: Yup.number().notRequired() },
     { name: 'materialCost', label: materialCategory === 'Tool' ? 'Tool Amount' : materialCategory === 'Service' ? 'Service Amount' : materialCategory === 'Assembly' ? 'Assembly Amount' : 'Material Amount', type: 'number', value: Number(calculatedForm.materialCost) || 0, readonly: true, validator: Yup.number().notRequired() },
-    { name: 'laborCost', label: 'Labor Cost', type: 'number', value: Number(calculatedForm.laborCost) || 0, validator: Yup.number().notRequired() },
+    { name: 'laborCost', label: 'Margin of Profit', type: 'number', value: Number(calculatedForm.laborCost) || 0, validator: Yup.number().notRequired() },
     { name: 'totalAmount', label: 'Total Amount', type: 'number', value: Number(calculatedForm.totalAmount) || 0, readonly: true, validator: Yup.number().notRequired() },
     { name: 'margin', label: 'Margin', type: 'number', value: Number(calculatedForm.margin) || 0, hidden: true, validator: Yup.number().notRequired() },
     { name: 'extendedCost', label: 'Extended Cost', type: 'number', value: Number(calculatedForm.extendedCost) || 0, hidden: true, validator: Yup.number().notRequired() },
@@ -462,7 +462,7 @@ export default function ProjectMaterialModal({ open, initial = {}, onCancel, onC
     { name: 'forecastedEndDate', label: 'Forecasted End', type: 'date', value: calculatedForm.forecastedEndDate || '', hidden: true, validator: Yup.string().notRequired() },
     { name: 'scopeOfWork', label: 'Scope Of Work', type: 'text', value: calculatedForm.scopeOfWork || '', hidden: true, validator: Yup.string().notRequired() },
     { name: 'remarks', label: 'Remarks', type: 'text', value: calculatedForm.remarks || '', hidden: true, validator: Yup.string().notRequired() },
-    { name: 'laborPercentage', label: 'Labor Percentage', type: 'number', value: Number(calculatedForm.laborPercentage) || 0, hidden: true, validator: Yup.number().notRequired() },
+    { name: 'laborPercentage', label: 'Margin of Profit (%)', type: 'number', value: Number(calculatedForm.laborPercentage) || 0, hidden: true, validator: Yup.number().notRequired() },
     { name: 'completedQuantity', label: 'Completed Quantity', type: 'number', value: Number(calculatedForm.completedQuantity) || 0, hidden: true, validator: Yup.number().notRequired() },
   ];
   }, [calculatedForm, materials, applyMaterialSelect, materialCategory, minQuantity, canEditFinance]);

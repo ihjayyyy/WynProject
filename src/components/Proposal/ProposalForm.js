@@ -462,12 +462,12 @@ export default function ProposalForm() {
     {
       // FINANCE FIELD: still shown to everyone, but the input and the
       // "Apply to all" action are only enabled for users with 'f' permission.
-      name: 'laborPercentage', label: 'Labor (%)', type: 'custom', span: 'span1',
+      name: 'laborPercentage', label: 'Margin of Profit (%)', type: 'custom', span: 'span1',
       render: ({ values, setValues }) => {
         const fieldDisabled = isReadOnly || !canEditFinance;
         return (
           <div className={inputStyles.field}>
-            <label htmlFor="laborPercentage">Labor (%)</label>
+            <label htmlFor="laborPercentage">Margin of Profit (%)</label>
             <Input
               id="laborPercentage"
               type="number"
@@ -487,7 +487,7 @@ export default function ProposalForm() {
                 onClick={() => {
                   const pct = Number(values.laborPercentage) || 0;
                   confirmModal.show(
-                    'Apply Labor % to All',
+                    'Apply Margin % to All',
                     `Apply ${pct}% labor to all scopes and materials? This will overwrite their existing values.`,
                     'Apply', 'primary',
                     () => applyLaborPctToChildren(pct)   // was: () => () => applyLaborPctToChildren(pct)
@@ -500,7 +500,7 @@ export default function ProposalForm() {
           </div>
         );
       },
-      validator: Yup.number().typeError('Labor % must be a number').min(0, 'Labor % cannot be less than 0').max(100, 'Labor % cannot be greater than 100').nullable(),
+      validator: Yup.number().typeError('Margin % must be a number').min(0, 'Margin % cannot be less than 0').max(100, 'Margin % cannot be greater than 100').nullable(),
     },
     { name: 'address', label: 'Address', span: 'span1', readOnly: isReviseMode },
     { name: 'spacer-7', type: 'spacer', span: 'span1' },
@@ -522,13 +522,13 @@ export default function ProposalForm() {
     { name: 'spacer-7b', type: 'spacer', span: 'span1' },
 
     (isReadOnly ? {
-      name: 'laborCostTotal', label: 'Labor Cost Total', type: 'custom', span: 'span1',
+      name: 'laborCostTotal', label: 'Margin of Profit Total', type: 'custom', span: 'span1',
       render: ({ values, setValues }) => {
         const v = Number(values.laborCostTotal) || 0;
         if (v !== totals.laborCostTotal) setValues({ ...values, laborCostTotal: totals.laborCostTotal });
         return (
           <div className={inputStyles.field}>
-            <label>Labor Cost Total</label>
+            <label>Margin of Profit Total</label>
             <Input id="laborCostTotal" value={totals.laborCostTotal} readOnly />
           </div>
         );

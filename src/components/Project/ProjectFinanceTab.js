@@ -226,7 +226,7 @@ const getStatementRows = () => {
 
     // BOM and other expenses remain in the Credit column
     { label: 'BOM', debit: null, credit: bom },
-    { label: 'Labor', debit: null, credit: labor },
+    { label: 'Margin of Profit', debit: null, credit: labor },
     { label: 'Trips', debit: null, credit: trips },
     { label: 'Other Expenses', debit: null, credit: otherExpenses },
 

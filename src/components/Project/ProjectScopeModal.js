@@ -103,7 +103,7 @@ export default function ProjectScopeModal({ open, initial = {}, onCancel, onConf
     },
     {
       name: 'laborPercentage',
-      label: 'Labor Percentage (%)',
+      label: 'Margin of Profit (%)',
       type: 'number',
       value: Number(form.laborPercentage) || 0,
       validator: Yup.number().min(0).max(100).notRequired(),

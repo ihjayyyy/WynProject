@@ -232,7 +232,7 @@ export default function ProjectScope({ projectId = 0, editable = true, projectSt
     { header: 'Actual Quantity', key: 'quantity', align: 'right', width: '120px', render: (it) => (it && it.quantity != null ? Number(it.quantity).toLocaleString() : '') },
     // { header: 'VAT', key: 'vat', align: 'right', width: '100px', render: (it) => Number(it.vat || 0).toLocaleString() },
     // { header: 'Material Cost', key: 'materialCost', align: 'right', width: '140px', render: (it) => Number(it.materialCost || 0).toLocaleString() },
-    // { header: 'Labor Cost', key: 'laborCost', align: 'right', width: '120px', render: (it) => Number(it.laborCost || 0).toLocaleString() },
+    // { header: 'Margin of Profit', key: 'laborCost', align: 'right', width: '120px', render: (it) => Number(it.laborCost || 0).toLocaleString() },
     // { header: 'Margin', key: 'margin', align: 'right', width: '100px', render: (it) => (it && (it.margin !== undefined && it.margin !== null) ? Number(it.margin).toLocaleString() : '') },
     { header: 'Completed Qty', key: 'completedQuantity', align: 'right', width: '120px', render: (it) => (it && it.completedQuantity != null ? Number(it.completedQuantity).toLocaleString() : '') },
     { header: 'Total', key: 'totalCost', align: 'right', width: '140px', render: (it) => Number(it.totalPrice || it.totalAmount || 0).toLocaleString() },
@@ -495,8 +495,8 @@ export default function ProjectScope({ projectId = 0, editable = true, projectSt
 
       <ConfirmModal
         open={isApplyLaborConfirmOpen}
-        title="Apply Labor Percentage?"
-        message={`The labor percentage has changed to ${pendingScopeUpdate ? Number(pendingScopeUpdate.val?.laborPercentage) || 0 : 0}%. Apply this to all existing materials in this scope?`}
+        title="Apply Margin of Profit?"
+        message={`The Margin of Profit has changed to ${pendingScopeUpdate ? Number(pendingScopeUpdate.val?.laborPercentage) || 0 : 0}%. Apply this to all existing materials in this scope?`}
         confirmText="Yes, Apply"
         cancelText="Skip"
         confirmVariant="primary"

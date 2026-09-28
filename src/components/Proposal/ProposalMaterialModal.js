@@ -904,7 +904,7 @@ export default function ProposalMaterialModal({
 
       {
         name: 'laborPercentage',
-        label: canEditFinance ? 'Labor Percentage (Editable)' : 'Labor Percentage',
+        label: canEditFinance ? 'Margin of Profit (%) (Editable)' : 'Margin of Profit (%)',
         type: 'number',
 
         value:
@@ -981,7 +981,7 @@ export default function ProposalMaterialModal({
 
       {
         name: 'laborCost',
-        label: 'Labor Cost',
+        label: 'Margin of Profit',
         type: 'number',
         readonly: true,
         value:

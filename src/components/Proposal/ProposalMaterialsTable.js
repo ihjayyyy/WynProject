@@ -77,7 +77,7 @@ export default function ProposalMaterialsTable({
     { header: 'Margin Quantity', key: 'marginQuantity', align: 'right', width: '80px' },
     
     { header: 'Material Cost', key: 'materialCost', align: 'right', width: '140px', render: (it) => Number(it.materialCost || 0).toLocaleString() },
-    { header: 'Labor Cost', key: 'laborCost', align: 'right', width: '120px', render: (it) => Number(it.laborCost || 0).toLocaleString() },
+    { header: 'Margin of Profit', key: 'laborCost', align: 'right', width: '120px', render: (it) => Number(it.laborCost || 0).toLocaleString() },
     { header: 'Total', key: 'totalPrice', align: 'right', width: '140px', render: (it) => Number(it.totalPrice || it.totalAmount || 0).toLocaleString() },
   ];
 
@@ -311,8 +311,8 @@ export default function ProposalMaterialsTable({
 
         <ConfirmModal
           open={isApplyLaborConfirmOpen}
-          title="Apply Labor % to existing materials?"
-          message={`The labor percentage has changed to ${pendingScopeUpdate?.pct ?? 0}%. Do you want to recalculate the labor cost for all existing materials in this scope?`}
+          title="Apply Margin of Profit to existing materials?"
+          message={`The Margin of Profit (%) has changed to ${pendingScopeUpdate?.pct ?? 0}%. Do you want to recalculate the margins for all existing materials in this scope?`}
           confirmText="Yes, Apply"
           confirmVariant="primary"
           onConfirm={() => {
