@@ -11,6 +11,48 @@ import * as Yup from 'yup';
 import ItemModal from '../ItemDetails/itemModal';
 import { byTypeMaterials } from '../../services/Materials';
 
+// ─────────────────────────────────────────────────────────────────────────
+// VAT / amount computation (inlined — no separate file)
+// ─────────────────────────────────────────────────────────────────────────
+const round2 = (n) => Number((Number(n) || 0).toFixed(2));
+
+// "Not Included" / "VAT Not-Included" / "Exclusive" -> 'exclusive'
+// "Included" / "VAT Included" / "Inclusive"          -> 'inclusive'
+// anything else (Non-VAT, blank)                     -> 'none'
+function normalizeVatType(t) {
+  const s = String(t || '').toLowerCase().replace(/[^a-z]/g, '');
+  if (!s) return 'none';
+  if (s.includes('notincluded') || s.includes('exclusive') || s.includes('excluded')) return 'exclusive';
+  if (s.includes('included') || s.includes('inclusive')) return 'inclusive';
+  return 'none';
+}
+
+function computeAmounts({
+  materialBase,            // unitCost * qty - discount
+  laborPercentage = 0,     // whole number, e.g. 10
+  laborCostOverride = 0,   // used only when laborPercentage is 0
+  vatPercentage = 0,       // whole number, e.g. 12
+  vatType = '',
+}) {
+  const material = round2(Math.max(0, Number(materialBase) || 0));
+  const pct = Number(laborPercentage) || 0;
+  const labor = pct > 0 ? round2((material * pct) / 100) : round2(laborCostOverride);
+  const subtotal = round2(material + labor);
+
+  const type = normalizeVatType(vatType);
+  const rate = type === 'none' ? 0 : (Number(vatPercentage) || 0) / 100;
+
+  let vat = 0;
+  let totalAmount = subtotal;
+  if (type === 'exclusive') {
+    vat = round2(subtotal * rate);
+    totalAmount = round2(subtotal + vat);
+  } else if (type === 'inclusive') {
+    vat = round2(subtotal - subtotal / (1 + rate));
+  }
+  return { materialCost: material, laborCost: labor, vat, totalAmount };
+}
+
 const DEFAULT_FORM = {
   id: 0,
   name: '',
@@ -56,6 +98,9 @@ export default function ProposalMaterialModal({
   // Labor Percentage render read-only and their recompute handlers no-op,
   // while item type, material selection, and quantities stay editable.
   canEditFinance = true,
+  // From the Proposal Form
+  vatPercentage = 0, // whole number, e.g. 12
+  vatType = '',      // e.g. "Included" / "Not Included" / non-VAT
 }) {
   const [resetKey, setResetKey] = useState(0);
 
@@ -185,42 +230,32 @@ export default function ProposalMaterialModal({
     };
   }, [open, materialCategory, getMaterialFilters]);
 
+  // Keep form totals in sync with VAT settings / inputs
   useEffect(() => {
-    const uc = Number(form.unitCost) || 0;
-    const qty = Number(form.quantity) || 0;
-    const lab = Number(form.laborCost) || 0;
-    const disc = Number(form.discount) || 0;
-
-    const base = uc * qty;
-    const materialBase = base - disc;
-
-    const rawVat = materialBase * 0.12;
-
-    const vatAmount = Number.isFinite(rawVat)
-      ? Math.max(0, Number(rawVat.toFixed(2)))
-      : 0;
-
-    const materialCost = Number(
-      (materialBase + vatAmount).toFixed(2)
-    );
-
-    const totalPrice = Number(
-      (materialCost + lab).toFixed(2)
-    );
+    const a = computeAmounts({
+      materialBase:
+        (Number(form.unitCost) || 0) * (Number(form.quantity) || 0) -
+        (Number(form.discount) || 0),
+      laborPercentage: Number(form.laborPercentage) || 0,
+      laborCostOverride: Number(form.laborCost) || 0,
+      vatPercentage,
+      vatType,
+    });
 
     setForm((f) => ({
       ...f,
-      materialCost,
-      totalPrice,
-      totalAmount: totalPrice,
-      extendedCost: totalPrice,
-      vat: vatAmount,
+      ...a,
+      extendedCost: a.totalAmount,
+      totalPrice: a.totalAmount,
     }));
   }, [
     form.unitCost,
     form.quantity,
-    form.laborCost,
     form.discount,
+    form.laborPercentage,
+    form.laborCost,
+    vatPercentage,
+    vatType,
   ]);
 
   const applyMaterialSelect = useCallback(
@@ -271,31 +306,23 @@ export default function ProposalMaterialModal({
   );
 
   const calculatedForm = useMemo(() => {
-    const uc = Number(form.unitCost) || 0;
-    const qty = Number(form.quantity) || 0;
-    const lab = Number(form.laborCost) || 0;
-    const disc = Number(form.discount) || 0;
-
-    const base = uc * qty;
-    const materialBase = base - disc;
-
-    const rawVat = materialBase * 0.12;
-    const vatAmount = Number.isFinite(rawVat)
-      ? Math.max(0, Number(rawVat.toFixed(2)))
-      : 0;
-
-    const materialCost = Number((materialBase + vatAmount).toFixed(2));
-    const totalPrice = Number((materialCost + lab).toFixed(2));
+    const a = computeAmounts({
+      materialBase:
+        (Number(form.unitCost) || 0) * (Number(form.quantity) || 0) -
+        (Number(form.discount) || 0),
+      laborPercentage: Number(form.laborPercentage) || 0,
+      laborCostOverride: Number(form.laborCost) || 0,
+      vatPercentage,
+      vatType,
+    });
 
     return {
       ...form,
-      vat: vatAmount,
-      materialCost,
-      totalAmount: totalPrice,
-      extendedCost: totalPrice,
-      totalPrice,
+      ...a,
+      extendedCost: a.totalAmount,
+      totalPrice: a.totalAmount,
     };
-  }, [form]);
+  }, [form, vatPercentage, vatType]);
 
   const recomputeTotals = (
     updateField,
@@ -304,67 +331,30 @@ export default function ProposalMaterialModal({
     unitCostOverride = null,
     extraFormPatch = {}
   ) => {
-    const uc =
-      unitCostOverride ??
-      (Number(
-        itemFields.find(
-          (f) => f.name === 'unitCost'
-        )?.value
-      ) || 0);
+    const getVal = (n) => itemFields.find((f) => f.name === n)?.value;
 
+    const uc = unitCostOverride ?? (Number(getVal('unitCost')) || 0);
+    const qty = qtyOverride ?? (Number(getVal('quantity')) || 0);
+    // itemFields is stale for the field currently being edited, so prefer the patch
     const disc =
-      Number(
-        itemFields.find(
-          (f) => f.name === 'discount'
-        )?.value
-      ) || 0;
+      extraFormPatch.discount ?? (Number(getVal('discount')) || 0);
+    const pctExplicit = extraFormPatch.laborPercentage != null;
+    const pct = pctExplicit
+      ? Number(extraFormPatch.laborPercentage) || 0
+      : Number(getVal('laborPercentage')) || 0;
 
-    const pct =
-      Number(
-        itemFields.find(
-          (f) => f.name === 'laborPercentage'
-        )?.value
-      ) || 0;
-
-    const qty =
-      qtyOverride ??
-      (Number(
-        itemFields.find(
-          (f) => f.name === 'quantity'
-        )?.value
-      ) || 0);
-
-    const base = uc * qty;
-    const materialBase = base - disc;
-
-    const vat = Number.isFinite(materialBase * 0.12)
-      ? Math.max(
-          0,
-          Number((materialBase * 0.12).toFixed(2))
-        )
-      : 0;
-
-    const materialCost = Number(
-      (materialBase + vat).toFixed(2)
-    );
-
-    const lab =
-      pct > 0
-        ? Number(
-            (
-              (materialCost * pct) /
-              100
-            ).toFixed(2)
-          )
-        : Number(
-            itemFields.find(
-              (f) => f.name === 'laborCost'
-            )?.value
-          ) || 0;
-
-    const total = Number(
-      (materialCost + lab).toFixed(2)
-    );
+    const {
+      materialCost,
+      laborCost: lab,
+      vat,
+      totalAmount: total,
+    } = computeAmounts({
+      materialBase: uc * qty - disc,
+      laborPercentage: pct,
+      laborCostOverride: pctExplicit ? 0 : Number(getVal('laborCost')) || 0,
+      vatPercentage,
+      vatType,
+    });
 
     updateField('vat', vat);
     updateField('materialCost', materialCost);
@@ -375,9 +365,8 @@ export default function ProposalMaterialModal({
     updateField('totalPrice', total);
 
     // Mirror the recomputed values (plus any field-specific patch passed
-    // in by the caller, e.g. unitCost/discount/materialId/quantity) back
-    // into the parent `form` state so it never goes stale relative to
-    // itemFields.
+    // in by the caller) back into the parent `form` state so it never
+    // goes stale relative to itemFields.
     setForm((f) => ({
       ...f,
       ...extraFormPatch,
@@ -644,10 +633,8 @@ export default function ProposalMaterialModal({
             ...formPatch,
           }));
 
-          // Recompute vat/materialCost/laborCost/totals using the new
-          // unitCost. itemFields here is still the array from before this
-          // onChange fired, so pass the new unitCost explicitly rather
-          // than relying on it being reflected in itemFields yet.
+          // Recompute using the new unitCost. itemFields is still the array
+          // from before this onChange fired, so pass it explicitly.
           recomputeTotals(
             updateField,
             itemFields,
@@ -928,54 +915,15 @@ export default function ProposalMaterialModal({
         ) => {
           if (!canEditFinance) return;
 
-          const pct =
-            Number(nextValue) || 0;
+          const pct = Number(nextValue) || 0;
 
-          const matCost =
-            Number(
-              itemFields.find(
-                (f) =>
-                  f.name ===
-                  'materialCost'
-              )?.value
-            ) || 0;
-
-          const lab = Number(
-            (
-              (matCost * pct) /
-              100
-            ).toFixed(2)
+          recomputeTotals(
+            updateField,
+            itemFields,
+            null,
+            null,
+            { laborPercentage: pct }
           );
-
-          const total = Number(
-            (matCost + lab).toFixed(2)
-          );
-
-          updateField('laborCost', lab);
-
-          updateField(
-            'totalAmount',
-            total
-          );
-
-          updateField(
-            'extendedCost',
-            total
-          );
-
-          updateField(
-            'totalPrice',
-            total
-          );
-
-          setForm((f) => ({
-            ...f,
-            laborPercentage: pct,
-            laborCost: lab,
-            totalAmount: total,
-            extendedCost: total,
-            totalPrice: total,
-          }));
         },
       },
 
@@ -990,54 +938,6 @@ export default function ProposalMaterialModal({
         validator: Yup.number()
           .min(0)
           .notRequired(),
-
-        onChange: (
-          item,
-          updateField,
-          itemFields,
-          nextValue
-        ) => {
-          if (!canEditFinance) return;
-
-          const matCost =
-            Number(
-              itemFields.find(
-                (f) =>
-                  f.name ===
-                  'materialCost'
-              )?.value
-            ) || 0;
-
-          const lab =
-            Number(nextValue) || 0;
-
-          const total = Number(
-            (matCost + lab).toFixed(2)
-          );
-
-          updateField(
-            'totalAmount',
-            total
-          );
-
-          updateField(
-            'extendedCost',
-            total
-          );
-
-          updateField(
-            'totalPrice',
-            total
-          );
-
-          setForm((f) => ({
-            ...f,
-            laborCost: lab,
-            totalAmount: total,
-            extendedCost: total,
-            totalPrice: total,
-          }));
-        },
       },
 
       {
@@ -1170,6 +1070,8 @@ export default function ProposalMaterialModal({
     applyMaterialSelect,
     materialCategory,
     canEditFinance,
+    vatPercentage,
+    vatType,
   ]);
 
   const isEditMode = Boolean(

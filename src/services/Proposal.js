@@ -19,6 +19,7 @@ export const INITIAL_PROPOSAL = {
     expirationDate: null,
     customerReferenceNumber: '',
     margin: 0,
+    vatPercentage: 0,
     laborPercentage: 0,
     inquiryId: null,
     description: '',

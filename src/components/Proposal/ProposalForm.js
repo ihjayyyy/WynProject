@@ -25,6 +25,48 @@ import ProposalBOMModal from './ProposalBOMModal';
 import { useConfirmModal } from '@/app/contextProviders/confirmModalContext';
 import DropdownAction from '../ui/DropdownAction/DropdownAction';
 
+// ─────────────────────────────────────────────────────────────────────────
+// VAT / amount computation (inlined — no separate file)
+// ─────────────────────────────────────────────────────────────────────────
+const round2 = (n) => Number((Number(n) || 0).toFixed(2));
+
+// "Not Included" / "VAT Not-Included" / "Exclusive" -> 'exclusive'
+// "Included" / "VAT Included" / "Inclusive"          -> 'inclusive'
+// anything else (Non-VAT, blank)                     -> 'none'
+function normalizeVatType(t) {
+  const s = String(t || '').toLowerCase().replace(/[^a-z]/g, '');
+  if (!s) return 'none';
+  if (s.includes('notincluded') || s.includes('exclusive') || s.includes('excluded')) return 'exclusive';
+  if (s.includes('included') || s.includes('inclusive')) return 'inclusive';
+  return 'none';
+}
+
+function computeAmounts({
+  materialBase,            // unitCost * qty - discount
+  laborPercentage = 0,     // whole number, e.g. 10
+  laborCostOverride = 0,   // used only when laborPercentage is 0
+  vatPercentage = 0,       // whole number, e.g. 12
+  vatType = '',
+}) {
+  const material = round2(Math.max(0, Number(materialBase) || 0));
+  const pct = Number(laborPercentage) || 0;
+  const labor = pct > 0 ? round2((material * pct) / 100) : round2(laborCostOverride);
+  const subtotal = round2(material + labor);
+
+  const type = normalizeVatType(vatType);
+  const rate = type === 'none' ? 0 : (Number(vatPercentage) || 0) / 100;
+
+  let vat = 0;
+  let totalAmount = subtotal;
+  if (type === 'exclusive') {
+    vat = round2(subtotal * rate);
+    totalAmount = round2(subtotal + vat);
+  } else if (type === 'inclusive') {
+    vat = round2(subtotal - subtotal / (1 + rate));
+  }
+  return { materialCost: material, laborCost: labor, vat, totalAmount };
+}
+
 export default function ProposalForm() {
   const PageName = 'Projects.Proposal';
   const { isAllowed } = useContext(AccessContext);
@@ -71,11 +113,15 @@ export default function ProposalForm() {
   // API returns a fraction (e.g. "0.1"); we convert to a whole-number percentage (10)
   // to match how laborPercentage is edited/displayed elsewhere in this form.
   const [defaultLaborPercentage, setDefaultLaborPercentage] = useState(null);
+  const [defaultVatPercentage, setDefaultVatPercentage] = useState(null);
   // Live mirror of the parent form's Labor (%) field, kept in sync via the field's
   // onChange below. Needed because ProposalMaterialsTable/ProposalScopeModal read
   // this as the default for brand-new scopes, and initialValues.laborPercentage is
   // only a load-time snapshot — it doesn't reflect what the user is currently typing.
   const [liveLaborPercentage, setLiveLaborPercentage] = useState(0);
+  // Live mirrors of VAT Percentage / VAT Type — passed down so item rows compute VAT.
+  const [liveVatPercentage, setLiveVatPercentage] = useState(0);
+  const [liveVatType, setLiveVatType] = useState('');
   const toast = useToast();
 
   React.useEffect(() => {
@@ -210,6 +256,16 @@ export default function ProposalForm() {
           if (!isNaN(fraction)) setDefaultLaborPercentage(fraction * 100);
         }
       });
+
+      if (!proposalId && !isReviseMode && !isCopyMode) {
+        getParameterByName('Proposal', 'VatPercent').then((res) => {
+          if (cancelled) return;
+          if (!res.error && res.data !== null && res.data !== undefined && res.data !== '') {
+            const fraction = Number(res.data);
+            if (!isNaN(fraction)) setDefaultVatPercentage(fraction * 100);
+          }
+        });
+      }
     } else {
       setRichText({
         miscellaneousDescription: initialValues?.miscellaneousDescription || '',
@@ -288,6 +344,21 @@ export default function ProposalForm() {
     const laborPercentageValue = (isBrandNew && !hasExistingLaborPercentage && defaultLaborPercentage != null && !isNaN(defaultLaborPercentage))
       ? defaultLaborPercentage
       : initialValues.laborPercentage;
+    const vatPercentageValue = isBrandNew && defaultVatPercentage != null && !isNaN(defaultVatPercentage)
+      ? defaultVatPercentage
+      : initialValues.vatPercentage;
+    const vatPercentageNumber = Number(vatPercentageValue) * (isBrandNew ? 1 : 100);
+    const displayedVatPercentage = vatPercentageValue !== null && vatPercentageValue !== undefined && vatPercentageValue !== '' && Number.isFinite(vatPercentageNumber)
+      ? vatPercentageNumber.toFixed(2)
+      : vatPercentageValue;
+
+    // VAT Type is UI-only (not saved with the proposal). For existing proposals,
+    // fall back to the customer's VAT type so it is still shown/used.
+    const customerVatType =
+      (customers || []).find((c) => String(c.id) === String(initialValues.customerId))?.vatType || '';
+
+    const effectiveVatType = initialValues.vatType || customerVatType;
+    const isNonVat = normalizeVatType(effectiveVatType) === 'none';
 
     return {
       ...initialValues,
@@ -296,11 +367,18 @@ export default function ProposalForm() {
       expirationDate: expirationDateValue,
       requestDate: toDateOnlyString(initialValues.requestDate) || today,
       laborPercentage: laborPercentageValue,
+      vatPercentage: isNonVat ? '0.00' : displayedVatPercentage,
+      vatType: effectiveVatType, // UI-only, not sent to the API
     };
-  }, [initialValues, proposalId, isReviseMode, isCopyMode, expiresInDays, defaultLaborPercentage]);
+  }, [initialValues, customers, proposalId, isReviseMode, isCopyMode, expiresInDays, defaultLaborPercentage, defaultVatPercentage]);
 
   React.useEffect(() => {
     setLiveLaborPercentage(Number(normalizedInitialValues?.laborPercentage) || 0);
+  }, [normalizedInitialValues]);
+
+  React.useEffect(() => {
+    setLiveVatPercentage(Number(normalizedInitialValues?.vatPercentage) || 0);
+    setLiveVatType(normalizedInitialValues?.vatType || '');
   }, [normalizedInitialValues]);
 
   const dedupeDeleted = (arr = []) => {
@@ -382,14 +460,21 @@ export default function ProposalForm() {
   const customerOptions = customers.map((c) => ({ value: c.id, label: c.name}));
   const inquiryOptions = inquiries.map((q) => ({ value: q.id, label: q.inquiryNo || q.reference || q.code || q.name || String(q.id) }));
 
+  // Proposal total uses each row's totalAmount (material + margin of profit + VAT
+  // where applicable), since materialCost alone no longer includes VAT.
   const totals = React.useMemo(() => {
     const rows = (childrenState || []).filter((c) => !c || !c.__isScope);
     const materialCostTotal = rows.reduce((s, r) => s + (Number(r.materialCost) || 0), 0);
     const laborCostTotal = rows.reduce((s, r) => s + (Number(r.laborCost) || 0), 0);
-    const proposalTotal = materialCostTotal + laborCostTotal;
+    const proposalTotal = rows.reduce(
+      (s, r) => s + (Number(r.totalAmount) || ((Number(r.materialCost) || 0) + (Number(r.laborCost) || 0))),
+      0
+    );
     return { materialCostTotal, laborCostTotal, proposalTotal };
   }, [childrenState]);
 
+  // Layout note: the grid is 3 columns filled in order (col1, spacer, col3),
+  // so every right-column field is preceded by a spacer.
   const fields = [
     {
       name: 'inquiryId', label: 'Inquiry', type: 'select', options: inquiryOptions, searchable: true,
@@ -428,6 +513,15 @@ export default function ProposalForm() {
         const numVal = val !== undefined && val !== null && val !== '' ? Number(val) : null;
         const sel = numVal != null ? customers.find((c) => c.id === numVal) : null;
         if (sel) {
+          const nonVat = normalizeVatType(sel.vatType) === 'none';
+          // Non-VAT -> 0. Otherwise restore the default VAT % (or keep the current one if no default).
+          const nextVatPct = nonVat
+            ? '0.00'
+            : (defaultVatPercentage != null && !isNaN(defaultVatPercentage)
+                ? Number(defaultVatPercentage).toFixed(2)
+                : (Number(values.vatPercentage) ? values.vatPercentage : '0.00'));
+          setLiveVatType(sel.vatType || '');
+          setLiveVatPercentage(Number(nextVatPct) || 0);
           setValues({
             ...values,
             customerId: sel.id,
@@ -438,9 +532,13 @@ export default function ProposalForm() {
             contactPerson: sel.customerName || '',
             address: sel.address || '',
             email: sel.email || '',
+            vatType: sel.vatType || '',
+            vatPercentage: nextVatPct,
           });
         } else {
-          setValues({ ...values, customerId: null, customerCode: '', customerName: '', contactNumber: '', address: '', email: '' });
+          setLiveVatType('');
+          setLiveVatPercentage(0);
+          setValues({ ...values, customerId: null, customerCode: '', customerName: '', contactNumber: '', address: '', email: '', vatType: '', vatPercentage: '0.00' });
         }
       },
       validator: Yup.number().typeError('Customer is required').required('Customer is required'),
@@ -456,9 +554,42 @@ export default function ProposalForm() {
     { name: 'spacer-5', type: 'spacer', span: 'span1' },
     { name: 'expirationDate', label: 'Expiration Date', type: 'date', span: 'span1', validator: Yup.date().typeError('Invalid date').nullable() },
 
-    
     { name: 'contactNumber', label: 'Contact Number', span: 'span1', readOnly: isReviseMode },
     { name: 'spacer-6', type: 'spacer', span: 'span1' },
+    {
+      // UI-only, read-only: intentionally not included in buildModelPayload
+      name: 'vatType', label: 'VAT Type', span: 'span1', readOnly: true,
+    },
+
+    { name: 'address', label: 'Address', span: 'span1', readOnly: isReviseMode },
+    { name: 'spacer-7', type: 'spacer', span: 'span1' },
+    {
+      name: 'vatPercentage', label: 'VAT Percentage (%)', type: 'custom', span: 'span1',
+      render: ({ values, setValues }) => {
+        const nonVat = normalizeVatType(values.vatType) === 'none';
+        return (
+          <div className={inputStyles.field}>
+            <label htmlFor="vatPercentage">VAT Percentage (%)</label>
+            <Input
+              id="vatPercentage"
+              type="number"
+              step="0.01"
+              value={nonVat ? '0.00' : (values.vatPercentage ?? '')}
+              readOnly={isReadOnly || nonVat}
+              onChange={(e) => {
+                if (nonVat) return;
+                setValues({ ...values, vatPercentage: e.target.value });
+                setLiveVatPercentage(Number(e.target.value) || 0);
+              }}
+            />
+          </div>
+        );
+      },
+      validator: Yup.number().typeError('VAT Percentage must be a number').nullable(),
+    },
+
+    { name: 'email', label: 'Email', type: 'email', span: 'span1', readOnly: isReviseMode },
+    { name: 'spacer-7b', type: 'spacer', span: 'span1' },
     {
       // FINANCE FIELD: still shown to everyone, but the input and the
       // "Apply to all" action are only enabled for users with 'f' permission.
@@ -490,7 +621,7 @@ export default function ProposalForm() {
                     'Apply Margin % to All',
                     `Apply ${pct}% labor to all scopes and materials? This will overwrite their existing values.`,
                     'Apply', 'primary',
-                    () => applyLaborPctToChildren(pct)   // was: () => () => applyLaborPctToChildren(pct)
+                    () => applyLaborPctToChildren(pct)
                   );
                 }}
               >
@@ -502,9 +633,10 @@ export default function ProposalForm() {
       },
       validator: Yup.number().typeError('Margin % must be a number').min(0, 'Margin % cannot be less than 0').max(100, 'Margin % cannot be greater than 100').nullable(),
     },
-    { name: 'address', label: 'Address', span: 'span1', readOnly: isReviseMode },
-    { name: 'spacer-7', type: 'spacer', span: 'span1' },
-        (isReadOnly ? {
+
+    { name: 'location', label: 'Location', span: 'span1', readOnly: isReviseMode },
+    { name: 'spacer-11', type: 'spacer', span: 'span1' },
+    (isReadOnly ? {
       name: 'materialCostTotal', label: 'Material Cost Total', type: 'custom', span: 'span1',
       render: ({ values, setValues }) => {
         const v = Number(values.materialCostTotal) || 0;
@@ -518,9 +650,7 @@ export default function ProposalForm() {
       },
     } : { name: 'spacer-materialCostTotal', type: 'spacer', span: 'span1' }),
 
-    { name: 'email', label: 'Email', type: 'email', span: 'span1', readOnly: isReviseMode},
-    { name: 'spacer-7b', type: 'spacer', span: 'span1' },
-
+    { name: 'description', label: 'Description', type: 'textarea', span: 'span2', readOnly: isReviseMode },
     (isReadOnly ? {
       name: 'laborCostTotal', label: 'Margin of Profit Total', type: 'custom', span: 'span1',
       render: ({ values, setValues }) => {
@@ -535,8 +665,8 @@ export default function ProposalForm() {
       },
     } : { name: 'spacer-laborCostTotal', type: 'spacer', span: 'span1' }),
 
-    { name: 'location', label: 'Location', span: 'span1', readOnly: isReviseMode },
-    { name: 'spacer-11', type: 'spacer', span: 'span1' },
+    { name: 'spacer-12', type: 'spacer', span: 'span1' },
+    { name: 'spacer-13', type: 'spacer', span: 'span1' },
     (isReadOnly ? {
       name: 'proposalTotal', label: 'Proposal Total', type: 'custom', span: 'span1',
       render: ({ values, setValues }) => {
@@ -558,18 +688,24 @@ export default function ProposalForm() {
       hidden: true,
       validator: Yup.number().typeError('Margin must be a number').min(0, 'Margin cannot be less than 0').max(100, 'Margin cannot be greater than 100').nullable(),
     },
-    { name: 'description', label: 'Description', type: 'textarea', span: 'span2', readOnly: isReviseMode },
   ];
 
+  // "Apply to all": recompute every item row with the given margin % and the
+  // current VAT % / VAT Type.
   const applyLaborPctToChildren = (pct) => {
     setChildrenState((prev) =>
       (prev || []).map((c) => {
         if (!c) return c;
         if (c.__isScope) return { ...c, laborPercentage: pct };
-        const mc = Number(c.materialCost) || 0;
-        const lc = Number((mc * pct / 100).toFixed(2));
-        const total = Number((mc + lc).toFixed(2));
-        return { ...c, laborPercentage: pct, laborCost: lc, totalAmount: total, extendedCost: total, totalPrice: total };
+        const base = (Number(c.unitCost) || 0) * (Number(c.quantity) || 0) - (Number(c.discount) || 0);
+        const a = computeAmounts({
+          materialBase: base,
+          laborPercentage: pct,
+          laborCostOverride: 0,
+          vatPercentage: liveVatPercentage,
+          vatType: liveVatType,
+        });
+        return { ...c, laborPercentage: pct, ...a, extendedCost: a.totalAmount, totalPrice: a.totalAmount };
       })
     );
   };
@@ -591,9 +727,7 @@ export default function ProposalForm() {
     }
 
     // Plain "YYYY-MM-DD" strings (e.g. from <input type="date">) should be
-    // treated as that calendar date at UTC midnight, not parsed in local time
-    // (new Date('YYYY-MM-DD') is already UTC-midnight per spec, but we build
-    // it explicitly here to be safe and to support dateOnly truncation).
+    // treated as that calendar date at UTC midnight.
     if (typeof v === 'string') {
       const dateOnlyMatch = v.match(/^(\d{4})-(\d{2})-(\d{2})$/);
       if (dateOnlyMatch) {
@@ -652,6 +786,7 @@ export default function ProposalForm() {
     marginQuantity: Number(c.marginQuantity) || 0,
   });
 
+  // NOTE: vatType is intentionally NOT included in the payload.
   const buildModelPayload = (values) => {
     const rawCustomerId = values.customerId;
     const resolvedCustomerId =
@@ -674,6 +809,7 @@ export default function ProposalForm() {
       requestDate: formatPayloadDate(values.requestDate, true) || null,
       customerReferenceNumber: values.customerReferenceNumber || '',
       margin: Number(values.margin) || 0,
+      vatPercentage: normalizeVatType(values.vatType) === 'none' ? 0 : (Number(values.vatPercentage) || 0) / 100,
       laborPercentage: Number(values.laborPercentage) || 0,
       inquiryId: values.inquiryId || 0,
       proposalTotal: Number(totals.proposalTotal) || 0,
@@ -704,10 +840,11 @@ export default function ProposalForm() {
   return isAllowed(PageName, 'r') ? (
     <>
       <EntityForm
-        // Force a remount once the ExpiresIn parameter resolves so EntityForm
-        // re-seeds its internal form state from the freshly computed
-        // normalizedInitialValues (it only reads initialValues once on mount).
-        key={`proposal-${proposalId || 'new'}-${mode || 'view'}-${expiresInDays ?? 'pending'}-${defaultLaborPercentage ?? 'pending'}`}
+        // Force a remount once async defaults resolve so EntityForm re-seeds its
+        // internal form state from the freshly computed normalizedInitialValues
+        // (it only reads initialValues once on mount). customers.length is included
+        // so the VAT Type fallback from the customer record is picked up.
+        key={`proposal-${proposalId || 'new'}-${mode || 'view'}-${expiresInDays ?? 'pending'}-${defaultLaborPercentage ?? 'pending'}-${defaultVatPercentage ?? 'pending'}-${customers.length}`}
         title={formTitle}
         breadcrumbLabel='Proposal'
         icon={<FiSend />}
@@ -756,6 +893,8 @@ export default function ProposalForm() {
               hideCostColumns={true}
               canEditFinance={canEditFinance}
               parentLaborPercentage={liveLaborPercentage}
+              vatPercentage={liveVatPercentage}
+              vatType={liveVatType}
               onChange={(updated, deleted) => {
                 setChildrenState(updated || []);
                 // clear table-level error when user modifies children
