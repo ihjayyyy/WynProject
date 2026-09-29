@@ -96,6 +96,10 @@ export default function Landing({
   searchPlaceholder = 'Search',
   newButtonLabel,
   onNew,
+  secondaryButtonLabel,
+  onSecondary,
+  secondaryButtonDisabled = false,
+  secondaryButtonIcon,
   emptyMessage = 'No records found',
   width = '320px',
   filterFn,
@@ -207,6 +211,10 @@ export default function Landing({
             showButton={Boolean(newButtonLabel)}
             buttonLabel={newButtonLabel}
             handleOnClick={onNew}
+            secondaryButtonLabel={secondaryButtonLabel}
+            handleSecondaryClick={onSecondary}
+            secondaryButtonDisabled={secondaryButtonDisabled}
+            secondaryButtonIcon={secondaryButtonIcon}
             width={width}
           />
         </div>

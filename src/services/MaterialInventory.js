@@ -143,6 +143,45 @@ async function printMaterialReport_byId() {
   }
 }
 
+async function downloadMaterialInventoryReportExcel() {
+  try {
+    const url = `${API_BASE_URL}/GenerateReport/excel`;
+    const res = await authenticatedFetch(url, {
+      method: 'GET',
+      headers: { Accept: '*/*' },
+    });
+
+    if (!res.ok) {
+      const errorText = await res.text();
+      throw new Error(errorText || `Report download failed with status ${res.status}`);
+    }
+
+    const blob = await res.blob();
+    const contentDisposition = res.headers.get('content-disposition') || '';
+    const filenameMatch = contentDisposition.match(/filename\*=UTF-8''([^;]+)|filename="?([^";]+)"?/i);
+    let filename = filenameMatch?.[1] || filenameMatch?.[2] || 'material-inventory-report.csv';
+    if (filenameMatch?.[1]) {
+      try {
+        filename = decodeURIComponent(filename);
+      } catch {}
+    }
+    filename = filename.replace(/[\\/]/g, '_');
+
+    const fileUrl = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = fileUrl;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    setTimeout(() => URL.revokeObjectURL(fileUrl), 10000);
+
+    return { data: { downloaded: true, fileName: filename }, error: null };
+  } catch (error) {
+    return { data: null, error: error?.message || error };
+  }
+}
+
 async function getRacksByMaterialId(materialId) {
   try {
     const url = `${API_BASE_URL}/Racks/ByMaterialId/${materialId}`;
@@ -237,6 +276,7 @@ export {
   setDefaultMaterialInventory,
   generateMaterialInventoryReport,
   printMaterialReport_byId,
+  downloadMaterialInventoryReportExcel,
 };
 
 const MaterialInventoryService = {
@@ -251,6 +291,7 @@ const MaterialInventoryService = {
   setDefaultMaterialInventory,
   generateMaterialInventoryReport,
   printMaterialReport_byId,
+  downloadMaterialInventoryReportExcel,
 };
 
 export default MaterialInventoryService;

@@ -1,8 +1,10 @@
 "use client";
 
 import React, { useEffect, useState, useMemo, useCallback } from "react";
+import { FiDownload } from "react-icons/fi";
 import Landing from "../ui/Landing/Landing";
-import { generateMaterialInventoryReport } from "../../services/MaterialInventory";
+import { generateMaterialInventoryReport, downloadMaterialInventoryReportExcel } from "../../services/MaterialInventory";
+import { useToast } from "../ui/Toast/Toast";
 import {
   createPdfDocument,
   drawPdfHeader,
@@ -26,6 +28,8 @@ export default function MaterialInventoryReportLanding() {
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [downloadingCsv, setDownloadingCsv] = useState(false);
+  const toast = useToast();
 
   useEffect(() => {
     let mounted = true;
@@ -269,6 +273,18 @@ export default function MaterialInventoryReportLanding() {
     previewPdfDocument(doc);
   }, [items]);
 
+  const handleDownloadCsv = useCallback(async () => {
+    if (downloadingCsv) return;
+    setDownloadingCsv(true);
+    const result = await downloadMaterialInventoryReportExcel();
+    if (result.error) {
+      toast.error('Failed to download the material inventory CSV.');
+    } else {
+      toast.success('Material inventory CSV downloaded.');
+    }
+    setDownloadingCsv(false);
+  }, [downloadingCsv, toast]);
+
   return (
     <Landing
       title="Material Inventory Report"
@@ -281,6 +297,10 @@ export default function MaterialInventoryReportLanding() {
       filterFn={filterFn}
       onNew={handlePrintReport}
       newButtonLabel={"Print Materials Report"}
+      onSecondary={handleDownloadCsv}
+      secondaryButtonLabel={downloadingCsv ? "Downloading..." : "Download CSV"}
+      secondaryButtonDisabled={downloadingCsv}
+      secondaryButtonIcon={<FiDownload size={16} />}
       loading={loading}
     />
   );

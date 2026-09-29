@@ -17,6 +17,10 @@ export default function SearchBar({
   showButton = false,
   buttonLabel = 'New',
   handleOnClick,
+  secondaryButtonLabel,
+  handleSecondaryClick,
+  secondaryButtonDisabled = false,
+  secondaryButtonIcon = null,
 }) {
   const [searchValue, setSearchValue] = useState(value);
 
@@ -58,6 +62,16 @@ export default function SearchBar({
       {showButton && (
         <Button onClick={handleOnClick} variant="primary">
           {buttonLabel}
+        </Button>
+      )}
+      {secondaryButtonLabel && (
+        <Button
+          onClick={handleSecondaryClick}
+          variant="secondary"
+          disabled={secondaryButtonDisabled}
+          icon={secondaryButtonIcon}
+        >
+          {secondaryButtonLabel}
         </Button>
       )}
       {showFilter && (
