@@ -473,6 +473,22 @@ export default function ProposalForm() {
     return { materialCostTotal, laborCostTotal, proposalTotal };
   }, [childrenState]);
 
+  // Shared by the Inquiry and Company Name handlers so VAT Type / VAT % are
+  // derived the same way no matter how the customer got selected.
+  // - No customer            -> blank VAT type, 0.00%
+  // - Non-VAT customer       -> keep type, 0.00%
+  // - VAT customer           -> default VAT % if loaded, else keep the current one
+  const getVatFieldsForCustomer = (customer, currentValues = {}) => {
+    if (!customer) return { vatType: '', vatPercentage: '0.00' };
+    const nonVat = normalizeVatType(customer.vatType) === 'none';
+    const vatPercentage = nonVat
+      ? '0.00'
+      : (defaultVatPercentage != null && !isNaN(defaultVatPercentage)
+          ? Number(defaultVatPercentage).toFixed(2)
+          : (Number(currentValues.vatPercentage) ? currentValues.vatPercentage : '0.00'));
+    return { vatType: customer.vatType || '', vatPercentage };
+  };
+
   // Layout note: the grid is 3 columns filled in order (col1, spacer, col3),
   // so every right-column field is preceded by a spacer.
   const fields = [
@@ -483,6 +499,16 @@ export default function ProposalForm() {
       onChange: (val, values, setValues) => {
         const sel = (inquiries || []).find((q) => String(q.id) === String(val));
         if (sel) {
+          // Setting customerId via setValues does NOT fire the Company Name field's
+          // onChange, so resolve the customer here and apply its VAT settings.
+          const customer = sel.customerId != null
+            ? (customers || []).find((c) => String(c.id) === String(sel.customerId))
+            : null;
+          const vat = getVatFieldsForCustomer(customer, values);
+
+          setLiveVatType(vat.vatType);
+          setLiveVatPercentage(Number(vat.vatPercentage) || 0);
+
           setValues({
             ...values,
             inquiryId: sel.id,
@@ -495,6 +521,8 @@ export default function ProposalForm() {
             contactPerson: sel.contactPerson || values.contactPerson || '',
             email: sel.email || values.email || '',
             customerReferenceNumber: sel.reference || sel.code || values.customerReferenceNumber || '',
+            vatType: vat.vatType,
+            vatPercentage: vat.vatPercentage,
           });
         }
       },
@@ -511,17 +539,11 @@ export default function ProposalForm() {
       readOnly: isReviseMode,
       onChange: (val, values, setValues) => {
         const numVal = val !== undefined && val !== null && val !== '' ? Number(val) : null;
-        const sel = numVal != null ? customers.find((c) => c.id === numVal) : null;
+        const sel = numVal != null ? customers.find((c) => String(c.id) === String(numVal)) : null;
         if (sel) {
-          const nonVat = normalizeVatType(sel.vatType) === 'none';
-          // Non-VAT -> 0. Otherwise restore the default VAT % (or keep the current one if no default).
-          const nextVatPct = nonVat
-            ? '0.00'
-            : (defaultVatPercentage != null && !isNaN(defaultVatPercentage)
-                ? Number(defaultVatPercentage).toFixed(2)
-                : (Number(values.vatPercentage) ? values.vatPercentage : '0.00'));
-          setLiveVatType(sel.vatType || '');
-          setLiveVatPercentage(Number(nextVatPct) || 0);
+          const vat = getVatFieldsForCustomer(sel, values);
+          setLiveVatType(vat.vatType);
+          setLiveVatPercentage(Number(vat.vatPercentage) || 0);
           setValues({
             ...values,
             customerId: sel.id,
@@ -532,8 +554,8 @@ export default function ProposalForm() {
             contactPerson: sel.customerName || '',
             address: sel.address || '',
             email: sel.email || '',
-            vatType: sel.vatType || '',
-            vatPercentage: nextVatPct,
+            vatType: vat.vatType,
+            vatPercentage: vat.vatPercentage,
           });
         } else {
           setLiveVatType('');
