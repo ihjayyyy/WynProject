@@ -489,6 +489,29 @@ export default function ProposalForm() {
     return { vatType: customer.vatType || '', vatPercentage };
   };
 
+  const recalculateChildrenVat = (vatPercentage, vatType) => {
+    setChildrenState((prev) =>
+      (prev || []).map((child) => {
+        if (!child || child.__isScope) return child;
+        const calculatedBase =
+          (Number(child.unitCost) || 0) * (Number(child.quantity) || 0) - (Number(child.discount) || 0);
+        const amounts = computeAmounts({
+          materialBase: calculatedBase > 0 ? calculatedBase : Number(child.materialCost) || 0,
+          laborPercentage: child.laborPercentage,
+          laborCostOverride: child.laborCost,
+          vatPercentage,
+          vatType,
+        });
+        return {
+          ...child,
+          ...amounts,
+          extendedCost: amounts.totalAmount,
+          totalPrice: amounts.totalAmount,
+        };
+      })
+    );
+  };
+
   // Layout note: the grid is 3 columns filled in order (col1, spacer, col3),
   // so every right-column field is preceded by a spacer.
   const fields = [
@@ -508,6 +531,7 @@ export default function ProposalForm() {
 
           setLiveVatType(vat.vatType);
           setLiveVatPercentage(Number(vat.vatPercentage) || 0);
+          recalculateChildrenVat(Number(vat.vatPercentage) || 0, vat.vatType);
 
           setValues({
             ...values,
@@ -544,6 +568,7 @@ export default function ProposalForm() {
           const vat = getVatFieldsForCustomer(sel, values);
           setLiveVatType(vat.vatType);
           setLiveVatPercentage(Number(vat.vatPercentage) || 0);
+          recalculateChildrenVat(Number(vat.vatPercentage) || 0, vat.vatType);
           setValues({
             ...values,
             customerId: sel.id,
@@ -560,6 +585,7 @@ export default function ProposalForm() {
         } else {
           setLiveVatType('');
           setLiveVatPercentage(0);
+          recalculateChildrenVat(0, '');
           setValues({ ...values, customerId: null, customerCode: '', customerName: '', contactNumber: '', address: '', email: '', vatType: '', vatPercentage: '0.00' });
         }
       },
@@ -601,7 +627,9 @@ export default function ProposalForm() {
               onChange={(e) => {
                 if (nonVat) return;
                 setValues({ ...values, vatPercentage: e.target.value });
-                setLiveVatPercentage(Number(e.target.value) || 0);
+                const percentage = Number(e.target.value) || 0;
+                setLiveVatPercentage(percentage);
+                recalculateChildrenVat(percentage, values.vatType);
               }}
             />
           </div>
@@ -621,35 +649,39 @@ export default function ProposalForm() {
         return (
           <div className={inputStyles.field}>
             <label htmlFor="laborPercentage">Margin of Profit (%)</label>
-            <Input
-              id="laborPercentage"
-              type="number"
-              value={values.laborPercentage ?? ''}
-              readOnly={fieldDisabled}
-              onChange={(e) => {
-                if (fieldDisabled) return;
-                const pct = Number(e.target.value) || 0;
-                setValues({ ...values, laborPercentage: pct });
-                setLiveLaborPercentage(pct);
-              }}
-            />
-            {!isReadOnly && canEditFinance && (
-              <Button
-                variant="secondary"
-                disabled={actionLoading}
-                onClick={() => {
-                  const pct = Number(values.laborPercentage) || 0;
-                  confirmModal.show(
-                    'Apply Margin % to All',
-                    `Apply ${pct}% labor to all scopes and materials? This will overwrite their existing values.`,
-                    'Apply', 'primary',
-                    () => applyLaborPctToChildren(pct)
-                  );
-                }}
-              >
-                Apply to all
-              </Button>
-            )}
+            <div style={{ display: 'flex', alignItems: 'flex-end', gap: 8 }}>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <Input
+                  id="laborPercentage"
+                  type="number"
+                  value={values.laborPercentage ?? ''}
+                  readOnly={fieldDisabled}
+                  onChange={(e) => {
+                    if (fieldDisabled) return;
+                    const pct = Number(e.target.value) || 0;
+                    setValues({ ...values, laborPercentage: pct });
+                    setLiveLaborPercentage(pct);
+                  }}
+                />
+              </div>
+              {!isReadOnly && canEditFinance && (
+                <Button
+                  variant="secondary"
+                  disabled={actionLoading}
+                  onClick={() => {
+                    const pct = Number(values.laborPercentage) || 0;
+                    confirmModal.show(
+                      'Apply Margin % to All',
+                      `Apply ${pct}% margin of profit to all scopes and materials? This will overwrite their margin percentages.`,
+                      'Apply', 'primary',
+                      () => applyLaborPctToChildren(pct)
+                    );
+                  }}
+                >
+                  Apply to all
+                </Button>
+              )}
+            </div>
           </div>
         );
       },
