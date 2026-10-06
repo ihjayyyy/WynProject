@@ -11,7 +11,7 @@ import inputStyles from '../ui/Input/Input.module.scss';
 import ProposalMaterialsTable from './ProposalMaterialsTable';
 import Button from '../ui/Button/Button';
 import { useToast } from '../ui/Toast/Toast';
-import { INITIAL_PROPOSAL, getProposalById, createProposal, updateProposal, submitProposal, approveProposal, rejectProposal, winProposal, loseProposal, cancelProposal, closeProposal, reviseProposal, createRevisedProposal, printProposal_byId, printProposalBreakdown_byId, printProposalBreakdown_Detailed_byId, printProposalBreakdown_Simple_byId } from '../../services/Proposal';
+import { INITIAL_PROPOSAL, getProposalById, createProposal, updateProposal, submitProposal, approveProposal, rejectProposal, winProposal, loseProposal, cancelProposal, closeProposal, reviseProposal, createRevisedProposal, printProposal_byId, printProposalBreakdown_Detailed_byId, printProposalBreakdown_Simple_byId } from '../../services/Proposal';
 import { getParameter, getParameterByName } from '../../services/Parameter';
 import { convertProposal } from '../../services/Project';
 import ConfirmModal from '../ui/ConfirmModal/ConfirmModal';
@@ -109,9 +109,7 @@ export default function ProposalForm() {
   // Days-to-expire default pulled from Parameter (module: Proposal, name: ExpiresIn).
   // Used to compute expirationDate = today + expiresInDays for brand-new proposals.
   const [expiresInDays, setExpiresInDays] = useState(null);
-  // Default labor % pulled from Parameter (module: ProposalScope, name: LaborPercent).
-  // API returns a fraction (e.g. "0.1"); we convert to a whole-number percentage (10)
-  // to match how laborPercentage is edited/displayed elsewhere in this form.
+  // Default margin % pulled from Parameter (module: Proposal, name: MarginOfProfit).
   const [defaultLaborPercentage, setDefaultLaborPercentage] = useState(null);
   const [defaultVatPercentage, setDefaultVatPercentage] = useState(null);
   // Live mirror of the parent form's Labor (%) field, kept in sync via the field's
@@ -245,15 +243,12 @@ export default function ProposalForm() {
         }
       });
 
-      // Dedicated fetch for the LaborPercent parameter (module: ProposalScope, name: LaborPercent).
-      // Response shape: { value: { value: "0.1", module, code, id, name, updatedAt, updatedBy }, isSuccess, ... }
-      // "0.1" is a fraction representing 10% — multiply by 100 to get the whole-number
-      // percentage this form's laborPercentage field expects.
-      getParameterByName('ProposalScope', 'LaborPercent').then((res) => {
+      // Response value is already a whole-number percentage, e.g. "0".
+      getParameterByName('Proposal', 'MarginOfProfit').then((res) => {
         if (cancelled) return;
         if (!res.error && res.data !== null && res.data !== undefined && res.data !== '') {
-          const fraction = Number(res.data);
-          if (!isNaN(fraction)) setDefaultLaborPercentage(fraction * 100);
+          const percentage = Number(res.data);
+          if (!isNaN(percentage)) setDefaultLaborPercentage(percentage);
         }
       });
 
@@ -605,8 +600,25 @@ export default function ProposalForm() {
     { name: 'contactNumber', label: 'Contact Number', span: 'span1', readOnly: isReviseMode },
     { name: 'spacer-6', type: 'spacer', span: 'span1' },
     {
-      // UI-only, read-only: intentionally not included in buildModelPayload
-      name: 'vatType', label: 'VAT Type', span: 'span1', readOnly: true,
+      // UI-only: intentionally not included in buildModelPayload
+      name: 'vatType', label: 'VAT Type', type: 'select', span: 'span1', readOnly: isReadOnly,
+      options: [
+        { label: 'Included', value: 'Included' },
+        { label: 'Not Included', value: 'Not Included' },
+        { label: 'NON-VAT', value: 'NON-VAT' },
+      ],
+      onChange: (value, values, setValues) => {
+        const nonVat = normalizeVatType(value) === 'none';
+        const vatPercentage = nonVat
+          ? '0.00'
+          : (Number(values.vatPercentage) > 0
+              ? values.vatPercentage
+              : (defaultVatPercentage != null ? Number(defaultVatPercentage).toFixed(2) : '0.00'));
+        setLiveVatType(value);
+        setLiveVatPercentage(Number(vatPercentage) || 0);
+        recalculateChildrenVat(Number(vatPercentage) || 0, value);
+        setValues({ ...values, vatType: value, vatPercentage });
+      },
     },
 
     { name: 'address', label: 'Address', span: 'span1', readOnly: isReviseMode },

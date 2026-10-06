@@ -1,5 +1,7 @@
 import { authenticatedFetch } from './Auth';
 import { handleOpenPdf } from "./Helper";
+import { buildProposalBreakdownPdf } from '../utils/proposalBreakdownPdf';
+import { previewPdfDocument } from '../utils/pdfTemplate';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL + "/Proposal";
 
@@ -80,51 +82,35 @@ async function printProposal_byId(id) {
         return { data: null, error: error?.message || error };
     }
 }
-async function printProposalBreakdown_byId(id) {
+async function loadProposalForPrint(id) {
+    const res = await getProposalById(id);
+    if (res.error) throw new Error(res.error);
+    const d = res.data;
+    if (Array.isArray(d)) return d.find((p) => String(p.id) === String(id)) || d[0];
+    return d;
+}
+
+async function printProposalBreakdown(id, detailed) {
     if (!id) return { data: null, error: 'Missing id' };
     try {
-        const url = `${API_BASE_URL}/pdf/breakdown/${id}`;
-        const res = await authenticatedFetch(url, {
-            method: 'GET',
-            headers: { Accept: '*/*' },
-        });
-
-       handleOpenPdf(res);
-
+        const proposal = await loadProposalForPrint(id);
+        if (!proposal) return { data: null, error: 'Proposal not found' };
+        const doc = await buildProposalBreakdownPdf(proposal, detailed);
+        previewPdfDocument(doc);
+        return { data: true, error: null };
     } catch (error) {
         return { data: null, error: error?.message || error };
     }
 }
+
 async function printProposalBreakdown_Simple_byId(id) {
-    if (!id) return { data: null, error: 'Missing id' };
-    try {
-        const url = `${API_BASE_URL}/pdf/breakdown/simple/${id}`;
-        const res = await authenticatedFetch(url, {
-            method: 'GET',
-            headers: { Accept: '*/*' },
-        });
-
-       handleOpenPdf(res);
-
-    } catch (error) {
-        return { data: null, error: error?.message || error };
-    }
+    return printProposalBreakdown(id, false);
 }
+
 async function printProposalBreakdown_Detailed_byId(id) {
-    if (!id) return { data: null, error: 'Missing id' };
-    try {
-        const url = `${API_BASE_URL}/pdf/breakdown/detailed/${id}`;
-        const res = await authenticatedFetch(url, {
-            method: 'GET',
-            headers: { Accept: '*/*' },
-        });
-
-       handleOpenPdf(res);
-
-    } catch (error) {
-        return { data: null, error: error?.message || error };
-    }
+    return printProposalBreakdown(id, true);
 }
+
 async function printJobOrder_byProposal(id) {
     if (!id) return { data: null, error: 'Missing id' };
     try {
@@ -312,7 +298,6 @@ export {
     approveProposal,
     rejectProposal,
     printProposal_byId,
-    printProposalBreakdown_byId,
     printJobOrder_byProposal,
     winProposal,
     loseProposal,
@@ -332,7 +317,6 @@ const ProposalService = {
     approveProposal,
     rejectProposal,
     printProposal_byId,
-    printProposalBreakdown_byId,
     printJobOrder_byProposal,
     winProposal,
     loseProposal,
