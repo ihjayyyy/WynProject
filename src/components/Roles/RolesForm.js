@@ -81,6 +81,7 @@ const MODULE_TREE = [
     children: [
       { key: 'UOM' },
       { key: 'UOMConversion' },
+      { key: 'Parameters' },
       { key: 'Users' },
       { key: 'Roles' },
     ],

@@ -309,6 +309,12 @@ export const sidenavItems = [
         href: '/maintainance/UOMConvertion',
         name: 'Maintenance.UOMConversion',
       },
+      {
+        label: 'Parameters',
+        icon: FiSliders,
+        href: '/maintainance/parameters',
+        name: 'Maintenance.Parameters',
+      },
       // ...add more maintenance items here if needed
     ],
   },

@@ -32,6 +32,41 @@ async function getParameterByName(moduleName, paramName) {
     return { data: null, error: error?.message || error };
   }
 }
+async function getAllParameters() {
+  try {
+    const res = await authenticatedFetch(API_BASE_URL, {
+      method: 'GET',
+      headers: { Accept: '*/*' },
+    });
+    if (!res.ok) throw new Error(`Request failed with status ${res.status}`);
+    const json = await res.json();
+    return { data: json && json.value ? json.value : json, error: null };
+  } catch (error) {
+    return { data: null, error: error?.message || error };
+  }
+}
 
-export { getParameter, getParameterByName };
-export default { getParameter, getParameterByName };
+async function updateParameter(id, { name, code, value, module }) {
+  try {
+    const url = `${API_BASE_URL}/${id}`;
+    const res = await authenticatedFetch(url, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        Accept: '*/*',
+      },
+      body: JSON.stringify({ name, code, value, module }),
+    });
+    if (!res.ok) {
+      throw new Error(`Update failed with status ${res.status}`);
+    }
+    const text = await res.text();
+    const json = text ? JSON.parse(text) : null;
+    return { data: json && json.value ? json.value : json, error: null };
+  } catch (error) {
+    return { data: null, error: error?.message || error };
+  }
+}
+
+export { getParameter, getParameterByName, getAllParameters, updateParameter };
+export default { getParameter, getParameterByName, getAllParameters, updateParameter };
