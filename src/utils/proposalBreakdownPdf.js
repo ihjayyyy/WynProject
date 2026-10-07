@@ -92,29 +92,30 @@ export async function buildProposalBreakdownPdf(proposal, detailed) {
     );
 
     const doc = createPdfDocument();
-    let logoInfo = null;
-    try {
-        logoInfo = await loadPdfLogo();
-    } catch (error) {
-        // Continue without a logo if the image cannot be loaded.
-    }
+    // let logoInfo = null;
+    // try {
+    //     logoInfo = await loadPdfLogo();
+    // } catch (error) {
+    //     // Continue without a logo if the image cannot be loaded.
+    // }
 
-    const startY = drawPdfHeader(doc, {
-        logoInfo,
-        title: 'Proposal Breakdown',
-        leftDetails: [
-            `Customer: ${proposal.customerName || ''}`,
-            `Proposal: ${proposal.name || ''}`,
-            proposal.location ? `Location: ${proposal.location}` : '',
-        ].filter(Boolean),
-        rightDetails: [
-            `Proposal No: ${proposal.proposalNo || ''}`,
-            `Ref No: ${proposal.customerReferenceNumber || ''}`,
-        ],
-    });
+    // const startY = drawPdfHeader(doc, {
+    //     logoInfo,
+    //     title: 'Proposal Breakdown',
+    //     leftDetails: [
+    //         `Customer: ${proposal.customerName || ''}`,
+    //         `Proposal: ${proposal.name || ''}`,
+    //         proposal.location ? `Location: ${proposal.location}` : '',
+    //     ].filter(Boolean),
+    //     rightDetails: [
+    //         `Proposal No: ${proposal.proposalNo || ''}`,
+    //         `Ref No: ${proposal.customerReferenceNumber || ''}`,
+    //     ],
+    // });
 
     renderPdfTable(doc, {
-        startY: startY + 4,
+        // startY: startY + 4,
+        startY: 8,
         head: [detailed
             ? ['Item', 'Work Item', 'Qty', 'Unit Cost', 'Total Cost', 'Amount']
             : ['Item', 'Work Item', 'Qty', 'Amount']],
