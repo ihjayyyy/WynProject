@@ -1092,7 +1092,7 @@ export default function ProposalMaterialModal({
       fields={fields}
       onItemRemove={() => {}}
       confirmOnClose
-      onClose={(val) => {
+            onClose={(val) => {
         if (!val) {
           onCancel && onCancel();
           return;
@@ -1108,19 +1108,37 @@ export default function ProposalMaterialModal({
           return new Date().toISOString();
         };
 
-        // Guard: if the user lacks finance access, force these fields back
-        // to their original/incoming values regardless of what was
-        // submitted, so a stray bypass of the disabled input can't change
-        // pricing data.
-        const originalUnitCost = Number(initial?.unitCost) || 0;
-        const originalDiscount = Number(initial?.discount) || 0;
-        const originalLaborPct = Number(initial?.laborPercentage) || 0;
-        const originalLaborCost = Number(initial?.laborCost) || 0;
-        const originalMaterialCost = Number(initial?.materialCost) || 0;
-        const originalVat = Number(initial?.vat) || 0;
-        const originalTotalAmount = Number(initial?.totalAmount) || 0;
-        const originalExtendedCost = Number(initial?.extendedCost) || 0;
-        const originalTotalPrice = Number(initial?.totalPrice) || 0;
+        const materialChanged =
+          Number(val.materialId) !== Number(initial?.materialId || 0);
+
+        // Price: locked to the saved price only when editing the same
+        // material. New item / newly selected material -> catalog price
+        // (already put in val.unitCost by the material select).
+        const unitCost = canEditFinance
+          ? Number(val.unitCost) || 0
+          : isEditMode && !materialChanged
+          ? Number(initial?.unitCost) || 0
+          : Number(val.unitCost) || 0;
+
+        const discount = canEditFinance
+          ? Number(val.discount) || 0
+          : Number(initial?.discount) || 0;
+
+        // For new items, initial.laborPercentage is the scope's default %
+        const laborPercentage = canEditFinance
+          ? Number(val.laborPercentage) || 0
+          : Number(initial?.laborPercentage) || 0;
+
+        const quantity = Number(val.quantity) || 0;
+
+        const amounts = computeAmounts({
+          materialBase: unitCost * quantity - discount,
+          laborPercentage,
+          laborCostOverride:
+            Number(canEditFinance ? val.laborCost : initial?.laborCost) || 0,
+          vatPercentage,
+          vatType,
+        });
 
         const payload = {
           id: Number(val.id) || 0,
@@ -1128,84 +1146,50 @@ export default function ProposalMaterialModal({
           name: val.name || '',
           code: val.code || '',
 
-          parentId:
-            Number(val.parentId) || 0,
+          parentId: Number(val.parentId) || 0,
 
-          materialId:
-            Number(val.materialId) || 0,
+          materialId: Number(val.materialId) || 0,
 
-          materialType:
-            val.materialType || '',
+          materialType: val.materialType || '',
 
           uom: val.uom || '',
 
-          unitCost: canEditFinance
-            ? (Number(val.unitCost) || 0)
-            : originalUnitCost,
+          unitCost,
 
-          marginQuantity:
-            Number(val.marginQuantity) || 0,
+          marginQuantity: Number(val.marginQuantity) || 0,
 
-          quantity:
-            Number(val.quantity) || 0,
+          quantity,
 
-          vat: canEditFinance
-            ? (Number(val.vat) || 0)
-            : originalVat,
+          vat: amounts.vat,
 
-          materialCost: canEditFinance
-            ? (Number(val.materialCost) || 0)
-            : originalMaterialCost,
+          materialCost: amounts.materialCost,
 
-          margin:
-            Number(val.margin) || 0,
+          margin: Number(val.margin) || 0,
 
-          discount: canEditFinance
-            ? (Number(val.discount) || 0)
-            : originalDiscount,
+          discount,
 
-          laborCost: canEditFinance
-            ? (Number(val.laborCost) || 0)
-            : originalLaborCost,
+          laborCost: amounts.laborCost,
 
-          extendedCost: canEditFinance
-            ? (Number(val.extendedCost) || 0)
-            : originalExtendedCost,
+          extendedCost: amounts.totalAmount,
 
-          totalAmount: canEditFinance
-            ? (Number(val.totalAmount) || 0)
-            : originalTotalAmount,
+          totalAmount: amounts.totalAmount,
 
-          isAssembly: Boolean(
-            val.isAssembly
-          ),
+          isAssembly: Boolean(val.isAssembly),
 
-          totalPrice: canEditFinance
-            ? (Number(val.totalPrice) || 0)
-            : originalTotalPrice,
+          totalPrice: amounts.totalAmount,
 
-          forecastedStartDate:
-            getIsoDate(
-              val.forecastedStartDate
-            ),
+          forecastedStartDate: getIsoDate(val.forecastedStartDate),
 
-          forecastedEndDate:
-            getIsoDate(
-              val.forecastedEndDate
-            ),
+          forecastedEndDate: getIsoDate(val.forecastedEndDate),
 
-          scopeOfWork:
-            val.scopeOfWork || '',
+          scopeOfWork: val.scopeOfWork || '',
 
           remarks: '',
 
-          laborPercentage: canEditFinance
-            ? (Number(val.laborPercentage) || 0)
-            : originalLaborPct,
+          laborPercentage,
         };
 
-        const shouldKeepOpen =
-          keepOpenOnSave && !isEditMode;
+        const shouldKeepOpen = keepOpenOnSave && !isEditMode;
 
         onConfirm &&
           onConfirm(payload, {
@@ -1215,11 +1199,9 @@ export default function ProposalMaterialModal({
         setForm({
           ...DEFAULT_FORM,
 
-          parentId:
-            Number(payload.parentId) || 0,
+          parentId: Number(payload.parentId) || 0,
 
-          scopeOfWork:
-            payload.scopeOfWork || '',
+          scopeOfWork: payload.scopeOfWork || '',
         });
 
         setResetKey((k) => k + 1);

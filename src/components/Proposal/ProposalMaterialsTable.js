@@ -290,13 +290,7 @@ export default function ProposalMaterialsTable({
         vatType={vatType}
         onCancel={() => { setIsMaterialModalOpen(false); setMaterialScopeTarget(null); setMaterialEditing(null); }}
         onConfirm={(m, options = {}) => {
-          // Strip finance-affecting fields from the submitted payload when
-          // the user isn't allowed to edit them, so a modal bug (or a user
-          // bypassing a disabled input) can't sneak a changed value through.
-          const financeKeys = ['unitCost', 'materialCost', 'laborCost', 'laborPercentage', 'margin', 'vat', 'totalAmount', 'extendedCost', 'totalPrice'];
-          const safeM = canEditFinance
-            ? m
-            : Object.fromEntries(Object.entries(m || {}).filter(([k]) => !financeKeys.includes(k)));
+          const safeM = m;
 
           if (materialEditing) {
             // update existing
