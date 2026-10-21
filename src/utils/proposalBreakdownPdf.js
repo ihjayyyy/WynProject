@@ -58,14 +58,15 @@ export async function buildProposalBreakdownPdf(proposal, detailed) {
 
         group.rows.forEach((row) => {
             const quantity = `${Number(row.quantity) || 0} ${row.uom || ''}`.trim();
+            const computedUnitCost = row.unitCost * (1 + (row.laborPercentage/100)) * (1 + proposal.vatPercentage);
             body.push(
                 detailed
                     ? [
                         '',
                         row.name || '',
                         { content: quantity, styles: right },
-                        { content: money(row.unitCost), styles: right },
-                        { content: money(amountOf(row)), styles: right },
+                        { content: money(computedUnitCost), styles: right },
+                        { content: money(computedUnitCost * Number(row.quantity)), styles: right },
                         '',
                     ]
                     : ['', row.name || '', { content: quantity, styles: right }, '']
