@@ -1,7 +1,15 @@
 'use client';
+import { Suspense } from 'react';
+import dynamic from 'next/dynamic';
 
-import ParameterLanding from '@/components/Parameter/ParameterLanding';
+const ParameterLanding = dynamic(() => import('@/components/Parameter/ParameterLanding'), {
+  ssr: false,
+});
 
 export default function Page() {
-  return <ParameterLanding />;
+  return (
+    <Suspense fallback={'Loading...'}>
+      <ParameterLanding />
+    </Suspense>
+  );
 }
