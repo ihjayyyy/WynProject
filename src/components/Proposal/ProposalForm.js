@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useContext, useMemo, useState, version } from 'react';
+import React, { useContext, useMemo, useState } from 'react';
 import * as Yup from 'yup';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { FiCheck, FiSend, FiX, FiXCircle, FiArchive, FiFileText, FiPrinter, FiEdit2 } from 'react-icons/fi';
@@ -27,45 +27,34 @@ import DropdownAction from '../ui/DropdownAction/DropdownAction';
 
 // ─────────────────────────────────────────────────────────────────────────
 // VAT / amount computation (inlined — no separate file)
+// VAT is ALWAYS added on top of (material + margin of profit).
 // ─────────────────────────────────────────────────────────────────────────
 const round2 = (n) => Number((Number(n) || 0).toFixed(2));
-
-// "Not Included" / "VAT Not-Included" / "Exclusive" -> 'exclusive'
-// "Included" / "VAT Included" / "Inclusive"          -> 'inclusive'
-// anything else (Non-VAT, blank)                     -> 'none'
-function normalizeVatType(t) {
-  const s = String(t || '').toLowerCase().replace(/[^a-z]/g, '');
-  if (!s) return 'none';
-  if (s.includes('notincluded') || s.includes('exclusive') || s.includes('excluded')) return 'exclusive';
-  if (s.includes('included') || s.includes('inclusive')) return 'inclusive';
-  return 'none';
-}
 
 function computeAmounts({
   materialBase,            // unitCost * qty - discount
   laborPercentage = 0,     // whole number, e.g. 10
   laborCostOverride = 0,   // used only when laborPercentage is 0
   vatPercentage = 0,       // whole number, e.g. 12
-  vatType = '',
 }) {
   const material = round2(Math.max(0, Number(materialBase) || 0));
   const pct = Number(laborPercentage) || 0;
   const labor = pct > 0 ? round2((material * pct) / 100) : round2(laborCostOverride);
   const subtotal = round2(material + labor);
 
-  const type = normalizeVatType(vatType);
-  const rate = type === 'none' ? 0 : (Number(vatPercentage) || 0) / 100;
+  const rate = (Number(vatPercentage) || 0) / 100;
+  const vat = round2(subtotal * rate);          // VAT on top
+  const totalAmount = round2(subtotal + vat);   // subtotal + VAT
 
-  let vat = 0;
-  let totalAmount = subtotal;
-  if (type === 'exclusive') {
-    vat = round2(subtotal * rate);
-    totalAmount = round2(subtotal + vat);
-  } else if (type === 'inclusive') {
-    vat = round2(subtotal - subtotal / (1 + rate));
-  }
   return { materialCost: material, laborCost: labor, vat, totalAmount };
 }
+
+// A customer marked NON-VAT still defaults the VAT % to 0.
+// (Adjust the comparison if your customer records use a different label.)
+const isNonVatCustomer = (customer) => {
+  const s = String(customer?.vatType || '').toLowerCase().replace(/[^a-z]/g, '');
+  return s === 'nonvat';
+};
 
 export default function ProposalForm() {
   const PageName = 'Projects.Proposal';
@@ -117,9 +106,8 @@ export default function ProposalForm() {
   // this as the default for brand-new scopes, and initialValues.laborPercentage is
   // only a load-time snapshot — it doesn't reflect what the user is currently typing.
   const [liveLaborPercentage, setLiveLaborPercentage] = useState(0);
-  // Live mirrors of VAT Percentage / VAT Type — passed down so item rows compute VAT.
+  // Live mirror of VAT Percentage — passed down so item rows compute VAT.
   const [liveVatPercentage, setLiveVatPercentage] = useState(0);
-  const [liveVatType, setLiveVatType] = useState('');
   const toast = useToast();
 
   React.useEffect(() => {
@@ -154,7 +142,7 @@ export default function ProposalForm() {
     })();
     return () => (mounted = false);
   }, [proposalId, isReviseMode, isCopyMode]);
-  
+
 
   React.useEffect(() => {
     let mounted = true;
@@ -347,14 +335,6 @@ export default function ProposalForm() {
       ? vatPercentageNumber.toFixed(2)
       : vatPercentageValue;
 
-    // VAT Type is UI-only (not saved with the proposal). For existing proposals,
-    // fall back to the customer's VAT type so it is still shown/used.
-    const customerVatType =
-      (customers || []).find((c) => String(c.id) === String(initialValues.customerId))?.vatType || '';
-
-    const effectiveVatType = initialValues.vatType || customerVatType;
-    const isNonVat = normalizeVatType(effectiveVatType) === 'none';
-
     return {
       ...initialValues,
       forecastedStartDate: toDateOnlyString(initialValues.forecastedStartDate, shouldDefaultToToday),
@@ -362,10 +342,9 @@ export default function ProposalForm() {
       expirationDate: expirationDateValue,
       requestDate: toDateOnlyString(initialValues.requestDate) || today,
       laborPercentage: laborPercentageValue,
-      vatPercentage: isNonVat ? '0.00' : displayedVatPercentage,
-      vatType: effectiveVatType, // UI-only, not sent to the API
+      vatPercentage: displayedVatPercentage,
     };
-  }, [initialValues, customers, proposalId, isReviseMode, isCopyMode, expiresInDays, defaultLaborPercentage, defaultVatPercentage]);
+  }, [initialValues, proposalId, isReviseMode, isCopyMode, expiresInDays, defaultLaborPercentage, defaultVatPercentage]);
 
   React.useEffect(() => {
     setLiveLaborPercentage(Number(normalizedInitialValues?.laborPercentage) || 0);
@@ -373,7 +352,6 @@ export default function ProposalForm() {
 
   React.useEffect(() => {
     setLiveVatPercentage(Number(normalizedInitialValues?.vatPercentage) || 0);
-    setLiveVatType(normalizedInitialValues?.vatType || '');
   }, [normalizedInitialValues]);
 
   const dedupeDeleted = (arr = []) => {
@@ -455,8 +433,8 @@ export default function ProposalForm() {
   const customerOptions = customers.map((c) => ({ value: c.id, label: c.name}));
   const inquiryOptions = inquiries.map((q) => ({ value: q.id, label: q.inquiryNo || q.reference || q.code || q.name || String(q.id) }));
 
-  // Proposal total uses each row's totalAmount (material + margin of profit + VAT
-  // where applicable), since materialCost alone no longer includes VAT.
+  // Proposal total uses each row's totalAmount (material + margin of profit + VAT),
+  // since materialCost alone does not include VAT.
   const totals = React.useMemo(() => {
     const rows = (childrenState || []).filter((c) => !c || !c.__isScope);
     const materialCostTotal = rows.reduce((s, r) => s + (Number(r.materialCost) || 0), 0);
@@ -468,23 +446,23 @@ export default function ProposalForm() {
     return { materialCostTotal, laborCostTotal, proposalTotal };
   }, [childrenState]);
 
-  // Shared by the Inquiry and Company Name handlers so VAT Type / VAT % are
-  // derived the same way no matter how the customer got selected.
-  // - No customer            -> blank VAT type, 0.00%
-  // - Non-VAT customer       -> keep type, 0.00%
+  // Shared by the Inquiry and Company Name handlers so VAT % is derived the
+  // same way no matter how the customer got selected.
+  // - No customer            -> 0.00%
+  // - Non-VAT customer       -> 0.00%
   // - VAT customer           -> default VAT % if loaded, else keep the current one
   const getVatFieldsForCustomer = (customer, currentValues = {}) => {
-    if (!customer) return { vatType: '', vatPercentage: '0.00' };
-    const nonVat = normalizeVatType(customer.vatType) === 'none';
-    const vatPercentage = nonVat
+    if (!customer) return { vatPercentage: '0.00' };
+    const vatPercentage = isNonVatCustomer(customer)
       ? '0.00'
       : (defaultVatPercentage != null && !isNaN(defaultVatPercentage)
           ? Number(defaultVatPercentage).toFixed(2)
           : (Number(currentValues.vatPercentage) ? currentValues.vatPercentage : '0.00'));
-    return { vatType: customer.vatType || '', vatPercentage };
+    return { vatPercentage };
   };
 
-  const recalculateChildrenVat = (vatPercentage, vatType) => {
+  // Recompute every item row with the given VAT % (VAT is always on top).
+  const recalculateChildrenVat = (vatPercentage) => {
     setChildrenState((prev) =>
       (prev || []).map((child) => {
         if (!child || child.__isScope) return child;
@@ -495,7 +473,6 @@ export default function ProposalForm() {
           laborPercentage: child.laborPercentage,
           laborCostOverride: child.laborCost,
           vatPercentage,
-          vatType,
         });
         return {
           ...child,
@@ -524,9 +501,8 @@ export default function ProposalForm() {
             : null;
           const vat = getVatFieldsForCustomer(customer, values);
 
-          setLiveVatType(vat.vatType);
           setLiveVatPercentage(Number(vat.vatPercentage) || 0);
-          recalculateChildrenVat(Number(vat.vatPercentage) || 0, vat.vatType);
+          recalculateChildrenVat(Number(vat.vatPercentage) || 0);
 
           setValues({
             ...values,
@@ -540,7 +516,6 @@ export default function ProposalForm() {
             contactPerson: sel.contactPerson || values.contactPerson || '',
             email: sel.email || values.email || '',
             customerReferenceNumber: sel.reference || sel.code || values.customerReferenceNumber || '',
-            vatType: vat.vatType,
             vatPercentage: vat.vatPercentage,
           });
         }
@@ -561,9 +536,8 @@ export default function ProposalForm() {
         const sel = numVal != null ? customers.find((c) => String(c.id) === String(numVal)) : null;
         if (sel) {
           const vat = getVatFieldsForCustomer(sel, values);
-          setLiveVatType(vat.vatType);
           setLiveVatPercentage(Number(vat.vatPercentage) || 0);
-          recalculateChildrenVat(Number(vat.vatPercentage) || 0, vat.vatType);
+          recalculateChildrenVat(Number(vat.vatPercentage) || 0);
           setValues({
             ...values,
             customerId: sel.id,
@@ -574,14 +548,12 @@ export default function ProposalForm() {
             contactPerson: sel.customerName || '',
             address: sel.address || '',
             email: sel.email || '',
-            vatType: vat.vatType,
             vatPercentage: vat.vatPercentage,
           });
         } else {
-          setLiveVatType('');
           setLiveVatPercentage(0);
-          recalculateChildrenVat(0, '');
-          setValues({ ...values, customerId: null, customerCode: '', customerName: '', contactNumber: '', address: '', email: '', vatType: '', vatPercentage: '0.00' });
+          recalculateChildrenVat(0);
+          setValues({ ...values, customerId: null, customerCode: '', customerName: '', contactNumber: '', address: '', email: '', vatPercentage: '0.00' });
         }
       },
       validator: Yup.number().typeError('Customer is required').required('Customer is required'),
@@ -600,58 +572,30 @@ export default function ProposalForm() {
     { name: 'contactNumber', label: 'Contact Number', span: 'span1', readOnly: isReviseMode },
     { name: 'spacer-6', type: 'spacer', span: 'span1' },
     {
-      // UI-only: intentionally not included in buildModelPayload
-      name: 'vatType', label: 'VAT Type', type: 'select', span: 'span1', readOnly: isReadOnly,
-      options: [
-        { label: 'Included', value: 'Included' },
-        { label: 'Not Included', value: 'Not Included' },
-        { label: 'NON-VAT', value: 'NON-VAT' },
-      ],
-      onChange: (value, values, setValues) => {
-        const nonVat = normalizeVatType(value) === 'none';
-        const vatPercentage = nonVat
-          ? '0.00'
-          : (Number(values.vatPercentage) > 0
-              ? values.vatPercentage
-              : (defaultVatPercentage != null ? Number(defaultVatPercentage).toFixed(2) : '0.00'));
-        setLiveVatType(value);
-        setLiveVatPercentage(Number(vatPercentage) || 0);
-        recalculateChildrenVat(Number(vatPercentage) || 0, value);
-        setValues({ ...values, vatType: value, vatPercentage });
-      },
+      name: 'vatPercentage', label: 'VAT Percentage (%)', type: 'custom', span: 'span1',
+      render: ({ values, setValues }) => (
+        <div className={inputStyles.field}>
+          <label htmlFor="vatPercentage">VAT Percentage (%)</label>
+          <Input
+            id="vatPercentage"
+            type="number"
+            step="0.01"
+            value={values.vatPercentage ?? ''}
+            readOnly={isReadOnly}
+            onChange={(e) => {
+              setValues({ ...values, vatPercentage: e.target.value });
+              const percentage = Number(e.target.value) || 0;
+              setLiveVatPercentage(percentage);
+              recalculateChildrenVat(percentage);
+            }}
+          />
+        </div>
+      ),
+      validator: Yup.number().typeError('VAT Percentage must be a number').nullable(),
     },
 
     { name: 'address', label: 'Address', span: 'span1', readOnly: isReviseMode },
     { name: 'spacer-7', type: 'spacer', span: 'span1' },
-    {
-      name: 'vatPercentage', label: 'VAT Percentage (%)', type: 'custom', span: 'span1',
-      render: ({ values, setValues }) => {
-        const nonVat = normalizeVatType(values.vatType) === 'none';
-        return (
-          <div className={inputStyles.field}>
-            <label htmlFor="vatPercentage">VAT Percentage (%)</label>
-            <Input
-              id="vatPercentage"
-              type="number"
-              step="0.01"
-              value={nonVat ? '0.00' : (values.vatPercentage ?? '')}
-              readOnly={isReadOnly || nonVat}
-              onChange={(e) => {
-                if (nonVat) return;
-                setValues({ ...values, vatPercentage: e.target.value });
-                const percentage = Number(e.target.value) || 0;
-                setLiveVatPercentage(percentage);
-                recalculateChildrenVat(percentage, values.vatType);
-              }}
-            />
-          </div>
-        );
-      },
-      validator: Yup.number().typeError('VAT Percentage must be a number').nullable(),
-    },
-
-    { name: 'email', label: 'Email', type: 'email', span: 'span1', readOnly: isReviseMode },
-    { name: 'spacer-7b', type: 'spacer', span: 'span1' },
     {
       // FINANCE FIELD: still shown to everyone, but the input and the
       // "Apply to all" action are only enabled for users with 'f' permission.
@@ -700,8 +644,8 @@ export default function ProposalForm() {
       validator: Yup.number().typeError('Margin % must be a number').min(0, 'Margin % cannot be less than 0').max(100, 'Margin % cannot be greater than 100').nullable(),
     },
 
-    { name: 'location', label: 'Location', span: 'span1', readOnly: isReviseMode },
-    { name: 'spacer-11', type: 'spacer', span: 'span1' },
+    { name: 'email', label: 'Email', type: 'email', span: 'span1', readOnly: isReviseMode },
+    { name: 'spacer-7b', type: 'spacer', span: 'span1' },
     (isReadOnly ? {
       name: 'materialCostTotal', label: 'Material Cost Total', type: 'custom', span: 'span1',
       render: ({ values, setValues }) => {
@@ -716,7 +660,8 @@ export default function ProposalForm() {
       },
     } : { name: 'spacer-materialCostTotal', type: 'spacer', span: 'span1' }),
 
-    { name: 'description', label: 'Description', type: 'textarea', span: 'span2', readOnly: isReviseMode },
+    { name: 'location', label: 'Location', span: 'span1', readOnly: isReviseMode },
+    { name: 'spacer-11', type: 'spacer', span: 'span1' },
     (isReadOnly ? {
       name: 'laborCostTotal', label: 'Margin of Profit Total', type: 'custom', span: 'span1',
       render: ({ values, setValues }) => {
@@ -731,8 +676,7 @@ export default function ProposalForm() {
       },
     } : { name: 'spacer-laborCostTotal', type: 'spacer', span: 'span1' }),
 
-    { name: 'spacer-12', type: 'spacer', span: 'span1' },
-    { name: 'spacer-13', type: 'spacer', span: 'span1' },
+    { name: 'description', label: 'Description', type: 'textarea', span: 'span2', readOnly: isReviseMode },
     (isReadOnly ? {
       name: 'proposalTotal', label: 'Proposal Total', type: 'custom', span: 'span1',
       render: ({ values, setValues }) => {
@@ -757,7 +701,7 @@ export default function ProposalForm() {
   ];
 
   // "Apply to all": recompute every item row with the given margin % and the
-  // current VAT % / VAT Type.
+  // current VAT % (VAT always on top).
   const applyLaborPctToChildren = (pct) => {
     setChildrenState((prev) =>
       (prev || []).map((c) => {
@@ -769,7 +713,6 @@ export default function ProposalForm() {
           laborPercentage: pct,
           laborCostOverride: 0,
           vatPercentage: liveVatPercentage,
-          vatType: liveVatType,
         });
         return { ...c, laborPercentage: pct, ...a, extendedCost: a.totalAmount, totalPrice: a.totalAmount };
       })
@@ -852,7 +795,6 @@ export default function ProposalForm() {
     marginQuantity: Number(c.marginQuantity) || 0,
   });
 
-  // NOTE: vatType is intentionally NOT included in the payload.
   const buildModelPayload = (values) => {
     const rawCustomerId = values.customerId;
     const resolvedCustomerId =
@@ -875,7 +817,7 @@ export default function ProposalForm() {
       requestDate: formatPayloadDate(values.requestDate, true) || null,
       customerReferenceNumber: values.customerReferenceNumber || '',
       margin: Number(values.margin) || 0,
-      vatPercentage: normalizeVatType(values.vatType) === 'none' ? 0 : (Number(values.vatPercentage) || 0) / 100,
+      vatPercentage: (Number(values.vatPercentage) || 0) / 100,
       laborPercentage: Number(values.laborPercentage) || 0,
       inquiryId: values.inquiryId || 0,
       proposalTotal: Number(totals.proposalTotal) || 0,
@@ -908,9 +850,8 @@ export default function ProposalForm() {
       <EntityForm
         // Force a remount once async defaults resolve so EntityForm re-seeds its
         // internal form state from the freshly computed normalizedInitialValues
-        // (it only reads initialValues once on mount). customers.length is included
-        // so the VAT Type fallback from the customer record is picked up.
-        key={`proposal-${proposalId || 'new'}-${mode || 'view'}-${expiresInDays ?? 'pending'}-${defaultLaborPercentage ?? 'pending'}-${defaultVatPercentage ?? 'pending'}-${customers.length}`}
+        // (it only reads initialValues once on mount).
+        key={`proposal-${proposalId || 'new'}-${mode || 'view'}-${expiresInDays ?? 'pending'}-${defaultLaborPercentage ?? 'pending'}-${defaultVatPercentage ?? 'pending'}`}
         title={formTitle}
         breadcrumbLabel='Proposal'
         icon={<FiSend />}
@@ -960,7 +901,6 @@ export default function ProposalForm() {
               canEditFinance={canEditFinance}
               parentLaborPercentage={liveLaborPercentage}
               vatPercentage={liveVatPercentage}
-              vatType={liveVatType}
               onChange={(updated, deleted) => {
                 setChildrenState(updated || []);
                 // clear table-level error when user modifies children
@@ -1090,299 +1030,299 @@ export default function ProposalForm() {
         showSubmitButton={false}
         readOnly={isReadOnly || !isAllowed(PageName, 'w')}
         headerActions={(() => {
-  const proposalStatus = String(initialValues?.proposalStatus || '').toLowerCase();
-  const isDraftStatus = proposalStatus === 'draft';
-  const isSubmitted = proposalStatus === 'submitted';
-  const isApproved = proposalStatus === 'approved';
-  const isRejected = proposalStatus === 'rejected';
-  const isWon = proposalStatus === 'won' || proposalStatus === 'win';
-  const isCancelled = proposalStatus === 'cancelled';
-  const shouldShowGenerateProject = isWon && initialValues?.isProjectCreated === false;
+          const proposalStatus = String(initialValues?.proposalStatus || '').toLowerCase();
+          const isDraftStatus = proposalStatus === 'draft';
+          const isSubmitted = proposalStatus === 'submitted';
+          const isApproved = proposalStatus === 'approved';
+          const isRejected = proposalStatus === 'rejected';
+          const isWon = proposalStatus === 'won' || proposalStatus === 'win';
+          const isCancelled = proposalStatus === 'cancelled';
+          const shouldShowGenerateProject = isWon && initialValues?.isProjectCreated === false;
 
-  // ── Shared confirm-modal helper ──────────────────────────────────────
-  // Called as confirmAndRun(title, message, action, { successMsg, errorMsg }) —
-  // the 4th arg is an options object, not a bare string.
-  const confirmAndRun = (title, message, action, options = {}) => {
-  const { successMsg = 'Done', errorMsg = 'Action failed' } = options;
-  setConfirmTitle(title);
-  setConfirmMessage(message);
-  setConfirmCallback(() => async () => {
-    // Guard: ignore if an action is already in flight (e.g. the confirm
-    // modal's own button was double-clicked before the disabled state
-    // re-rendered).
-    if (actionLoading) return;
-    setActionLoading(true);
-    const res = await action();
-    if (res?.error) toast.error(errorMsg);
-    else {
-      toast.success(successMsg);
-      try { router.push('/projects/proposal'); } catch (err) {}
-    }
-    setActionLoading(false);
-  });
-  setIsConfirmOpen(true);
-};
+          // ── Shared confirm-modal helper ──────────────────────────────────────
+          // Called as confirmAndRun(title, message, action, { successMsg, errorMsg }) —
+          // the 4th arg is an options object, not a bare string.
+          const confirmAndRun = (title, message, action, options = {}) => {
+            const { successMsg = 'Done', errorMsg = 'Action failed' } = options;
+            setConfirmTitle(title);
+            setConfirmMessage(message);
+            setConfirmCallback(() => async () => {
+              // Guard: ignore if an action is already in flight (e.g. the confirm
+              // modal's own button was double-clicked before the disabled state
+              // re-rendered).
+              if (actionLoading) return;
+              setActionLoading(true);
+              const res = await action();
+              if (res?.error) toast.error(errorMsg);
+              else {
+                toast.success(successMsg);
+                try { router.push('/projects/proposal'); } catch (err) {}
+              }
+              setActionLoading(false);
+            });
+            setIsConfirmOpen(true);
+          };
 
-  // ── Document/reference actions — always available once a record exists,
-  // regardless of status, so they live in the overflow menu in every branch ──
-  const documentMenuItems = isAllowed(PageName, 'r')
-    ? [
-        {
-          key: 'view-bom',
-          label: 'View BOM',
-          icon: <FiFileText size={14} />,
-          disabled: () => !proposalId || actionLoading,
-          onClick: () => setIsProposalBOMOpen(true),
-        },
-        {
-          key: 'print',
-          label: 'Print',
-          icon: <FiPrinter size={14} />,
-          disabled: () => actionLoading,
-          onClick: async () => {
-            if (actionLoading) return;
-            setActionLoading(true);
-            await printProposal_byId(proposalId);
-            setActionLoading(false);
-          },
-        },
-        {
-          key: 'print-breakdown',
-          label: 'Print Breakdown (Simple)',
-          icon: <FiPrinter size={14} />,
-          disabled: () => actionLoading,
-          onClick: async () => {
-            if (actionLoading) return;
-            setActionLoading(true);
-            await printProposalBreakdown_Simple_byId(proposalId);
-            setActionLoading(false);
-          },
-        },
-        {
-          key: 'print-breakdown-detailed',
-          label: 'Print Breakdown (Detailed)',
-          icon: <FiPrinter size={14} />,
-          disabled: () => actionLoading,
-          onClick: async () => {
-            if (actionLoading) return;
-            setActionLoading(true);
-            await printProposalBreakdown_Detailed_byId(proposalId);
-            setActionLoading(false);
-          },
-        },
-      ]
-    : [];
+          // ── Document/reference actions — always available once a record exists,
+          // regardless of status, so they live in the overflow menu in every branch ──
+          const documentMenuItems = isAllowed(PageName, 'r')
+            ? [
+                {
+                  key: 'view-bom',
+                  label: 'View BOM',
+                  icon: <FiFileText size={14} />,
+                  disabled: () => !proposalId || actionLoading,
+                  onClick: () => setIsProposalBOMOpen(true),
+                },
+                {
+                  key: 'print',
+                  label: 'Print',
+                  icon: <FiPrinter size={14} />,
+                  disabled: () => actionLoading,
+                  onClick: async () => {
+                    if (actionLoading) return;
+                    setActionLoading(true);
+                    await printProposal_byId(proposalId);
+                    setActionLoading(false);
+                  },
+                },
+                {
+                  key: 'print-breakdown',
+                  label: 'Print Breakdown (Simple)',
+                  icon: <FiPrinter size={14} />,
+                  disabled: () => actionLoading,
+                  onClick: async () => {
+                    if (actionLoading) return;
+                    setActionLoading(true);
+                    await printProposalBreakdown_Simple_byId(proposalId);
+                    setActionLoading(false);
+                  },
+                },
+                {
+                  key: 'print-breakdown-detailed',
+                  label: 'Print Breakdown (Detailed)',
+                  icon: <FiPrinter size={14} />,
+                  disabled: () => actionLoading,
+                  onClick: async () => {
+                    if (actionLoading) return;
+                    setActionLoading(true);
+                    await printProposalBreakdown_Detailed_byId(proposalId);
+                    setActionLoading(false);
+                  },
+                },
+              ]
+            : [];
 
-  // ── REVISE MODE: only Save/Cancel — no menu needed ──────────────────────
-  if (isReviseMode) {
-    return (
-      <>
-        <Button variant="outlineDanger" disabled={actionLoading} onClick={() => router.push('/projects/proposal')}>Cancel</Button>
-        {isAllowed(PageName, 'w') ? <Button type="submit" variant="save" disabled={actionLoading}>Save Revision</Button> : null}
-      </>
-    );
-  }
-
-  // ── COPY MODE ────────────────────────────────────────────────────────────
-  if (isCopyMode) {
-    return isAllowed(PageName, 'w') ? (
-      <>
-        <Button variant="outlineDanger" disabled={actionLoading} onClick={() => router.push('/projects/proposal')}>Cancel</Button>
-        <Button type="submit" variant="save" disabled={actionLoading}>Create Copy</Button>
-      </>
-    ) : null;
-  }
-
-  // ── CREATE MODE (no proposalId yet) ─────────────────────────────────────
-  if (!proposalId) {
-    return isAllowed(PageName, 'w') ? <Button type="submit" variant="save" disabled={actionLoading}>Create</Button> : null;
-  }
-
-  // ── EDIT MODE (form is currently editable) ──────────────────────────────
-  if (!isReadOnly) {
-    return (
-      <>
-        <Button variant="outlineDanger" disabled={actionLoading} onClick={() => {
-          if (mode === 'edit') {
-            router.push(`/projects/proposal/proposalform?id=${proposalId}`);
-            return;
+          // ── REVISE MODE: only Save/Cancel — no menu needed ──────────────────────
+          if (isReviseMode) {
+            return (
+              <>
+                <Button variant="outlineDanger" disabled={actionLoading} onClick={() => router.push('/projects/proposal')}>Cancel</Button>
+                {isAllowed(PageName, 'w') ? <Button type="submit" variant="save" disabled={actionLoading}>Save Revision</Button> : null}
+              </>
+            );
           }
-          setIsEditModeLocal(false);
-        }}>Cancel</Button>
-        {isAllowed(PageName, 'w') ? <Button type="submit" variant="save" disabled={actionLoading}>Save</Button> : null}
-        {documentMenuItems.length > 0 ? (
-          <DropdownAction item={initialValues} items={documentMenuItems} />
-        ) : null}
-      </>
-    );
-  }
 
-  // ── READ-ONLY VIEW: one primary action per status + everything else in the menu ──
-  const menuItems = [...documentMenuItems];
-  let primaryAction = null;
+          // ── COPY MODE ────────────────────────────────────────────────────────────
+          if (isCopyMode) {
+            return isAllowed(PageName, 'w') ? (
+              <>
+                <Button variant="outlineDanger" disabled={actionLoading} onClick={() => router.push('/projects/proposal')}>Cancel</Button>
+                <Button type="submit" variant="save" disabled={actionLoading}>Create Copy</Button>
+              </>
+            ) : null;
+          }
 
-  // Edit action — available whenever canEnterEditMode says so (Draft for
-  // everyone with 'w', or Submitted/Approved/Rejected for approvers with
-  // 'a', per the editability rule above). Captured separately so we can
-  // tell below whether a later status-transition button (Submit/Approve/
-  // Win/etc.) took over the primary slot instead.
-  const editAction = (canEnterEditMode && isAllowed(PageName, 'w')) ? (
-    <Button variant="outlinedPrimary" disabled={actionLoading} onClick={() => setIsEditModeLocal(true)}>Edit</Button>
-  ) : null;
+          // ── CREATE MODE (no proposalId yet) ─────────────────────────────────────
+          if (!proposalId) {
+            return isAllowed(PageName, 'w') ? <Button type="submit" variant="save" disabled={actionLoading}>Create</Button> : null;
+          }
 
-  if (editAction) {
-    primaryAction = editAction;
-  }
+          // ── EDIT MODE (form is currently editable) ──────────────────────────────
+          if (!isReadOnly) {
+            return (
+              <>
+                <Button variant="outlineDanger" disabled={actionLoading} onClick={() => {
+                  if (mode === 'edit') {
+                    router.push(`/projects/proposal/proposalform?id=${proposalId}`);
+                    return;
+                  }
+                  setIsEditModeLocal(false);
+                }}>Cancel</Button>
+                {isAllowed(PageName, 'w') ? <Button type="submit" variant="save" disabled={actionLoading}>Save</Button> : null}
+                {documentMenuItems.length > 0 ? (
+                  <DropdownAction item={initialValues} items={documentMenuItems} />
+                ) : null}
+              </>
+            );
+          }
 
-  if (isDraftStatus && isAllowed(PageName, 'w')) {
-    primaryAction = (
-      <Button variant="primary" disabled={actionLoading} onClick={() => confirmAndRun(
-        'Submit proposal?',
-        `Submit proposal "${initialValues.name || initialValues.code || ''}"?`,
-        () => submitProposal(proposalId),
-        { successMsg: 'Proposal submitted' },
-      )}>
-        <FiSend size={14} style={{ marginRight: 4 }} />Submit
-      </Button>
-    );
-    if (isAllowed(PageName, 'w') && !isCancelled) {
-      menuItems.push({
-        key: 'cancel',
-        label: 'Cancel Proposal',
-        icon: <FiXCircle size={14} />,
-        destructive: true,
-        disabled: () => actionLoading,
-        onClick: () => confirmAndRun(
-          'Cancel Proposal?',
-          `Are you sure you want to cancel proposal "${initialValues.name || initialValues.code || ''}"?`,
-          async () => {
-            const res = await cancelProposal(proposalId);
-            if (!res?.error) {
-              const refreshed = await getProposalById(proposalId);
-              if (!refreshed.error) setItems(refreshed.data || []);
+          // ── READ-ONLY VIEW: one primary action per status + everything else in the menu ──
+          const menuItems = [...documentMenuItems];
+          let primaryAction = null;
+
+          // Edit action — available whenever canEnterEditMode says so (Draft for
+          // everyone with 'w', or Submitted/Approved/Rejected for approvers with
+          // 'a', per the editability rule above). Captured separately so we can
+          // tell below whether a later status-transition button (Submit/Approve/
+          // Win/etc.) took over the primary slot instead.
+          const editAction = (canEnterEditMode && isAllowed(PageName, 'w')) ? (
+            <Button variant="outlinedPrimary" disabled={actionLoading} onClick={() => setIsEditModeLocal(true)}>Edit</Button>
+          ) : null;
+
+          if (editAction) {
+            primaryAction = editAction;
+          }
+
+          if (isDraftStatus && isAllowed(PageName, 'w')) {
+            primaryAction = (
+              <Button variant="primary" disabled={actionLoading} onClick={() => confirmAndRun(
+                'Submit proposal?',
+                `Submit proposal "${initialValues.name || initialValues.code || ''}"?`,
+                () => submitProposal(proposalId),
+                { successMsg: 'Proposal submitted' },
+              )}>
+                <FiSend size={14} style={{ marginRight: 4 }} />Submit
+              </Button>
+            );
+            if (isAllowed(PageName, 'w') && !isCancelled) {
+              menuItems.push({
+                key: 'cancel',
+                label: 'Cancel Proposal',
+                icon: <FiXCircle size={14} />,
+                destructive: true,
+                disabled: () => actionLoading,
+                onClick: () => confirmAndRun(
+                  'Cancel Proposal?',
+                  `Are you sure you want to cancel proposal "${initialValues.name || initialValues.code || ''}"?`,
+                  async () => {
+                    const res = await cancelProposal(proposalId);
+                    if (!res?.error) {
+                      const refreshed = await getProposalById(proposalId);
+                      if (!refreshed.error) setItems(refreshed.data || []);
+                    }
+                    return res;
+                  },
+                  { successMsg: 'Proposal cancelled' },
+                ),
+              });
             }
-            return res;
-          },
-          { successMsg: 'Proposal cancelled' },
-        ),
-      });
-    }
-  }
+          }
 
-  if (isSubmitted && isAllowed(PageName, 'a')) {
-    primaryAction = (
-      <Button variant="save" disabled={actionLoading} onClick={() => confirmAndRun(
-        'Approve proposal?',
-        `Approve proposal "${initialValues.name || initialValues.code || ''}"?`,
-        () => approveProposal(proposalId),
-        { successMsg: 'Proposal approved' },
-      )}>
-        <FiCheck size={14} style={{ marginRight: 4 }} />Approve
-      </Button>
-    );
-    menuItems.push({
-      key: 'reject',
-      label: 'Reject Proposal',
-      icon: <FiX size={14} />,
-      destructive: true,
-      disabled: () => actionLoading,
-      onClick: () => confirmAndRun(
-        'Reject proposal?',
-        `Reject proposal "${initialValues.name || initialValues.code || ''}"?`,
-        () => rejectProposal(proposalId),
-        { successMsg: 'Proposal rejected' },
-      ),
-    });
-  }
+          if (isSubmitted && isAllowed(PageName, 'a')) {
+            primaryAction = (
+              <Button variant="save" disabled={actionLoading} onClick={() => confirmAndRun(
+                'Approve proposal?',
+                `Approve proposal "${initialValues.name || initialValues.code || ''}"?`,
+                () => approveProposal(proposalId),
+                { successMsg: 'Proposal approved' },
+              )}>
+                <FiCheck size={14} style={{ marginRight: 4 }} />Approve
+              </Button>
+            );
+            menuItems.push({
+              key: 'reject',
+              label: 'Reject Proposal',
+              icon: <FiX size={14} />,
+              destructive: true,
+              disabled: () => actionLoading,
+              onClick: () => confirmAndRun(
+                'Reject proposal?',
+                `Reject proposal "${initialValues.name || initialValues.code || ''}"?`,
+                () => rejectProposal(proposalId),
+                { successMsg: 'Proposal rejected' },
+              ),
+            });
+          }
 
-  if (isApproved && canWinOrLose) {
-    primaryAction = (
-      <Button variant="save" disabled={actionLoading} onClick={() => confirmAndRun(
-        'Mark proposal as Won?',
-        `Mark proposal "${initialValues.name || initialValues.code || ''}" as Won?`,
-        () => winProposal(proposalId),
-        { successMsg: 'Proposal marked as won' },
-      )}>
-        <FiCheck size={14} style={{ marginRight: 4 }} />Win
-      </Button>
-    );
-    menuItems.push({
-      key: 'lose',
-      label: 'Mark as Lost',
-      icon: <FiX size={14} />,
-      destructive: true,
-      disabled: () => actionLoading,
-      onClick: () => confirmAndRun(
-        'Mark proposal as Lost?',
-        `Mark proposal "${initialValues.name || initialValues.code || ''}" as Lost?`,
-        () => loseProposal(proposalId),
-        { successMsg: 'Proposal marked as lost' },
-      ),
-    });
-  }
+          if (isApproved && canWinOrLose) {
+            primaryAction = (
+              <Button variant="save" disabled={actionLoading} onClick={() => confirmAndRun(
+                'Mark proposal as Won?',
+                `Mark proposal "${initialValues.name || initialValues.code || ''}" as Won?`,
+                () => winProposal(proposalId),
+                { successMsg: 'Proposal marked as won' },
+              )}>
+                <FiCheck size={14} style={{ marginRight: 4 }} />Win
+              </Button>
+            );
+            menuItems.push({
+              key: 'lose',
+              label: 'Mark as Lost',
+              icon: <FiX size={14} />,
+              destructive: true,
+              disabled: () => actionLoading,
+              onClick: () => confirmAndRun(
+                'Mark proposal as Lost?',
+                `Mark proposal "${initialValues.name || initialValues.code || ''}" as Lost?`,
+                () => loseProposal(proposalId),
+                { successMsg: 'Proposal marked as lost' },
+              ),
+            });
+          }
 
-  if (isRejected && canWinOrLose) {
-    primaryAction = (
-      <Button variant="outlineDanger" disabled={actionLoading} onClick={() => confirmAndRun(
-        'Mark proposal as Lost?',
-        `Mark proposal "${initialValues.name || initialValues.code || ''}" as Lost?`,
-        () => loseProposal(proposalId),
-        { successMsg: 'Proposal marked as lost' },
-      )}>
-        <FiX size={14} style={{ marginRight: 4 }} />Lose
-      </Button>
-    );
-  }
+          if (isRejected && canWinOrLose) {
+            primaryAction = (
+              <Button variant="outlineDanger" disabled={actionLoading} onClick={() => confirmAndRun(
+                'Mark proposal as Lost?',
+                `Mark proposal "${initialValues.name || initialValues.code || ''}" as Lost?`,
+                () => loseProposal(proposalId),
+                { successMsg: 'Proposal marked as lost' },
+              )}>
+                <FiX size={14} style={{ marginRight: 4 }} />Lose
+              </Button>
+            );
+          }
 
-  if (shouldShowGenerateProject && isAllowed(PageName, 'w')) {
-    primaryAction = (
-      <Button variant="primary" disabled={actionLoading} onClick={() => confirmAndRun(
-        'Generate Project?',
-        `Create a project from proposal "${initialValues.name || initialValues.code || ''}"?`,
-        () => convertProposal(proposalId),
-        { successMsg: 'Project created from proposal' },
-      )}>
-        <FiCheck size={14} style={{ marginRight: 4 }} />Generate Project
-      </Button>
-    );
-  }
+          if (shouldShowGenerateProject && isAllowed(PageName, 'w')) {
+            primaryAction = (
+              <Button variant="primary" disabled={actionLoading} onClick={() => confirmAndRun(
+                'Generate Project?',
+                `Create a project from proposal "${initialValues.name || initialValues.code || ''}"?`,
+                () => convertProposal(proposalId),
+                { successMsg: 'Project created from proposal' },
+              )}>
+                <FiCheck size={14} style={{ marginRight: 4 }} />Generate Project
+              </Button>
+            );
+          }
 
-  if (proposalId && isAllowed(PageName, 'w') && isCancelled) {
-    menuItems.push({
-      key: 'close-proposal',
-      label: 'Close Proposal',
-      icon: <FiArchive size={14} />,
-      disabled: () => actionLoading,
-      onClick: () => confirmAndRun(
-        'Close Proposal?',
-        `Are you sure you want to close proposal "${initialValues.name || initialValues.code || ''}"?`,
-        () => closeProposal(proposalId),
-        { successMsg: 'Proposal closed' },
-      ),
-    });
-  }
+          if (proposalId && isAllowed(PageName, 'w') && isCancelled) {
+            menuItems.push({
+              key: 'close-proposal',
+              label: 'Close Proposal',
+              icon: <FiArchive size={14} />,
+              disabled: () => actionLoading,
+              onClick: () => confirmAndRun(
+                'Close Proposal?',
+                `Are you sure you want to close proposal "${initialValues.name || initialValues.code || ''}"?`,
+                () => closeProposal(proposalId),
+                { successMsg: 'Proposal closed' },
+              ),
+            });
+          }
 
-  // If a status-transition action (Submit/Approve/Win/Lose/Generate
-  // Project) claimed the primary slot instead of Edit, approvers don't
-  // lose the ability to edit — it's relocated into the overflow menu so
-  // it's still one click away.
-  if (editAction && primaryAction !== editAction) {
-    menuItems.push({
-      key: 'edit-inline',
-      label: 'Edit',
-      icon: <FiEdit2 size={14} />,
-      disabled: () => actionLoading,
-      onClick: () => setIsEditModeLocal(true),
-    });
-  }
+          // If a status-transition action (Submit/Approve/Win/Lose/Generate
+          // Project) claimed the primary slot instead of Edit, approvers don't
+          // lose the ability to edit — it's relocated into the overflow menu so
+          // it's still one click away.
+          if (editAction && primaryAction !== editAction) {
+            menuItems.push({
+              key: 'edit-inline',
+              label: 'Edit',
+              icon: <FiEdit2 size={14} />,
+              disabled: () => actionLoading,
+              onClick: () => setIsEditModeLocal(true),
+            });
+          }
 
-  return (
-    <>
-      {primaryAction}
-      {menuItems.length > 0 ? <DropdownAction item={initialValues} items={menuItems} /> : null}
-    </>
-  );
-})()}
+          return (
+            <>
+              {primaryAction}
+              {menuItems.length > 0 ? <DropdownAction item={initialValues} items={menuItems} /> : null}
+            </>
+          );
+        })()}
       />
       <ConfirmModal
         open={isConfirmOpen}

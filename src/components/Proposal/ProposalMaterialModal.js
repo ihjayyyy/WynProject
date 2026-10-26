@@ -13,43 +13,25 @@ import { byTypeMaterials } from '../../services/Materials';
 
 // ─────────────────────────────────────────────────────────────────────────
 // VAT / amount computation (inlined — no separate file)
+// VAT is ALWAYS added on top of (material + margin of profit).
 // ─────────────────────────────────────────────────────────────────────────
 const round2 = (n) => Number((Number(n) || 0).toFixed(2));
-
-// "Not Included" / "VAT Not-Included" / "Exclusive" -> 'exclusive'
-// "Included" / "VAT Included" / "Inclusive"          -> 'inclusive'
-// anything else (Non-VAT, blank)                     -> 'none'
-function normalizeVatType(t) {
-  const s = String(t || '').toLowerCase().replace(/[^a-z]/g, '');
-  if (!s) return 'none';
-  if (s.includes('notincluded') || s.includes('exclusive') || s.includes('excluded')) return 'exclusive';
-  if (s.includes('included') || s.includes('inclusive')) return 'inclusive';
-  return 'none';
-}
 
 function computeAmounts({
   materialBase,            // unitCost * qty - discount
   laborPercentage = 0,     // whole number, e.g. 10
   laborCostOverride = 0,   // used only when laborPercentage is 0
   vatPercentage = 0,       // whole number, e.g. 12
-  vatType = '',
 }) {
   const material = round2(Math.max(0, Number(materialBase) || 0));
   const pct = Number(laborPercentage) || 0;
   const labor = pct > 0 ? round2((material * pct) / 100) : round2(laborCostOverride);
   const subtotal = round2(material + labor);
 
-  const type = normalizeVatType(vatType);
-  const rate = type === 'none' ? 0 : (Number(vatPercentage) || 0) / 100;
+  const rate = (Number(vatPercentage) || 0) / 100;
+  const vat = round2(subtotal * rate);          // VAT on top
+  const totalAmount = round2(subtotal + vat);   // subtotal + VAT
 
-  let vat = 0;
-  let totalAmount = subtotal;
-  if (type === 'exclusive') {
-    vat = round2(subtotal * rate);
-    totalAmount = round2(subtotal + vat);
-  } else if (type === 'inclusive') {
-    vat = round2(subtotal - subtotal / (1 + rate));
-  }
   return { materialCost: material, laborCost: labor, vat, totalAmount };
 }
 
@@ -100,7 +82,6 @@ export default function ProposalMaterialModal({
   canEditFinance = true,
   // From the Proposal Form
   vatPercentage = 0, // whole number, e.g. 12
-  vatType = '',      // e.g. "Included" / "Not Included" / non-VAT
 }) {
   const [resetKey, setResetKey] = useState(0);
 
@@ -239,7 +220,6 @@ export default function ProposalMaterialModal({
       laborPercentage: Number(form.laborPercentage) || 0,
       laborCostOverride: Number(form.laborCost) || 0,
       vatPercentage,
-      vatType,
     });
 
     setForm((f) => ({
@@ -255,7 +235,6 @@ export default function ProposalMaterialModal({
     form.laborPercentage,
     form.laborCost,
     vatPercentage,
-    vatType,
   ]);
 
   const applyMaterialSelect = useCallback(
@@ -313,7 +292,6 @@ export default function ProposalMaterialModal({
       laborPercentage: Number(form.laborPercentage) || 0,
       laborCostOverride: Number(form.laborCost) || 0,
       vatPercentage,
-      vatType,
     });
 
     return {
@@ -322,7 +300,7 @@ export default function ProposalMaterialModal({
       extendedCost: a.totalAmount,
       totalPrice: a.totalAmount,
     };
-  }, [form, vatPercentage, vatType]);
+  }, [form, vatPercentage]);
 
   const recomputeTotals = (
     updateField,
@@ -353,7 +331,6 @@ export default function ProposalMaterialModal({
       laborPercentage: pct,
       laborCostOverride: pctExplicit ? 0 : Number(getVal('laborCost')) || 0,
       vatPercentage,
-      vatType,
     });
 
     updateField('vat', vat);
@@ -577,10 +554,10 @@ export default function ProposalMaterialModal({
                     m.id != null &&
                     m.id !== ''
                 )
-              .map((m) => ({
-                value: String(m.id),
-                label: `${m.code ? `[${m.code}] ` : ''}${m.name || ''}`.trim(),
-              })),
+                .map((m) => ({
+                  value: String(m.id),
+                  label: `${m.code ? `[${m.code}] ` : ''}${m.name || ''}`.trim(),
+                })),
 
         validator:
           !isService && categorySelected
@@ -1071,7 +1048,6 @@ export default function ProposalMaterialModal({
     materialCategory,
     canEditFinance,
     vatPercentage,
-    vatType,
   ]);
 
   const isEditMode = Boolean(
@@ -1092,7 +1068,7 @@ export default function ProposalMaterialModal({
       fields={fields}
       onItemRemove={() => {}}
       confirmOnClose
-            onClose={(val) => {
+      onClose={(val) => {
         if (!val) {
           onCancel && onCancel();
           return;
@@ -1137,7 +1113,6 @@ export default function ProposalMaterialModal({
           laborCostOverride:
             Number(canEditFinance ? val.laborCost : initial?.laborCost) || 0,
           vatPercentage,
-          vatType,
         });
 
         const payload = {

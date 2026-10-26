@@ -9,40 +9,25 @@ import ConfirmModal from '../ui/ConfirmModal/ConfirmModal';
 
 // ─────────────────────────────────────────────────────────────────────────
 // VAT / amount computation (inlined — no separate file)
+// VAT is ALWAYS added on top of (material + margin of profit).
 // ─────────────────────────────────────────────────────────────────────────
 const round2 = (n) => Number((Number(n) || 0).toFixed(2));
-
-function normalizeVatType(t) {
-  const s = String(t || '').toLowerCase().replace(/[^a-z]/g, '');
-  if (!s) return 'none';
-  if (s.includes('notincluded') || s.includes('exclusive') || s.includes('excluded')) return 'exclusive';
-  if (s.includes('included') || s.includes('inclusive')) return 'inclusive';
-  return 'none';
-}
 
 function computeAmounts({
   materialBase,
   laborPercentage = 0,
   laborCostOverride = 0,
   vatPercentage = 0,
-  vatType = '',
 }) {
   const material = round2(Math.max(0, Number(materialBase) || 0));
   const pct = Number(laborPercentage) || 0;
   const labor = pct > 0 ? round2((material * pct) / 100) : round2(laborCostOverride);
   const subtotal = round2(material + labor);
 
-  const type = normalizeVatType(vatType);
-  const rate = type === 'none' ? 0 : (Number(vatPercentage) || 0) / 100;
+  const rate = (Number(vatPercentage) || 0) / 100;
+  const vat = round2(subtotal * rate);          // VAT on top
+  const totalAmount = round2(subtotal + vat);   // subtotal + VAT
 
-  let vat = 0;
-  let totalAmount = subtotal;
-  if (type === 'exclusive') {
-    vat = round2(subtotal * rate);
-    totalAmount = round2(subtotal + vat);
-  } else if (type === 'inclusive') {
-    vat = round2(subtotal - subtotal / (1 + rate));
-  }
   return { materialCost: material, laborCost: labor, vat, totalAmount };
 }
 
@@ -67,7 +52,6 @@ export default function ProposalMaterialsTable({
   isAdmin = false,
   // From the Proposal Form — forwarded to the item modal so VAT is computed there
   vatPercentage = 0,
-  vatType = '',
 }) {
   const [localItems, setLocalItems] = useState([]);
   const [deletedChildren, setDeletedChildren] = useState([]);
@@ -117,7 +101,7 @@ export default function ProposalMaterialsTable({
     { header: 'UoM', key: 'uom', width: '80px' },
     { header: 'Proposed Quantity', key: 'quantity', align: 'right', width: '80px' },
     { header: 'Margin Quantity', key: 'marginQuantity', align: 'right', width: '80px' },
-    
+
     { header: 'Material Cost', key: 'materialCost', align: 'right', width: '140px', render: (it) => Number(it.materialCost || 0).toLocaleString() },
     { header: 'Margin of Profit', key: 'laborCost', align: 'right', width: '120px', render: (it) => Number(it.laborCost || 0).toLocaleString() },
     { header: 'Vat', key: 'vat', align: 'right', width: '100px', render: (it) => Number(it.vat || 0).toLocaleString() },
@@ -247,7 +231,7 @@ export default function ProposalMaterialsTable({
                 if (it.scopeOfWork !== scopeEditing) return it;
                 const updated = { ...it, scopeOfWork: val, laborPercentage: effectivePct, scopeDuration: dur };
                 if (applyToMaterials && canEditFinance && !it.__isScope) {
-                  // Recompute with the current VAT % / VAT Type
+                  // Recompute with the current VAT % (VAT always on top)
                   const base =
                     (Number(it.unitCost) || 0) * (Number(it.quantity) || 0) - (Number(it.discount) || 0);
                   const a = computeAmounts({
@@ -255,7 +239,6 @@ export default function ProposalMaterialsTable({
                     laborPercentage: effectivePct,
                     laborCostOverride: 0,
                     vatPercentage,
-                    vatType,
                   });
                   return { ...updated, laborPercentage: effectivePct, ...a, extendedCost: a.totalAmount, totalPrice: a.totalAmount };
                 }
@@ -285,9 +268,8 @@ export default function ProposalMaterialsTable({
         // down so it can render those specific inputs as read-only while
         // name/code/uom/quantity/type stay editable.
         canEditFinance={canEditFinance}
-        // VAT settings from the Proposal Form
+        // VAT % from the Proposal Form (always added on top)
         vatPercentage={vatPercentage}
-        vatType={vatType}
         onCancel={() => { setIsMaterialModalOpen(false); setMaterialScopeTarget(null); setMaterialEditing(null); }}
         onConfirm={(m, options = {}) => {
           const safeM = m;
@@ -328,7 +310,7 @@ export default function ProposalMaterialsTable({
           }
         }}
       />
-      
+
         <ConfirmModal open={isConfirmOpen} title="Remove material?" message={confirmTarget ? `Remove material "${confirmTarget.name || confirmTarget.code || ''}"?` : 'Remove this material?'} confirmText="Remove" confirmVariant="danger" onConfirm={() => {
           // use canonical item from localItems to preserve original id (if present)
           const sel = (localItems || []).find((p) => (confirmTarget && p._localId && confirmTarget._localId && p._localId === confirmTarget._localId) || (confirmTarget && confirmTarget.id && Number(confirmTarget.id) !== 0 && p.id === confirmTarget.id)) || confirmTarget;
